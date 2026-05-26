@@ -1,0 +1,42 @@
+services:
+  laravel:
+    environment:
+      APP_ENV: staging
+      APP_DEBUG: "false"
+      AUTORUN_ENABLED: "true"
+      AUTORUN_LARAVEL_MIGRATION_ISOLATION: "true"
+      PHP_OPCACHE_ENABLE: "1"
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: "0"
+      PHP_OPCACHE_REVALIDATE_FREQ: "0"
+    volumes: &laravel-staging-volumes
+      - laravel-storage:/var/www/html/storage
+
+  horizon:
+    environment:
+      APP_ENV: staging
+      APP_DEBUG: "false"
+      AUTORUN_ENABLED: "false"
+      PHP_OPCACHE_ENABLE: "1"
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: "0"
+      PHP_OPCACHE_REVALIDATE_FREQ: "0"
+    volumes: *laravel-staging-volumes
+
+  scheduler:
+    environment:
+      APP_ENV: staging
+      APP_DEBUG: "false"
+      AUTORUN_ENABLED: "false"
+      PHP_OPCACHE_ENABLE: "1"
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: "0"
+      PHP_OPCACHE_REVALIDATE_FREQ: "0"
+    volumes: *laravel-staging-volumes
+
+  reverb:
+    environment:
+      APP_ENV: staging
+      APP_DEBUG: "false"
+      AUTORUN_ENABLED: "false"
+      PHP_OPCACHE_ENABLE: "1"
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: "0"
+      PHP_OPCACHE_REVALIDATE_FREQ: "0"
+    volumes: *laravel-staging-volumes

@@ -1,0 +1,104 @@
+services:
+  laravel:
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      AUTORUN_ENABLED: "false"
+      PHP_OPCACHE_ENABLE: "0"
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
+    volumes: &laravel-develop-volumes
+      - ./proxy:/var/www/html
+
+  horizon:
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      AUTORUN_ENABLED: "false"
+      PHP_OPCACHE_ENABLE: "0"
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
+    volumes: *laravel-develop-volumes
+
+  scheduler:
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      AUTORUN_ENABLED: "false"
+      PHP_OPCACHE_ENABLE: "0"
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
+    volumes: *laravel-develop-volumes
+
+  reverb:
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      AUTORUN_ENABLED: "false"
+      PHP_OPCACHE_ENABLE: "0"
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
+    volumes: *laravel-develop-volumes
+
+  vite:
+    image: ${LARAVEL_IMAGE:-pygeoapi-proxy-laravel:latest}
+    user: root
+    working_dir: /var/www/html
+    command: ["sh", "-c", "if [ ! -x node_modules/.bin/vite ]; then bun install --frozen-lockfile; fi; bun run dev -- --host 0.0.0.0 --port $${VITE_DEV_SERVER_PORT:-5173} --strictPort"]
+    environment:
+      APP_URL: ${APP_URL:-http://localhost:8088}
+      VITE_APP_NAME: ${VITE_APP_NAME:-Pygeoapi Proxy}
+      VITE_REVERB_APP_KEY: ${REVERB_APP_KEY:-develop-reverb-key}
+      VITE_REVERB_HOST: ${REVERB_HOST:-localhost}
+      VITE_REVERB_PORT: ${REVERB_PORT:-8089}
+      VITE_REVERB_SCHEME: ${REVERB_SCHEME:-http}
+      VITE_DEV_SERVER_URL: ${VITE_DEV_SERVER_URL:-http://localhost:5174}
+      VITE_DEV_SERVER_PORT: ${VITE_DEV_SERVER_PORT:-5173}
+      VITE_DEV_SERVER_CLIENT_PORT: ${VITE_DEV_SERVER_CLIENT_PORT:-5174}
+      PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-2G}
+      PHP_MAX_EXECUTION_TIME: ${PHP_MAX_EXECUTION_TIME:-120}
+      PHP_MAX_INPUT_TIME: ${PHP_MAX_INPUT_TIME:-60}
+      PHP_MAX_INPUT_VARS: ${PHP_MAX_INPUT_VARS:-3000}
+      PHP_UPLOAD_MAX_FILE_SIZE: ${PHP_UPLOAD_MAX_FILE_SIZE:-100M}
+      PHP_POST_MAX_SIZE: ${PHP_POST_MAX_SIZE:-100M}
+      NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE:-100M}
+      PHP_OPCACHE_ENABLE: "0"
+      PHP_OPCACHE_MEMORY_CONSUMPTION: ${PHP_OPCACHE_MEMORY_CONSUMPTION:-256}
+      PHP_OPCACHE_MAX_ACCELERATED_FILES: ${PHP_OPCACHE_MAX_ACCELERATED_FILES:-20000}
+      PHP_OPCACHE_REVALIDATE_FREQ: ${PHP_OPCACHE_REVALIDATE_FREQ:-0}
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
+    ports:
+      - "${VITE_PORT:-5174}:5173"
+    healthcheck:
+      test: ["CMD-SHELL", "php -r 'exit(@file_get_contents(\"http://127.0.0.1:5173/@vite/client\") === false ? 1 : 0);'"]
+      start_period: 10s
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - ./proxy:/var/www/html
+      - vite-node-modules:/var/www/html/node_modules
+    networks:
+      - pygeoapi-proxy
+    restart: unless-stopped
+
+  pygeoapi:
+    ports:
+      - "${PYGEOAPI_PORT:-5000}:80"
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    pull_policy: always
+    environment:
+      PMA_HOST: mariadb
+      PMA_PORT: 3306
+      PMA_USER: ${MARIADB_USER:-pygeoapi_proxy}
+      PMA_PASSWORD: ${MARIADB_PASSWORD:-develop-password}
+      UPLOAD_LIMIT: 100M
+    ports:
+      - "${PHPMYADMIN_PORT:-8090}:80"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - pygeoapi-proxy
+    restart: unless-stopped
+
+volumes:
+  vite-node-modules:

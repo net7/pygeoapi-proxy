@@ -1,0 +1,4 @@
+.env.develop
+.env.staging
+.env.production
+!.env.*.example

@@ -1,0 +1,46 @@
+server:
+  bind:
+    host: 0.0.0.0
+    port: 80
+  url: ${PYGEOAPI_SERVER_URL:-http://localhost:5000}
+  mimetype: application/json; charset=UTF-8
+  encoding: utf-8
+  language: en-US
+  gzip: false
+  cors: true
+  pretty_print: true
+  admin: ${PYGEOAPI_SERVER_ADMIN:-false}
+  limits:
+    default_items: 10
+    max_items: 50
+  map:
+    url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+    attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+  ogc_schemas_location: /schemas.opengis.net
+
+logging:
+  level: ERROR
+
+metadata:
+  identification:
+    title: pygeoapi local instance
+    description: pygeoapi provides an API to geospatial data
+    keywords:
+      - geospatial
+      - data
+      - api
+    keywords_type: theme
+    terms_of_service: https://creativecommons.org/licenses/by/4.0/
+    url: https://pygeoapi.io
+  license:
+    name: CC-BY 4.0 license
+    url: https://creativecommons.org/licenses/by/4.0/
+  provider:
+    name: Local provider
+    url: https://pygeoapi.io
+  contact:
+    name: Local administrator
+    email: admin@example.org
+    role: pointOfContact
+
+resources: {}

@@ -1,0 +1,194 @@
+x-laravel-build: &laravel-build
+  context: ./proxy
+  dockerfile: Dockerfile
+  target: runtime
+  pull: true
+  args:
+    PHP_IMAGE_TAG: ${PHP_IMAGE_TAG:-8.5-fpm-nginx}
+    BUN_IMAGE_TAG: ${BUN_IMAGE_TAG:-latest}
+    NODE_IMAGE_TAG: ${NODE_IMAGE_TAG:-latest}
+    VITE_APP_NAME: ${VITE_APP_NAME:-Pygeoapi Proxy}
+    VITE_REVERB_APP_KEY: ${REVERB_APP_KEY:-local-reverb-key}
+    VITE_REVERB_HOST: ${REVERB_HOST:-localhost}
+    VITE_REVERB_PORT: ${REVERB_PORT:-8081}
+    VITE_REVERB_SCHEME: ${REVERB_SCHEME:-http}
+
+x-laravel-environment: &laravel-environment
+  APP_NAME: ${APP_NAME:-Pygeoapi Proxy}
+  APP_ENV: ${APP_ENV:-local}
+  APP_KEY: ${APP_KEY:-base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=}
+  APP_DEBUG: ${APP_DEBUG:-true}
+  APP_URL: ${APP_URL:-http://localhost:8080}
+  APP_LOCALE: ${APP_LOCALE:-en}
+  APP_FALLBACK_LOCALE: ${APP_FALLBACK_LOCALE:-en}
+  APP_FAKER_LOCALE: ${APP_FAKER_LOCALE:-en_US}
+  LOG_CHANNEL: ${LOG_CHANNEL:-stderr}
+  LOG_LEVEL: ${LOG_LEVEL:-debug}
+  DB_CONNECTION: mariadb
+  DB_HOST: mariadb
+  DB_PORT: 3306
+  DB_DATABASE: ${MARIADB_DATABASE:-pygeoapi_proxy}
+  DB_USERNAME: ${MARIADB_USER:-pygeoapi_proxy}
+  DB_PASSWORD: ${MARIADB_PASSWORD:-develop-password}
+  CACHE_STORE: redis
+  SESSION_DRIVER: redis
+  QUEUE_CONNECTION: redis
+  REDIS_CLIENT: phpredis
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  BROADCAST_CONNECTION: ${BROADCAST_CONNECTION:-reverb}
+  REVERB_APP_ID: ${REVERB_APP_ID:-develop}
+  REVERB_APP_KEY: ${REVERB_APP_KEY:-develop-reverb-key}
+  REVERB_APP_SECRET: ${REVERB_APP_SECRET:-develop-reverb-secret}
+  REVERB_SERVER_HOST: 0.0.0.0
+  REVERB_SERVER_PORT: 8000
+  REVERB_HOST: ${REVERB_HOST:-localhost}
+  REVERB_PORT: ${REVERB_PORT:-8081}
+  REVERB_SCHEME: ${REVERB_SCHEME:-http}
+  REVERB_SCALING_ENABLED: "true"
+  VITE_APP_NAME: ${VITE_APP_NAME:-Pygeoapi Proxy}
+  VITE_REVERB_APP_KEY: ${REVERB_APP_KEY:-develop-reverb-key}
+  VITE_REVERB_HOST: ${REVERB_HOST:-localhost}
+  VITE_REVERB_PORT: ${REVERB_PORT:-8081}
+  VITE_REVERB_SCHEME: ${REVERB_SCHEME:-http}
+  PYGEOAPI_BASE_URL: ${PYGEOAPI_BASE_URL:-http://pygeoapi}
+  HEALTHCHECK_PATH: /up
+  SSL_MODE: ${SSL_MODE:-off}
+  PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-2G}
+  PHP_MAX_EXECUTION_TIME: ${PHP_MAX_EXECUTION_TIME:-120}
+  PHP_MAX_INPUT_TIME: ${PHP_MAX_INPUT_TIME:-60}
+  PHP_MAX_INPUT_VARS: ${PHP_MAX_INPUT_VARS:-3000}
+  PHP_UPLOAD_MAX_FILE_SIZE: ${PHP_UPLOAD_MAX_FILE_SIZE:-100M}
+  PHP_POST_MAX_SIZE: ${PHP_POST_MAX_SIZE:-100M}
+  NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE:-100M}
+  PHP_OPCACHE_ENABLE: ${PHP_OPCACHE_ENABLE:-0}
+  PHP_OPCACHE_MEMORY_CONSUMPTION: ${PHP_OPCACHE_MEMORY_CONSUMPTION:-256}
+  PHP_OPCACHE_MAX_ACCELERATED_FILES: ${PHP_OPCACHE_MAX_ACCELERATED_FILES:-20000}
+  PHP_OPCACHE_REVALIDATE_FREQ: ${PHP_OPCACHE_REVALIDATE_FREQ:-0}
+  PHP_OPCACHE_VALIDATE_TIMESTAMPS: ${PHP_OPCACHE_VALIDATE_TIMESTAMPS:-1}
+  AUTORUN_ENABLED: "false"
+
+x-laravel-service: &laravel-service
+  build: *laravel-build
+  image: ${LARAVEL_IMAGE:-pygeoapi-proxy-laravel:latest}
+  environment: *laravel-environment
+  depends_on:
+    mariadb:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    pygeoapi:
+      condition: service_healthy
+  networks:
+    - pygeoapi-proxy
+  restart: unless-stopped
+
+services:
+  laravel:
+    <<: *laravel-service
+    ports:
+      - "${APP_PORT:-8080}:8080"
+
+  horizon:
+    <<: *laravel-service
+    command: ["php", "/var/www/html/artisan", "horizon"]
+    stop_signal: SIGTERM
+    healthcheck:
+      test: ["CMD", "healthcheck-horizon"]
+      start_period: 10s
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  scheduler:
+    <<: *laravel-service
+    command: ["php", "/var/www/html/artisan", "schedule:work"]
+    stop_signal: SIGTERM
+    healthcheck:
+      test: ["CMD", "healthcheck-schedule"]
+      start_period: 10s
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  reverb:
+    <<: *laravel-service
+    command: ["php", "/var/www/html/artisan", "reverb:start", "--host=0.0.0.0", "--port=8000"]
+    stop_signal: SIGTERM
+    ports:
+      - "${REVERB_HOST_PORT:-8081}:8000"
+    healthcheck:
+      test: ["CMD", "healthcheck-reverb"]
+      start_period: 10s
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  mariadb:
+    image: mariadb:latest
+    pull_policy: always
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-develop-root-password}
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-pygeoapi_proxy}
+      MARIADB_USER: ${MARIADB_USER:-pygeoapi_proxy}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-develop-password}
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -uroot -p\"$${MARIADB_ROOT_PASSWORD}\" --silent"]
+      start_period: 20s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pygeoapi-proxy
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    pull_policy: always
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      start_period: 5s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pygeoapi-proxy
+    restart: unless-stopped
+
+  pygeoapi:
+    build:
+      context: .
+      pull: true
+      args:
+        PYGEOAPI_IMAGE_TAG: ${PYGEOAPI_IMAGE_TAG:-latest}
+    image: ${PYGEOAPI_IMAGE:-pygeoapi-local:latest}
+    environment:
+      PYGEOAPI_CONFIG: /pygeoapi/local.config.yml
+      PYGEOAPI_OPENAPI: /pygeoapi/local.openapi.yml
+      PYGEOAPI_SERVER_URL: ${PYGEOAPI_SERVER_URL:-http://pygeoapi}
+      WSGI_WORKERS: ${PYGEOAPI_WSGI_WORKERS:-4}
+    volumes:
+      - ./my.config.yml:/pygeoapi/local.config.yml:ro
+    healthcheck:
+      test: ["CMD-SHELL", "/venv/bin/python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1/', timeout=5).read()\""]
+      start_period: 20s
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - pygeoapi-proxy
+    restart: unless-stopped
+
+networks:
+  pygeoapi-proxy:
+    driver: bridge
+
+volumes:
+  mariadb-data:
+  redis-data:
+  laravel-storage:
