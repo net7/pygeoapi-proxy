@@ -1,4 +1,11 @@
-# pygeoapi proxy Docker stack
+```
+                                              _                               
+    ____  __  ______ ____  ____  ____ _____  (_)  ____  _________  _  ____  __
+   / __ \/ / / / __ `/ _ \/ __ \/ __ `/ __ \/ /  / __ \/ ___/ __ \| |/_/ / / /
+  / /_/ / /_/ / /_/ /  __/ /_/ / /_/ / /_/ / /  / /_/ / /  / /_/ />  </ /_/ / 
+ / .___/\__, /\__, /\___/\____/\__,_/ .___/_/  / .___/_/   \____/_/|_|\__, /  
+/_/    /____//____/                /_/        /_/                    /____/   
+```
 
 Configurazione Docker Compose unica per eseguire Laravel, pygeoapi, MariaDB,
 Redis, Horizon, Scheduler, Reverb e Vite/Bun.
