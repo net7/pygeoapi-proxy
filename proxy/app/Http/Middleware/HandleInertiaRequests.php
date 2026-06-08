@@ -47,6 +47,7 @@ class HandleInertiaRequests extends Middleware
                 'canResetPassword' => Features::enabled(Features::resetPasswords()),
                 'canUsePasskeys' => Features::enabled(Features::passkeys()),
                 'canUsePasswordLogin' => AuthFeatures::enabled(AuthFeatures::passwordLogin()),
+                'canDeleteAccount' => AuthFeatures::enabled(AuthFeatures::accountDeletion()),
                 'routes' => $this->authRoutes($request),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
@@ -100,7 +101,9 @@ class HandleInertiaRequests extends Middleware
                 ]
                 : null,
             'socialProviders' => $this->socialProviderRoutes(),
-            'sensitiveConfirmation' => $request->user() !== null && ! $request->user()->hasLocalPassword()
+            'sensitiveConfirmation' => $request->user() !== null
+                && AuthFeatures::enabled(AuthFeatures::accountDeletion())
+                && ! $request->user()->hasLocalPassword()
                 ? route('settings.sensitive-confirmation.send', absolute: false)
                 : null,
         ];

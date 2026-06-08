@@ -32,6 +32,7 @@ export type Auth = {
     canResetPassword: boolean;
     canUsePasskeys: boolean;
     canUsePasswordLogin: boolean;
+    canDeleteAccount: boolean;
     routes: {
         register: string | null;
         passwordRequest: string | null;

@@ -181,10 +181,12 @@ export default function Profile() {
                 </Form>
             </div>
 
-            <DeleteUser
-                usesPasswordConfirmation={auth.user.has_local_password}
-                sensitiveConfirmationUrl={auth.routes.sensitiveConfirmation}
-            />
+            {auth.canDeleteAccount && (
+                <DeleteUser
+                    usesPasswordConfirmation={auth.user.has_local_password}
+                    sensitiveConfirmationUrl={auth.routes.sensitiveConfirmation}
+                />
+            )}
         </>
     );
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Models\EmailOtpChallenge;
 use App\Services\Auth\EmailOtpService;
+use App\Support\AuthFeatures;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -12,6 +13,7 @@ class SensitiveConfirmationController extends Controller
 {
     public function send(Request $request, EmailOtpService $otp): RedirectResponse
     {
+        abort_unless(AuthFeatures::enabled(AuthFeatures::accountDeletion()), 404);
         abort_if($request->user()->hasLocalPassword(), 404);
 
         $otp->createAndSend(
