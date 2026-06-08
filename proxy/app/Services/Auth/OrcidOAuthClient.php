@@ -53,8 +53,18 @@ class OrcidOAuthClient
             name: $token['name'] ?? null,
             email: null,
             emailVerified: false,
-            avatar: null,
+            avatar: $this->avatar($token),
             raw: $token,
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $token
+     */
+    private function avatar(array $token): ?string
+    {
+        $avatar = $token['picture'] ?? $token['avatar'] ?? null;
+
+        return is_string($avatar) && filled($avatar) ? $avatar : null;
     }
 }

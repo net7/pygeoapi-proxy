@@ -3,14 +3,17 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\ProfileAvatarUpdateRequest;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ProfileController extends Controller
 {
@@ -44,6 +47,56 @@ class ProfileController extends Controller
     }
 
     /**
+     * Serve the user's profile avatar.
+     */
+    public function showAvatar(Request $request, string $path): BinaryFileResponse
+    {
+        abort_unless($request->user()->avatar_path === $path, 404);
+        abort_unless(Storage::disk('public')->exists($path), 404);
+
+        return response()->file(Storage::disk('public')->path($path));
+    }
+
+    /**
+     * Update the user's profile avatar.
+     */
+    public function updateAvatar(ProfileAvatarUpdateRequest $request): RedirectResponse
+    {
+        $user = $request->user();
+        $previousAvatarPath = $user->avatar_path;
+        $avatarPath = $request->file('avatar')->store('avatars', 'public');
+
+        abort_if($avatarPath === false, 500);
+
+        $user->forceFill(['avatar_path' => $avatarPath])->save();
+
+        if ($previousAvatarPath !== null) {
+            Storage::disk('public')->delete($previousAvatarPath);
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Avatar updated.')]);
+
+        return to_route('profile.edit');
+    }
+
+    /**
+     * Remove the user's profile avatar.
+     */
+    public function destroyAvatar(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($user->avatar_path !== null) {
+            Storage::disk('public')->delete($user->avatar_path);
+            $user->forceFill(['avatar_path' => null])->save();
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Avatar removed.')]);
+
+        return to_route('profile.edit');
+    }
+
+    /**
      * Delete the user's profile.
      */
     public function destroy(ProfileDeleteRequest $request): RedirectResponse
@@ -51,6 +104,10 @@ class ProfileController extends Controller
         $user = $request->user();
 
         Auth::logout();
+
+        if ($user->avatar_path !== null) {
+            Storage::disk('public')->delete($user->avatar_path);
+        }
 
         $user->delete();
 

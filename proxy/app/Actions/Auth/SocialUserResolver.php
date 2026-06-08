@@ -19,6 +19,8 @@ class SocialUserResolver
             ->first();
 
         if ($existingAccount !== null) {
+            $this->refreshProvider($existingAccount, $profile);
+
             return SocialLoginResult::authenticated($existingAccount->user);
         }
 
@@ -79,5 +81,20 @@ class SocialUserResolver
             'avatar' => $profile->avatar,
             'raw_profile' => $profile->raw,
         ]);
+    }
+
+    private function refreshProvider(SocialAccount $account, ProviderProfile $profile): void
+    {
+        $normalizedEmail = $profile->normalizedEmail();
+
+        $account->forceFill([
+            'provider_email' => $normalizedEmail ?? $account->provider_email,
+            'provider_email_verified' => $normalizedEmail !== null
+                ? $profile->emailVerified
+                : $account->provider_email_verified,
+            'name' => $profile->name ?? $account->name,
+            'avatar' => $profile->avatar ?? $account->avatar,
+            'raw_profile' => $profile->raw,
+        ])->save();
     }
 }

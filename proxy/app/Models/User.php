@@ -13,7 +13,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password', 'avatar_path'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -31,6 +31,20 @@ class User extends Authenticatable implements PasskeyUser
     public function hasLocalPassword(): bool
     {
         return filled($this->password);
+    }
+
+    public function avatar(): ?string
+    {
+        if (filled($this->avatar_path)) {
+            return route('profile.avatar.show', ['path' => $this->avatar_path], absolute: false);
+        }
+
+        $providerAvatar = $this->socialAccounts()
+            ->whereNotNull('avatar')
+            ->latest('updated_at')
+            ->value('avatar');
+
+        return $providerAvatar === null ? null : (string) $providerAvatar;
     }
 
     /**

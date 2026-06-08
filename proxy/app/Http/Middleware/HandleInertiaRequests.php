@@ -64,8 +64,13 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
+        $userData = $user->toArray();
+        unset($userData['avatar_path']);
+
         return [
-            ...$user->toArray(),
+            ...$userData,
+            'avatar' => $user->avatar(),
+            'has_custom_avatar' => filled($user->avatar_path),
             'has_local_password' => $user->hasLocalPassword(),
         ];
     }

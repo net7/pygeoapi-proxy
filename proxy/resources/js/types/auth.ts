@@ -2,7 +2,8 @@ export type User = {
     id: number;
     name: string;
     email: string;
-    avatar?: string;
+    avatar: string | null;
+    has_custom_avatar: boolean;
     email_verified_at: string | null;
     has_local_password: boolean;
     created_at: string;

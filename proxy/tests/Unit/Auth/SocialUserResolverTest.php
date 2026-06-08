@@ -31,6 +31,29 @@ test('existing social account resolves authenticated user', function () {
         ->and($result->user->is($user))->toBeTrue();
 });
 
+test('existing social account refreshes provider avatar', function () {
+    $user = User::factory()->create();
+    $account = SocialAccount::factory()->for($user)->create([
+        'provider' => 'google',
+        'provider_user_id' => 'google-1',
+        'avatar' => 'https://example.org/old-avatar.png',
+    ]);
+
+    $result = app(SocialUserResolver::class)->resolve(new ProviderProfile(
+        provider: 'google',
+        providerUserId: 'google-1',
+        name: 'Ada Lovelace',
+        email: 'ada@example.org',
+        emailVerified: true,
+        avatar: 'https://example.org/new-avatar.png',
+        raw: ['sub' => 'google-1'],
+    ));
+
+    expect($result->status)->toBe(SocialLoginResult::Authenticated)
+        ->and($result->user->is($user))->toBeTrue()
+        ->and($account->refresh()->avatar)->toBe('https://example.org/new-avatar.png');
+});
+
 test('verified email links provider to existing user', function () {
     $user = User::factory()->create(['email' => 'ada@example.org']);
 
