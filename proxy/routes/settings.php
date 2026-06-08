@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
-use Illuminate\Auth\Middleware\RequirePassword;
+use App\Http\Controllers\Settings\SensitiveConfirmationController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -15,9 +15,11 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('settings/security', [SecurityController::class, 'edit'])
-        ->middleware(RequirePassword::class)
-        ->name('security.edit');
+    Route::post('settings/sensitive-confirmation', [SensitiveConfirmationController::class, 'send'])
+        ->middleware('throttle:3,1')
+        ->name('settings.sensitive-confirmation.send');
+
+    Route::redirect('settings/security', '/settings/profile')->name('security.edit');
 
     Route::put('settings/password', [SecurityController::class, 'update'])
         ->middleware('throttle:6,1')

@@ -1,13 +1,13 @@
 import { router } from '@inertiajs/react';
 import { KeyRound } from 'lucide-react';
-import { destroy } from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyRegistrationController';
 import Heading from '@/components/heading';
 import PasskeyItem from '@/components/passkey-item';
 import PasskeyRegistration from '@/components/passkey-register';
-import type { Passkey } from '@/types/auth';
+import type { Passkey, PasskeyManagementRoutes } from '@/types/auth';
 
 export type Props = {
     canManagePasskeys?: boolean;
+    passkeyRoutes?: PasskeyManagementRoutes | null;
     passkeys?: Passkey[];
 };
 
@@ -27,19 +27,30 @@ const EmptyState = () => {
 
 export default function ManagePasskeys(props: Props) {
     const passkeys = props.passkeys ?? [];
+    const routes = props.passkeyRoutes;
 
     const handleDelete = (id: number, onError: () => void) => {
-        router.delete(destroy.url(id), {
-            preserveScroll: true,
-            onError,
-        });
+        if (!routes) {
+            return;
+        }
+
+        router.delete(
+            routes.destroy.replace(
+                '__PASSKEY_ID__',
+                encodeURIComponent(String(id)),
+            ),
+            {
+                preserveScroll: true,
+                onError,
+            },
+        );
     };
 
     const handleRegisterSuccess = () => {
         router.reload();
     };
 
-    if (!(props.canManagePasskeys ?? false)) {
+    if (!(props.canManagePasskeys ?? false) || !routes) {
         return null;
     }
 
@@ -65,7 +76,10 @@ export default function ManagePasskeys(props: Props) {
                 )}
             </div>
 
-            <PasskeyRegistration onSuccess={handleRegisterSuccess} />
+            <PasskeyRegistration
+                routes={routes}
+                onSuccess={handleRegisterSuccess}
+            />
         </div>
     );
 }

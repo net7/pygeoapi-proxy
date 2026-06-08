@@ -44,6 +44,17 @@ class UserFactory extends Factory
     }
 
     /**
+     * Indicate that the model has no local password.
+     */
+    public function socialOnly(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'password' => null,
+            'email_verified_at' => now(),
+        ]);
+    }
+
+    /**
      * Indicate that the model has two-factor authentication configured.
      */
     public function withTwoFactor(): static {}

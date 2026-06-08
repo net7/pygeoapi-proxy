@@ -19,7 +19,14 @@ class SecurityController extends Controller
     public function edit(TwoFactorAuthenticationRequest $request): Response
     {
         $props = [
+            'canUpdatePassword' => $request->user()->hasLocalPassword(),
+            'sensitiveConfirmationUrl' => $request->user()->hasLocalPassword()
+                ? null
+                : route('settings.sensitive-confirmation.send', absolute: false),
             'canManagePasskeys' => Features::canManagePasskeys(),
+            'passkeyRoutes' => Features::canManagePasskeys()
+                ? $this->passkeyRoutes()
+                : null,
             'passkeys' => Features::canManagePasskeys()
                 ? $request->user()
                     ->passkeys()
@@ -40,6 +47,18 @@ class SecurityController extends Controller
         ];
 
         return Inertia::render('settings/security', $props);
+    }
+
+    /**
+     * @return array{options: string, submit: string, destroy: string}
+     */
+    private function passkeyRoutes(): array
+    {
+        return [
+            'options' => route('passkey.registration-options', absolute: false),
+            'submit' => route('passkey.store', absolute: false),
+            'destroy' => route('passkey.destroy', ['passkey' => '__PASSKEY_ID__'], absolute: false),
+        ];
     }
 
     /**

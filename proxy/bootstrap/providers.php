@@ -1,7 +1,13 @@
 <?php
 
+use App\Providers\AppServiceProvider;
+use App\Providers\FortifyServiceProvider;
+use App\Providers\HorizonServiceProvider;
+use App\Providers\SocialiteServiceProvider;
+
 return [
-    App\Providers\AppServiceProvider::class,
-    App\Providers\FortifyServiceProvider::class,
-    App\Providers\HorizonServiceProvider::class,
+    AppServiceProvider::class,
+    FortifyServiceProvider::class,
+    HorizonServiceProvider::class,
+    SocialiteServiceProvider::class,
 ];

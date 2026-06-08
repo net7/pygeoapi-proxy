@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { edit } from '@/routes/profile';
-import type { Auth } from '@/types';
+import type { Auth, User } from '@/types';
 
 type PageProps = {
-    auth: Auth;
+    auth: Auth & {
+        user: User;
+    };
 };
 
 export default function Profile() {
@@ -90,7 +92,10 @@ export default function Profile() {
                 </Form>
             </div>
 
-            <DeleteUser />
+            <DeleteUser
+                usesPasswordConfirmation={auth.user.has_local_password}
+                sensitiveConfirmationUrl={auth.routes.sensitiveConfirmation}
+            />
         </>
     );
 }

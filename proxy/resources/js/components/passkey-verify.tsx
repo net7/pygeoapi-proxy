@@ -1,4 +1,3 @@
-import type { UrlMethodPair } from '@inertiajs/core';
 import { router } from '@inertiajs/react';
 import { usePasskeyVerify } from '@laravel/passkeys/react';
 import { KeyRound } from 'lucide-react';
@@ -6,12 +5,10 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import type { PasskeyRoutePair } from '@/types/auth';
 
 type Props = {
-    routes?: {
-        options: UrlMethodPair;
-        submit: UrlMethodPair;
-    };
+    routes: PasskeyRoutePair;
     label?: string;
     loadingLabel?: string;
     separator?: string;
@@ -22,14 +19,9 @@ export default function PasskeyVerify({
     label,
     loadingLabel,
     separator,
-}: Props = {}) {
+}: Props) {
     const { verify, isLoading, error, isSupported } = usePasskeyVerify({
-        ...(routes && {
-            routes: {
-                options: routes.options.url,
-                submit: routes.submit.url,
-            },
-        }),
+        routes,
         onSuccess: (response) => {
             router.visit(response.redirect ?? '/dashboard');
         },

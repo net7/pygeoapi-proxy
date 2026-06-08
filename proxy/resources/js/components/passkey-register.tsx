@@ -4,12 +4,14 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import type { PasskeyRoutePair } from '@/types/auth';
 
 type Props = {
+    routes: PasskeyRoutePair;
     onSuccess: () => void;
 };
 
-export default function PasskeyRegistration({ onSuccess }: Props) {
+export default function PasskeyRegistration({ routes, onSuccess }: Props) {
     const [name, setName] = useState(() => {
         const ua = navigator.userAgent;
 
@@ -26,6 +28,7 @@ export default function PasskeyRegistration({ onSuccess }: Props) {
 
     const [showForm, setShowForm] = useState(false);
     const { register, isLoading, error, isSupported } = usePasskeyRegister({
+        routes,
         onSuccess: () => {
             setName('');
             setShowForm(false);

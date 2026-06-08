@@ -10,6 +10,11 @@ class PasswordUpdateRequest extends FormRequest
 {
     use PasswordValidationRules;
 
+    public function authorize(): bool
+    {
+        return $this->user()->hasLocalPassword();
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *

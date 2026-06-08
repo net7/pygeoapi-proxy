@@ -54,6 +54,7 @@ class ProfileController extends Controller
 
         $user->delete();
 
+        $request->session()->forget('auth.email_otp_confirmed_at');
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

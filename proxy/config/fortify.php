@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\AuthFeatures;
 use Laravel\Fortify\Features;
 
 return [
@@ -160,11 +161,17 @@ return [
     */
 
     'features' => [
-        Features::registration(),
-        Features::resetPasswords(),
-        Features::passkeys([
-            'confirmPassword' => true,
-        ]),
+
+        // AuthFeatures::passwordLogin(),
+        // Features::registration(),
+        // Features::resetPasswords(),
+        // Features::passkeys([
+        //     'confirmPassword' => true,
+        // ]),
+
+        AuthFeatures::google(),
+        AuthFeatures::orcid(),
+        AuthFeatures::emailOtp(),
     ],
 
 ];

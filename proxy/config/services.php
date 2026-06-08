@@ -28,6 +28,20 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
+    'orcid' => [
+        'client_id' => env('ORCID_CLIENT_ID'),
+        'client_secret' => env('ORCID_CLIENT_SECRET'),
+        'redirect' => env('ORCID_REDIRECT_URI'),
+        'base_url' => env('ORCID_BASE_URL', 'https://orcid.org'),
+        'scope' => env('ORCID_SCOPE', 'openid'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

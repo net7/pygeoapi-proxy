@@ -4,8 +4,11 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\User;
+use App\Support\AuthFeatures;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -41,6 +44,24 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
+
+        Fortify::authenticateUsing(function (Request $request): ?User {
+            if (! AuthFeatures::enabled(AuthFeatures::passwordLogin())) {
+                return null;
+            }
+
+            $user = User::query()
+                ->where('email', $request->string(Fortify::username())->toString())
+                ->first();
+
+            if ($user !== null
+                && $user->password !== null
+                && Hash::check((string) $request->input('password'), $user->password)) {
+                return $user;
+            }
+
+            return null;
+        });
     }
 
     /**
@@ -56,18 +77,23 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/reset-password', [
             'email' => $request->email,
             'token' => $request->route('token'),
+            'passwordUpdateAction' => route('password.update', absolute: false),
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
         ]));
 
         Fortify::requestPasswordResetLinkView(fn (Request $request) => Inertia::render('auth/forgot-password', [
+            'passwordEmailAction' => route('password.email', absolute: false),
             'status' => $request->session()->get('status'),
         ]));
 
         Fortify::registerView(fn () => Inertia::render('auth/register', [
+            'registerAction' => route('register.store', absolute: false),
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
         ]));
 
-        Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password'));
+        Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password', [
+            'passkeyConfirmRoutes' => $this->passkeyConfirmRoutes(),
+        ]));
     }
 
     /**
@@ -87,5 +113,20 @@ class FortifyServiceProvider extends ServiceProvider
                 ($request->input('credential.id') ?: $request->session()->getId()).'|'.$request->ip(),
             );
         });
+    }
+
+    /**
+     * @return array{options: string, submit: string}|null
+     */
+    private function passkeyConfirmRoutes(): ?array
+    {
+        if (! Features::enabled(Features::passkeys())) {
+            return null;
+        }
+
+        return [
+            'options' => route('passkey.confirm-options', absolute: false),
+            'submit' => route('passkey.confirm', absolute: false),
+        ];
     }
 }
