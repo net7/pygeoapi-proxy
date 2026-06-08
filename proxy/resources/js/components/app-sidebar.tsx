@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-react';
+import { LayoutGrid } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -12,7 +12,9 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    useSidebar,
 } from '@/components/ui/sidebar';
+import INGV_LOGO_SHORT_IMAGE from '@/images/ingv-logo-short.png';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 
@@ -38,6 +40,8 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+    const { state } = useSidebar();
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -45,7 +49,10 @@ export function AppSidebar() {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <Link href={dashboard()} prefetch>
-                                <AppLogo />
+                                <AppLogo
+                                    collapsed={state === 'collapsed'}
+                                    collapsedLogoSrc={INGV_LOGO_SHORT_IMAGE}
+                                />
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>

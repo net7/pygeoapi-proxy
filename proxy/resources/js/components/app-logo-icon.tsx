@@ -3,11 +3,16 @@ import INGV_LOGO_WHITE_IMAGE from '@/images/ingv-logo-white.svg';
 import INGV_LOGO_IMAGE from '@/images/invg-logo.svg';
 import { cn } from '@/lib/utils';
 
-type AppLogoIconProps = Omit<ComponentProps<'img'>, 'src'>;
+type AppLogoIconProps = Omit<ComponentProps<'img'>, 'src'> & {
+    collapsed?: boolean;
+    collapsedLogoSrc?: string;
+};
 
 const LOGO_VIEWBOX_WIDTH = 890;
 const LOGO_VIEWBOX_HEIGHT = 200;
 const LOGO_ASPECT_RATIO = LOGO_VIEWBOX_WIDTH / LOGO_VIEWBOX_HEIGHT;
+const COLLAPSED_LOGO_WIDTH = 13;
+const COLLAPSED_LOGO_HEIGHT = 20;
 
 export const APP_LOGO_DEFAULT_WIDTH = 400;
 export const APP_LOGO_DEFAULT_HEIGHT = Math.round(
@@ -35,11 +40,26 @@ export function resolveAppLogoDimensions({
 export default function AppLogoIcon({
     alt = 'INGV Logo',
     className,
+    collapsed = false,
+    collapsedLogoSrc,
     width,
     height,
     ...props
 }: AppLogoIconProps) {
     const dimensions = resolveAppLogoDimensions({ width, height });
+
+    if (collapsed && collapsedLogoSrc) {
+        return (
+            <img
+                {...props}
+                width={COLLAPSED_LOGO_WIDTH}
+                height={COLLAPSED_LOGO_HEIGHT}
+                className={cn(className, 'mx-auto object-contain')}
+                src={collapsedLogoSrc}
+                alt={alt}
+            />
+        );
+    }
 
     return (
         <>
