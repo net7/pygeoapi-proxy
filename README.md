@@ -61,6 +61,8 @@ make up ENV=production
 - `pygeoapi`: servizio pygeoapi interno al network Compose.
 - `vite`: solo in `develop`, dev server Vite eseguito con Bun.
 - `phpmyadmin`: solo in `develop`, gia' configurato verso MariaDB.
+- `mailpit`: solo in `develop`, SMTP locale e interfaccia web per testare le
+  email.
 
 In `develop`, pygeoapi e' esposto anche sull'host:
 
@@ -72,6 +74,12 @@ In `develop`, phpMyAdmin e' esposto su:
 
 ```text
 http://localhost:8090
+```
+
+In `develop`, Mailpit e' esposto su:
+
+```text
+http://localhost:8026
 ```
 
 In `staging` e `production`, pygeoapi non e' pubblicato sull'host: Laravel lo
@@ -309,11 +317,13 @@ make pygeoapi-validate
 
 Con i valori di default in `develop`:
 
-- Laravel: `http://localhost:8088`
-- Reverb: `http://localhost:8089`
-- Vite: `http://localhost:5174`
+- Laravel APP_URL: `http://ingv.test`
+- Laravel porta container diretta: `http://localhost:8088`
+- Reverb: `http://ingv.test:8089`
+- Vite: `http://ingv.test:5174`
 - pygeoapi: `http://localhost:5000`
 - phpMyAdmin: `http://localhost:8090`
+- Mailpit: `http://localhost:8026`
 
 In `staging` e `production`, Laravel e Reverb restano esposti sulle porte
 configurate, mentre pygeoapi resta solo interno al network Docker.
@@ -348,5 +358,8 @@ usa un volume Docker dedicato per evitare di riusare dipendenze native installat
 sull'host macOS dentro il container Linux.
 
 Vite ascolta dentro il container su `0.0.0.0:5173`, ma pubblica gli URL browser
-con `VITE_DEV_SERVER_URL=http://localhost:5174`. Non usare `0.0.0.0` come URL
+con `VITE_DEV_SERVER_URL=http://ingv.test:5174`. Non usare `0.0.0.0` come URL
 nel browser: e' solo un indirizzo di bind del processo.
+
+Quando cambiano servizi Compose, porte, variabili `.env.*.example`, comandi
+Make o workflow operativi, aggiorna questo README nello stesso commit.
