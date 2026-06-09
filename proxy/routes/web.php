@@ -3,6 +3,9 @@
 use App\Http\Controllers\Auth\EmailOtpChallengeController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\Auth\SocialEmailController;
+use App\Http\Controllers\Ogc\ProcessController;
+use App\Http\Controllers\Ogc\ProcessExecutionController;
+use App\Http\Controllers\Ogc\ProcessExecutionResultController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
@@ -26,6 +29,18 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
+
+    Route::get('processes', [ProcessController::class, 'index'])->name('processes.index');
+    Route::get('processes/{process}', [ProcessController::class, 'show'])->name('processes.show');
+    Route::post('processes/{process}/executions', [ProcessExecutionController::class, 'store'])
+        ->name('processes.executions.store');
+
+    Route::get('process-executions', [ProcessExecutionController::class, 'index'])
+        ->name('process-executions.index');
+    Route::get('process-executions/{processExecution}', [ProcessExecutionController::class, 'show'])
+        ->name('process-executions.show');
+    Route::get('process-executions/{processExecution}/results/{result}/download', [ProcessExecutionResultController::class, 'download'])
+        ->name('process-executions.results.download');
 });
 
 Route::get('verify/{challenge}', [EmailOtpChallengeController::class, 'show'])
