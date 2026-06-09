@@ -1,60 +1,50 @@
 import { Head, Link } from '@inertiajs/react';
 
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { index, show } from '@/routes/process-executions';
-
-type ExecutionSummary = {
-    id: number;
-    processId: string;
-    processTitle?: string;
-    status: string;
-    progress?: number | null;
-    message?: string | null;
-    createdAt?: string | null;
-};
+import type { ProcessExecutionListItem } from '@/types';
 
 type PaginatedExecutions = {
-    data: ExecutionSummary[];
+    data: ProcessExecutionListItem[];
 };
 
-export default function ProcessExecutionsIndex({ executions }: { executions: PaginatedExecutions }) {
+export default function ProcessExecutionIndex({ executions }: { executions: PaginatedExecutions }) {
     return (
         <>
-            <Head title="Process Executions" />
+            <Head title="Execution History" />
 
-            <main className="flex h-full flex-1 flex-col gap-4 p-4">
-                <header className="space-y-1">
-                    <h1 className="text-2xl font-semibold tracking-normal">Process Executions</h1>
-                    <p className="max-w-3xl text-sm text-muted-foreground">Storico locale delle richieste OGC.</p>
-                </header>
+            <div className="flex flex-col gap-4 p-4">
+                <h1 className="text-2xl font-semibold">Execution History</h1>
 
-                <div className="grid gap-3">
+                <div className="flex flex-col gap-3">
                     {executions.data.map((execution) => (
-                        <Link
-                            key={execution.id}
-                            href={show(execution.id)}
-                            className="rounded-lg border border-sidebar-border/70 p-4 transition-colors hover:bg-muted/40 dark:border-sidebar-border"
-                        >
-                            <div className="flex flex-wrap items-center gap-2">
-                                <h2 className="text-base font-medium">{execution.processTitle ?? execution.processId}</h2>
-                                <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                                    {execution.status}
-                                </span>
-                            </div>
-                            {execution.message ? (
-                                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{execution.message}</p>
-                            ) : null}
-                        </Link>
+                        <Card key={execution.id}>
+                            <CardHeader>
+                                <div className="flex items-center justify-between gap-3">
+                                    <CardTitle>{execution.processTitle ?? execution.processId}</CardTitle>
+                                    <Badge variant="secondary">{execution.status}</Badge>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="flex items-center justify-between gap-3">
+                                <p className="text-sm text-muted-foreground">{execution.message}</p>
+                                <Button asChild variant="outline">
+                                    <Link href={show(execution.id)}>Details</Link>
+                                </Button>
+                            </CardContent>
+                        </Card>
                     ))}
                 </div>
-            </main>
+            </div>
         </>
     );
 }
 
-ProcessExecutionsIndex.layout = {
+ProcessExecutionIndex.layout = {
     breadcrumbs: [
         {
-            title: 'Process Executions',
+            title: 'Execution History',
             href: index(),
         },
     ],

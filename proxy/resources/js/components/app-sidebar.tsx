@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { LayoutGrid } from 'lucide-react';
+import { History, LayoutGrid, Workflow } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/sidebar';
 import INGV_LOGO_SHORT_IMAGE from '@/images/ingv-logo-short.png';
 import { dashboard } from '@/routes';
+import { index as processExecutionsIndex } from '@/routes/process-executions';
+import { index as processesIndex } from '@/routes/processes';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -23,6 +25,16 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Processes',
+        href: processesIndex(),
+        icon: Workflow,
+    },
+    {
+        title: 'Executions',
+        href: processExecutionsIndex(),
+        icon: History,
     },
 ];
 

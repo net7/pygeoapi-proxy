@@ -1,79 +1,52 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 
+import ResultPreview from '@/components/ogc/result-preview';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { index } from '@/routes/process-executions';
-import { download } from '@/routes/process-executions/results';
+import type { ProcessExecutionDetail } from '@/types';
 
-type ExecutionResult = {
-    id: number;
-    outputId: string;
-    title?: string | null;
-    description?: string | null;
-    mediaType?: string | null;
-    cacheStatus: string;
-};
-
-type ExecutionDetail = {
-    id: number;
-    processId: string;
-    processTitle?: string | null;
-    processVersion?: string | null;
-    status: string;
-    progress?: number | null;
-    message?: string | null;
-    results: ExecutionResult[];
-};
-
-export default function ProcessExecutionsShow({ execution }: { execution: ExecutionDetail }) {
+export default function ProcessExecutionShow({ execution }: { execution: ProcessExecutionDetail }) {
     return (
         <>
-            <Head title={execution.processTitle ?? execution.processId} />
+            <Head title={`Execution ${execution.id}`} />
 
-            <main className="flex h-full flex-1 flex-col gap-5 p-4">
-                <header className="space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <h1 className="text-2xl font-semibold tracking-normal">
+            <div className="flex flex-col gap-4 p-4">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col gap-1">
+                        <h1 className="text-2xl font-semibold">
                             {execution.processTitle ?? execution.processId}
                         </h1>
-                        <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                            {execution.status}
-                        </span>
+                        <p className="text-sm text-muted-foreground">Execution #{execution.id}</p>
                     </div>
-                    {execution.message ? (
-                        <p className="max-w-4xl text-sm text-muted-foreground">{execution.message}</p>
-                    ) : null}
-                </header>
+                    <Badge variant="secondary">{execution.status}</Badge>
+                </div>
 
-                <section className="grid gap-3">
-                    <h2 className="text-sm font-medium uppercase text-muted-foreground">Outputs</h2>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Request Payload</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <pre className="overflow-auto rounded-md bg-muted p-3 text-xs">
+                            {JSON.stringify(execution.requestPayload, null, 2)}
+                        </pre>
+                    </CardContent>
+                </Card>
+
+                <div className="flex flex-col gap-3">
                     {execution.results.map((result) => (
-                        <div key={result.id} className="rounded-lg border border-sidebar-border/70 p-4 dark:border-sidebar-border">
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                                <div>
-                                    <h3 className="text-sm font-medium">{result.title ?? result.outputId}</h3>
-                                    <p className="mt-1 font-mono text-xs text-muted-foreground">{result.outputId}</p>
-                                </div>
-                                <Link
-                                    href={download({ processExecution: execution.id, result: result.id })}
-                                    className="rounded-md border border-input px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
-                                >
-                                    Download
-                                </Link>
-                            </div>
-                            {result.description ? (
-                                <p className="mt-3 text-sm text-muted-foreground">{result.description}</p>
-                            ) : null}
-                        </div>
+                        <ResultPreview key={result.id} executionId={execution.id} result={result} />
                     ))}
-                </section>
-            </main>
+                </div>
+            </div>
         </>
     );
 }
 
-ProcessExecutionsShow.layout = {
+ProcessExecutionShow.layout = {
     breadcrumbs: [
         {
-            title: 'Process Executions',
+            title: 'Execution History',
             href: index(),
         },
     ],
