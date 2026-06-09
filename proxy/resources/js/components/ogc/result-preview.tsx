@@ -13,7 +13,9 @@ export default function ResultPreview({
                 <CardTitle>{result.title ?? result.outputId}</CardTitle>
             </CardHeader>
             <CardContent>
-                <pre className="overflow-auto rounded-md bg-muted p-3 text-xs">{JSON.stringify(result.preview, null, 2)}</pre>
+                <pre className="overflow-auto rounded-md bg-muted p-3 text-xs">
+                    {JSON.stringify(result.preview, null, 2)}
+                </pre>
             </CardContent>
         </Card>
     );

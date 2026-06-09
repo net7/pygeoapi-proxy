@@ -3,11 +3,21 @@ import { Cpu, PlayCircle } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { index, show } from '@/routes/processes';
 import type { OgcProcessSummary } from '@/types';
 
-export default function ProcessIndex({ processes }: { processes: OgcProcessSummary[] }) {
+export default function ProcessIndex({
+    processes,
+}: {
+    processes: OgcProcessSummary[];
+}) {
     return (
         <>
             <Head title="Processes" />
@@ -16,7 +26,9 @@ export default function ProcessIndex({ processes }: { processes: OgcProcessSumma
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex flex-col gap-1">
                         <h1 className="text-2xl font-semibold">Processes</h1>
-                        <p className="text-sm text-muted-foreground">Available OGC API processes from Geo-INQUIRE.</p>
+                        <p className="text-sm text-muted-foreground">
+                            Available OGC API processes from Geo-INQUIRE.
+                        </p>
                     </div>
                 </div>
 
@@ -26,20 +38,34 @@ export default function ProcessIndex({ processes }: { processes: OgcProcessSumma
                             <CardHeader>
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="flex flex-col gap-1">
-                                        <CardTitle>{process.title ?? process.id}</CardTitle>
-                                        <CardDescription>{process.id}</CardDescription>
+                                        <CardTitle>
+                                            {process.title ?? process.id}
+                                        </CardTitle>
+                                        <CardDescription>
+                                            {process.id}
+                                        </CardDescription>
                                     </div>
-                                    <Cpu className="text-muted-foreground" data-icon="inline-start" />
+                                    <Cpu
+                                        className="text-muted-foreground"
+                                        data-icon="inline-start"
+                                    />
                                 </div>
                             </CardHeader>
                             <CardContent className="flex flex-col gap-4">
-                                <p className="line-clamp-4 text-sm text-muted-foreground">{process.description}</p>
+                                <p className="line-clamp-4 text-sm text-muted-foreground">
+                                    {process.description}
+                                </p>
                                 <div className="flex flex-wrap gap-2">
-                                    {process.jobControlOptions?.map((option) => (
-                                        <Badge key={option} variant="secondary">
-                                            {option}
-                                        </Badge>
-                                    ))}
+                                    {process.jobControlOptions?.map(
+                                        (option) => (
+                                            <Badge
+                                                key={option}
+                                                variant="secondary"
+                                            >
+                                                {option}
+                                            </Badge>
+                                        ),
+                                    )}
                                 </div>
                                 <Button asChild>
                                     <Link href={show(process.id)}>

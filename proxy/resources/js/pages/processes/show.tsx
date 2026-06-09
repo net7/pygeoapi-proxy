@@ -5,10 +5,8 @@ import { index } from '@/routes/processes';
 import type { OgcFormSchema } from '@/types';
 
 export default function ProcessShow({
-    process,
     formSchema,
 }: {
-    process: Record<string, unknown>;
     formSchema: OgcFormSchema;
 }) {
     return (
@@ -17,8 +15,12 @@ export default function ProcessShow({
 
             <div className="flex flex-col gap-4 p-4">
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-2xl font-semibold">{formSchema.title}</h1>
-                    <p className="text-sm text-muted-foreground">{formSchema.description}</p>
+                    <h1 className="text-2xl font-semibold">
+                        {formSchema.title}
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                        {formSchema.description}
+                    </p>
                 </div>
 
                 <DynamicProcessForm schema={formSchema} />

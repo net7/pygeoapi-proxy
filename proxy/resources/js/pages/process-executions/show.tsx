@@ -6,7 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { index } from '@/routes/process-executions';
 import type { ProcessExecutionDetail } from '@/types';
 
-export default function ProcessExecutionShow({ execution }: { execution: ProcessExecutionDetail }) {
+export default function ProcessExecutionShow({
+    execution,
+}: {
+    execution: ProcessExecutionDetail;
+}) {
     return (
         <>
             <Head title={`Execution ${execution.id}`} />
@@ -17,7 +21,9 @@ export default function ProcessExecutionShow({ execution }: { execution: Process
                         <h1 className="text-2xl font-semibold">
                             {execution.processTitle ?? execution.processId}
                         </h1>
-                        <p className="text-sm text-muted-foreground">Execution #{execution.id}</p>
+                        <p className="text-sm text-muted-foreground">
+                            Execution #{execution.id}
+                        </p>
                     </div>
                     <Badge variant="secondary">{execution.status}</Badge>
                 </div>
@@ -35,7 +41,11 @@ export default function ProcessExecutionShow({ execution }: { execution: Process
 
                 <div className="flex flex-col gap-3">
                     {execution.results.map((result) => (
-                        <ResultPreview key={result.id} executionId={execution.id} result={result} />
+                        <ResultPreview
+                            key={result.id}
+                            executionId={execution.id}
+                            result={result}
+                        />
                     ))}
                 </div>
             </div>
