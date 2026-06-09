@@ -7,15 +7,6 @@ use Tests\TestCase;
 
 uses(TestCase::class);
 
-function ogcFixture(string $name): array
-{
-    return json_decode(
-        file_get_contents(base_path("tests/Fixtures/Ogc/{$name}.json")),
-        true,
-        flags: JSON_THROW_ON_ERROR,
-    );
-}
-
 beforeEach(function () {
     Http::preventStrayRequests();
 
