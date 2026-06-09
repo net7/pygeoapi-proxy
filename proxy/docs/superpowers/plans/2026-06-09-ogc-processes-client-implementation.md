@@ -165,7 +165,7 @@ test('it submits sync execution with prefer header', function () {
 
     $response = app(OgcProcessesClient::class)->execute('conduit', [
         'inputs' => ['lat' => 1],
-        'outputs' => ['gas'],
+        'outputs' => ['gas' => ['transmissionMode' => 'value']],
     ], 'respond-sync');
 
     expect($response->status())->toBe(200)
@@ -497,6 +497,13 @@ Append this entry before the closing array in `config/services.php`:
         'connect_timeout' => (int) env('OGC_PROCESSES_CONNECT_TIMEOUT', 5),
         'cache_ttl' => (int) env('OGC_PROCESSES_CACHE_TTL', 300),
         'binary_cache_ttl_days' => (int) env('OGC_PROCESSES_BINARY_CACHE_TTL_DAYS', 30),
+        'input_references' => [
+            // 'process_id' => [
+            //     'input_id' => [
+            //         ['label' => 'Dataset name', 'href' => 'https://example.test/input.csv', 'mediaType' => 'text/csv'],
+            //     ],
+            // ],
+        ],
     ],
 ```
 
@@ -578,6 +585,7 @@ namespace App\Services\Ogc;
 
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\Client\Response;
+use InvalidArgumentException;
 use Illuminate\Support\Str;
 
 class OgcProcessesClient
@@ -634,6 +642,25 @@ class OgcProcessesClient
             ->throw();
     }
 
+    public function downloadResultUrl(string $url): Response
+    {
+        if (! Str::startsWith($url, ['http://', 'https://'])) {
+            return $this->request()
+                ->get($this->path($url))
+                ->throw();
+        }
+
+        $baseUrl = $this->baseUrl();
+
+        if (! Str::startsWith($url, $baseUrl.'/')) {
+            throw new InvalidArgumentException('Result URL is outside the configured OGC Processes base URL.');
+        }
+
+        return $this->request()
+            ->get($url)
+            ->throw();
+    }
+
     /**
      * @param  array<string, scalar>  $query
      * @return array<string, mixed>
@@ -658,9 +685,12 @@ class OgcProcessesClient
 
     private function path(string $path): string
     {
-        $baseUrl = rtrim((string) config('services.ogc_processes.base_url'), '/');
+        return $this->baseUrl().'/'.Str::of($path)->trim('/')->toString();
+    }
 
-        return $baseUrl.'/'.Str::of($path)->trim('/')->toString();
+    private function baseUrl(): string
+    {
+        return rtrim((string) config('services.ogc_processes.base_url'), '/');
     }
 }
 ```
@@ -1198,6 +1228,23 @@ test('it normalizes repeatable object arrays', function () {
         ->and($field['fields'])->toHaveKeys(['eps0', 'rhos', 'ds'])
         ->and($field['maxItems'])->toBe(21);
 });
+
+test('it attaches configured reference datasets to top level inputs', function () {
+    config()->set('services.ogc_processes.input_references', [
+        'solwcad' => [
+            'sw.data' => [
+                ['label' => 'Example CSV', 'href' => 'https://example.test/sw.csv', 'mediaType' => 'text/csv'],
+            ],
+        ],
+    ]);
+
+    $normalized = app(ProcessSchemaNormalizer::class)->normalize(ogcFixture('process-solwcad'));
+
+    expect($normalized['fields']['sw.data']['references'])
+        ->toBe([
+            ['label' => 'Example CSV', 'href' => 'https://example.test/sw.csv', 'mediaType' => 'text/csv'],
+        ]);
+});
 ```
 
 - [ ] **Step 2: Run test and confirm it fails**
@@ -1236,7 +1283,7 @@ class ProcessSchemaNormalizer
             'version' => $process['version'] ?? null,
             'jobControlOptions' => $process['jobControlOptions'] ?? [],
             'outputTransmission' => $process['outputTransmission'] ?? [],
-            'fields' => $this->normalizeInputs($process['inputs'] ?? []),
+            'fields' => $this->normalizeInputs((string) $process['id'], $process['inputs'] ?? []),
             'outputs' => $this->normalizeOutputs($process['outputs'] ?? []),
         ];
     }
@@ -1245,12 +1292,12 @@ class ProcessSchemaNormalizer
      * @param  array<string, mixed>  $inputs
      * @return array<string, mixed>
      */
-    private function normalizeInputs(array $inputs): array
+    private function normalizeInputs(string $processId, array $inputs): array
     {
         $fields = [];
 
         foreach ($inputs as $name => $input) {
-            $fields[$name] = $this->normalizeField((string) $name, $input['schema'] ?? [], $input);
+            $fields[$name] = $this->normalizeField((string) $name, $input['schema'] ?? [], $input, $processId);
         }
 
         return $fields;
@@ -1261,11 +1308,11 @@ class ProcessSchemaNormalizer
      * @param  array<string, mixed>  $metadata
      * @return array<string, mixed>
      */
-    private function normalizeField(string $name, array $schema, array $metadata = []): array
+    private function normalizeField(string $name, array $schema, array $metadata = [], ?string $processId = null): array
     {
         if (isset($schema['oneOf']) && is_array($schema['oneOf'])) {
             return [
-                ...$this->baseField($name, $schema, $metadata),
+                ...$this->baseField($name, $schema, $metadata, $processId),
                 'kind' => 'oneOf',
                 'variants' => collect($schema['oneOf'])
                     ->values()
@@ -1282,7 +1329,7 @@ class ProcessSchemaNormalizer
 
         if (($schema['type'] ?? null) === 'object') {
             return [
-                ...$this->baseField($name, $schema, $metadata),
+                ...$this->baseField($name, $schema, $metadata, $processId),
                 'kind' => 'object',
                 'required' => $schema['required'] ?? [],
                 'fields' => $this->normalizeProperties($schema['properties'] ?? [], $schema['required'] ?? []),
@@ -1290,19 +1337,19 @@ class ProcessSchemaNormalizer
         }
 
         if (($schema['type'] ?? null) === 'array') {
-            return $this->normalizeArrayField($name, $schema, $metadata);
+            return $this->normalizeArrayField($name, $schema, $metadata, $processId);
         }
 
         if (isset($schema['enum'])) {
             return [
-                ...$this->baseField($name, $schema, $metadata),
+                ...$this->baseField($name, $schema, $metadata, $processId),
                 'kind' => 'enum',
                 'options' => $schema['enum'],
             ];
         }
 
         return [
-            ...$this->baseField($name, $schema, $metadata),
+            ...$this->baseField($name, $schema, $metadata, $processId),
             'kind' => 'scalar',
             'type' => $schema['type'] ?? 'string',
         ];
@@ -1313,7 +1360,7 @@ class ProcessSchemaNormalizer
      * @param  array<string, mixed>  $metadata
      * @return array<string, mixed>
      */
-    private function normalizeArrayField(string $name, array $schema, array $metadata): array
+    private function normalizeArrayField(string $name, array $schema, array $metadata, ?string $processId = null): array
     {
         $items = $schema['items'] ?? [];
 
@@ -1321,7 +1368,7 @@ class ProcessSchemaNormalizer
             $columnCount = (int) ($items['maxItems'] ?? $items['minItems'] ?? 1);
 
             return [
-                ...$this->baseField($name, $schema, $metadata),
+                ...$this->baseField($name, $schema, $metadata, $processId),
                 'kind' => 'array_table',
                 'minItems' => $schema['minItems'] ?? null,
                 'maxItems' => $schema['maxItems'] ?? null,
@@ -1337,7 +1384,7 @@ class ProcessSchemaNormalizer
 
         if (($items['type'] ?? null) === 'object') {
             return [
-                ...$this->baseField($name, $schema, $metadata),
+                ...$this->baseField($name, $schema, $metadata, $processId),
                 'kind' => 'array_object',
                 'minItems' => $schema['minItems'] ?? null,
                 'maxItems' => $schema['maxItems'] ?? null,
@@ -1347,7 +1394,7 @@ class ProcessSchemaNormalizer
         }
 
         return [
-            ...$this->baseField($name, $schema, $metadata),
+            ...$this->baseField($name, $schema, $metadata, $processId),
             'kind' => 'array_scalar',
             'minItems' => $schema['minItems'] ?? null,
             'maxItems' => $schema['maxItems'] ?? null,
@@ -1379,7 +1426,7 @@ class ProcessSchemaNormalizer
      * @param  array<string, mixed>  $metadata
      * @return array<string, mixed>
      */
-    private function baseField(string $name, array $schema, array $metadata): array
+    private function baseField(string $name, array $schema, array $metadata, ?string $processId = null): array
     {
         return [
             'name' => $name,
@@ -1394,7 +1441,18 @@ class ProcessSchemaNormalizer
             'pattern' => $schema['pattern'] ?? null,
             'mediaType' => $schema['contentMediaType'] ?? null,
             'contentEncoding' => $schema['contentEncoding'] ?? null,
+            'references' => $processId !== null ? $this->referenceOptions($processId, $name) : [],
         ];
+    }
+
+    /**
+     * @return array<int, array{label: string, href: string, mediaType?: string|null}>
+     */
+    private function referenceOptions(string $processId, string $inputName): array
+    {
+        $references = config('services.ogc_processes.input_references', []);
+
+        return $references[$processId][$inputName] ?? [];
     }
 
     /**
@@ -1600,7 +1658,7 @@ test('it stores asynchronous execution and dispatches polling', function () {
     $execution = app(\App\Actions\Ogc\StartProcessExecution::class)->handle(
         user: $user,
         process: $process,
-        payload: ['inputs' => ['lat' => 14.47], 'outputs' => ['input_data']],
+        payload: ['inputs' => ['lat' => 14.47], 'outputs' => ['input_data' => ['transmissionMode' => 'value']]],
         mode: ExecutionMode::Async,
     );
 
@@ -1768,7 +1826,7 @@ class StartProcessExecution
             'execution_mode' => $mode,
             'status' => ExecutionStatus::Submitting,
             'progress' => 0,
-            'request_payload' => $payload,
+            'request_payload' => $this->redactLargeInlineValues($payload),
             'requested_outputs' => $payload['outputs'] ?? null,
             'submitted_at' => now(),
         ]);
@@ -1824,6 +1882,32 @@ class StartProcessExecution
 
         return Str::of($location)->afterLast('/')->before('?')->toString();
     }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function redactLargeInlineValues(array $payload): array
+    {
+        $inputs = collect($payload['inputs'] ?? [])
+            ->map(function (mixed $input): mixed {
+                if (! is_array($input) || ! isset($input['value']) || ! is_string($input['value']) || strlen($input['value']) <= 2048) {
+                    return $input;
+                }
+
+                return [
+                    ...$input,
+                    'value' => '[redacted inline value]',
+                    'sizeBytes' => strlen($input['value']),
+                ];
+            })
+            ->all();
+
+        return [
+            ...$payload,
+            'inputs' => $inputs,
+        ];
+    }
 }
 ```
 
@@ -1841,12 +1925,12 @@ use Illuminate\Support\Str;
 
 class StoreProcessResult
 {
-    public function fromResponse(ProcessExecution $execution, Response $response): void
+    public function fromResponse(ProcessExecution $execution, Response $response, ?string $outputId = null): void
     {
         $mediaType = Str::of((string) $response->header('Content-Type'))->before(';')->trim()->toString();
         $body = $response->body();
         $json = $response->json();
-        $outputId = array_key_first($execution->requested_outputs ?? []) ?? 'result';
+        $outputId ??= $this->firstRequestedOutputId($execution);
 
         $execution->results()->updateOrCreate(
             ['output_id' => $outputId],
@@ -1860,6 +1944,30 @@ class StoreProcessResult
                 'size_bytes' => strlen($body),
                 'cache_status' => ResultCacheStatus::Cached,
                 'preview' => $this->preview($mediaType, $json, $body),
+            ],
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $link
+     */
+    public function fromLink(ProcessExecution $execution, array $link, ?string $outputId = null): void
+    {
+        $outputId ??= $this->firstRequestedOutputId($execution);
+        $mediaType = Str::of((string) ($link['type'] ?? 'application/octet-stream'))->before(';')->trim()->toString();
+
+        $execution->results()->updateOrCreate(
+            ['output_id' => $outputId],
+            [
+                'title' => $outputId,
+                'description' => $link['title'] ?? null,
+                'media_type' => $mediaType,
+                'transmission_mode' => data_get($execution->requested_outputs, "{$outputId}.transmissionMode", 'reference'),
+                'remote_href' => $link['href'] ?? null,
+                'storage_path' => null,
+                'size_bytes' => null,
+                'cache_status' => ResultCacheStatus::MetadataOnly,
+                'preview' => ['kind' => 'binary', 'data' => ['mediaType' => $mediaType]],
             ],
         );
     }
@@ -1887,6 +1995,11 @@ class StoreProcessResult
         }
 
         return ['kind' => 'binary', 'data' => ['mediaType' => $mediaType]];
+    }
+
+    private function firstRequestedOutputId(ProcessExecution $execution): string
+    {
+        return (string) (array_key_first($execution->requested_outputs ?? []) ?? 'result');
     }
 }
 ```
@@ -1952,7 +2065,15 @@ class PollProcessExecution
         $execution->refresh();
 
         if ($execution->status === ExecutionStatus::Successful) {
-            $this->storeProcessResult->fromResponse($execution, $this->client->jobResults($execution->remote_job_id));
+            $resultLink = collect($job['links'] ?? [])
+                ->first(fn (array $link): bool => str_contains((string) ($link['rel'] ?? ''), 'results'));
+
+            if (is_array($resultLink) && $this->shouldDeferResultDownload($resultLink)) {
+                $this->storeProcessResult->fromLink($execution, $resultLink);
+            } else {
+                $this->storeProcessResult->fromResponse($execution, $this->client->jobResults($execution->remote_job_id));
+            }
+
             $execution->user->notify((new ProcessExecutionCompleted($execution))->afterCommit());
 
             return;
@@ -1976,6 +2097,18 @@ class PollProcessExecution
             'failed' => ExecutionStatus::Failed,
             default => ExecutionStatus::Running,
         };
+    }
+
+    /**
+     * @param  array<string, mixed>  $link
+     */
+    private function shouldDeferResultDownload(array $link): bool
+    {
+        $mediaType = (string) ($link['type'] ?? '');
+
+        return filled($mediaType)
+            && ! str_contains($mediaType, 'application/json')
+            && ! str_starts_with($mediaType, 'text/');
     }
 
     private function parseRemoteDate(?string $date): ?\Carbon\CarbonImmutable
@@ -2179,6 +2312,7 @@ use App\Enums\Ogc\ResultCacheStatus;
 use App\Models\ProcessExecution;
 use App\Models\ProcessExecutionResult;
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 test('users can view their execution detail', function () {
@@ -2221,6 +2355,35 @@ test('users can download cached result files', function () {
         ->get("/process-executions/{$execution->id}/results/{$result->id}/download")
         ->assertOk()
         ->assertHeader('content-type', 'text/csv');
+});
+
+test('users can download and cache remote result files on demand', function () {
+    Storage::fake('local');
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-1/results/outfile' => Http::response("a,b\n1,2\n", 200, [
+            'Content-Type' => 'text/csv',
+        ]),
+    ]);
+
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create([
+        'remote_job_id' => 'job-1',
+    ]);
+    $result = ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'outfile',
+        'media_type' => 'text/csv',
+        'remote_href' => 'https://voice.pi.ingv.it/geoinquire/jobs/job-1/results/outfile',
+        'storage_path' => null,
+        'cache_status' => ResultCacheStatus::MetadataOnly,
+    ]);
+
+    $this->actingAs($user)
+        ->get("/process-executions/{$execution->id}/results/{$result->id}/download")
+        ->assertOk()
+        ->assertHeader('content-type', 'text/csv');
+
+    Storage::disk('local')->assertExists("ogc-results/{$execution->id}/outfile");
+    expect($result->refresh()->cache_status)->toBe(ResultCacheStatus::Cached);
 });
 ```
 
@@ -2273,13 +2436,34 @@ class StoreProcessExecutionRequest extends FormRequest
     {
         return array_filter([
             'inputs' => $this->validated('inputs'),
-            'outputs' => $this->validated('outputs'),
+            'outputs' => $this->normalizeOutputs($this->validated('outputs')),
         ], fn (mixed $value): bool => $value !== null);
     }
 
     public function executionMode(): ExecutionMode
     {
         return ExecutionMode::from((string) $this->validated('mode'));
+    }
+
+    /**
+     * @param  array<int|string, mixed>|null  $outputs
+     * @return array<string, mixed>|null
+     */
+    private function normalizeOutputs(?array $outputs): ?array
+    {
+        if ($outputs === null) {
+            return null;
+        }
+
+        if (array_is_list($outputs)) {
+            return collect($outputs)
+                ->mapWithKeys(fn (mixed $output): array => [
+                    (string) $output => ['transmissionMode' => 'value'],
+                ])
+                ->all();
+        }
+
+        return $outputs;
     }
 }
 ```
@@ -2427,18 +2611,45 @@ Replace `app/Http/Controllers/Ogc/ProcessExecutionResultController.php`:
 
 namespace App\Http\Controllers\Ogc;
 
+use App\Enums\Ogc\ResultCacheStatus;
 use App\Http\Controllers\Controller;
 use App\Models\ProcessExecution;
 use App\Models\ProcessExecutionResult;
+use App\Services\Ogc\OgcProcessesClient;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProcessExecutionResultController extends Controller
 {
-    public function download(ProcessExecution $processExecution, ProcessExecutionResult $result): Response
+    public function download(
+        ProcessExecution $processExecution,
+        ProcessExecutionResult $result,
+        OgcProcessesClient $client,
+    ): Response
     {
         $this->authorize('view', $processExecution);
         abort_unless($result->process_execution_id === $processExecution->id, 404);
+
+        if (blank($result->storage_path) && filled($result->remote_href)) {
+            $remoteResponse = $client->downloadResultUrl($result->remote_href);
+            $body = $remoteResponse->body();
+            $path = "ogc-results/{$processExecution->id}/{$result->output_id}";
+            $mediaType = Str::of((string) $remoteResponse->header('Content-Type'))
+                ->before(';')
+                ->trim()
+                ->toString();
+
+            Storage::disk('local')->put($path, $body);
+
+            $result->update([
+                'media_type' => $mediaType ?: $result->media_type,
+                'storage_path' => $path,
+                'size_bytes' => strlen($body),
+                'cache_status' => ResultCacheStatus::Cached,
+            ]);
+        }
+
         abort_unless(filled($result->storage_path), 404);
 
         return response(Storage::disk('local')->get($result->storage_path), 200, [
@@ -2571,6 +2782,7 @@ export type OgcNormalizedField = {
     pattern?: string | null;
     mediaType?: string | null;
     contentEncoding?: string | null;
+    references?: { label: string; href: string; mediaType?: string | null }[];
 };
 
 export type OgcNormalizedOutput = {
@@ -2959,10 +3171,21 @@ Expected: commit succeeds.
 **Files:**
 - Modify: `resources/js/components/ogc/dynamic-process-form.tsx`
 - Create: `resources/js/components/ogc/schema-field-renderer.tsx`
+- Create: `resources/js/components/ogc/data-input-field.tsx`
 - Create: `resources/js/components/ogc/one-of-field.tsx`
 - Create: `resources/js/components/ogc/array-object-field.tsx`
 - Create: `resources/js/components/ogc/array-table-field.tsx`
 - Create: `resources/js/components/ogc/output-selector.tsx`
+
+- [ ] **Preparation: Ensure shadcn form and table components exist**
+
+Run:
+
+```bash
+bunx --bun shadcn@latest add @shadcn/field @shadcn/table @shadcn/textarea
+```
+
+Expected: `resources/js/components/ui/field.tsx`, `resources/js/components/ui/table.tsx`, and `resources/js/components/ui/textarea.tsx` exist. If any component already exists, keep the existing file and continue.
 
 - [ ] **Step 1: Implement output selector**
 
@@ -2970,7 +3193,13 @@ Create `resources/js/components/ogc/output-selector.tsx`:
 
 ```tsx
 import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
+import {
+    Field,
+    FieldContent,
+    FieldDescription,
+    FieldGroup,
+    FieldLabel,
+} from '@/components/ui/field';
 import {
     Select,
     SelectContent,
@@ -3010,19 +3239,19 @@ export default function OutputSelector({
     }
 
     return (
-        <div className="flex flex-col gap-3">
+        <FieldGroup>
             {Object.entries(outputs).map(([outputId, output]) => (
-                <div key={outputId} className="flex items-center justify-between gap-3 rounded-md border p-3">
+                <Field key={outputId} className="flex-row items-center justify-between gap-3 rounded-md border p-3">
                     <div className="flex items-start gap-3">
                         <Checkbox
                             id={`output-${outputId}`}
                             checked={Boolean(value[outputId])}
                             onCheckedChange={(checked) => toggle(outputId, checked === true)}
                         />
-                        <div className="flex flex-col gap-1">
-                            <Label htmlFor={`output-${outputId}`}>{output.title}</Label>
-                            <p className="text-xs text-muted-foreground">{output.mediaType}</p>
-                        </div>
+                        <FieldContent>
+                            <FieldLabel htmlFor={`output-${outputId}`}>{output.title}</FieldLabel>
+                            <FieldDescription>{output.mediaType}</FieldDescription>
+                        </FieldContent>
                     </div>
 
                     {value[outputId] && (
@@ -3041,9 +3270,9 @@ export default function OutputSelector({
                             </SelectContent>
                         </Select>
                     )}
-                </div>
+                </Field>
             ))}
-        </div>
+        </FieldGroup>
     );
 }
 ```
@@ -3055,9 +3284,17 @@ Create `resources/js/components/ogc/schema-field-renderer.tsx`:
 ```tsx
 import ArrayObjectField from '@/components/ogc/array-object-field';
 import ArrayTableField from '@/components/ogc/array-table-field';
+import DataInputField from '@/components/ogc/data-input-field';
 import OneOfField from '@/components/ogc/one-of-field';
+import {
+    Field,
+    FieldDescription,
+    FieldGroup,
+    FieldLabel,
+    FieldLegend,
+    FieldSet,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -3066,6 +3303,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    FieldGroup,
+    FieldLegend,
+    FieldSet,
+} from '@/components/ui/field';
 import type { OgcNormalizedField } from '@/types';
 
 export default function SchemaFieldRenderer({
@@ -3081,17 +3323,19 @@ export default function SchemaFieldRenderer({
         const objectValue = isRecord(value) ? value : {};
 
         return (
-            <fieldset className="flex flex-col gap-3 rounded-md border p-3">
-                <legend className="px-1 text-sm font-medium">{field.title}</legend>
-                {Object.entries(field.fields).map(([key, child]) => (
-                    <SchemaFieldRenderer
-                        key={key}
-                        field={child}
-                        value={objectValue[key]}
-                        onChange={(nextValue) => onChange({ ...objectValue, [key]: nextValue })}
-                    />
-                ))}
-            </fieldset>
+            <FieldSet>
+                <FieldLegend>{field.title}</FieldLegend>
+                <FieldGroup>
+                    {Object.entries(field.fields).map(([key, child]) => (
+                        <SchemaFieldRenderer
+                            key={key}
+                            field={child}
+                            value={objectValue[key]}
+                            onChange={(nextValue) => onChange({ ...objectValue, [key]: nextValue })}
+                        />
+                    ))}
+                </FieldGroup>
+            </FieldSet>
         );
     }
 
@@ -3107,11 +3351,18 @@ export default function SchemaFieldRenderer({
         return <ArrayTableField field={field} value={value} onChange={onChange} />;
     }
 
+    if (isComplexInput(field)) {
+        return <DataInputField field={field} value={value} onChange={onChange} />;
+    }
+
     if (field.kind === 'enum') {
         return (
-            <div className="flex flex-col gap-2">
-                <Label>{field.title}</Label>
-                <Select value={String(value ?? '')} onValueChange={onChange}>
+            <Field>
+                <FieldLabel>{field.title}</FieldLabel>
+                <Select
+                    value={String(value ?? '')}
+                    onValueChange={(selected) => onChange(enumValueFromString(field, selected))}
+                >
                     <SelectTrigger>
                         <SelectValue />
                     </SelectTrigger>
@@ -3125,13 +3376,14 @@ export default function SchemaFieldRenderer({
                         </SelectGroup>
                     </SelectContent>
                 </Select>
-            </div>
+                {field.description && <FieldDescription>{field.description}</FieldDescription>}
+            </Field>
         );
     }
 
     return (
-        <div className="flex flex-col gap-2">
-            <Label>{field.title}</Label>
+        <Field>
+            <FieldLabel>{field.title}</FieldLabel>
             <Input
                 type={field.type === 'number' || field.type === 'integer' ? 'number' : 'text'}
                 value={String(value ?? '')}
@@ -3139,16 +3391,238 @@ export default function SchemaFieldRenderer({
                 max={field.maximum ?? field.exclusiveMaximum ?? undefined}
                 onChange={(event) => {
                     const raw = event.target.value;
+
+                    if (raw === '') {
+                        onChange(null);
+
+                        return;
+                    }
+
                     onChange(field.type === 'number' ? Number(raw) : field.type === 'integer' ? Number.parseInt(raw, 10) : raw);
                 }}
             />
-            {field.description && <p className="text-xs text-muted-foreground">{field.description}</p>}
-        </div>
+            {field.description && <FieldDescription>{field.description}</FieldDescription>}
+        </Field>
     );
+}
+
+function enumValueFromString(field: OgcNormalizedField, selected: string): unknown {
+    return field.options?.find((option) => String(option) === selected) ?? selected;
+}
+
+function isComplexInput(field: OgcNormalizedField): boolean {
+    return Boolean(field.mediaType || field.contentEncoding === 'binary' || field.references?.length);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+```
+
+Create `resources/js/components/ogc/data-input-field.tsx`:
+
+```tsx
+import { useState } from 'react';
+import {
+    Field,
+    FieldDescription,
+    FieldGroup,
+    FieldLabel,
+    FieldLegend,
+    FieldSet,
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+} from '@/components/ui/toggle-group';
+import type { OgcNormalizedField } from '@/types';
+
+type InputMode = 'inline' | 'reference' | 'upload';
+
+export default function DataInputField({
+    field,
+    value,
+    onChange,
+}: {
+    field: OgcNormalizedField;
+    value: unknown;
+    onChange: (value: unknown) => void;
+}) {
+    const [mode, setMode] = useState<InputMode>(() => initialMode(value, field));
+    const selectedReference = isHrefValue(value) ? value.href : '';
+
+    function changeMode(nextMode: string) {
+        if (nextMode === 'inline' || nextMode === 'reference' || nextMode === 'upload') {
+            setMode(nextMode);
+        }
+    }
+
+    function setReference(href: string) {
+        const reference = field.references?.find((option) => option.href === href);
+
+        onChange({
+            href,
+            type: reference?.mediaType ?? field.mediaType ?? undefined,
+        });
+    }
+
+    function readFile(file: File | null) {
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = () => {
+            const result = String(reader.result ?? '');
+
+            if (isBinaryInput(field, file)) {
+                onChange({
+                    value: result.includes(',') ? result.split(',')[1] : result,
+                    mediaType: file.type || field.mediaType || undefined,
+                    encoding: 'base64',
+                });
+
+                return;
+            }
+
+            onChange(qualifiedValue(field, result));
+        };
+
+        if (isBinaryInput(field, file)) {
+            reader.readAsDataURL(file);
+        } else {
+            reader.readAsText(file);
+        }
+    }
+
+    return (
+        <FieldSet>
+            <FieldLegend>{field.title}</FieldLegend>
+            {field.description && <FieldDescription>{field.description}</FieldDescription>}
+
+            <ToggleGroup type="single" value={mode} onValueChange={changeMode}>
+                <ToggleGroupItem value="inline">Inline</ToggleGroupItem>
+                <ToggleGroupItem value="reference">URL</ToggleGroupItem>
+                <ToggleGroupItem value="upload">Upload</ToggleGroupItem>
+            </ToggleGroup>
+
+            <FieldGroup>
+                {mode === 'inline' && (
+                    <Field>
+                        <FieldLabel>Value</FieldLabel>
+                        <Textarea
+                            value={inlineValue(value)}
+                            onChange={(event) => onChange(qualifiedValue(field, event.target.value))}
+                        />
+                    </Field>
+                )}
+
+                {mode === 'reference' && (
+                    <Field>
+                        <FieldLabel>Reference URL</FieldLabel>
+                        {field.references && field.references.length > 0 && (
+                            <Select value={selectedReference || undefined} onValueChange={setReference}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        {field.references.map((reference) => (
+                                            <SelectItem key={reference.href} value={reference.href}>
+                                                {reference.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                        )}
+                        <Input
+                            type="url"
+                            value={selectedReference}
+                            onChange={(event) => setReference(event.target.value)}
+                        />
+                    </Field>
+                )}
+
+                {mode === 'upload' && (
+                    <Field>
+                        <FieldLabel>File</FieldLabel>
+                        <Input
+                            type="file"
+                            accept={field.mediaType ?? undefined}
+                            onChange={(event) => readFile(event.target.files?.item(0) ?? null)}
+                        />
+                    </Field>
+                )}
+            </FieldGroup>
+        </FieldSet>
+    );
+}
+
+function initialMode(value: unknown, field: OgcNormalizedField): InputMode {
+    if (isHrefValue(value)) {
+        return 'reference';
+    }
+
+    return field.references?.length ? 'reference' : 'inline';
+}
+
+function qualifiedValue(field: OgcNormalizedField, rawValue: string): Record<string, unknown> {
+    return {
+        value: parseJsonIfNeeded(field, rawValue),
+        mediaType: field.mediaType ?? undefined,
+        encoding: field.contentEncoding && field.contentEncoding !== 'binary' ? field.contentEncoding : undefined,
+    };
+}
+
+function parseJsonIfNeeded(field: OgcNormalizedField, rawValue: string): unknown {
+    if (!field.mediaType?.includes('json')) {
+        return rawValue;
+    }
+
+    try {
+        return JSON.parse(rawValue);
+    } catch {
+        return rawValue;
+    }
+}
+
+function inlineValue(value: unknown): string {
+    if (isQualifiedValue(value)) {
+        return typeof value.value === 'string' ? value.value : JSON.stringify(value.value, null, 2);
+    }
+
+    return typeof value === 'string' ? value : '';
+}
+
+function isBinaryInput(field: OgcNormalizedField, file: File): boolean {
+    return field.contentEncoding === 'binary'
+        || Boolean(field.mediaType && !field.mediaType.includes('json') && !field.mediaType.startsWith('text/'))
+        || Boolean(file.type && !file.type.includes('json') && !file.type.startsWith('text/'));
+}
+
+function isHrefValue(value: unknown): value is { href: string; type?: string } {
+    return typeof value === 'object'
+        && value !== null
+        && 'href' in value
+        && typeof value.href === 'string';
+}
+
+function isQualifiedValue(value: unknown): value is { value: unknown } {
+    return typeof value === 'object'
+        && value !== null
+        && 'value' in value;
 }
 ```
 
@@ -3189,8 +3663,8 @@ export default function OneOfField({
     }
 
     return (
-        <fieldset className="flex flex-col gap-3 rounded-md border p-3">
-            <legend className="px-1 text-sm font-medium">{field.title}</legend>
+        <FieldSet>
+            <FieldLegend>{field.title}</FieldLegend>
             <Select
                 value={current.variant}
                 onValueChange={(variant) => onChange({ variant, value: {} })}
@@ -3209,20 +3683,22 @@ export default function OneOfField({
                 </SelectContent>
             </Select>
 
-            {Object.entries(selected.fields).map(([key, child]) => (
-                <SchemaFieldRenderer
-                    key={key}
-                    field={child}
-                    value={current.value[key]}
-                    onChange={(nextValue) =>
-                        onChange({
-                            variant: current.variant,
-                            value: { ...current.value, [key]: nextValue },
-                        })
-                    }
-                />
-            ))}
-        </fieldset>
+            <FieldGroup>
+                {Object.entries(selected.fields).map(([key, child]) => (
+                    <SchemaFieldRenderer
+                        key={key}
+                        field={child}
+                        value={current.value[key]}
+                        onChange={(nextValue) =>
+                            onChange({
+                                variant: current.variant,
+                                value: { ...current.value, [key]: nextValue },
+                            })
+                        }
+                    />
+                ))}
+            </FieldGroup>
+        </FieldSet>
     );
 }
 
@@ -3240,6 +3716,11 @@ Create `resources/js/components/ogc/array-object-field.tsx`:
 import { Plus, Trash2 } from 'lucide-react';
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
 import { Button } from '@/components/ui/button';
+import {
+    FieldGroup,
+    FieldLegend,
+    FieldSet,
+} from '@/components/ui/field';
 import type { OgcNormalizedField } from '@/types';
 
 export default function ArrayObjectField({
@@ -3258,39 +3739,41 @@ export default function ArrayObjectField({
     }
 
     return (
-        <fieldset className="flex flex-col gap-3 rounded-md border p-3">
-            <legend className="px-1 text-sm font-medium">{field.title}</legend>
-            {rows.map((row, index) => {
-                const rowValue = isRecord(row) ? row : {};
+        <FieldSet>
+            <FieldLegend>{field.title}</FieldLegend>
+            <FieldGroup>
+                {rows.map((row, index) => {
+                    const rowValue = isRecord(row) ? row : {};
 
-                return (
-                    <div key={index} className="flex flex-col gap-3 rounded-md border p-3">
-                        <div className="flex justify-end">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => onChange(rows.filter((_, rowIndex) => rowIndex !== index))}
-                            >
-                                <Trash2 />
-                            </Button>
+                    return (
+                        <div key={index} className="flex flex-col gap-3 rounded-md border p-3">
+                            <div className="flex justify-end">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => onChange(rows.filter((_, rowIndex) => rowIndex !== index))}
+                                >
+                                    <Trash2 />
+                                </Button>
+                            </div>
+                            {Object.entries(field.fields ?? {}).map(([key, child]) => (
+                                <SchemaFieldRenderer
+                                    key={key}
+                                    field={child}
+                                    value={rowValue[key]}
+                                    onChange={(nextValue) => updateRow(index, { ...rowValue, [key]: nextValue })}
+                                />
+                            ))}
                         </div>
-                        {Object.entries(field.fields ?? {}).map(([key, child]) => (
-                            <SchemaFieldRenderer
-                                key={key}
-                                field={child}
-                                value={rowValue[key]}
-                                onChange={(nextValue) => updateRow(index, { ...rowValue, [key]: nextValue })}
-                            />
-                        ))}
-                    </div>
-                );
-            })}
+                    );
+                })}
+            </FieldGroup>
             <Button type="button" variant="outline" onClick={() => onChange([...rows, {}])}>
                 <Plus data-icon="inline-start" />
                 Add row
             </Button>
-        </fieldset>
+        </FieldSet>
     );
 }
 
@@ -3304,7 +3787,19 @@ Create `resources/js/components/ogc/array-table-field.tsx`:
 ```tsx
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+    FieldLegend,
+    FieldSet,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import type { OgcNormalizedField } from '@/types';
 
 export default function ArrayTableField({
@@ -3334,35 +3829,35 @@ export default function ArrayTableField({
     }
 
     return (
-        <fieldset className="flex flex-col gap-3 rounded-md border p-3">
-            <legend className="px-1 text-sm font-medium">{field.title}</legend>
+        <FieldSet>
+            <FieldLegend>{field.title}</FieldLegend>
             <div className="overflow-auto">
-                <table className="w-full min-w-[960px] text-sm">
-                    <thead>
-                        <tr>
+                <Table className="min-w-[960px]">
+                    <TableHeader>
+                        <TableRow>
                             {columns.map((column) => (
-                                <th key={column.key} className="p-1 text-left font-medium">
+                                <TableHead key={column.key}>
                                     {column.label}
-                                </th>
+                                </TableHead>
                             ))}
-                            <th className="w-10" />
-                        </tr>
-                    </thead>
-                    <tbody>
+                            <TableHead className="w-10" />
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {rows.map((row, rowIndex) => {
                             const rowValues = Array.isArray(row) ? row : [];
 
                             return (
-                                <tr key={rowIndex}>
+                                <TableRow key={rowIndex}>
                                     {columns.map((column, columnIndex) => (
-                                        <td key={column.key} className="p-1">
+                                        <TableCell key={column.key}>
                                             <Input
                                                 value={String(rowValues[columnIndex] ?? '')}
                                                 onChange={(event) => updateCell(rowIndex, columnIndex, event.target.value)}
                                             />
-                                        </td>
+                                        </TableCell>
                                     ))}
-                                    <td className="p-1">
+                                    <TableCell>
                                         <Button
                                             type="button"
                                             variant="ghost"
@@ -3371,12 +3866,12 @@ export default function ArrayTableField({
                                         >
                                             <Trash2 />
                                         </Button>
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             );
                         })}
-                    </tbody>
-                </table>
+                    </TableBody>
+                </Table>
             </div>
             <Button
                 type="button"
@@ -3386,7 +3881,7 @@ export default function ArrayTableField({
                 <Plus data-icon="inline-start" />
                 Add row
             </Button>
-        </fieldset>
+        </FieldSet>
     );
 }
 ```
@@ -3544,7 +4039,7 @@ Expected: TypeScript passes.
 Run:
 
 ```bash
-git add resources/js/components/ogc
+git add resources/js/components/ogc resources/js/components/ui/field.tsx resources/js/components/ui/table.tsx resources/js/components/ui/textarea.tsx
 git commit -m "Add dynamic OGC process form"
 ```
 
@@ -3556,6 +4051,15 @@ Expected: commit succeeds.
 
 **Files:**
 - Modify: `resources/js/components/ogc/result-preview.tsx`
+
+- [ ] **Dependency checkpoint: approve rich previews**
+
+Before replacing the baseline JSON/CSV/text previews with real charts and maps, get explicit approval to add frontend dependencies. Recommended direction:
+
+- Use `@shadcn/chart` for chart composition, which installs the local shadcn chart wrapper and its charting dependency.
+- Use Leaflet or OpenLayers for GeoJSON/GeoTIFF map previews, with the final choice based on the concrete result media types returned by the INGV processes.
+
+Expected: dependency choice is confirmed before modifying `package.json` or `bun.lock`.
 
 - [ ] **Step 1: Implement result preview UI**
 
@@ -3590,6 +4094,7 @@ export default function ResultPreview({
     result: ProcessExecutionResult;
 }) {
     const preview = result.preview;
+    const canDownload = result.cacheStatus === 'cached' || result.cacheStatus === 'metadata_only';
 
     return (
         <Card>
@@ -3599,7 +4104,7 @@ export default function ResultPreview({
                         <CardTitle>{result.title ?? result.outputId}</CardTitle>
                         <CardDescription>{result.mediaType}</CardDescription>
                     </div>
-                    {result.cacheStatus === 'cached' && (
+                    {canDownload && (
                         <Button asChild variant="outline">
                             <a href={download.url([executionId, result.id])}>
                                 <Download data-icon="inline-start" />
@@ -3616,7 +4121,7 @@ export default function ResultPreview({
                 {preview?.kind === 'json' && <JsonPreview data={preview.data} />}
                 {preview?.kind === 'binary' && (
                     <p className="text-sm text-muted-foreground">
-                        Binary result available for download. Map preview is planned for the geospatial preview phase.
+                        Preview unavailable for this media type.
                     </p>
                 )}
             </CardContent>
@@ -3683,7 +4188,7 @@ function JsonPreview({ data }: { data: unknown }) {
 Run:
 
 ```bash
-test -f resources/js/components/ui/table.tsx || bunx --bun shadcn@latest add table
+test -f resources/js/components/ui/table.tsx || bunx --bun shadcn@latest add @shadcn/table
 bunx tsc --noEmit
 ```
 
