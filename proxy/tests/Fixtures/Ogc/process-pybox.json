@@ -1,0 +1,66 @@
+{
+  "$defs": {
+    "chart": {
+      "type": "object",
+      "required": ["chartType", "domain", "series"],
+      "properties": {
+        "chartType": { "type": "string" },
+        "domain": { "type": "object" },
+        "series": { "type": "array" }
+      }
+    }
+  },
+  "id": "pybox",
+  "version": "1.0.0",
+  "title": "PYBOX",
+  "description": "PYBOX process",
+  "jobControlOptions": ["async-execute"],
+  "outputTransmission": ["value", "reference"],
+  "inputs": {
+    "lat": {
+      "title": "Latitude",
+      "description": "Geographic latitude",
+      "schema": { "type": "number", "minimum": -90, "maximum": 90 },
+      "minOccurs": 1,
+      "maxOccurs": 1
+    },
+    "multiple_values": {
+      "title": "Multiple particle classes",
+      "description": "Particle classes",
+      "schema": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 21,
+        "items": {
+          "type": "object",
+          "required": ["eps0", "rhos", "ds"],
+          "additionalProperties": false,
+          "properties": {
+            "eps0": { "type": "number", "minimum": 0.001, "maximum": 0.1 },
+            "rhos": { "type": "number", "minimum": 500, "maximum": 3500 },
+            "ds": { "type": "number", "minimum": 0.00001, "maximum": 0.005 }
+          }
+        }
+      },
+      "minOccurs": 1,
+      "maxOccurs": 1
+    }
+  },
+  "outputs": {
+    "input_data": {
+      "title": "Input parameters",
+      "description": "Log of all input parameters used",
+      "schema": { "type": "string", "contentMediaType": "text/plain" }
+    },
+    "invasion_map": {
+      "title": "Invasion Map",
+      "description": "2D GeoTIFF",
+      "schema": { "type": "string", "contentEncoding": "binary", "contentMediaType": "application/tiff; application=geotiff" }
+    },
+    "spatial_evolution": {
+      "title": "Spatial evolution",
+      "description": "Chart result",
+      "schema": { "$ref": "#/$defs/chart", "contentMediaType": "application/json" }
+    }
+  }
+}

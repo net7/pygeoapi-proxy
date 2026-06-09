@@ -1,0 +1,29 @@
+{
+  "processes": [
+    {
+      "id": "solwcad",
+      "version": "1.0.0",
+      "title": "SOLWCAD",
+      "description": "Fortran code to compute the saturation surface of H2O-CO2 fluids in silicate melts of arbitrary composition.",
+      "jobControlOptions": ["async-execute", "sync-execute"],
+      "outputTransmission": ["value", "reference"]
+    },
+    {
+      "id": "conduit",
+      "version": "2.2.0",
+      "title": "CONDUIT",
+      "description": "CONDUIT4 is a Fortran code for computing magma flow in volcanic conduits.",
+      "jobControlOptions": ["async-execute", "sync-execute"],
+      "outputTransmission": ["value", "reference"]
+    },
+    {
+      "id": "pybox",
+      "version": "1.0.0",
+      "title": "PYBOX",
+      "description": "Python code to simulate pyroclastic density currents.",
+      "jobControlOptions": ["async-execute"],
+      "outputTransmission": ["value", "reference"]
+    }
+  ],
+  "links": []
+}

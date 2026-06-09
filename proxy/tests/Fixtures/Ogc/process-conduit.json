@@ -1,0 +1,86 @@
+{
+  "$defs": {
+    "chart": {
+      "type": "object",
+      "required": ["chartType", "domain", "series"],
+      "properties": {
+        "chartType": { "type": "string" },
+        "domain": { "type": "object" },
+        "series": { "type": "array" }
+      }
+    }
+  },
+  "id": "conduit",
+  "version": "2.2.0",
+  "title": "CONDUIT",
+  "description": "CONDUIT4 process",
+  "jobControlOptions": ["async-execute", "sync-execute"],
+  "outputTransmission": ["value", "reference"],
+  "inputs": {
+    "melt_composition": {
+      "title": "Melt composition",
+      "description": "Melt oxides",
+      "schema": {
+        "type": "object",
+        "required": ["sio2", "tio2"],
+        "properties": {
+          "sio2": { "type": "number", "title": "SiO2", "exclusiveMinimum": 0, "exclusiveMaximum": 1 },
+          "tio2": { "type": "number", "title": "TiO2", "exclusiveMinimum": 0, "exclusiveMaximum": 1 }
+        }
+      },
+      "minOccurs": 1,
+      "maxOccurs": 1
+    },
+    "geometry": {
+      "title": "Geometry",
+      "description": "Geometry of the conduit",
+      "schema": {
+        "type": "object",
+        "required": ["g", "l"],
+        "properties": {
+          "g": { "type": "string", "title": "Geometry", "enum": ["conduit", "fissure"] },
+          "l": { "type": "number", "title": "Conduit length [m]", "exclusiveMinimum": 0 }
+        }
+      },
+      "minOccurs": 1,
+      "maxOccurs": 1
+    },
+    "searching_mode": {
+      "title": "Searching mode",
+      "description": "Searching for mass flow rate or diameter",
+      "schema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "required": ["d"],
+            "additionalProperties": false,
+            "properties": {
+              "d": { "type": "number", "title": "Conduit diameter [m]", "exclusiveMinimum": 0 }
+            }
+          },
+          {
+            "required": ["f"],
+            "additionalProperties": false,
+            "properties": {
+              "f": { "type": "number", "title": "Mass flow rate [kg/s]", "exclusiveMinimum": 0 }
+            }
+          }
+        ]
+      },
+      "minOccurs": 1,
+      "maxOccurs": 1
+    }
+  },
+  "outputs": {
+    "gas": {
+      "title": "Plot gas volume fraction",
+      "description": "Profile of gas volume fraction.",
+      "schema": { "$ref": "#/$defs/chart", "contentMediaType": "application/json" }
+    },
+    "outfile": {
+      "title": "Table of output variables",
+      "description": "CSV output",
+      "schema": { "type": "string", "contentMediaType": "text/csv" }
+    }
+  }
+}
