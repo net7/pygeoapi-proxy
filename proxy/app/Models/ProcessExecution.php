@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\Ogc\ExecutionMode;
+use App\Enums\Ogc\ExecutionStatus;
+use Database\Factories\ProcessExecutionFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+#[Fillable([
+    'user_id',
+    'process_id',
+    'process_title',
+    'process_version',
+    'execution_mode',
+    'remote_job_id',
+    'status',
+    'progress',
+    'message',
+    'request_payload',
+    'requested_outputs',
+    'remote_created_at',
+    'remote_started_at',
+    'remote_finished_at',
+    'last_polled_at',
+    'submitted_at',
+    'completed_at',
+    'failed_at',
+])]
+class ProcessExecution extends Model
+{
+    /** @use HasFactory<ProcessExecutionFactory> */
+    use HasFactory;
+
+    /**
+     * @return BelongsTo<User, ProcessExecution>
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return HasMany<ProcessExecutionResult>
+     */
+    public function results(): HasMany
+    {
+        return $this->hasMany(ProcessExecutionResult::class);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'execution_mode' => ExecutionMode::class,
+            'status' => ExecutionStatus::class,
+            'request_payload' => 'array',
+            'requested_outputs' => 'array',
+            'remote_created_at' => 'datetime',
+            'remote_started_at' => 'datetime',
+            'remote_finished_at' => 'datetime',
+            'last_polled_at' => 'datetime',
+            'submitted_at' => 'datetime',
+            'completed_at' => 'datetime',
+            'failed_at' => 'datetime',
+        ];
+    }
+}

@@ -28,6 +28,14 @@ class User extends Authenticatable implements PasskeyUser
         return $this->hasMany(SocialAccount::class);
     }
 
+    /**
+     * @return HasMany<ProcessExecution>
+     */
+    public function processExecutions(): HasMany
+    {
+        return $this->hasMany(ProcessExecution::class);
+    }
+
     public function hasLocalPassword(): bool
     {
         return filled($this->password);
