@@ -1,0 +1,21 @@
+{
+  "type": "process",
+  "processID": "conduit",
+  "jobID": "job-123",
+  "status": "successful",
+  "message": "Job complete",
+  "progress": 100,
+  "parameters": null,
+  "created": "2026-05-26T09:13:16.389136",
+  "started": "2026-05-26T09:13:16.389186",
+  "finished": "2026-05-26T09:13:28.289299",
+  "updated": "2026-05-26T09:13:28.289327",
+  "links": [
+    {
+      "href": "https://voice.pi.ingv.it/geoinquire/jobs/job-123/results",
+      "rel": "http://www.opengis.net/def/rel/ogc/1.0/results",
+      "type": "application/json",
+      "title": "Results of job job-123 as application/json"
+    }
+  ]
+}
