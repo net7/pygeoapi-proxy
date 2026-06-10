@@ -163,7 +163,7 @@ const columns: ColumnDef<ProcessExecutionListItem>[] = [
                 row.original.remoteJobId ?? `Local #${row.original.id}`;
 
             return (
-                <code className="block max-w-[300px] overflow-x-auto rounded bg-muted px-2 py-1 font-mono text-xs whitespace-nowrap">
+                <code className="block max-w-[300px] overflow-x-auto rounded bg-muted px-2 py-1 font-mono text-xs whitespace-nowrap dark:bg-muted/70">
                     {displayJobId}
                 </code>
             );
@@ -501,7 +501,7 @@ export default function ProcessExecutionIndex({
                     </div>
                 </div>
 
-                <div className="overflow-hidden rounded-md border bg-background">
+                <div className="overflow-hidden rounded-md border bg-card shadow-sm dark:border-border/70 dark:bg-card/95">
                     <Table>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
@@ -544,7 +544,7 @@ export default function ProcessExecutionIndex({
                                                 )
                                             }
                                             className={cn(
-                                                'cursor-pointer align-top',
+                                                'cursor-pointer align-top transition-colors hover:bg-accent/50 dark:hover:bg-accent/30',
                                                 styles.rowClassName,
                                             )}
                                         >

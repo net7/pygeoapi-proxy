@@ -103,7 +103,7 @@ export default function ProcessExecutionShow({
                                 <span className="font-medium text-muted-foreground">
                                     Job ID
                                 </span>
-                                <code className="min-w-0 truncate rounded bg-muted px-2 py-1 font-mono text-xs">
+                                <code className="min-w-0 truncate rounded bg-muted px-2 py-1 font-mono text-xs dark:bg-muted/70">
                                     {displayJobId}
                                 </code>
                             </div>
@@ -158,7 +158,7 @@ export default function ProcessExecutionShow({
                                 ))}
                             </div>
                         ) : (
-                            <Card>
+                            <Card className="shadow-sm dark:bg-card/95">
                                 <CardHeader>
                                     <CardTitle>No results yet</CardTitle>
                                     <CardDescription>
@@ -172,7 +172,7 @@ export default function ProcessExecutionShow({
                     <aside className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-4">
                         <Card
                             className={cn(
-                                'min-w-0 border-l-4',
+                                'min-w-0 border-l-4 shadow-sm',
                                 styles.cardClassName,
                             )}
                         >
@@ -249,7 +249,7 @@ export default function ProcessExecutionShow({
                                     />
                                 </div>
 
-                                <div className="flex items-start gap-2 rounded-md bg-muted p-3 text-sm text-muted-foreground">
+                                <div className="flex items-start gap-2 rounded-md bg-muted p-3 text-sm text-muted-foreground dark:bg-muted/60">
                                     <InfoIcon
                                         aria-hidden="true"
                                         className="mt-0.5 size-4 shrink-0"
@@ -262,7 +262,7 @@ export default function ProcessExecutionShow({
                             </CardContent>
                         </Card>
 
-                        <Card className="min-w-0">
+                        <Card className="min-w-0 shadow-sm dark:border-border/70 dark:bg-card/95">
                             <CardHeader>
                                 <CardTitle>Request</CardTitle>
                                 <CardDescription>
@@ -306,7 +306,7 @@ function JobMetric({
     value: string;
 }) {
     return (
-        <div className="flex min-w-0 items-center gap-3 rounded-md border bg-background p-3">
+        <div className="flex min-w-0 items-center gap-3 rounded-md border bg-card p-3 shadow-sm dark:border-border/70 dark:bg-card/95">
             <Icon
                 aria-hidden="true"
                 className="size-4 shrink-0 text-muted-foreground"
@@ -356,7 +356,7 @@ function JsonBlock({ title, value }: { title: string; value: unknown }) {
             <h3 className="text-xs font-semibold tracking-wide text-muted-foreground">
                 {title}
             </h3>
-            <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs">
+            <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs ring-1 ring-border/50 dark:bg-muted/50 dark:text-foreground">
                 {JSON.stringify(value, null, 2)}
             </pre>
         </div>

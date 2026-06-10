@@ -30,8 +30,8 @@ export default function JobPollingIndicator({
                 className={cn(
                     'w-fit gap-2 border px-2.5 py-1 text-xs font-medium shadow-sm',
                     active
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200'
-                        : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300',
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-400/60 dark:bg-emerald-500/15 dark:text-emerald-100'
+                        : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-500/60 dark:bg-slate-500/10 dark:text-slate-200',
                 )}
                 role="status"
             >
@@ -46,8 +46,8 @@ export default function JobPollingIndicator({
                         className={cn(
                             'relative inline-flex size-2.5',
                             active
-                                ? 'rounded-full bg-emerald-500'
-                                : 'rounded-full bg-slate-400',
+                                ? 'rounded-full bg-emerald-500 dark:bg-emerald-300'
+                                : 'rounded-full bg-slate-400 dark:bg-slate-300',
                         )}
                     />
                 </span>

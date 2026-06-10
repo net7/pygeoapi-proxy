@@ -11,6 +11,27 @@ test('process form keeps inputs beside execution controls on desktop', function 
         ->toContain('Outputs');
 });
 
+test('process index cards are optimized for scanning', function () {
+    $source = file_get_contents(getcwd().'/resources/js/pages/processes/index.tsx');
+
+    expect($source)
+        ->toContain('CardFooter')
+        ->toContain('md:grid-cols-2 2xl:grid-cols-4')
+        ->toContain('h-full overflow-hidden')
+        ->toContain('group-hover:border-primary/40')
+        ->toContain('min-h-[3.75rem]')
+        ->toContain('No description provided.')
+        ->toContain('{processes.length}')
+        ->toContain('process.version')
+        ->toContain('process.outputTransmission')
+        ->toContain('Job controls')
+        ->toContain('Output modes')
+        ->toContain('Open process')
+        ->toContain('ArrowRightIcon')
+        ->toContain('data-icon="inline-end"')
+        ->not->toContain('<Card key={process.id}>');
+});
+
 test('process form exposes a local development prefill action', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/dynamic-process-form.tsx');
 
@@ -158,7 +179,6 @@ test('jobs index exposes a filterable status table', function () {
         ->not->toContain('Select job')
         ->not->toContain('sticky right-0')
         ->not->toContain('bg-inherit')
-        ->not->toContain('shadow-sm')
         ->not->toContain('filteredExecutions')
         ->not->toContain('function JobRow(')
         ->not->toContain('ExecutionCard')
@@ -252,6 +272,40 @@ test('job pages poll while executions are active', function () {
     expect($helperSource)
         ->toContain('terminalStatuses')
         ->toContain('export function isJobTerminal');
+});
+
+test('job pages use readable dark mode status surfaces', function () {
+    $indexSource = file_get_contents(getcwd().'/resources/js/pages/process-executions/index.tsx');
+    $showSource = file_get_contents(getcwd().'/resources/js/pages/process-executions/show.tsx');
+    $resultPreviewSource = file_get_contents(getcwd().'/resources/js/components/ogc/result-preview.tsx');
+    $indicatorSource = file_get_contents(getcwd().'/resources/js/components/ogc/job-polling-indicator.tsx');
+    $helperSource = file_get_contents(getcwd().'/resources/js/lib/jobs.ts');
+
+    expect($helperSource)
+        ->toContain('dark:bg-red-500/10')
+        ->toContain('dark:hover:bg-red-500/15')
+        ->toContain('dark:border-red-400/70')
+        ->toContain('dark:text-red-100')
+        ->toContain('dark:bg-red-400')
+        ->not->toContain('text-destructive');
+
+    expect($indexSource)
+        ->toContain('bg-card shadow-sm dark:border-border/70 dark:bg-card/95')
+        ->toContain('dark:hover:bg-accent/30')
+        ->toContain('dark:bg-muted/70');
+
+    expect($showSource)
+        ->toContain('shadow-sm dark:bg-card/95')
+        ->toContain('dark:bg-muted/60')
+        ->toContain('ring-1 ring-border/50 dark:bg-muted/50');
+
+    expect($resultPreviewSource)
+        ->toContain('dark:bg-card/95')
+        ->toContain('ring-1 ring-border/50 dark:bg-muted/50');
+
+    expect($indicatorSource)
+        ->toContain('dark:border-emerald-400/60')
+        ->toContain('dark:border-slate-500/60');
 });
 
 test('sidebar labels process executions as jobs', function () {

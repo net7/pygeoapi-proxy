@@ -32,7 +32,7 @@ export default function ResultPreview({
         result.cacheStatus === 'metadata_only';
 
     return (
-        <Card>
+        <Card className="shadow-sm dark:border-border/70 dark:bg-card/95">
             <CardHeader>
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex flex-col gap-1">
@@ -79,7 +79,7 @@ export default function ResultPreview({
 
 function ChartPreview({ data }: { data: unknown }) {
     return (
-        <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs">
+        <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs ring-1 ring-border/50 dark:bg-muted/50 dark:text-foreground">
             {JSON.stringify(data, null, 2)}
         </pre>
     );
@@ -116,7 +116,7 @@ function CsvPreview({ data }: { data: unknown }) {
 
 function TextPreview({ data }: { data: unknown }) {
     return (
-        <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs">
+        <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs ring-1 ring-border/50 dark:bg-muted/50 dark:text-foreground">
             {String(data ?? '')}
         </pre>
     );
@@ -124,7 +124,7 @@ function TextPreview({ data }: { data: unknown }) {
 
 function JsonPreview({ data }: { data: unknown }) {
     return (
-        <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs">
+        <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs ring-1 ring-border/50 dark:bg-muted/50 dark:text-foreground">
             {JSON.stringify(data, null, 2)}
         </pre>
     );
