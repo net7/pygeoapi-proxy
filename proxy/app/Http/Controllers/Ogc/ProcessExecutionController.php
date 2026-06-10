@@ -28,12 +28,16 @@ class ProcessExecutionController extends Controller
                 ->paginate(15)
                 ->through(fn (ProcessExecution $execution): array => [
                     'id' => $execution->id,
+                    'remoteJobId' => $execution->remote_job_id,
                     'processId' => $execution->process_id,
                     'processTitle' => $execution->process_title,
                     'status' => $execution->status->value,
                     'progress' => $execution->progress,
                     'message' => $execution->message,
                     'createdAt' => $execution->created_at?->toIso8601String(),
+                    'submittedAt' => $execution->submitted_at?->toIso8601String(),
+                    'completedAt' => $execution->completed_at?->toIso8601String(),
+                    'failedAt' => $execution->failed_at?->toIso8601String(),
                 ]),
         ]);
     }
@@ -54,7 +58,7 @@ class ProcessExecutionController extends Controller
             mode: $request->executionMode(),
         );
 
-        return redirect()->route('process-executions.show', $execution);
+        return redirect()->route('jobs.show', $execution);
     }
 
     public function show(ProcessExecution $processExecution): Response
@@ -66,6 +70,7 @@ class ProcessExecutionController extends Controller
         return Inertia::render('process-executions/show', [
             'execution' => [
                 'id' => $processExecution->id,
+                'remoteJobId' => $processExecution->remote_job_id,
                 'processId' => $processExecution->process_id,
                 'processTitle' => $processExecution->process_title,
                 'processVersion' => $processExecution->process_version,

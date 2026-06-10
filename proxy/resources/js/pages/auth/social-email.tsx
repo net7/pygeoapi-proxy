@@ -43,7 +43,11 @@ export default function SocialEmail({ email = '', status, submitUrl }: Props) {
                             </div>
 
                             <Button type="submit" className="w-full">
-                                {processing ? <Spinner /> : <MailCheckIcon />}
+                                {processing ? (
+                                    <Spinner data-icon="inline-start" />
+                                ) : (
+                                    <MailCheckIcon data-icon="inline-start" />
+                                )}
                                 Send code
                             </Button>
                         </div>

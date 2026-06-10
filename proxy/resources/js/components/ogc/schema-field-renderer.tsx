@@ -122,6 +122,7 @@ export default function SchemaFieldRenderer({
                 value={String(value ?? '')}
                 min={field.minimum ?? field.exclusiveMinimum ?? undefined}
                 max={field.maximum ?? field.exclusiveMaximum ?? undefined}
+                step={field.type === 'number' ? 'any' : undefined}
                 pattern={field.pattern ?? undefined}
                 onChange={(event) => {
                     const raw = event.target.value;

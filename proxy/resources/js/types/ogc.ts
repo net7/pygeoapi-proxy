@@ -57,6 +57,13 @@ export type OgcNormalizedOutput = {
     schemaRef?: string | null;
 };
 
+export type OgcExamplePayload = {
+    inputs?: Record<string, unknown>;
+    outputs?:
+        | Record<string, { transmissionMode?: string } | string | unknown>
+        | string[];
+};
+
 export type OgcFormSchema = {
     id: string;
     title: string;
@@ -66,16 +73,21 @@ export type OgcFormSchema = {
     outputTransmission: string[];
     fields: Record<string, OgcNormalizedField>;
     outputs: Record<string, OgcNormalizedOutput>;
+    examplePayload?: OgcExamplePayload | null;
 };
 
 export type ProcessExecutionListItem = {
     id: number;
+    remoteJobId?: string | null;
     processId: string;
     processTitle?: string | null;
     status: string;
     progress: number;
     message?: string | null;
     createdAt?: string | null;
+    submittedAt?: string | null;
+    completedAt?: string | null;
+    failedAt?: string | null;
 };
 
 export type ProcessExecutionResult = {

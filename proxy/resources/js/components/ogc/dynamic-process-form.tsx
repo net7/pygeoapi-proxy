@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircleIcon, PlayIcon, WandSparklesIcon } from 'lucide-react';
 
 import OutputSelector from '@/components/ogc/output-selector';
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
@@ -14,8 +14,12 @@ import {
 } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { store } from '@/routes/processes/executions';
-import type { OgcFormSchema, OgcNormalizedField } from '@/types';
+import { store } from '@/routes/processes/jobs';
+import type {
+    OgcExamplePayload,
+    OgcFormSchema,
+    OgcNormalizedField,
+} from '@/types';
 
 type FormData = {
     mode: 'sync' | 'async';
@@ -50,6 +54,30 @@ export default function DynamicProcessForm({
         });
     }
 
+    function applyExamplePayload() {
+        const examplePayload = schema.examplePayload;
+
+        if (!examplePayload) {
+            return;
+        }
+
+        setData((currentData) => ({
+            ...currentData,
+            inputs: {
+                ...initialInputValues(schema.fields),
+                ...exampleInputsToFormValues(
+                    schema.fields,
+                    examplePayload.inputs ?? {},
+                ),
+            },
+            outputs: exampleOutputsToFormValues(
+                schema.outputs,
+                examplePayload.outputs,
+                currentData.outputs,
+            ),
+        }));
+    }
+
     return (
         <form
             className="grid max-w-full min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start"
@@ -64,7 +92,7 @@ export default function DynamicProcessForm({
         >
             {Object.keys(errors).length > 0 ? (
                 <Alert variant="destructive" className="lg:col-span-2">
-                    <AlertCircle />
+                    <AlertCircleIcon />
                     <AlertTitle>Check the process inputs</AlertTitle>
                     <AlertDescription>
                         Some values need attention before the process can run.
@@ -73,8 +101,20 @@ export default function DynamicProcessForm({
             ) : null}
 
             <Card className="min-w-0">
-                <CardHeader>
+                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <CardTitle>Inputs</CardTitle>
+                    {schema.examplePayload ? (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200 hover:text-amber-950 focus-visible:ring-amber-500 dark:border-amber-500/50 dark:bg-amber-500/15 dark:text-amber-200 dark:hover:bg-amber-500/25"
+                            onClick={applyExamplePayload}
+                        >
+                            <WandSparklesIcon data-icon="inline-start" />
+                            PREFILL TEST DATA
+                        </Button>
+                    ) : null}
                 </CardHeader>
                 <CardContent className="flex min-w-0 flex-col gap-4">
                     {Object.entries(schema.fields).map(([name, field]) => (
@@ -141,7 +181,9 @@ export default function DynamicProcessForm({
                         >
                             {processing ? (
                                 <Spinner data-icon="inline-start" />
-                            ) : null}
+                            ) : (
+                                <PlayIcon data-icon="inline-start" />
+                            )}
                             Execute
                         </Button>
                     </CardFooter>
@@ -149,6 +191,110 @@ export default function DynamicProcessForm({
             </aside>
         </form>
     );
+}
+
+function exampleInputsToFormValues(
+    fields: Record<string, OgcNormalizedField>,
+    inputs: Record<string, unknown>,
+): Record<string, unknown> {
+    return Object.fromEntries(
+        Object.entries(inputs)
+            .filter(([name]) => Boolean(fields[name]))
+            .map(([name, value]) => [
+                name,
+                exampleInputToFormValue(fields[name], value),
+            ]),
+    );
+}
+
+function exampleInputToFormValue(
+    field: OgcNormalizedField,
+    input: unknown,
+): unknown {
+    const value = unwrapExampleValue(input);
+
+    if (field.kind === 'oneOf') {
+        const objectValue = isRecord(value) ? value : {};
+        const variant =
+            field.variants?.find((candidate) =>
+                Object.keys(objectValue).some((key) =>
+                    Object.prototype.hasOwnProperty.call(
+                        candidate.fields,
+                        key,
+                    ),
+                ),
+            ) ?? field.variants?.[0];
+
+        if (!variant) {
+            return value;
+        }
+
+        return {
+            variant: variant.id,
+            value: objectValue,
+        };
+    }
+
+    if (field.kind === 'object') {
+        return isRecord(value) ? value : {};
+    }
+
+    return value;
+}
+
+function unwrapExampleValue(value: unknown): unknown {
+    if (isRecord(value) && Object.prototype.hasOwnProperty.call(value, 'value')) {
+        return value.value;
+    }
+
+    return value;
+}
+
+function exampleOutputsToFormValues(
+    outputs: OgcFormSchema['outputs'],
+    exampleOutputs: OgcExamplePayload['outputs'],
+    fallback: FormData['outputs'],
+): FormData['outputs'] {
+    if (!exampleOutputs) {
+        return fallback;
+    }
+
+    if (Array.isArray(exampleOutputs)) {
+        return Object.fromEntries(
+            exampleOutputs
+                .filter((outputId) => typeof outputId === 'string')
+                .filter((outputId) => Boolean(outputs[outputId]))
+                .map((outputId) => [
+                    outputId,
+                    { transmissionMode: 'value' },
+                ]),
+        );
+    }
+
+    if (!isRecord(exampleOutputs)) {
+        return fallback;
+    }
+
+    return Object.fromEntries(
+        Object.entries(exampleOutputs)
+            .filter(([outputId]) => Boolean(outputs[outputId]))
+            .map(([outputId, value]) => [
+                outputId,
+                { transmissionMode: exampleTransmissionMode(value) },
+            ]),
+    );
+}
+
+function exampleTransmissionMode(value: unknown): string {
+    if (typeof value === 'string' && value.length > 0) {
+        return value;
+    }
+
+    if (isRecord(value) && typeof value.transmissionMode === 'string') {
+        return value.transmissionMode;
+    }
+
+    return 'value';
 }
 
 function initialInputValues(
@@ -270,4 +416,8 @@ function toFormValue(value: unknown): any {
     }
 
     return String(value);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

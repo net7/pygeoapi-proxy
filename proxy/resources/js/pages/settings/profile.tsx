@@ -1,5 +1,5 @@
 import { Form, Head, usePage } from '@inertiajs/react';
-import { Trash2, Upload } from 'lucide-react';
+import { SaveIcon, Trash2, Upload } from 'lucide-react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
@@ -173,6 +173,7 @@ export default function Profile() {
                                     disabled={processing}
                                     data-test="update-profile-button"
                                 >
+                                    <SaveIcon data-icon="inline-start" />
                                     Save
                                 </Button>
                             </div>

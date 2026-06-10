@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { History, LayoutGrid, Workflow } from 'lucide-react';
+import { BriefcaseBusiness, LayoutGrid, Workflow } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/sidebar';
 import INGV_LOGO_SHORT_IMAGE from '@/images/ingv-logo-short.png';
 import { dashboard } from '@/routes';
-import { index as processExecutionsIndex } from '@/routes/process-executions';
+import { index as jobsIndex } from '@/routes/jobs';
 import { index as processesIndex } from '@/routes/processes';
 import type { NavItem } from '@/types';
 
@@ -32,9 +32,9 @@ const mainNavItems: NavItem[] = [
         icon: Workflow,
     },
     {
-        title: 'Executions',
-        href: processExecutionsIndex(),
-        icon: History,
+        title: 'My Jobs',
+        href: jobsIndex(),
+        icon: BriefcaseBusiness,
     },
 ];
 

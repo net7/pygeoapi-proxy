@@ -42,3 +42,34 @@ test('authenticated users can view process detail with normalized schema', funct
             ->where('process.id', 'conduit')
             ->has('formSchema.fields.melt_composition'));
 });
+
+test('process detail exposes example payload for local environments', function () {
+    app()->detectEnvironment(fn (): string => 'local');
+
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/processes/conduit?f=json' => Http::response(ogcFixture('process-conduit')),
+    ]);
+
+    $this->actingAs(User::factory()->create())
+        ->get('/processes/conduit')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('processes/show')
+            ->where('formSchema.examplePayload.inputs.melt_composition.value.sio2', 0.7669)
+            ->where('formSchema.examplePayload.outputs.gas.transmissionMode', 'value'));
+});
+
+test('process detail hides example payload outside local environments', function () {
+    app()->detectEnvironment(fn (): string => 'production');
+
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/processes/conduit?f=json' => Http::response(ogcFixture('process-conduit')),
+    ]);
+
+    $this->actingAs(User::factory()->create())
+        ->get('/processes/conduit')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('processes/show')
+            ->where('formSchema.examplePayload', null));
+});

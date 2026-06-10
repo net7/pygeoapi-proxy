@@ -4,6 +4,7 @@ use App\Enums\Ogc\ResultCacheStatus;
 use App\Models\ProcessExecution;
 use App\Models\ProcessExecutionResult;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
@@ -15,25 +16,69 @@ beforeEach(function () {
 
 test('users can view their execution detail', function () {
     $user = User::factory()->create();
-    $execution = ProcessExecution::factory()->for($user)->create();
+    $execution = ProcessExecution::factory()->for($user)->create([
+        'remote_job_id' => '550e8400-e29b-41d4-a716-446655440000',
+    ]);
 
     ProcessExecutionResult::factory()->for($execution)->create();
 
     $this->actingAs($user)
-        ->get("/process-executions/{$execution->id}")
+        ->get("/jobs/{$execution->id}")
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('process-executions/show')
             ->where('execution.id', $execution->id)
+            ->where('execution.remoteJobId', '550e8400-e29b-41d4-a716-446655440000')
             ->has('execution.results', 1));
+});
+
+test('users can view their job list with timeline timestamps', function () {
+    Carbon::setTestNow('2026-06-10 12:30:00');
+
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create([
+        'remote_job_id' => '550e8400-e29b-41d4-a716-446655440000',
+        'submitted_at' => now()->subMinutes(8),
+        'completed_at' => now()->subMinute(),
+        'failed_at' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->get('/jobs')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('process-executions/index')
+            ->where('executions.data.0.id', $execution->id)
+            ->where('executions.data.0.remoteJobId', '550e8400-e29b-41d4-a716-446655440000')
+            ->where('executions.data.0.submittedAt', now()->subMinutes(8)->toIso8601String())
+            ->where('executions.data.0.completedAt', now()->subMinute()->toIso8601String())
+            ->where('executions.data.0.failedAt', null));
 });
 
 test('users cannot view another users execution detail', function () {
     $execution = ProcessExecution::factory()->create();
 
     $this->actingAs(User::factory()->create())
-        ->get("/process-executions/{$execution->id}")
+        ->get("/jobs/{$execution->id}")
         ->assertForbidden();
+});
+
+test('legacy execution routes redirect to canonical job routes', function () {
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create();
+    $result = ProcessExecutionResult::factory()->for($execution)->create();
+
+    $this->actingAs($user)
+        ->get('/process-executions')
+        ->assertRedirectToRoute('jobs.index');
+
+    $this->actingAs($user)
+        ->get("/process-executions/{$execution->id}")
+        ->assertRedirectToRoute('jobs.show', $execution);
+
+    $this->actingAs($user)
+        ->get("/process-executions/{$execution->id}/results/{$result->id}/download")
+        ->assertRedirectToRoute('jobs.results.download', [$execution, $result]);
 });
 
 test('users can download cached result files', function () {
@@ -51,7 +96,7 @@ test('users can download cached result files', function () {
     Storage::disk('local')->put('ogc-results/outfile.csv', "a,b\n1,2\n");
 
     $this->actingAs($user)
-        ->get("/process-executions/{$execution->id}/results/{$result->id}/download")
+        ->get("/jobs/{$execution->id}/results/{$result->id}/download")
         ->assertOk()
         ->assertHeader('content-type', 'text/csv; charset=utf-8');
 });
@@ -77,7 +122,7 @@ test('users can download and cache remote result files on demand', function () {
     ]);
 
     $this->actingAs($user)
-        ->get("/process-executions/{$execution->id}/results/{$result->id}/download")
+        ->get("/jobs/{$execution->id}/results/{$result->id}/download")
         ->assertOk()
         ->assertHeader('content-type', 'text/csv; charset=utf-8');
 

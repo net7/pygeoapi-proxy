@@ -52,7 +52,11 @@ export default function VerifyOtp({
                             </div>
 
                             <Button type="submit" className="w-full">
-                                {processing ? <Spinner /> : <ShieldCheckIcon />}
+                                {processing ? (
+                                    <Spinner data-icon="inline-start" />
+                                ) : (
+                                    <ShieldCheckIcon data-icon="inline-start" />
+                                )}
                                 Verify code
                             </Button>
                         </div>
@@ -66,7 +70,7 @@ export default function VerifyOtp({
                                 'w-full',
                             )}
                         >
-                            <RefreshCwIcon />
+                            <RefreshCwIcon data-icon="inline-start" />
                             Send new code
                         </Link>
                     </>

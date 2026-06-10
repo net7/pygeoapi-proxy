@@ -1,5 +1,5 @@
 import { Form } from '@inertiajs/react';
-import { MailCheckIcon } from 'lucide-react';
+import { MailCheckIcon, Trash2Icon, XIcon } from 'lucide-react';
 import { useRef } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import Heading from '@/components/heading';
@@ -49,6 +49,7 @@ export default function DeleteUser({
                             variant="destructive"
                             data-test="delete-user-button"
                         >
+                            <Trash2Icon data-icon="inline-start" />
                             Delete account
                         </Button>
                     </DialogTrigger>
@@ -74,7 +75,7 @@ export default function DeleteUser({
                                             variant="secondary"
                                             disabled={processing}
                                         >
-                                            <MailCheckIcon />
+                                            <MailCheckIcon data-icon="inline-start" />
                                             Send confirmation code
                                         </Button>
                                     )}
@@ -121,12 +122,13 @@ export default function DeleteUser({
                                         <DialogClose asChild>
                                             <Button
                                                 variant="secondary"
-                                                onClick={() =>
-                                                    resetAndClearErrors()
-                                                }
-                                            >
-                                                Cancel
-                                            </Button>
+                                            onClick={() =>
+                                                resetAndClearErrors()
+                                            }
+                                        >
+                                            <XIcon data-icon="inline-start" />
+                                            Cancel
+                                        </Button>
                                         </DialogClose>
 
                                         <Button
@@ -138,6 +140,7 @@ export default function DeleteUser({
                                                 type="submit"
                                                 data-test="confirm-delete-user-button"
                                             >
+                                                <Trash2Icon data-icon="inline-start" />
                                                 Delete account
                                             </button>
                                         </Button>

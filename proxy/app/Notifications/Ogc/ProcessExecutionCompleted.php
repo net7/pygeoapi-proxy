@@ -30,7 +30,7 @@ class ProcessExecutionCompleted extends Notification implements ShouldQueue
             'body' => $this->body(),
             'icon' => $this->icon(),
             'tone' => $this->tone(),
-            'action_url' => route('process-executions.show', $this->execution),
+            'action_url' => route('jobs.show', $this->execution),
             'process_execution_id' => $this->execution->id,
             'process_id' => $this->execution->process_id,
             'process_title' => $this->execution->process_title,

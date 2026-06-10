@@ -1,4 +1,5 @@
 import { Form, Head, usePage } from '@inertiajs/react';
+import { LogInIcon } from 'lucide-react';
 import InputError from '@/components/input-error';
 import PasskeyVerify from '@/components/passkey-verify';
 import PasswordInput from '@/components/password-input';
@@ -187,7 +188,11 @@ export default function Login({ status, canResetPassword }: Props) {
                                         disabled={processing}
                                         data-test="login-button"
                                     >
-                                        {processing && <Spinner />}
+                                        {processing ? (
+                                            <Spinner data-icon="inline-start" />
+                                        ) : (
+                                            <LogInIcon data-icon="inline-start" />
+                                        )}
                                         Log in
                                     </Button>
                                 </div>

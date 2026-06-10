@@ -1,4 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
+import { KeyRoundIcon } from 'lucide-react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
@@ -86,7 +87,11 @@ export default function ResetPassword({
                             disabled={processing}
                             data-test="reset-password-button"
                         >
-                            {processing && <Spinner />}
+                            {processing ? (
+                                <Spinner data-icon="inline-start" />
+                            ) : (
+                                <KeyRoundIcon data-icon="inline-start" />
+                            )}
                             Reset password
                         </Button>
                     </div>

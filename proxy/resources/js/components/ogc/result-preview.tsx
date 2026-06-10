@@ -16,7 +16,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { download } from '@/routes/process-executions/results';
+import { download } from '@/routes/jobs/results';
 import type { ProcessExecutionResult } from '@/types';
 
 export default function ResultPreview({

@@ -1,4 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
+import { ShieldCheckIcon } from 'lucide-react';
 import InputError from '@/components/input-error';
 import PasskeyVerify from '@/components/passkey-verify';
 import PasswordInput from '@/components/password-input';
@@ -48,7 +49,11 @@ export default function ConfirmPassword({ passkeyConfirmRoutes }: Props) {
                                 disabled={processing}
                                 data-test="confirm-password-button"
                             >
-                                {processing && <Spinner />}
+                                {processing ? (
+                                    <Spinner data-icon="inline-start" />
+                                ) : (
+                                    <ShieldCheckIcon data-icon="inline-start" />
+                                )}
                                 Confirm password
                             </Button>
                         </div>

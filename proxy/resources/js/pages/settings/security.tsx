@@ -1,4 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
+import { ShieldCheckIcon } from 'lucide-react';
 import { useRef } from 'react';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import Heading from '@/components/heading';
@@ -123,6 +124,7 @@ export default function Security(props: Props) {
                                         disabled={processing}
                                         data-test="update-password-button"
                                     >
+                                        <ShieldCheckIcon data-icon="inline-start" />
                                         Save
                                     </Button>
                                 </div>

@@ -42,7 +42,7 @@ test('it marks successful jobs and stores results', function () {
                 && $data['body'] === 'The process finished successfully and the results are ready.'
                 && $data['icon'] === 'check-circle'
                 && $data['tone'] === 'success'
-                && $data['action_url'] === route('process-executions.show', $execution);
+                && $data['action_url'] === route('jobs.show', $execution);
         },
     );
 });
@@ -78,7 +78,7 @@ test('it marks failed jobs and notifies the user', function () {
                 && str_contains($data['body'], 'InvalidParameterValue')
                 && $data['icon'] === 'circle-alert'
                 && $data['tone'] === 'error'
-                && $data['action_url'] === route('process-executions.show', $execution);
+                && $data['action_url'] === route('jobs.show', $execution);
         },
     );
 });

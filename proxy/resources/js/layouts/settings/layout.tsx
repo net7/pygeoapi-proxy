@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import { PaletteIcon, UserIcon } from 'lucide-react';
 import type { PropsWithChildren } from 'react';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
@@ -13,12 +14,12 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Profile',
         href: edit(),
-        icon: null,
+        icon: UserIcon,
     },
     {
         title: 'Appearance',
         href: editAppearance(),
-        icon: null,
+        icon: PaletteIcon,
     },
 ];
 
@@ -50,7 +51,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                             >
                                 <Link href={item.href}>
                                     {item.icon && (
-                                        <item.icon className="h-4 w-4" />
+                                        <item.icon data-icon="inline-start" />
                                     )}
                                     {item.title}
                                 </Link>

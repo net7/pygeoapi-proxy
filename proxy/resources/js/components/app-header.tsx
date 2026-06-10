@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-react';
+import { LayoutGrid, Menu, Search } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Breadcrumbs } from '@/components/breadcrumbs';
@@ -81,8 +81,9 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     variant="ghost"
                                     size="icon"
                                     className="mr-2 h-[34px] w-[34px]"
+                                    aria-label="Open navigation menu"
                                 >
-                                    <Menu className="h-5 w-5" />
+                                    <Menu data-icon="icon" />
                                 </Button>
                             </SheetTrigger>
                             <SheetContent
@@ -104,9 +105,9 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                                     href={item.href}
                                                     className="flex items-center space-x-2 font-medium"
                                                 >
-                                                    {item.icon && (
-                                                        <item.icon className="h-5 w-5" />
-                                                    )}
+                                            {item.icon && (
+                                                <item.icon data-icon="inline-start" />
+                                            )}
                                                     <span>{item.title}</span>
                                                 </Link>
                                             ))}
@@ -122,7 +123,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                                     className="flex items-center space-x-2 font-medium"
                                                 >
                                                     {item.icon && (
-                                                        <item.icon className="h-5 w-5" />
+                                                        <item.icon data-icon="inline-start" />
                                                     )}
                                                     <span>{item.title}</span>
                                                 </a>
@@ -163,7 +164,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             )}
                                         >
                                             {item.icon && (
-                                                <item.icon className="mr-2 h-4 w-4" />
+                                                <item.icon data-icon="inline-start" />
                                             )}
                                             {item.title}
                                         </Link>
@@ -182,8 +183,9 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 variant="ghost"
                                 size="icon"
                                 className="group h-9 w-9 cursor-pointer"
+                                aria-label="Search"
                             >
-                                <Search className="!size-5 opacity-80 group-hover:opacity-100" />
+                                <Search data-icon="icon" />
                             </Button>
                             <div className="ml-1 hidden gap-1 lg:flex">
                                 {rightNavItems.map((item) => (
@@ -199,7 +201,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                                     {item.title}
                                                 </span>
                                                 {item.icon && (
-                                                    <item.icon className="size-5 opacity-80 group-hover:opacity-100" />
+                                                    <item.icon data-icon="icon" />
                                                 )}
                                             </a>
                                         </TooltipTrigger>
@@ -215,6 +217,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 <Button
                                     variant="ghost"
                                     className="size-10 rounded-full p-1"
+                                    aria-label="Open user menu"
                                 >
                                     <Avatar className="size-8 overflow-hidden rounded-full">
                                         <AvatarImage
