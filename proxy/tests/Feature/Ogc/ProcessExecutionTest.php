@@ -65,6 +65,31 @@ test('it stores asynchronous execution and dispatches polling', function () {
     Bus::assertDispatched(PollProcessExecutionJob::class);
 });
 
+test('it stores process output definitions with asynchronous executions', function () {
+    Bus::fake();
+
+    $user = User::factory()->create();
+    $process = ogcFixture('process-pybox');
+
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/processes/pybox/execution' => Http::response([], 201, [
+            'Location' => 'https://voice.pi.ingv.it/geoinquire/jobs/job-123',
+        ]),
+    ]);
+
+    $execution = app(StartProcessExecution::class)->handle(
+        user: $user,
+        process: $process,
+        payload: ['inputs' => ['lat' => 14.47], 'outputs' => ['dem' => ['transmissionMode' => 'value']]],
+        mode: ExecutionMode::Async,
+    );
+
+    expect($execution->process_outputs)
+        ->toBe($process['outputs'])
+        ->and($execution->process_outputs)->toHaveKey('dem')
+        ->and($execution->process_outputs['dem']['schema']['contentMediaType'])->toBe('application/tiff; application=geotiff');
+});
+
 test('it stores submission failures with original payload', function () {
     $user = User::factory()->create();
 

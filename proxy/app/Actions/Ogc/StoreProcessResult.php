@@ -4,32 +4,40 @@ namespace App\Actions\Ogc;
 
 use App\Enums\Ogc\ResultCacheStatus;
 use App\Models\ProcessExecution;
+use App\Services\Ogc\OgcResultResponseParser;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class StoreProcessResult
 {
+    public function __construct(private OgcResultResponseParser $parser) {}
+
     public function fromResponse(ProcessExecution $execution, Response $response, ?string $outputId = null): void
     {
-        $mediaType = Str::of((string) $response->header('Content-Type'))->before(';')->trim()->toString();
-        $body = $response->body();
-        $json = $response->json();
-        $outputId ??= $this->firstRequestedOutputId($execution);
+        foreach ($this->parser->parse($execution, $response, $outputId) as $result) {
+            $storagePath = null;
 
-        $execution->results()->updateOrCreate(
-            ['output_id' => $outputId],
-            [
-                'title' => $outputId,
-                'description' => null,
-                'media_type' => $mediaType ?: 'application/json',
-                'transmission_mode' => data_get($execution->requested_outputs, "{$outputId}.transmissionMode", 'value'),
-                'remote_href' => null,
-                'storage_path' => null,
-                'size_bytes' => strlen($body),
-                'cache_status' => ResultCacheStatus::Cached,
-                'preview' => $this->preview($mediaType, $json, $body),
-            ],
-        );
+            if ($result['storage_body'] !== null) {
+                $storagePath = "ogc-results/{$execution->id}/".$this->resultFileName($result['output_id']);
+                Storage::disk('local')->put($storagePath, $result['storage_body']);
+            }
+
+            $execution->results()->updateOrCreate(
+                ['output_id' => $result['output_id']],
+                [
+                    'title' => $result['title'],
+                    'description' => $result['description'],
+                    'media_type' => $result['media_type'],
+                    'transmission_mode' => $result['transmission_mode'],
+                    'remote_href' => null,
+                    'storage_path' => $storagePath,
+                    'size_bytes' => $result['size_bytes'],
+                    'cache_status' => $result['cache_status'],
+                    'preview' => $result['preview'],
+                ],
+            );
+        }
     }
 
     /**
@@ -56,33 +64,18 @@ class StoreProcessResult
         );
     }
 
-    /**
-     * @param  array<string, mixed>|null  $json
-     * @return array<string, mixed>
-     */
-    private function preview(string $mediaType, ?array $json, string $body): array
-    {
-        if (is_array($json) && isset($json['chartType'], $json['domain'], $json['series'])) {
-            return ['kind' => 'chart', 'data' => $json];
-        }
-
-        if (is_array($json)) {
-            return ['kind' => 'json', 'data' => $json];
-        }
-
-        if ($mediaType === 'text/csv') {
-            return ['kind' => 'csv', 'data' => str($body)->limit(50000)->toString()];
-        }
-
-        if (str_starts_with($mediaType, 'text/')) {
-            return ['kind' => 'text', 'data' => str($body)->limit(50000)->toString()];
-        }
-
-        return ['kind' => 'binary', 'data' => ['mediaType' => $mediaType]];
-    }
-
     private function firstRequestedOutputId(ProcessExecution $execution): string
     {
         return (string) (array_key_first($execution->requested_outputs ?? []) ?? 'result');
+    }
+
+    private function resultFileName(string $outputId): string
+    {
+        $fileName = Str::of($outputId)
+            ->replaceMatches('/[^A-Za-z0-9._-]+/', '_')
+            ->trim('._-')
+            ->toString();
+
+        return $fileName !== '' ? $fileName : 'result';
     }
 }

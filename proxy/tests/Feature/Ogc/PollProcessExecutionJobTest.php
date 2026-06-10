@@ -7,6 +7,7 @@ use App\Models\ProcessExecution;
 use App\Notifications\Ogc\ProcessExecutionCompleted;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 
 test('it marks successful jobs and stores results', function () {
     Notification::fake();
@@ -45,6 +46,111 @@ test('it marks successful jobs and stores results', function () {
                 && $data['action_url'] === route('jobs.show', $execution);
         },
     );
+});
+
+test('it stores each multipart result using process output definitions', function () {
+    Notification::fake();
+    Storage::fake('local');
+
+    $boundary = 'result-boundary';
+    $body = implode("\r\n", [
+        '--'.$boundary,
+        'Content-Disposition: form-data; name="gas"',
+        'Content-Type: application/json',
+        '',
+        json_encode(ogcFixture('chart-result'), JSON_THROW_ON_ERROR),
+        '--'.$boundary,
+        'Content-Disposition: form-data; name="outfile"; filename="outfile.csv"',
+        'Content-Type: text/csv',
+        '',
+        "length,gas\r\n0,10\r\n1,20\r\n",
+        '--'.$boundary.'--',
+        '',
+    ]);
+
+    $execution = ProcessExecution::factory()->create([
+        'process_id' => 'conduit',
+        'remote_job_id' => 'job-123',
+        'status' => ExecutionStatus::Running,
+        'requested_outputs' => [
+            'gas' => ['transmissionMode' => 'value'],
+            'outfile' => ['transmissionMode' => 'value'],
+        ],
+        'process_outputs' => ogcFixture('process-conduit')['outputs'],
+    ]);
+
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123?f=json' => Http::response(ogcFixture('job-successful')),
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results?f=json' => Http::response($body, 200, [
+            'Content-Type' => 'multipart/mixed; boundary="'.$boundary.'"',
+        ]),
+    ]);
+
+    (new PollProcessExecutionJob($execution->id))->handle(
+        app(PollProcessExecution::class),
+    );
+
+    $execution->refresh();
+    $results = $execution->results()->orderBy('output_id')->get()->keyBy('output_id');
+
+    expect($results)->toHaveCount(2)
+        ->and($results['gas']->title)->toBe('Plot gas volume fraction')
+        ->and($results['gas']->media_type)->toBe('application/json')
+        ->and($results['gas']->preview['kind'])->toBe('chart')
+        ->and($results['outfile']->title)->toBe('Table of output variables')
+        ->and($results['outfile']->media_type)->toBe('text/csv')
+        ->and($results['outfile']->preview['kind'])->toBe('csv')
+        ->and($results['outfile']->preview['data'])->toContain('length,gas');
+});
+
+test('it caches binary multipart results on local storage', function () {
+    Notification::fake();
+    Storage::fake('local');
+
+    $boundary = 'binary-boundary';
+    $body = implode("\r\n", [
+        '--'.$boundary,
+        'Content-Disposition: form-data; name="invasion_map"; filename="invasion_map.tif"',
+        'Content-Type: application/tiff; application=geotiff',
+        '',
+        'TIFF-BINARY-CONTENT',
+        '--'.$boundary.'--',
+        '',
+    ]);
+
+    $execution = ProcessExecution::factory()->create([
+        'process_id' => 'pybox',
+        'remote_job_id' => 'job-123',
+        'status' => ExecutionStatus::Running,
+        'requested_outputs' => ['invasion_map' => ['transmissionMode' => 'value']],
+        'process_outputs' => ogcFixture('process-pybox')['outputs'],
+    ]);
+
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123?f=json' => Http::response(ogcFixture('job-successful')),
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results?f=json' => Http::response($body, 200, [
+            'Content-Type' => 'multipart/mixed; boundary="'.$boundary.'"',
+        ]),
+    ]);
+
+    (new PollProcessExecutionJob($execution->id))->handle(
+        app(PollProcessExecution::class),
+    );
+
+    $result = $execution->refresh()->results()->sole();
+
+    expect($result->output_id)->toBe('invasion_map')
+        ->and($result->title)->toBe('Invasion Map')
+        ->and($result->preview)->toBe([
+            'kind' => 'binary',
+            'data' => [
+                'mediaType' => 'application/tiff',
+                'sizeBytes' => strlen('TIFF-BINARY-CONTENT'),
+            ],
+        ])
+        ->and($result->storage_path)->not->toBeNull();
+
+    Storage::disk('local')->assertExists($result->storage_path);
 });
 
 test('it marks failed jobs and notifies the user', function () {

@@ -34,6 +34,7 @@ class StartProcessExecution
             'progress' => 0,
             'request_payload' => $this->redactLargeInlineValues($payload),
             'requested_outputs' => $payload['outputs'] ?? null,
+            'process_outputs' => $process['outputs'] ?? null,
             'submitted_at' => now(),
         ]);
 
