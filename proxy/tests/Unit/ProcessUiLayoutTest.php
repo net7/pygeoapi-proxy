@@ -103,6 +103,7 @@ test('jobs index exposes a filterable status table', function () {
     $source = file_get_contents(getcwd().'/resources/js/pages/process-executions/index.tsx');
     $normalizedSource = preg_replace('/\s+/', '', $source) ?? '';
     $helperSource = file_get_contents(getcwd().'/resources/js/lib/jobs.ts');
+    $copyableJobIdSource = file_get_contents(getcwd().'/resources/js/components/ogc/copyable-job-id.tsx');
 
     expect($source)
         ->toContain('My Jobs')
@@ -156,19 +157,10 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('createdAt')
         ->toContain('remoteJobId')
         ->toContain("remoteJobId: 'whitespace-nowrap'")
-        ->toContain("import { toast } from 'sonner';")
-        ->toContain('@/hooks/use-clipboard')
-        ->toContain('CopyIcon')
-        ->toContain('TooltipContent')
+        ->toContain('@/components/ogc/copyable-job-id')
         ->toContain('CopyableJobId')
-        ->toContain('Copy job ID')
-        ->toContain('Click to copy this job ID.')
-        ->toContain('Job ID copied')
-        ->toContain('copy(displayJobId)')
-        ->toContain('cursor-pointer justify-start')
+        ->toContain('<CopyableJobId displayJobId={displayJobId} />')
         ->toContain('whitespace-nowrap')
-        ->toContain('font-mono')
-        ->toContain('event.stopPropagation()')
         ->toContain('styles.rowClassName')
         ->toContain("actions: 'w-28 text-right'")
         ->toContain('submittedAt')
@@ -194,6 +186,22 @@ test('jobs index exposes a filterable status table', function () {
         ->not->toContain('function JobRow(')
         ->not->toContain('ExecutionCard')
         ->not->toContain('<Card');
+
+    expect($copyableJobIdSource)
+        ->toContain("import { toast } from 'sonner';")
+        ->toContain('@/hooks/use-clipboard')
+        ->toContain('CopyIcon')
+        ->toContain('TooltipContent')
+        ->toContain('Copy job ID')
+        ->toContain('Click to copy this job ID.')
+        ->toContain('side="right"')
+        ->toContain('align="center"')
+        ->toContain('Job ID copied')
+        ->toContain('copy(displayJobId)')
+        ->toContain('cursor-pointer justify-start')
+        ->toContain('font-mono')
+        ->toContain('event.stopPropagation()')
+        ->not->toContain('side="top" align="start"');
 
     expect($normalizedSource)
         ->toContain('router.visit(show(row.original.id),)');
@@ -242,14 +250,17 @@ test('job detail prioritizes results and keeps request data beside them', functi
 
     expect($source)
         ->toContain('xl:grid-cols-[minmax(0,1fr)_24rem]')
+        ->toContain('@/components/ogc/copyable-job-id')
         ->toContain('@/routes/jobs')
         ->toContain('jobStatusStyles')
         ->toContain('Job ID')
         ->toContain('remoteJobId')
+        ->toContain('<CopyableJobId displayJobId={displayJobId} />')
         ->toContain('STATUS')
         ->toContain('Requested Outputs')
         ->toContain('Results')
-        ->toContain('Request');
+        ->toContain('Request')
+        ->not->toContain('<code className="min-w-0 truncate');
 });
 
 test('job pages poll while executions are active', function () {

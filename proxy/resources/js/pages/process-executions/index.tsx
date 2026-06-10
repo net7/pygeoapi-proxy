@@ -23,16 +23,14 @@ import {
     ChevronsLeftIcon,
     ChevronsRightIcon,
     Columns3Icon,
-    CopyIcon,
     ListChecksIcon,
     ListFilterIcon,
     SearchIcon,
     XIcon,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import type { MouseEvent } from 'react';
-import { toast } from 'sonner';
 
+import CopyableJobId from '@/components/ogc/copyable-job-id';
 import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -62,12 +60,6 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { useClipboard } from '@/hooks/use-clipboard';
 import {
     clampProgress,
     formatJobDate,
@@ -689,51 +681,6 @@ function JobStatusBadge({ status }: { status: string }) {
             <StatusIcon data-icon="inline-start" />
             {styles.label}
         </Badge>
-    );
-}
-
-function CopyableJobId({ displayJobId }: { displayJobId: string }) {
-    const [, copy] = useClipboard();
-
-    const copyDisplayJobId = async (
-        event: MouseEvent<HTMLButtonElement>,
-    ): Promise<void> => {
-        event.stopPropagation();
-
-        if (await copy(displayJobId)) {
-            toast.success('Job ID copied', {
-                description: displayJobId,
-            });
-
-            return;
-        }
-
-        toast.error('Unable to copy Job ID', {
-            description: 'Clipboard access is not available.',
-        });
-    };
-
-    return (
-        <Tooltip>
-            <TooltipTrigger asChild>
-                <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="cursor-pointer justify-start"
-                    aria-label={`Copy job ID ${displayJobId}`}
-                    onClick={copyDisplayJobId}
-                >
-                    <span className="font-mono whitespace-nowrap">
-                        {displayJobId}
-                    </span>
-                    <CopyIcon data-icon="inline-end" />
-                </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top" align="start">
-                Click to copy this job ID.
-            </TooltipContent>
-        </Tooltip>
     );
 }
 

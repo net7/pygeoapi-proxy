@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
+import CopyableJobId from '@/components/ogc/copyable-job-id';
 import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
 import ResultPreview from '@/components/ogc/result-preview';
 import { Badge } from '@/components/ui/badge';
@@ -103,9 +104,7 @@ export default function ProcessExecutionShow({
                                 <span className="font-medium text-muted-foreground">
                                     Job ID
                                 </span>
-                                <code className="min-w-0 truncate rounded bg-muted px-2 py-1 font-mono text-xs dark:bg-muted/70">
-                                    {displayJobId}
-                                </code>
+                                <CopyableJobId displayJobId={displayJobId} />
                             </div>
                         </div>
                     </div>
