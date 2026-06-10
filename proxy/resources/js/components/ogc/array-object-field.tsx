@@ -23,16 +23,16 @@ export default function ArrayObjectField({
     }
 
     return (
-        <FieldSet>
+        <FieldSet className="max-w-full min-w-0">
             <FieldLegend>{field.title}</FieldLegend>
-            <FieldGroup>
+            <FieldGroup className="min-w-0">
                 {rows.map((row, index) => {
                     const rowValue = isRecord(row) ? row : {};
 
                     return (
                         <div
                             key={index}
-                            className="flex flex-col gap-3 rounded-md border p-3"
+                            className="flex min-w-0 flex-col gap-3 rounded-md border p-3"
                         >
                             <div className="flex justify-end">
                                 <Button

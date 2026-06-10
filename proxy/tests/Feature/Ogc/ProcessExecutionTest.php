@@ -5,6 +5,7 @@ use App\Enums\Ogc\ExecutionMode;
 use App\Enums\Ogc\ExecutionStatus;
 use App\Jobs\Ogc\PollProcessExecutionJob;
 use App\Models\User;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 
@@ -18,7 +19,7 @@ test('it stores a successful synchronous execution with preview result', functio
 
     $process = ogcFixture('process-conduit');
     $payload = [
-        'inputs' => ['melt_composition' => ['sio2' => 0.7, 'tio2' => 0.01]],
+        'inputs' => ['melt_composition' => ['value' => ['sio2' => 0.7, 'tio2' => 0.01]]],
         'outputs' => ['gas' => ['transmissionMode' => 'value']],
     ];
 
@@ -33,6 +34,10 @@ test('it stores a successful synchronous execution with preview result', functio
         ->and($execution->request_payload)->toBe($payload)
         ->and($execution->results)->toHaveCount(1)
         ->and($execution->results->first()->preview['kind'])->toBe('chart');
+
+    Http::assertSent(fn (Request $request): bool => $request->url() === 'https://voice.pi.ingv.it/geoinquire/processes/conduit/execution'
+        && $request['inputs'] === $payload['inputs']
+        && $request['outputs'] === $payload['outputs']);
 });
 
 test('it stores asynchronous execution and dispatches polling', function () {

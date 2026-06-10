@@ -89,23 +89,31 @@ export default function DataInputField({
     }
 
     return (
-        <FieldSet>
+        <FieldSet className="max-w-full min-w-0">
             <FieldLegend>{field.title}</FieldLegend>
             {field.description ? (
-                <FieldDescription>{field.description}</FieldDescription>
+                <FieldDescription className="break-words">
+                    {field.description}
+                </FieldDescription>
             ) : null}
 
-            <ToggleGroup type="single" value={mode} onValueChange={changeMode}>
+            <ToggleGroup
+                type="single"
+                value={mode}
+                onValueChange={changeMode}
+                className="flex-wrap justify-start"
+            >
                 <ToggleGroupItem value="inline">Inline</ToggleGroupItem>
                 <ToggleGroupItem value="reference">URL</ToggleGroupItem>
                 <ToggleGroupItem value="upload">Upload</ToggleGroupItem>
             </ToggleGroup>
 
-            <FieldGroup>
+            <FieldGroup className="min-w-0">
                 {mode === 'inline' ? (
-                    <Field>
+                    <Field className="min-w-0">
                         <FieldLabel>Value</FieldLabel>
                         <Textarea
+                            className="min-w-0"
                             value={inlineValue(value)}
                             onChange={(event) =>
                                 onChange(
@@ -117,14 +125,14 @@ export default function DataInputField({
                 ) : null}
 
                 {mode === 'reference' ? (
-                    <Field>
+                    <Field className="min-w-0">
                         <FieldLabel>Reference URL</FieldLabel>
                         {field.references && field.references.length > 0 ? (
                             <Select
                                 value={selectedReference || undefined}
                                 onValueChange={setReference}
                             >
-                                <SelectTrigger>
+                                <SelectTrigger className="w-full min-w-0">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -143,6 +151,7 @@ export default function DataInputField({
                         ) : null}
                         <Input
                             type="url"
+                            className="min-w-0"
                             value={selectedReference}
                             onChange={(event) =>
                                 setReference(event.target.value)
@@ -152,10 +161,11 @@ export default function DataInputField({
                 ) : null}
 
                 {mode === 'upload' ? (
-                    <Field>
+                    <Field className="min-w-0">
                         <FieldLabel>File</FieldLabel>
                         <Input
                             type="file"
+                            className="min-w-0"
                             accept={field.mediaType ?? undefined}
                             onChange={(event) =>
                                 readFile(event.target.files?.item(0) ?? null)

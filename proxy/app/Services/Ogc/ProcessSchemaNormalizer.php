@@ -54,7 +54,7 @@ class ProcessSchemaNormalizer
                     ->values()
                     ->map(fn (array $variant, int $index): array => [
                         'id' => (string) $index,
-                        'label' => $variant['title'] ?? $variant['description'] ?? 'Variant '.($index + 1),
+                        'label' => $this->variantLabel($variant, $index),
                         'description' => $variant['description'] ?? null,
                         'required' => $variant['required'] ?? [],
                         'fields' => $this->normalizeProperties($variant['properties'] ?? [], $variant['required'] ?? []),
@@ -113,6 +113,7 @@ class ProcessSchemaNormalizer
                         'key' => (string) ($column - 1),
                         'label' => 'Column '.$column,
                         'type' => Arr::get($items, 'items.type', 'string'),
+                        'pattern' => Arr::get($items, 'items.pattern'),
                     ])
                     ->all(),
             ];
@@ -136,6 +137,67 @@ class ProcessSchemaNormalizer
             'maxItems' => $schema['maxItems'] ?? null,
             'itemType' => $items['type'] ?? 'string',
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $variant
+     */
+    private function variantLabel(array $variant, int $index): string
+    {
+        $title = $variant['title'] ?? null;
+
+        if (is_string($title) && trim($title) !== '') {
+            return $title;
+        }
+
+        $constantLabels = collect($variant['properties'] ?? [])
+            ->map(function (array $schema, string $name): ?string {
+                $value = $schema['const'] ?? null;
+
+                if (! array_key_exists('const', $schema) && isset($schema['enum']) && is_array($schema['enum']) && count($schema['enum']) === 1) {
+                    $value = $schema['enum'][0];
+                }
+
+                if ($value === null) {
+                    return null;
+                }
+
+                return $name.' = '.$this->formatVariantConstant($value);
+            })
+            ->filter()
+            ->values();
+
+        if ($constantLabels->isNotEmpty()) {
+            return $constantLabels->implode(', ');
+        }
+
+        $requiredLabels = collect($variant['required'] ?? [])
+            ->map(function (string $name) use ($variant): ?string {
+                $title = Arr::get($variant, "properties.{$name}.title");
+
+                if (is_string($title) && trim($title) !== '') {
+                    return $title;
+                }
+
+                return $name;
+            })
+            ->filter()
+            ->values();
+
+        if ($requiredLabels->isNotEmpty()) {
+            return $requiredLabels->implode(', ');
+        }
+
+        return 'Variant '.($index + 1);
+    }
+
+    private function formatVariantConstant(mixed $value): string
+    {
+        return match (true) {
+            is_bool($value) => $value ? 'true' : 'false',
+            is_scalar($value) => (string) $value,
+            default => json_encode($value) ?: '',
+        };
     }
 
     /**

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { store } from '@/routes/processes/executions';
-import type { OgcFormSchema } from '@/types';
+import type { OgcFormSchema, OgcNormalizedField } from '@/types';
 
 type FormData = {
     mode: 'sync' | 'async';
@@ -24,29 +24,34 @@ export default function DynamicProcessForm({
     const initialMode = schema.jobControlOptions.includes('sync-execute')
         ? 'sync'
         : 'async';
-    const { data, setData, submit, processing, errors } = useForm<FormData>({
-        mode: initialMode,
-        inputs: {},
-        outputs: Object.fromEntries(
-            Object.keys(schema.outputs).map((outputId) => [
-                outputId,
-                { transmissionMode: 'value' },
-            ]),
-        ),
-    });
+    const { data, setData, submit, transform, processing, errors } =
+        useForm<FormData>({
+            mode: initialMode,
+            inputs: initialInputValues(schema.fields),
+            outputs: Object.fromEntries(
+                Object.keys(schema.outputs).map((outputId) => [
+                    outputId,
+                    { transmissionMode: 'value' },
+                ]),
+            ),
+        });
 
     function setInput(name: string, value: unknown) {
         setData('inputs', {
             ...data.inputs,
-            [name]: normalizeValue(value),
+            [name]: value,
         });
     }
 
     return (
         <form
-            className="flex flex-col gap-4"
+            className="flex max-w-full min-w-0 flex-col gap-4"
             onSubmit={(event) => {
                 event.preventDefault();
+                transform((formData) => ({
+                    ...formData,
+                    inputs: normalizeInputs(schema.fields, formData.inputs),
+                }));
                 submit(store(schema.id));
             }}
         >
@@ -58,11 +63,11 @@ export default function DynamicProcessForm({
                 </Alert>
             ) : null}
 
-            <Card>
+            <Card className="min-w-0">
                 <CardHeader>
                     <CardTitle>Execution Mode</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="min-w-0">
                     <ToggleGroup
                         type="single"
                         value={data.mode}
@@ -84,11 +89,11 @@ export default function DynamicProcessForm({
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className="min-w-0">
                 <CardHeader>
                     <CardTitle>Inputs</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-4">
+                <CardContent className="flex min-w-0 flex-col gap-4">
                     {Object.entries(schema.fields).map(([name, field]) => (
                         <SchemaFieldRenderer
                             key={name}
@@ -100,11 +105,11 @@ export default function DynamicProcessForm({
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className="min-w-0">
                 <CardHeader>
                     <CardTitle>Outputs</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="min-w-0">
                     <OutputSelector
                         outputs={schema.outputs}
                         value={data.outputs}
@@ -123,14 +128,95 @@ export default function DynamicProcessForm({
     );
 }
 
-function normalizeValue(value: unknown): any {
+function initialInputValues(
+    fields: Record<string, OgcNormalizedField>,
+): Record<string, unknown> {
+    return Object.fromEntries(
+        Object.entries(fields)
+            .map(([name, field]) => [name, defaultFieldValue(field)] as const)
+            .filter(([, value]) => value !== undefined),
+    );
+}
+
+function defaultFieldValue(field: OgcNormalizedField): unknown {
+    if (field.kind === 'enum' && field.options?.length === 1) {
+        return field.options[0];
+    }
+
+    if (field.kind === 'oneOf') {
+        const variant = field.variants?.[0];
+
+        if (!variant) {
+            return undefined;
+        }
+
+        return {
+            variant: variant.id,
+            value: defaultObjectValue(variant.fields),
+        };
+    }
+
+    if (field.kind === 'object' && field.fields) {
+        const value = defaultObjectValue(field.fields);
+
+        return Object.keys(value).length > 0 ? value : undefined;
+    }
+
+    if (field.kind === 'array_table' && field.minItems && field.minItems > 0) {
+        return Array.from({ length: field.minItems }, () =>
+            (field.columns ?? []).map(() => ''),
+        );
+    }
+
+    if (field.kind === 'array_object' && field.minItems && field.minItems > 0) {
+        return Array.from({ length: field.minItems }, () =>
+            defaultObjectValue(field.fields ?? {}),
+        );
+    }
+
+    return undefined;
+}
+
+function defaultObjectValue(
+    fields: Record<string, OgcNormalizedField>,
+): Record<string, unknown> {
+    return Object.fromEntries(
+        Object.entries(fields)
+            .map(([name, field]) => [name, defaultFieldValue(field)] as const)
+            .filter(([, value]) => value !== undefined),
+    );
+}
+
+function normalizeInputs(
+    fields: Record<string, OgcNormalizedField>,
+    inputs: Record<string, unknown>,
+): Record<string, any> {
+    return Object.fromEntries(
+        Object.entries(inputs).map(([name, value]) => [
+            name,
+            normalizeValue(value, fields[name]),
+        ]),
+    );
+}
+
+function normalizeValue(value: unknown, field?: OgcNormalizedField): any {
     if (
         typeof value === 'object' &&
         value !== null &&
         'variant' in value &&
         'value' in value
     ) {
-        return toFormValue((value as { value: Record<string, unknown> }).value);
+        return {
+            value: toFormValue(
+                (value as { value: Record<string, unknown> }).value,
+            ),
+        };
+    }
+
+    if (field?.kind === 'object') {
+        return {
+            value: toFormValue(value),
+        };
     }
 
     return toFormValue(value);

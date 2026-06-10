@@ -47,14 +47,14 @@ export default function OutputSelector({
     }
 
     return (
-        <FieldGroup>
+        <FieldGroup className="min-w-0">
             {Object.entries(outputs).map(([outputId, output]) => (
                 <Field
                     key={outputId}
                     orientation="horizontal"
-                    className="items-center justify-between rounded-md border p-3"
+                    className="min-w-0 items-center justify-between rounded-md border p-3"
                 >
-                    <div className="flex items-start gap-3">
+                    <div className="flex min-w-0 items-start gap-3">
                         <Checkbox
                             id={`output-${outputId}`}
                             checked={Boolean(value[outputId])}
@@ -62,11 +62,11 @@ export default function OutputSelector({
                                 toggle(outputId, checked === true)
                             }
                         />
-                        <FieldContent>
+                        <FieldContent className="min-w-0">
                             <FieldLabel htmlFor={`output-${outputId}`}>
                                 {output.title}
                             </FieldLabel>
-                            <FieldDescription>
+                            <FieldDescription className="break-words">
                                 {output.mediaType}
                             </FieldDescription>
                         </FieldContent>

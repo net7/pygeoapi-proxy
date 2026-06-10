@@ -44,9 +44,9 @@ export default function ArrayTableField({
     }
 
     return (
-        <FieldSet>
+        <FieldSet className="max-w-full min-w-0">
             <FieldLegend>{field.title}</FieldLegend>
-            <div className="overflow-auto">
+            <div className="w-full max-w-full overflow-x-auto">
                 <Table className="min-w-[960px]">
                     <TableHeader>
                         <TableRow>
@@ -71,6 +71,9 @@ export default function ArrayTableField({
                                                     rowValues[columnIndex] ??
                                                         '',
                                                 )}
+                                                pattern={
+                                                    column.pattern ?? undefined
+                                                }
                                                 onChange={(event) =>
                                                     updateCell(
                                                         rowIndex,

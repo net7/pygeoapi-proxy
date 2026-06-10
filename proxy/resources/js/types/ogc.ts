@@ -11,7 +11,14 @@ export type OgcNormalizedField = {
     name: string;
     title: string;
     description?: string | null;
-    kind: 'scalar' | 'enum' | 'object' | 'oneOf' | 'array_object' | 'array_table' | 'array_scalar';
+    kind:
+        | 'scalar'
+        | 'enum'
+        | 'object'
+        | 'oneOf'
+        | 'array_object'
+        | 'array_table'
+        | 'array_scalar';
     type?: string;
     required?: boolean | string[];
     fields?: Record<string, OgcNormalizedField>;
@@ -25,7 +32,12 @@ export type OgcNormalizedField = {
     options?: Array<string | number | boolean>;
     minItems?: number | null;
     maxItems?: number | null;
-    columns?: { key: string; label: string; type: string }[];
+    columns?: {
+        key: string;
+        label: string;
+        type: string;
+        pattern?: string | null;
+    }[];
     minimum?: number | null;
     maximum?: number | null;
     exclusiveMinimum?: number | null;

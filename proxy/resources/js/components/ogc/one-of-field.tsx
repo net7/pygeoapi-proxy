@@ -1,5 +1,10 @@
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
-import { FieldGroup, FieldLegend, FieldSet } from '@/components/ui/field';
+import {
+    FieldDescription,
+    FieldGroup,
+    FieldLegend,
+    FieldSet,
+} from '@/components/ui/field';
 import {
     Select,
     SelectContent,
@@ -37,13 +42,24 @@ export default function OneOfField({
     }
 
     return (
-        <FieldSet>
+        <FieldSet className="max-w-full min-w-0 overflow-hidden">
             <FieldLegend>{field.title}</FieldLegend>
             <Select
                 value={current.variant}
-                onValueChange={(variant) => onChange({ variant, value: {} })}
+                onValueChange={(variant) => {
+                    const selectedVariant = variants.find(
+                        (item) => item.id === variant,
+                    );
+
+                    onChange({
+                        variant,
+                        value: selectedVariant
+                            ? defaultObjectValue(selectedVariant.fields)
+                            : {},
+                    });
+                }}
             >
-                <SelectTrigger>
+                <SelectTrigger className="w-full max-w-full min-w-0">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -56,8 +72,13 @@ export default function OneOfField({
                     </SelectGroup>
                 </SelectContent>
             </Select>
+            {selected.description ? (
+                <FieldDescription className="break-words">
+                    {selected.description}
+                </FieldDescription>
+            ) : null}
 
-            <FieldGroup>
+            <FieldGroup className="min-w-0">
                 {Object.entries(selected.fields).map(([key, child]) => (
                     <SchemaFieldRenderer
                         key={key}
@@ -83,4 +104,34 @@ function isOneOfValue(value: unknown): value is OneOfValue {
         'variant' in value &&
         'value' in value
     );
+}
+
+function defaultObjectValue(
+    fields: Record<string, OgcNormalizedField>,
+): Record<string, unknown> {
+    return Object.fromEntries(
+        Object.entries(fields)
+            .map(([name, field]) => [name, defaultFieldValue(field)] as const)
+            .filter(([, value]) => value !== undefined),
+    );
+}
+
+function defaultFieldValue(field: OgcNormalizedField): unknown {
+    if (field.kind === 'enum' && field.options?.length === 1) {
+        return field.options[0];
+    }
+
+    if (field.kind === 'object' && field.fields) {
+        const value = defaultObjectValue(field.fields);
+
+        return Object.keys(value).length > 0 ? value : undefined;
+    }
+
+    if (field.kind === 'array_object' && field.minItems && field.minItems > 0) {
+        return Array.from({ length: field.minItems }, () =>
+            defaultObjectValue(field.fields ?? {}),
+        );
+    }
+
+    return undefined;
 }

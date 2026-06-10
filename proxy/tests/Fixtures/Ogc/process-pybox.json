@@ -1,66 +1,371 @@
 {
-  "$defs": {
-    "chart": {
-      "type": "object",
-      "required": ["chartType", "domain", "series"],
-      "properties": {
-        "chartType": { "type": "string" },
-        "domain": { "type": "object" },
-        "series": { "type": "array" }
-      }
-    }
-  },
-  "id": "pybox",
-  "version": "1.0.0",
-  "title": "PYBOX",
-  "description": "PYBOX process",
-  "jobControlOptions": ["async-execute"],
-  "outputTransmission": ["value", "reference"],
-  "inputs": {
-    "lat": {
-      "title": "Latitude",
-      "description": "Geographic latitude",
-      "schema": { "type": "number", "minimum": -90, "maximum": 90 },
-      "minOccurs": 1,
-      "maxOccurs": 1
-    },
-    "multiple_values": {
-      "title": "Multiple particle classes",
-      "description": "Particle classes",
-      "schema": {
-        "type": "array",
-        "minItems": 1,
-        "maxItems": 21,
-        "items": {
-          "type": "object",
-          "required": ["eps0", "rhos", "ds"],
-          "additionalProperties": false,
-          "properties": {
-            "eps0": { "type": "number", "minimum": 0.001, "maximum": 0.1 },
-            "rhos": { "type": "number", "minimum": 500, "maximum": 3500 },
-            "ds": { "type": "number", "minimum": 0.00001, "maximum": 0.005 }
-          }
+    "$defs": {
+        "chart": {
+            "type": "object",
+            "required": ["chartType", "domain", "series"],
+            "properties": {
+                "chartType": {
+                    "type": "string"
+                },
+                "domain": {
+                    "type": "object",
+                    "properties": {
+                        "key": {
+                            "type": "string"
+                        },
+                        "label": {
+                            "type": "string"
+                        },
+                        "unit": {
+                            "type": "string"
+                        },
+                        "values": {
+                            "type": "array",
+                            "items": {
+                                "type": "number"
+                            }
+                        }
+                    },
+                    "required": ["key", "label", "values"]
+                },
+                "series": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "key": {
+                                "type": "string"
+                            },
+                            "label": {
+                                "type": "string"
+                            },
+                            "unit": {
+                                "type": "string"
+                            },
+                            "values": {
+                                "type": "array",
+                                "items": {
+                                    "type": "number"
+                                }
+                            }
+                        },
+                        "required": ["key", "values"]
+                    }
+                }
+            }
         }
-      },
-      "minOccurs": 1,
-      "maxOccurs": 1
-    }
-  },
-  "outputs": {
-    "input_data": {
-      "title": "Input parameters",
-      "description": "Log of all input parameters used",
-      "schema": { "type": "string", "contentMediaType": "text/plain" }
     },
-    "invasion_map": {
-      "title": "Invasion Map",
-      "description": "2D GeoTIFF",
-      "schema": { "type": "string", "contentEncoding": "binary", "contentMediaType": "application/tiff; application=geotiff" }
+    "id": "pybox",
+    "version": "1.0.0",
+    "jobControlOptions": ["async-execute"],
+    "outputTransmission": ["value", "reference"],
+    "links": [
+        {
+            "href": "https://civ.pi.ingv.it/project/pybox-2/",
+            "rel": "related",
+            "type": "text/html",
+            "title": "CIV repository"
+        },
+        {
+            "href": "https://doi.org/10.5281/zenodo.2616551",
+            "rel": "describedby",
+            "type": "application/pdf",
+            "hreflang": "en-US",
+            "title": "PyBox: a Python tool for simulating the kinematics of Pyroclastic density currents with the box-model approach, Reference and User's Guide"
+        },
+        {
+            "href": "http://dx.doi.org/10.1016/j.jvolgeores.2016.08.002",
+            "rel": "describedby",
+            "type": "text/html",
+            "hreflang": "en-US",
+            "title": "A fast, calibrated model for pyroclastic density currents kinematics and hazard"
+        },
+        {
+            "href": "https://doi.org/10.5281/zenodo.18920969",
+            "rel": "cite-as",
+            "type": "text/html",
+            "title": "PyBOX-Web release on Zenodo (DOI: 10.5281/zenodo.18920969)"
+        },
+        {
+            "href": "https://github.com/silviagians/PyBOX-Web",
+            "rel": "source",
+            "type": "text/html",
+            "title": "PyBOX-Web source code repository on GitHub"
+        },
+        {
+            "type": "application/json",
+            "rel": "self",
+            "href": "https://voice.pi.ingv.it/geoinquire/processes/pybox?f=json",
+            "title": "Process description as JSON",
+            "hreflang": "it-IT"
+        },
+        {
+            "type": "text/html",
+            "rel": "alternate",
+            "href": "https://voice.pi.ingv.it/geoinquire/processes/pybox?f=html",
+            "title": "Process description as HTML",
+            "hreflang": "it-IT"
+        },
+        {
+            "type": "text/html",
+            "rel": "http://www.opengis.net/def/rel/ogc/1.0/job-list",
+            "href": "https://voice.pi.ingv.it/geoinquire/jobs?f=html",
+            "title": "Jobs list as HTML",
+            "hreflang": "it-IT"
+        },
+        {
+            "type": "application/json",
+            "rel": "http://www.opengis.net/def/rel/ogc/1.0/job-list",
+            "href": "https://voice.pi.ingv.it/geoinquire/jobs?f=json",
+            "title": "Jobs list as JSON",
+            "hreflang": "it-IT"
+        },
+        {
+            "type": "application/json",
+            "rel": "http://www.opengis.net/def/rel/ogc/1.0/execute",
+            "href": "https://voice.pi.ingv.it/geoinquire/processes/pybox/execution?f=json",
+            "title": "Execution for this process as JSON",
+            "hreflang": "it-IT"
+        }
+    ],
+    "title": "PYBOX",
+    "description": "Python code to simulate the dispersals of a gravity-driven pyroclastic density current (PDC) using a box model physical description. It produces a 2D invasion area adopting the energy conoid approach and using a Digital Surface Model (DSM) as topography. Note: the script supports multiple particle classes.",
+    "keywords": [
+        "Python code",
+        "Box model",
+        "Pyroclastic density currents",
+        "Invasion maps",
+        "Hazard assessment"
+    ],
+    "metadata": [
+        {
+            "title": "Source repository",
+            "role": "repository",
+            "href": "https://github.com/silviagians/PyBOX-Web"
+        },
+        {
+            "title": "Silvia Giansante",
+            "role": "author",
+            "href": "https://orcid.org/0009-0008-2803-0873"
+        }
+    ],
+    "inputs": {
+        "lat": {
+            "title": "Latitude",
+            "description": "Geographic latitude of the vent in Decimal degrees",
+            "schema": {
+                "title": "Latitude",
+                "description": "Geographic latitude of the vent in Decimal degrees",
+                "type": "number",
+                "minimum": -90.0,
+                "maximum": 90.0
+            },
+            "minOccurs": 1,
+            "maxOccurs": 1
+        },
+        "lon": {
+            "title": "Longitude",
+            "description": "Geographic longitude of the vent in Decimal degrees",
+            "schema": {
+                "title": "Longitude",
+                "description": "Geographic longitude of the vent in Decimal degrees",
+                "type": "number",
+                "minimum": -180.0,
+                "maximum": 180.0
+            },
+            "minOccurs": 1,
+            "maxOccurs": 1
+        },
+        "l0": {
+            "title": "Initial Radius",
+            "description": "Initial horizontal extent (l0) of the current in meters",
+            "schema": {
+                "title": "Initial Radius",
+                "description": "Initial horizontal extent (l0) of the current in meters",
+                "type": "number",
+                "minimum": 100.0,
+                "maximum": 2000.0
+            },
+            "minOccurs": 1,
+            "maxOccurs": 1
+        },
+        "h0": {
+            "title": "Initial height",
+            "description": "Initial vertical thickness (h0) of the current in meters",
+            "schema": {
+                "title": "Initial height",
+                "description": "Initial vertical thickness (h0) of the current in meters",
+                "type": "number",
+                "minimum": 100.0,
+                "maximum": 2000.0
+            },
+            "minOccurs": 1,
+            "maxOccurs": 1
+        },
+        "theta0": {
+            "title": "Temperature",
+            "description": "Initial temperature of the current in Kelvin",
+            "schema": {
+                "title": "Temperature",
+                "description": "Initial temperature of the current in Kelvin",
+                "type": "number",
+                "minimum": 300.0,
+                "maximum": 1400.0
+            },
+            "minOccurs": 1,
+            "maxOccurs": 1
+        },
+        "multiple_values": {
+            "title": "Multiple particle classes",
+            "description": "When simulating multiple particle classes, the volume fraction (eps0), density (rhos), and diameter (ds) of each class should be specified and the sum of eps0 must be &lt; 1",
+            "schema": {
+                "title": "Multiple particle classes",
+                "description": "When simulating multiple particle classes, the volume fraction (eps0), density (rhos), and diameter (ds) of each class should be specified and the sum of eps0 must be &lt; 1",
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 21,
+                "items": {
+                    "type": "object",
+                    "required": ["eps0", "rhos", "ds"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "eps0": {
+                            "title": "Particle volume fraction",
+                            "description": "Volume fraction of particle class",
+                            "type": "number",
+                            "minimum": 0.001,
+                            "maximum": 0.1
+                        },
+                        "rhos": {
+                            "title": "Particle density",
+                            "description": "Density of particle class in kg/m3",
+                            "type": "number",
+                            "minimum": 500.0,
+                            "maximum": 3500.0
+                        },
+                        "ds": {
+                            "title": "Particle diameter",
+                            "description": "Diameter of particle class (10 micron-5 mm) in meters",
+                            "type": "number",
+                            "minimum": 1e-5,
+                            "maximum": 0.005
+                        }
+                    }
+                }
+            },
+            "minOccurs": 1,
+            "maxOccurs": 1
+        },
+        "dt": {
+            "title": "Time step",
+            "description": "Temporal resolution of the numerical integration in seconds",
+            "schema": {
+                "title": "Time step",
+                "description": "Temporal resolution of the numerical integration in seconds",
+                "type": "number",
+                "minimum": 0.1,
+                "maximum": 30.0
+            },
+            "minOccurs": 1,
+            "maxOccurs": 1
+        },
+        "margin": {
+            "title": "Margin",
+            "description": "-x, -y, x, y distance from the given vent location (i.e. bounding box of the requested DSM) in meters",
+            "schema": {
+                "title": "Margin",
+                "description": "-x, -y, x, y distance from the given vent location (i.e. bounding box of the requested DSM) in meters",
+                "type": "number",
+                "minimum": 5000,
+                "maximum": 50000
+            },
+            "minOccurs": 1,
+            "maxOccurs": 1
+        }
     },
-    "spatial_evolution": {
-      "title": "Spatial evolution",
-      "description": "Chart result",
-      "schema": { "$ref": "#/$defs/chart", "contentMediaType": "application/json" }
-    }
-  }
+    "outputs": {
+        "input_data": {
+            "title": "Input parameters",
+            "description": "Log of all input parameters used",
+            "schema": {
+                "type": "string",
+                "contentMediaType": "text/plain"
+            }
+        },
+        "dem": {
+            "title": "Primary DEM",
+            "description": "The local DSM (GeoTIFF) used for the simulation.",
+            "schema": {
+                "type": "string",
+                "contentEncoding": "binary",
+                "contentMediaType": "application/tiff; application=geotiff"
+            }
+        },
+        "invasion_map": {
+            "title": "Invasion Map",
+            "description": "2D GeoTIFF showing PDC invaded area, based on the energy conoid method.",
+            "schema": {
+                "type": "string",
+                "contentEncoding": "binary",
+                "contentMediaType": "application/tiff; application=geotiff"
+            }
+        },
+        "spatial_evolution": {
+            "title": "Spatial evolution of current mean properties.",
+            "description": "Spatial evolution of current mean properties.",
+            "schema": {
+                "$ref": "#/$defs/chart",
+                "contentMediaType": "application/json"
+            }
+        },
+        "deposit_thickness": {
+            "title": "Deposit thickness left by the current with distance from vent.",
+            "description": "Deposit thickness left by the current with distance from vent.",
+            "schema": {
+                "$ref": "#/$defs/chart",
+                "contentMediaType": "application/json"
+            }
+        }
+    },
+    "example": [
+        {
+            "payload_example": {
+                "inputs": {
+                    "lon": 90.88,
+                    "lat": 14.47,
+                    "l0": 150,
+                    "h0": 150,
+                    "theta0": 500,
+                    "multiple_values": [
+                        {
+                            "eps0": 0.01,
+                            "rhos": 1000,
+                            "ds": 0.0001
+                        }
+                    ],
+                    "dt": 0.5,
+                    "margin": 5000
+                },
+                "outputs": [
+                    "input_data",
+                    "dem",
+                    "invasion_map",
+                    "spatial_evolution",
+                    "deposit_thickness"
+                ]
+            }
+        },
+        {
+            "curl_request_example": "curl -k -L -X POST \"https://voice.pi.ingv.it/geoinquire/processes/pybox/execution\" -H \"Content-Type: application/json\" -d '{\"inputs\":{\"lon\":-90.88,\"lat\":15.47,\"l0\":150,\"h0\":150,\"theta0\":500,\"multiple_values\":[{\"eps0\":0.01,\"rhos\":1000,\"ds\":0.0001}],\"dt\":0.5,\"margin\":5000},\"outputs\":{\"dem\":{\"transmissionMode\": \"reference\"},\"spatial_evolution\":{\"transmissionMode\": \"value\"}}}'"
+        },
+        {
+            "curl_request_with_qualified_example__href-only_not_supported_yet": "curl -k -L -X POST \"https://voice.pi.ingv.it/geoinquire/processes/pybox/execution\" -H \"Content-Type: application/json\" -d '{\"inputs\":{\"lon\":{\"value\":-90.88},\"lat\":{\"value\":15.47},\"l0\":150,\"h0\":150,\"theta0\":500,\"multiple_values\":[{\"eps0\":0.01,\"rhos\":1000,\"ds\":0.0001}],\"dt\":0.5,\"margin\":5000},\"outputs\":{\"dem\":{\"transmissionMode\": \"reference\"},\"spatial_evolution\":{\"transmissionMode\": \"value\"}}}'"
+        },
+        {
+            "curl_jobStatus_request": "curl -k -L \"https://voice.pi.ingv.it/jobs/&lt;jobID&gt;\""
+        },
+        {
+            "curl_jobResults_request": "curl -k -L \"https://voice.pi.ingv.it/jobs/&lt;jobID&gt;/results\"?f=json"
+        }
+    ]
 }

@@ -34,9 +34,9 @@ export default function SchemaFieldRenderer({
         const objectValue = isRecord(value) ? value : {};
 
         return (
-            <FieldSet>
+            <FieldSet className="max-w-full min-w-0">
                 <FieldLegend>{field.title}</FieldLegend>
-                <FieldGroup>
+                <FieldGroup className="min-w-0">
                     {Object.entries(field.fields).map(([key, child]) => (
                         <SchemaFieldRenderer
                             key={key}
@@ -76,7 +76,7 @@ export default function SchemaFieldRenderer({
 
     if (field.kind === 'enum') {
         return (
-            <Field>
+            <Field className="min-w-0">
                 <FieldLabel>{field.title}</FieldLabel>
                 <Select
                     value={String(value ?? '')}
@@ -84,7 +84,7 @@ export default function SchemaFieldRenderer({
                         onChange(enumValueFromString(field, selected))
                     }
                 >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full min-w-0">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -101,16 +101,19 @@ export default function SchemaFieldRenderer({
                     </SelectContent>
                 </Select>
                 {field.description ? (
-                    <FieldDescription>{field.description}</FieldDescription>
+                    <FieldDescription className="break-words">
+                        {field.description}
+                    </FieldDescription>
                 ) : null}
             </Field>
         );
     }
 
     return (
-        <Field>
+        <Field className="min-w-0">
             <FieldLabel>{field.title}</FieldLabel>
             <Input
+                className="min-w-0"
                 type={
                     field.type === 'number' || field.type === 'integer'
                         ? 'number'
@@ -119,6 +122,7 @@ export default function SchemaFieldRenderer({
                 value={String(value ?? '')}
                 min={field.minimum ?? field.exclusiveMinimum ?? undefined}
                 max={field.maximum ?? field.exclusiveMaximum ?? undefined}
+                pattern={field.pattern ?? undefined}
                 onChange={(event) => {
                     const raw = event.target.value;
 
@@ -138,7 +142,9 @@ export default function SchemaFieldRenderer({
                 }}
             />
             {field.description ? (
-                <FieldDescription>{field.description}</FieldDescription>
+                <FieldDescription className="break-words">
+                    {field.description}
+                </FieldDescription>
             ) : null}
         </Field>
     );

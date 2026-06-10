@@ -29,6 +29,93 @@ test('it normalizes one of variants', function () {
         ->and($field['variants'][1]['fields'])->toHaveKey('f');
 });
 
+test('it normalizes live conduit inputs and outputs', function () {
+    $normalized = app(ProcessSchemaNormalizer::class)->normalize(ogcFixture('process-conduit'));
+
+    expect($normalized['fields'])->toHaveKeys([
+        'melt_composition',
+        'volatiles',
+        'crystals',
+        'fragmentation',
+        'pressure_temperature',
+        'geometry',
+        'searching_mode',
+    ])
+        ->and($normalized['outputs'])->toHaveKeys(['gas', 'velocity', 'pressure', 'outfile', 'exit'])
+        ->and(array_column($normalized['fields']['searching_mode']['variants'], 'label'))->toBe([
+            'Conduit diameter [m]',
+            'Mass flow rate [kg/s] (-g cylinder) or mass flow rate per unit surface [kg/(s m^2)] (-g fissure)',
+        ]);
+});
+
+test('it normalizes live pybox inputs and outputs', function () {
+    $normalized = app(ProcessSchemaNormalizer::class)->normalize(ogcFixture('process-pybox'));
+
+    expect($normalized['fields'])->toHaveKeys([
+        'lat',
+        'lon',
+        'l0',
+        'h0',
+        'theta0',
+        'multiple_values',
+        'dt',
+        'margin',
+    ])
+        ->and($normalized['outputs'])->toHaveKeys([
+            'input_data',
+            'dem',
+            'invasion_map',
+            'spatial_evolution',
+            'deposit_thickness',
+        ])
+        ->and($normalized['fields']['multiple_values']['kind'])->toBe('array_object')
+        ->and($normalized['fields']['multiple_values']['minItems'])->toBe(1)
+        ->and($normalized['fields']['multiple_values']['maxItems'])->toBe(21)
+        ->and($normalized['fields']['multiple_values']['fields'])->toHaveKeys(['eps0', 'rhos', 'ds'])
+        ->and($normalized['outputs']['dem']['contentEncoding'])->toBe('binary')
+        ->and($normalized['outputs']['invasion_map']['mediaType'])->toBe('application/tiff; application=geotiff');
+});
+
+test('it keeps description only one of variant labels compact', function () {
+    $process = [
+        'id' => 'description-only',
+        'inputs' => [
+            'mode' => [
+                'schema' => [
+                    'type' => 'object',
+                    'oneOf' => [
+                        [
+                            'description' => str_repeat('Long variant description ', 12),
+                            'properties' => [
+                                'value' => ['type' => 'integer'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ];
+
+    $variant = app(ProcessSchemaNormalizer::class)
+        ->normalize($process)['fields']['mode']['variants'][0];
+
+    expect($variant['label'])->toBe('Variant 1')
+        ->and($variant['description'])->toStartWith('Long variant description');
+});
+
+test('it derives compact labels for constant one of variants', function () {
+    $field = app(ProcessSchemaNormalizer::class)
+        ->normalize(ogcFixture('process-solwcad'))['fields']['swinput.data'];
+
+    expect($field['variants'])->toHaveCount(4)
+        ->and(array_column($field['variants'], 'label'))->toBe([
+            'kl = 0',
+            'kl = 1',
+            'kl = 2',
+            'kl = -1',
+        ]);
+});
+
 test('it normalizes array tables', function () {
     $process = ogcFixture('process-solwcad');
 
@@ -36,7 +123,8 @@ test('it normalizes array tables', function () {
 
     expect($field['kind'])->toBe('array_table')
         ->and($field['minItems'])->toBe(1)
-        ->and($field['columns'])->toHaveCount(14);
+        ->and($field['columns'])->toHaveCount(14)
+        ->and($field['columns'][0]['pattern'])->toBe('^([+-]?([\d]+\.|[\d]*\.[\d]+))([Dd][+-]?[\d]+)?$');
 });
 
 test('it normalizes repeatable object arrays', function () {
