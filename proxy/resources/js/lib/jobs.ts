@@ -12,6 +12,7 @@ import type { LucideIcon } from 'lucide-react';
 export type JobStatusStyles = {
     label: string;
     icon: LucideIcon;
+    rowClassName: string;
     cardClassName: string;
     badgeClassName: string;
     progressClassName: string;
@@ -33,6 +34,7 @@ export function jobStatusStyles(status: string): JobStatusStyles {
             submitting: {
                 label: 'SUBMITTING',
                 icon: RadioTowerIcon,
+                rowClassName: 'bg-sky-50/60 dark:bg-sky-950/20',
                 cardClassName:
                     'border-l-sky-500 bg-sky-50/60 dark:bg-sky-950/20',
                 badgeClassName:
@@ -42,6 +44,7 @@ export function jobStatusStyles(status: string): JobStatusStyles {
             accepted: {
                 label: 'ACCEPTED',
                 icon: CircleDashedIcon,
+                rowClassName: 'bg-blue-50/60 dark:bg-blue-950/20',
                 cardClassName:
                     'border-l-blue-500 bg-blue-50/60 dark:bg-blue-950/20',
                 badgeClassName:
@@ -51,6 +54,7 @@ export function jobStatusStyles(status: string): JobStatusStyles {
             running: {
                 label: 'RUNNING',
                 icon: ActivityIcon,
+                rowClassName: 'bg-amber-50/70 dark:bg-amber-950/20',
                 cardClassName:
                     'border-l-amber-500 bg-amber-50/70 dark:bg-amber-950/20',
                 badgeClassName:
@@ -60,6 +64,7 @@ export function jobStatusStyles(status: string): JobStatusStyles {
             successful: {
                 label: 'SUCCESSFUL',
                 icon: CheckCircle2Icon,
+                rowClassName: 'bg-emerald-50/70 dark:bg-emerald-950/20',
                 cardClassName:
                     'border-l-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/20',
                 badgeClassName:
@@ -69,6 +74,7 @@ export function jobStatusStyles(status: string): JobStatusStyles {
             failed: {
                 label: 'FAILED',
                 icon: CircleAlertIcon,
+                rowClassName: 'bg-destructive/5',
                 cardClassName: 'border-l-destructive bg-destructive/5',
                 badgeClassName:
                     'border-destructive/40 bg-destructive/10 text-destructive',
@@ -77,6 +83,7 @@ export function jobStatusStyles(status: string): JobStatusStyles {
             submission_failed: {
                 label: 'SUBMISSION FAILED',
                 icon: XCircleIcon,
+                rowClassName: 'bg-destructive/5',
                 cardClassName: 'border-l-destructive bg-destructive/5',
                 badgeClassName:
                     'border-destructive/40 bg-destructive/10 text-destructive',
@@ -85,6 +92,7 @@ export function jobStatusStyles(status: string): JobStatusStyles {
             remote_missing: {
                 label: 'REMOTE MISSING',
                 icon: HelpCircleIcon,
+                rowClassName: 'bg-muted/40',
                 cardClassName: 'border-l-muted-foreground bg-muted/40',
                 badgeClassName: 'border-muted-foreground/30 bg-muted',
                 progressClassName: 'bg-muted-foreground',
@@ -92,6 +100,7 @@ export function jobStatusStyles(status: string): JobStatusStyles {
         }[status] ?? {
             label: status.replaceAll('_', ' ').toUpperCase(),
             icon: HelpCircleIcon,
+            rowClassName: 'bg-muted/30',
             cardClassName: 'border-l-muted-foreground bg-muted/30',
             badgeClassName: 'border-muted-foreground/30 bg-muted',
             progressClassName: 'bg-muted-foreground',
@@ -105,7 +114,10 @@ export function jobStatusSortIndex(status: string): number {
     return index === -1 ? statusOrder.length : index;
 }
 
-export function formatJobDate(value?: string | null): string {
+export function formatJobDate(
+    value?: string | null,
+    locale?: Intl.LocalesArgument,
+): string {
     if (!value) {
         return 'Not available';
     }
@@ -116,7 +128,7 @@ export function formatJobDate(value?: string | null): string {
         return 'Not available';
     }
 
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat(locale ?? browserDateLocale(), {
         dateStyle: 'medium',
         timeStyle: 'short',
     }).format(date);
@@ -124,4 +136,16 @@ export function formatJobDate(value?: string | null): string {
 
 export function clampProgress(progress: number): number {
     return Math.min(Math.max(progress, 0), 100);
+}
+
+function browserDateLocale(): Intl.LocalesArgument | undefined {
+    if (typeof navigator === 'undefined') {
+        return undefined;
+    }
+
+    if (navigator.languages.length > 0) {
+        return navigator.languages;
+    }
+
+    return navigator.language;
 }
