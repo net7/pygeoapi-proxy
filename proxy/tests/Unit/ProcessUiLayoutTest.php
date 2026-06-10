@@ -314,7 +314,7 @@ test('job pages use readable dark mode status surfaces', function () {
     expect($indexSource)
         ->toContain('bg-card shadow-sm dark:border-border/70 dark:bg-card/95')
         ->toContain('dark:hover:bg-accent/30')
-        ->toContain('dark:bg-muted/70');
+        ->toContain('variant="secondary"');
 
     expect($showSource)
         ->toContain('shadow-sm dark:bg-card/95')
