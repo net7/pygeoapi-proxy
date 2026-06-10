@@ -6,6 +6,7 @@ import InputError from '@/components/input-error';
 import type { Props as ManagePasskeysProps } from '@/components/manage-passkeys';
 import ManagePasskeys from '@/components/manage-passkeys';
 import PasswordInput from '@/components/password-input';
+import StatusNotice from '@/components/status-notice';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { edit } from '@/routes/security';
@@ -14,6 +15,7 @@ type Props = {
     canUpdatePassword: boolean;
     passwordRules: string;
     sensitiveConfirmationUrl: string | null;
+    status?: string;
 } & ManagePasskeysProps;
 
 export default function Security(props: Props) {
@@ -25,6 +27,8 @@ export default function Security(props: Props) {
             <Head title="Security settings" />
 
             <h1 className="sr-only">Security settings</h1>
+
+            <StatusNotice message={props.status} title="Code sent" />
 
             {props.canUpdatePassword && (
                 <div className="space-y-6">

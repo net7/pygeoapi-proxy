@@ -42,7 +42,12 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'title' => __('Profile updated'),
+            'message' => __('Profile updated.'),
+            'description' => __('Your account details are now up to date.'),
+        ]);
 
         return to_route('profile.edit');
     }
@@ -75,7 +80,12 @@ class ProfileController extends Controller
             Storage::disk('public')->delete($previousAvatarPath);
         }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Avatar updated.')]);
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'title' => __('Avatar updated'),
+            'message' => __('Avatar updated.'),
+            'description' => __('Your profile image has been refreshed.'),
+        ]);
 
         return to_route('profile.edit');
     }
@@ -92,7 +102,12 @@ class ProfileController extends Controller
             $user->forceFill(['avatar_path' => null])->save();
         }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Avatar removed.')]);
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'title' => __('Avatar removed'),
+            'message' => __('Avatar removed.'),
+            'description' => __('Your profile now uses the default account initials.'),
+        ]);
 
         return to_route('profile.edit');
     }

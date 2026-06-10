@@ -1,6 +1,7 @@
 import { Form, Head } from '@inertiajs/react';
 import { MailCheckIcon } from 'lucide-react';
 import InputError from '@/components/input-error';
+import StatusNotice from '@/components/status-notice';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -47,11 +48,7 @@ export default function SocialEmail({ email = '', status, submitUrl }: Props) {
                             </Button>
                         </div>
 
-                        {status && (
-                            <div className="text-center text-sm font-medium text-green-600">
-                                {status}
-                            </div>
-                        )}
+                        <StatusNotice message={status} title="Code sent" />
                     </>
                 )}
             </Form>

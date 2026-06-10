@@ -1,6 +1,7 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { RefreshCwIcon, ShieldCheckIcon } from 'lucide-react';
 import InputError from '@/components/input-error';
+import StatusNotice from '@/components/status-notice';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -72,11 +73,9 @@ export default function VerifyOtp({
                 )}
             </Form>
 
-            <div className="space-y-2 text-center text-sm text-muted-foreground">
+            <div className="flex flex-col gap-2 text-center text-sm text-muted-foreground">
                 <p>{email}</p>
-                {status && (
-                    <p className="font-medium text-green-600">{status}</p>
-                )}
+                <StatusNotice message={status} title="Code sent" />
             </div>
         </>
     );

@@ -51,8 +51,8 @@ export default function OutputSelector({
             {Object.entries(outputs).map(([outputId, output]) => (
                 <Field
                     key={outputId}
-                    orientation="horizontal"
-                    className="min-w-0 items-center justify-between rounded-md border p-3"
+                    orientation="responsive"
+                    className="min-w-0 rounded-md border p-3"
                 >
                     <div className="flex min-w-0 items-start gap-3">
                         <Checkbox
@@ -79,7 +79,7 @@ export default function OutputSelector({
                                 setTransmissionMode(outputId, mode)
                             }
                         >
-                            <SelectTrigger className="w-36">
+                            <SelectTrigger className="w-full min-w-0 md:w-36">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>

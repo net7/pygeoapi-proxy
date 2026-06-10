@@ -59,12 +59,11 @@ export default function PasskeyItem({ passkey, onDelete }: Props) {
             <Dialog>
                 <DialogTrigger asChild>
                     <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        variant="destructive"
+                        size="icon"
+                        aria-label="Remove passkey"
                     >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Remove</span>
+                        <Trash2 data-icon="icon" />
                     </Button>
                 </DialogTrigger>
                 <DialogContent>

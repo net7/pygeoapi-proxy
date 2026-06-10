@@ -10,7 +10,9 @@ export type AppVariant = 'header' | 'sidebar';
 
 export type FlashToast = {
     type: 'success' | 'info' | 'warning' | 'error';
+    title?: string;
     message: string;
+    description?: string;
 };
 
 export type AuthLayoutProps = {

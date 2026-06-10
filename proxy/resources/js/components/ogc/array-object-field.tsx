@@ -37,7 +37,7 @@ export default function ArrayObjectField({
                             <div className="flex justify-end">
                                 <Button
                                     type="button"
-                                    variant="ghost"
+                                    variant="destructive"
                                     size="icon"
                                     aria-label="Remove row"
                                     onClick={() =>

@@ -1,11 +1,18 @@
 import { useForm } from '@inertiajs/react';
-import { Loader2 } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 import OutputSelector from '@/components/ogc/output-selector';
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { store } from '@/routes/processes/executions';
 import type { OgcFormSchema, OgcNormalizedField } from '@/types';
@@ -45,7 +52,7 @@ export default function DynamicProcessForm({
 
     return (
         <form
-            className="flex max-w-full min-w-0 flex-col gap-4"
+            className="grid max-w-full min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start"
             onSubmit={(event) => {
                 event.preventDefault();
                 transform((formData) => ({
@@ -56,38 +63,14 @@ export default function DynamicProcessForm({
             }}
         >
             {Object.keys(errors).length > 0 ? (
-                <Alert variant="destructive">
+                <Alert variant="destructive" className="lg:col-span-2">
+                    <AlertCircle />
+                    <AlertTitle>Check the process inputs</AlertTitle>
                     <AlertDescription>
-                        Check the highlighted fields and submit again.
+                        Some values need attention before the process can run.
                     </AlertDescription>
                 </Alert>
             ) : null}
-
-            <Card className="min-w-0">
-                <CardHeader>
-                    <CardTitle>Execution Mode</CardTitle>
-                </CardHeader>
-                <CardContent className="min-w-0">
-                    <ToggleGroup
-                        type="single"
-                        value={data.mode}
-                        onValueChange={(value) => {
-                            if (value === 'sync' || value === 'async') {
-                                setData('mode', value);
-                            }
-                        }}
-                    >
-                        {schema.jobControlOptions.includes('sync-execute') ? (
-                            <ToggleGroupItem value="sync">Sync</ToggleGroupItem>
-                        ) : null}
-                        {schema.jobControlOptions.includes('async-execute') ? (
-                            <ToggleGroupItem value="async">
-                                Async
-                            </ToggleGroupItem>
-                        ) : null}
-                    </ToggleGroup>
-                </CardContent>
-            </Card>
 
             <Card className="min-w-0">
                 <CardHeader>
@@ -105,25 +88,65 @@ export default function DynamicProcessForm({
                 </CardContent>
             </Card>
 
-            <Card className="min-w-0">
-                <CardHeader>
-                    <CardTitle>Outputs</CardTitle>
-                </CardHeader>
-                <CardContent className="min-w-0">
-                    <OutputSelector
-                        outputs={schema.outputs}
-                        value={data.outputs}
-                        onChange={(outputs) => setData('outputs', outputs)}
-                    />
-                </CardContent>
-            </Card>
+            <aside className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-4">
+                <Card className="min-w-0">
+                    <CardHeader>
+                        <CardTitle>Execution</CardTitle>
+                    </CardHeader>
+                    <CardContent className="min-w-0">
+                        <ToggleGroup
+                            type="single"
+                            value={data.mode}
+                            onValueChange={(value) => {
+                                if (value === 'sync' || value === 'async') {
+                                    setData('mode', value);
+                                }
+                            }}
+                            className="w-full justify-start"
+                        >
+                            {schema.jobControlOptions.includes(
+                                'sync-execute',
+                            ) ? (
+                                <ToggleGroupItem value="sync">
+                                    Sync
+                                </ToggleGroupItem>
+                            ) : null}
+                            {schema.jobControlOptions.includes(
+                                'async-execute',
+                            ) ? (
+                                <ToggleGroupItem value="async">
+                                    Async
+                                </ToggleGroupItem>
+                            ) : null}
+                        </ToggleGroup>
+                    </CardContent>
+                </Card>
 
-            <div className="flex justify-end">
-                <Button type="submit" disabled={processing}>
-                    {processing ? <Loader2 data-icon="inline-start" /> : null}
-                    Execute
-                </Button>
-            </div>
+                <Card className="min-w-0">
+                    <CardHeader>
+                        <CardTitle>Outputs</CardTitle>
+                    </CardHeader>
+                    <CardContent className="min-w-0">
+                        <OutputSelector
+                            outputs={schema.outputs}
+                            value={data.outputs}
+                            onChange={(outputs) => setData('outputs', outputs)}
+                        />
+                    </CardContent>
+                    <CardFooter>
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            className="w-full"
+                        >
+                            {processing ? (
+                                <Spinner data-icon="inline-start" />
+                            ) : null}
+                            Execute
+                        </Button>
+                    </CardFooter>
+                </Card>
+            </aside>
         </form>
     );
 }

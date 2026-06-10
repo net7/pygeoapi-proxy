@@ -32,7 +32,19 @@ test('it marks successful jobs and stores results', function () {
         ->and($execution->progress)->toBe(100)
         ->and($execution->results)->toHaveCount(1);
 
-    Notification::assertSentTo($execution->user, ProcessExecutionCompleted::class);
+    Notification::assertSentTo(
+        $execution->user,
+        ProcessExecutionCompleted::class,
+        function (ProcessExecutionCompleted $notification) use ($execution) {
+            $data = $notification->toDatabase($execution->user)->data;
+
+            return $data['title'] === 'Process completed'
+                && $data['body'] === 'The process finished successfully and the results are ready.'
+                && $data['icon'] === 'check-circle'
+                && $data['tone'] === 'success'
+                && $data['action_url'] === route('process-executions.show', $execution);
+        },
+    );
 });
 
 test('it marks failed jobs and notifies the user', function () {
@@ -56,7 +68,19 @@ test('it marks failed jobs and notifies the user', function () {
     expect($execution->status)->toBe(ExecutionStatus::Failed)
         ->and($execution->message)->toContain('InvalidParameterValue');
 
-    Notification::assertSentTo($execution->user, ProcessExecutionCompleted::class);
+    Notification::assertSentTo(
+        $execution->user,
+        ProcessExecutionCompleted::class,
+        function (ProcessExecutionCompleted $notification) use ($execution) {
+            $data = $notification->toDatabase($execution->user)->data;
+
+            return $data['title'] === 'Process failed'
+                && str_contains($data['body'], 'InvalidParameterValue')
+                && $data['icon'] === 'circle-alert'
+                && $data['tone'] === 'error'
+                && $data['action_url'] === route('process-executions.show', $execution);
+        },
+    );
 });
 
 test('it marks missing remote jobs', function () {

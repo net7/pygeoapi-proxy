@@ -24,6 +24,7 @@ export default function ArrayTableField({
 }) {
     const rows = Array.isArray(value) ? value : [];
     const columns = field.columns ?? [];
+    const tableMinWidth = `${Math.max(columns.length * 8 + 3, 32)}rem`;
 
     function updateCell(
         rowIndex: number,
@@ -46,8 +47,8 @@ export default function ArrayTableField({
     return (
         <FieldSet className="max-w-full min-w-0">
             <FieldLegend>{field.title}</FieldLegend>
-            <div className="w-full max-w-full overflow-x-auto">
-                <Table className="min-w-[960px]">
+            <div className="w-full max-w-full overflow-x-auto rounded-md border">
+                <Table style={{ minWidth: tableMinWidth }}>
                     <TableHeader>
                         <TableRow>
                             {columns.map((column) => (
@@ -87,7 +88,7 @@ export default function ArrayTableField({
                                     <TableCell>
                                         <Button
                                             type="button"
-                                            variant="ghost"
+                                            variant="destructive"
                                             size="icon"
                                             aria-label="Remove row"
                                             onClick={() =>

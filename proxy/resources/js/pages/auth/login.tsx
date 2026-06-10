@@ -2,6 +2,7 @@ import { Form, Head, usePage } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import PasskeyVerify from '@/components/passkey-verify';
 import PasswordInput from '@/components/password-input';
+import StatusNotice from '@/components/status-notice';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -208,11 +209,7 @@ export default function Login({ status, canResetPassword }: Props) {
                 </div>
             )}
 
-            {status && (
-                <div className="text-center text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
+            <StatusNotice message={status} title="Account notice" />
         </>
     );
 }
