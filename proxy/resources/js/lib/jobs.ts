@@ -28,6 +28,17 @@ const statusOrder = [
     'remote_missing',
 ];
 
+const terminalStatuses = [
+    'successful',
+    'failed',
+    'submission_failed',
+    'remote_missing',
+];
+
+export function isJobTerminal(status: string): boolean {
+    return terminalStatuses.includes(status);
+}
+
 export function jobStatusStyles(status: string): JobStatusStyles {
     return (
         {

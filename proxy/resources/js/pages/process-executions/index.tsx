@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -61,6 +62,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
     clampProgress,
     formatJobDate,
+    isJobTerminal,
     jobStatusSortIndex,
     jobStatusStyles,
 } from '@/lib/jobs';
@@ -139,7 +141,9 @@ const columns: ColumnDef<ProcessExecutionListItem>[] = [
     },
     {
         accessorKey: 'status',
-        header: ({ column }) => <SortableHeader column={column} title="Status" />,
+        header: ({ column }) => (
+            <SortableHeader column={column} title="Status" />
+        ),
         cell: ({ row }) => <JobStatusBadge status={row.original.status} />,
         filterFn: (row, columnId, filterValue) =>
             !filterValue ||
@@ -159,7 +163,7 @@ const columns: ColumnDef<ProcessExecutionListItem>[] = [
                 row.original.remoteJobId ?? `Local #${row.original.id}`;
 
             return (
-                <code className="block max-w-[300px] overflow-x-auto whitespace-nowrap rounded bg-muted px-2 py-1 font-mono text-xs">
+                <code className="block max-w-[300px] overflow-x-auto rounded bg-muted px-2 py-1 font-mono text-xs whitespace-nowrap">
                     {displayJobId}
                 </code>
             );
@@ -213,8 +217,12 @@ const columns: ColumnDef<ProcessExecutionListItem>[] = [
         ),
         cell: ({ row }) => <JobFinishedAt execution={row.original} />,
         sortingFn: (first, second) =>
-            dateSortValue(first.original.completedAt ?? first.original.failedAt) -
-            dateSortValue(second.original.completedAt ?? second.original.failedAt),
+            dateSortValue(
+                first.original.completedAt ?? first.original.failedAt,
+            ) -
+            dateSortValue(
+                second.original.completedAt ?? second.original.failedAt,
+            ),
     },
     {
         accessorKey: 'progress',
@@ -238,8 +246,10 @@ const columns: ColumnDef<ProcessExecutionListItem>[] = [
 
 export default function ProcessExecutionIndex({
     executions,
+    pollingInterval,
 }: {
     executions: PaginatedExecutions;
+    pollingInterval: number;
 }) {
     const [sorting, setSorting] = useState<SortingState>([
         { id: 'createdAt', desc: true },
@@ -314,11 +324,19 @@ export default function ProcessExecutionIndex({
         (table.getColumn('status')?.getFilterValue() as string | undefined) ??
         'all';
     const searchFilter =
-        (table.getColumn('jobSearch')?.getFilterValue() as string | undefined) ??
-        '';
+        (table.getColumn('jobSearch')?.getFilterValue() as
+            | string
+            | undefined) ?? '';
     const filteredRowsCount = table.getFilteredRowModel().rows.length;
     const pageCount = Math.max(table.getPageCount(), 1);
     const hasActiveFilters = statusFilter !== 'all' || searchFilter !== '';
+    const hasActiveJobs = useMemo(
+        () =>
+            executions.data.some(
+                (execution) => !isJobTerminal(execution.status),
+            ),
+        [executions.data],
+    );
 
     return (
         <>
@@ -335,6 +353,13 @@ export default function ProcessExecutionIndex({
                             {filteredRowsCount} of {executions.data.length} jobs
                             shown
                         </p>
+                        <JobPollingIndicator
+                            active={hasActiveJobs}
+                            activeLabel="Polling active: refreshing running jobs"
+                            inactiveLabel="Polling inactive: no running jobs"
+                            interval={pollingInterval}
+                            only={['executions', 'pollingInterval']}
+                        />
                     </div>
 
                     <ToggleGroup
@@ -343,9 +368,11 @@ export default function ProcessExecutionIndex({
                         onValueChange={(value) => {
                             const nextValue = value || 'all';
 
-                            table.getColumn('status')?.setFilterValue(
-                                nextValue === 'all' ? undefined : nextValue,
-                            );
+                            table
+                                .getColumn('status')
+                                ?.setFilterValue(
+                                    nextValue === 'all' ? undefined : nextValue,
+                                );
                             table.setPageIndex(0);
                         }}
                         variant="outline"
@@ -485,17 +512,17 @@ export default function ProcessExecutionIndex({
                                             className={cn(
                                                 'align-middle',
                                                 columnClassNames[
-                                                header.column.id
+                                                    header.column.id
                                                 ],
                                             )}
                                         >
                                             {header.isPlaceholder
                                                 ? null
                                                 : flexRender(
-                                                    header.column.columnDef
-                                                        .header,
-                                                    header.getContext(),
-                                                )}
+                                                      header.column.columnDef
+                                                          .header,
+                                                      header.getContext(),
+                                                  )}
                                         </TableHead>
                                     ))}
                                 </TableRow>
@@ -512,7 +539,9 @@ export default function ProcessExecutionIndex({
                                         <TableRow
                                             key={row.id}
                                             onClick={() =>
-                                                router.visit(show(row.original.id))
+                                                router.visit(
+                                                    show(row.original.id),
+                                                )
                                             }
                                             className={cn(
                                                 'cursor-pointer align-top',
@@ -527,7 +556,7 @@ export default function ProcessExecutionIndex({
                                                         className={cn(
                                                             'align-top',
                                                             columnClassNames[
-                                                            cell.column.id
+                                                                cell.column.id
                                                             ],
                                                         )}
                                                     >
@@ -658,17 +687,13 @@ function JobStatusBadge({ status }: { status: string }) {
     );
 }
 
-function JobFinishedAt({
-    execution,
-}: {
-    execution: ProcessExecutionListItem;
-}) {
+function JobFinishedAt({ execution }: { execution: ProcessExecutionListItem }) {
     const terminalTimestamp = execution.completedAt ?? execution.failedAt;
     const terminalLabel = execution.completedAt
         ? 'Completed'
         : execution.failedAt
-            ? 'Failed'
-            : 'Finished';
+          ? 'Failed'
+          : 'Finished';
 
     return (
         <div className="flex flex-col gap-1 text-muted-foreground">
@@ -711,11 +736,7 @@ function JobProgress({ execution }: { execution: ProcessExecutionListItem }) {
     );
 }
 
-function JobRowActions({
-    execution,
-}: {
-    execution: ProcessExecutionListItem;
-}) {
+function JobRowActions({ execution }: { execution: ProcessExecutionListItem }) {
     return (
         <Button asChild variant="default" size="sm">
             <Link

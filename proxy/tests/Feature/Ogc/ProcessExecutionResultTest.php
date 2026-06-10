@@ -15,6 +15,8 @@ beforeEach(function () {
 });
 
 test('users can view their execution detail', function () {
+    config(['services.ogc_processes.polling_interval' => 2500]);
+
     $user = User::factory()->create();
     $execution = ProcessExecution::factory()->for($user)->create([
         'remote_job_id' => '550e8400-e29b-41d4-a716-446655440000',
@@ -29,11 +31,13 @@ test('users can view their execution detail', function () {
             ->component('process-executions/show')
             ->where('execution.id', $execution->id)
             ->where('execution.remoteJobId', '550e8400-e29b-41d4-a716-446655440000')
+            ->where('pollingInterval', 2500)
             ->has('execution.results', 1));
 });
 
 test('users can view their job list with timeline timestamps', function () {
     Carbon::setTestNow('2026-06-10 12:30:00');
+    config(['services.ogc_processes.polling_interval' => 2500]);
 
     $user = User::factory()->create();
     $execution = ProcessExecution::factory()->for($user)->create([
@@ -52,7 +56,8 @@ test('users can view their job list with timeline timestamps', function () {
             ->where('executions.data.0.remoteJobId', '550e8400-e29b-41d4-a716-446655440000')
             ->where('executions.data.0.submittedAt', now()->subMinutes(8)->toIso8601String())
             ->where('executions.data.0.completedAt', now()->subMinute()->toIso8601String())
-            ->where('executions.data.0.failedAt', null));
+            ->where('executions.data.0.failedAt', null)
+            ->where('pollingInterval', 2500));
 });
 
 test('users cannot view another users execution detail', function () {

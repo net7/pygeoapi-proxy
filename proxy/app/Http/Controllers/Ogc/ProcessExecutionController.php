@@ -22,6 +22,7 @@ class ProcessExecutionController extends Controller
         assert($user instanceof User);
 
         return Inertia::render('process-executions/index', [
+            'pollingInterval' => $this->pollingInterval(),
             'executions' => $user
                 ->processExecutions()
                 ->latest()
@@ -68,6 +69,7 @@ class ProcessExecutionController extends Controller
         $processExecution->load('results');
 
         return Inertia::render('process-executions/show', [
+            'pollingInterval' => $this->pollingInterval(),
             'execution' => [
                 'id' => $processExecution->id,
                 'remoteJobId' => $processExecution->remote_job_id,
@@ -94,5 +96,10 @@ class ProcessExecutionController extends Controller
                 ])->all(),
             ],
         ]);
+    }
+
+    private function pollingInterval(): int
+    {
+        return max(1000, (int) config('services.ogc_processes.polling_interval', 5000));
     }
 }

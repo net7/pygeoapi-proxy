@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
+import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
 import ResultPreview from '@/components/ogc/result-preview';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ import {
 import {
     clampProgress,
     formatJobDate,
+    isJobTerminal,
     jobStatusStyles,
 } from '@/lib/jobs';
 import { cn } from '@/lib/utils';
@@ -32,8 +34,10 @@ import type { ProcessExecutionDetail } from '@/types';
 
 export default function ProcessExecutionShow({
     execution,
+    pollingInterval,
 }: {
     execution: ProcessExecutionDetail;
+    pollingInterval: number;
 }) {
     const styles = jobStatusStyles(execution.status);
     const StatusIcon = styles.icon;
@@ -44,6 +48,7 @@ export default function ProcessExecutionShow({
         : execution.failedAt
           ? 'Failed'
           : 'Finished';
+    const isPolling = !isJobTerminal(execution.status);
 
     return (
         <>
@@ -52,7 +57,12 @@ export default function ProcessExecutionShow({
             <div className="flex min-w-0 flex-col gap-5 p-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="flex min-w-0 flex-col gap-3">
-                        <Button asChild variant="ghost" size="sm" className="w-fit">
+                        <Button
+                            asChild
+                            variant="ghost"
+                            size="sm"
+                            className="w-fit"
+                        >
                             <Link href={index()}>
                                 <ArrowLeftIcon data-icon="inline-start" />
                                 Back to Jobs
@@ -82,6 +92,13 @@ export default function ProcessExecutionShow({
                                     ? ` v${execution.processVersion}`
                                     : ''}
                             </p>
+                            <JobPollingIndicator
+                                active={isPolling}
+                                activeLabel="Polling active: waiting for this job to finish"
+                                inactiveLabel="Polling inactive: this job is finished"
+                                interval={pollingInterval}
+                                only={['execution', 'pollingInterval']}
+                            />
                             <div className="flex min-w-0 flex-col gap-1 text-sm sm:flex-row sm:items-center sm:gap-3">
                                 <span className="font-medium text-muted-foreground">
                                     Job ID

@@ -48,6 +48,7 @@ return [
         'connect_timeout' => (int) env('OGC_PROCESSES_CONNECT_TIMEOUT', 5),
         'cache_ttl' => (int) env('OGC_PROCESSES_CACHE_TTL', 300),
         'binary_cache_ttl_days' => (int) env('OGC_PROCESSES_BINARY_CACHE_TTL_DAYS', 30),
+        'polling_interval' => (int) env('OGC_PROCESSES_POLLING_INTERVAL', 5000),
         'input_references' => [
             // 'process_id' => [
             //     'input_id' => [

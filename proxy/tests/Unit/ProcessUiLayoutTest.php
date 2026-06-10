@@ -80,6 +80,7 @@ test('text buttons include representative icons', function () {
 
 test('jobs index exposes a filterable status table', function () {
     $source = file_get_contents(getcwd().'/resources/js/pages/process-executions/index.tsx');
+    $normalizedSource = preg_replace('/\s+/', '', $source) ?? '';
     $helperSource = file_get_contents(getcwd().'/resources/js/lib/jobs.ts');
 
     expect($source)
@@ -96,7 +97,6 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('getPaginationRowModel')
         ->toContain('getSortedRowModel')
         ->toContain('useReactTable')
-        ->toContain('router.visit(show(row.original.id))')
         ->toContain('onClick={() =>')
         ->toContain('cursor-pointer')
         ->toContain('ToggleGroup')
@@ -164,6 +164,9 @@ test('jobs index exposes a filterable status table', function () {
         ->not->toContain('ExecutionCard')
         ->not->toContain('<Card');
 
+    expect($normalizedSource)
+        ->toContain('router.visit(show(row.original.id),)');
+
     expect($helperSource)
         ->toContain('SUBMISSION FAILED')
         ->toContain('REMOTE MISSING')
@@ -205,6 +208,50 @@ test('job detail prioritizes results and keeps request data beside them', functi
         ->toContain('Requested Outputs')
         ->toContain('Results')
         ->toContain('Request');
+});
+
+test('job pages poll while executions are active', function () {
+    $indexSource = file_get_contents(getcwd().'/resources/js/pages/process-executions/index.tsx');
+    $showSource = file_get_contents(getcwd().'/resources/js/pages/process-executions/show.tsx');
+    $indicatorSource = file_get_contents(getcwd().'/resources/js/components/ogc/job-polling-indicator.tsx');
+    $helperSource = file_get_contents(getcwd().'/resources/js/lib/jobs.ts');
+
+    expect($indexSource)
+        ->toContain('pollingInterval')
+        ->toContain('hasActiveJobs')
+        ->toContain('isJobTerminal')
+        ->toContain('<JobPollingIndicator')
+        ->toContain('Polling active: refreshing running jobs')
+        ->toContain('Polling inactive: no running jobs');
+
+    expect($showSource)
+        ->toContain('pollingInterval')
+        ->toContain('isJobTerminal(execution.status)')
+        ->toContain('<JobPollingIndicator')
+        ->toContain('Polling active: waiting for this job to finish')
+        ->toContain('Polling inactive: this job is finished');
+
+    expect($indicatorSource)
+        ->toContain("import { usePoll } from '@inertiajs/react'")
+        ->toContain("mode: 'rest'")
+        ->toContain('only')
+        ->toContain('activeLabel')
+        ->toContain('inactiveLabel')
+        ->toContain('active ? (')
+        ->toContain('<ActiveJobPoller')
+        ->toContain('role="status"')
+        ->toContain('bg-emerald-50')
+        ->toContain('text-emerald-800')
+        ->toContain('animate-ping')
+        ->toContain('rounded-full bg-emerald-500')
+        ->toContain('bg-slate-50')
+        ->toContain('text-slate-700')
+        ->toContain('rounded-full bg-slate-400')
+        ->not->toContain('Spinner');
+
+    expect($helperSource)
+        ->toContain('terminalStatuses')
+        ->toContain('export function isJobTerminal');
 });
 
 test('sidebar labels process executions as jobs', function () {
