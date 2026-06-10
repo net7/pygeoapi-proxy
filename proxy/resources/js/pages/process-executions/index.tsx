@@ -23,12 +23,15 @@ import {
     ChevronsLeftIcon,
     ChevronsRightIcon,
     Columns3Icon,
+    CopyIcon,
     ListChecksIcon,
     ListFilterIcon,
     SearchIcon,
     XIcon,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import type { MouseEvent } from 'react';
+import { toast } from 'sonner';
 
 import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
 import { Badge } from '@/components/ui/badge';
@@ -60,6 +63,12 @@ import {
 } from '@/components/ui/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { useClipboard } from '@/hooks/use-clipboard';
+import {
     clampProgress,
     formatJobDate,
     isJobTerminal,
@@ -88,7 +97,7 @@ const columnLabels: Record<string, string> = {
 const columnClassNames: Record<string, string> = {
     process: 'min-w-56 whitespace-normal',
     status: 'min-w-32',
-    remoteJobId: 'w-[300px] max-w-[300px]',
+    remoteJobId: 'whitespace-nowrap',
     message: 'min-w-64 whitespace-normal',
     createdAt: 'min-w-36',
     submittedAt: 'min-w-36',
@@ -162,11 +171,7 @@ const columns: ColumnDef<ProcessExecutionListItem>[] = [
             const displayJobId =
                 row.original.remoteJobId ?? `Local #${row.original.id}`;
 
-            return (
-                <code className="block max-w-[300px] overflow-x-auto rounded bg-muted px-2 py-1 font-mono text-xs whitespace-nowrap dark:bg-muted/70">
-                    {displayJobId}
-                </code>
-            );
+            return <CopyableJobId displayJobId={displayJobId} />;
         },
     },
     {
@@ -684,6 +689,51 @@ function JobStatusBadge({ status }: { status: string }) {
             <StatusIcon data-icon="inline-start" />
             {styles.label}
         </Badge>
+    );
+}
+
+function CopyableJobId({ displayJobId }: { displayJobId: string }) {
+    const [, copy] = useClipboard();
+
+    const copyDisplayJobId = async (
+        event: MouseEvent<HTMLButtonElement>,
+    ): Promise<void> => {
+        event.stopPropagation();
+
+        if (await copy(displayJobId)) {
+            toast.success('Job ID copied', {
+                description: displayJobId,
+            });
+
+            return;
+        }
+
+        toast.error('Unable to copy Job ID', {
+            description: 'Clipboard access is not available.',
+        });
+    };
+
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="cursor-pointer justify-start"
+                    aria-label={`Copy job ID ${displayJobId}`}
+                    onClick={copyDisplayJobId}
+                >
+                    <span className="font-mono whitespace-nowrap">
+                        {displayJobId}
+                    </span>
+                    <CopyIcon data-icon="inline-end" />
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top" align="start">
+                Click to copy this job ID.
+            </TooltipContent>
+        </Tooltip>
     );
 }
 

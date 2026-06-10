@@ -9,14 +9,19 @@ export function useClipboard(): UseClipboardReturn {
     const [copiedText, setCopiedText] = useState<CopiedValue>(null);
 
     const copy: CopyFn = async (text) => {
-        if (!navigator?.clipboard) {
-            console.warn('Clipboard not supported');
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+            try {
+                await navigator.clipboard.writeText(text);
+                setCopiedText(text);
 
-            return false;
+                return true;
+            } catch (error) {
+                console.warn('Async clipboard copy failed', error);
+            }
         }
 
         try {
-            await navigator.clipboard.writeText(text);
+            writeClipboardFallback(text);
             setCopiedText(text);
 
             return true;
@@ -29,4 +34,31 @@ export function useClipboard(): UseClipboardReturn {
     };
 
     return [copiedText, copy];
+}
+
+function writeClipboardFallback(text: string): void {
+    if (typeof document === 'undefined' || !document.body) {
+        throw new Error('Clipboard fallback is not available');
+    }
+
+    const textarea = document.createElement('textarea');
+
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.top = '0';
+    textarea.style.left = '0';
+    textarea.style.opacity = '0';
+
+    document.body.appendChild(textarea);
+    textarea.select();
+    textarea.setSelectionRange(0, text.length);
+
+    try {
+        if (!document.execCommand('copy')) {
+            throw new Error('Clipboard copy command was rejected');
+        }
+    } finally {
+        document.body.removeChild(textarea);
+    }
 }

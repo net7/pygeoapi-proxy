@@ -155,8 +155,17 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('formatJobDate')
         ->toContain('createdAt')
         ->toContain('remoteJobId')
-        ->toContain("remoteJobId: 'w-[300px] max-w-[300px]'")
-        ->toContain('max-w-[300px]')
+        ->toContain("remoteJobId: 'whitespace-nowrap'")
+        ->toContain("import { toast } from 'sonner';")
+        ->toContain('@/hooks/use-clipboard')
+        ->toContain('CopyIcon')
+        ->toContain('TooltipContent')
+        ->toContain('CopyableJobId')
+        ->toContain('Copy job ID')
+        ->toContain('Click to copy this job ID.')
+        ->toContain('Job ID copied')
+        ->toContain('copy(displayJobId)')
+        ->toContain('cursor-pointer justify-start')
         ->toContain('whitespace-nowrap')
         ->toContain('font-mono')
         ->toContain('event.stopPropagation()')
@@ -168,6 +177,8 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('Badge')
         ->toContain('<Button asChild variant="default" size="sm">')
         ->not->toContain('max-w-52 truncate')
+        ->not->toContain("remoteJobId: 'w-[300px] max-w-[300px]'")
+        ->not->toContain('max-w-[300px]')
         ->not->toContain('border-l-4 align-top')
         ->not->toContain('import { Checkbox }')
         ->not->toContain('RowSelectionState')
@@ -196,6 +207,17 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('browserDateLocale()')
         ->toContain('navigator.languages')
         ->toContain('new Intl.DateTimeFormat(locale ?? browserDateLocale()');
+});
+
+test('clipboard hook falls back when async clipboard is unavailable', function () {
+    $source = file_get_contents(getcwd().'/resources/js/hooks/use-clipboard.ts');
+
+    expect($source)
+        ->toContain('writeClipboardFallback')
+        ->toContain("document.execCommand('copy')")
+        ->toContain('textarea.select()')
+        ->toContain('document.body.appendChild(textarea)')
+        ->toContain('document.body.removeChild(textarea)');
 });
 
 test('remove and delete buttons use destructive styling', function () {
