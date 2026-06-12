@@ -372,3 +372,17 @@ test('auth status messages use the shared notice component', function () {
             ->not->toContain('text-green-600');
     }
 });
+
+test('process pages expose cache warming states', function () {
+    $indexSource = file_get_contents(getcwd().'/resources/js/pages/processes/index.tsx');
+    $showSource = file_get_contents(getcwd().'/resources/js/pages/processes/show.tsx');
+
+    expect($indexSource)
+        ->toContain('catalogStatus')
+        ->toContain('Service catalog is being prepared')
+        ->toContain('Spinner')
+        ->and($showSource)
+        ->toContain('processStatus')
+        ->toContain('Process description is being prepared')
+        ->toContain('formSchema === null');
+});

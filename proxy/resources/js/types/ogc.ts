@@ -1,3 +1,5 @@
+export type OgcCacheStatus = 'ready' | 'warming';
+
 export type OgcProcessSummary = {
     id: string;
     title?: string;
