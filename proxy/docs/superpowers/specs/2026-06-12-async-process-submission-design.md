@@ -99,6 +99,7 @@ Responsabilita:
 - impostare `submitted_at`.
 
 Questa parte non deve chiamare pygeoapi.
+Il payload originale non redatto deve essere passato al job di submission, perche il record locale conserva una versione redatta destinata alla UI e allo storico.
 
 ### Submission Remota
 
@@ -119,6 +120,7 @@ Introdurre `SubmitProcessExecutionJob`.
 Responsabilita:
 
 - ricevere l'ID del `ProcessExecution`;
+- ricevere il payload originale validato da inviare a pygeoapi;
 - ricaricare il record;
 - uscire se il record non esiste;
 - uscire se il record e terminale;
@@ -152,7 +154,7 @@ Responsabilita:
 3. Laravel valida `mode`, `inputs` e `outputs`.
 4. Laravel legge la descrizione processo dalla cache.
 5. Laravel crea `ProcessExecution` locale in stato `submitting`.
-6. Laravel dispatcha `SubmitProcessExecutionJob`.
+6. Laravel dispatcha `SubmitProcessExecutionJob` con ID locale e payload originale.
 7. Laravel imposta il toast flash.
 8. Laravel fa redirect a `jobs.show`.
 9. L'utente vede subito la pagina dettaglio del job.
@@ -161,7 +163,7 @@ Responsabilita:
 
 1. Il worker esegue `SubmitProcessExecutionJob`.
 2. Il job ricarica il record locale.
-3. `SubmitProcessExecution` chiama pygeoapi `/processes/{processID}/execution`.
+3. `SubmitProcessExecution` chiama pygeoapi `/processes/{processID}/execution` usando il payload originale ricevuto dal job.
 4. Se pygeoapi risponde `201`, il record diventa `accepted`, salva `remote_job_id` e dispatcha `PollProcessExecutionJob`.
 5. Se pygeoapi risponde con risultato sync, il record diventa `successful` e i risultati vengono salvati.
 6. Se pygeoapi fallisce, il record diventa `submission_failed`.

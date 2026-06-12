@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Ogc;
 
-use App\Actions\Ogc\StartProcessExecution;
+use App\Actions\Ogc\CreateProcessExecution;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Ogc\StoreProcessExecutionRequest;
+use App\Jobs\Ogc\SubmitProcessExecutionJob;
 use App\Models\ProcessExecution;
 use App\Models\User;
-use App\Services\Ogc\OgcProcessesClient;
+use App\Services\Ogc\OgcProcessCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -46,18 +47,38 @@ class ProcessExecutionController extends Controller
     public function store(
         StoreProcessExecutionRequest $request,
         string $process,
-        OgcProcessesClient $client,
-        StartProcessExecution $startProcessExecution,
+        OgcProcessCache $cache,
+        CreateProcessExecution $createProcessExecution,
     ): RedirectResponse {
         $user = $request->user();
         assert($user instanceof User);
 
-        $execution = $startProcessExecution->handle(
+        $processDescription = $cache->process($process);
+
+        abort_if($processDescription === null, 409, 'Process description is still warming up.');
+
+        $payload = $request->executionPayload();
+        $mode = $request->executionMode();
+
+        $execution = $createProcessExecution->handle(
             user: $user,
-            process: $client->process($process),
-            payload: $request->executionPayload(),
-            mode: $request->executionMode(),
+            process: $processDescription,
+            payload: $payload,
+            mode: $mode,
         );
+
+        SubmitProcessExecutionJob::dispatch($execution->id, $payload);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'title' => __('Process queued'),
+            'message' => __('Process queued.'),
+            'description' => __(':process was queued as local job #:job using :mode mode.', [
+                'process' => $execution->process_title ?? $execution->process_id,
+                'job' => $execution->id,
+                'mode' => $mode->value,
+            ]),
+        ]);
 
         return redirect()->route('jobs.show', $execution);
     }
