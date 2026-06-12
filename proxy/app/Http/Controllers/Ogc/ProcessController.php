@@ -3,40 +3,40 @@
 namespace App\Http\Controllers\Ogc;
 
 use App\Http\Controllers\Controller;
-use App\Services\Ogc\OgcProcessesClient;
+use App\Services\Ogc\OgcProcessCache;
 use App\Services\Ogc\ProcessSchemaNormalizer;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProcessController extends Controller
 {
     public function __construct(
-        private OgcProcessesClient $client,
+        private OgcProcessCache $cache,
         private ProcessSchemaNormalizer $normalizer,
     ) {}
 
     public function index(): Response
     {
-        $catalog = Cache::remember(
-            'ogc-processes.catalog',
-            (int) config('services.ogc_processes.cache_ttl', 300),
-            fn (): array => $this->client->processes(),
-        );
+        $catalog = $this->cache->catalog();
 
         return Inertia::render('processes/index', [
+            'catalogStatus' => $catalog === null ? 'warming' : 'ready',
             'processes' => $catalog['processes'] ?? [],
         ]);
     }
 
     public function show(string $process): Response
     {
-        $description = Cache::remember(
-            "ogc-processes.process.{$process}",
-            (int) config('services.ogc_processes.cache_ttl', 300),
-            fn (): array => $this->client->process($process),
-        );
+        $description = $this->cache->process($process);
+
+        if ($description === null) {
+            return Inertia::render('processes/show', [
+                'process' => null,
+                'processStatus' => 'warming',
+                'formSchema' => null,
+            ]);
+        }
 
         $formSchema = $this->normalizer->normalize($description);
         $formSchema['examplePayload'] = App::environment(['local', 'development'])
@@ -45,6 +45,7 @@ class ProcessController extends Controller
 
         return Inertia::render('processes/show', [
             'process' => $description,
+            'processStatus' => 'ready',
             'formSchema' => $formSchema,
         ]);
     }
