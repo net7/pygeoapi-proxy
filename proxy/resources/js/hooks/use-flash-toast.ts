@@ -21,15 +21,74 @@ export function useFlashToast(): void {
             }
 
             toast[data.type](data.title ?? data.message, {
-                description:
-                    data.description ??
-                    (data.title
-                        ? data.message
-                        : getToastDescription(data.type)),
-                icon: getToastIcon(data.type),
+                description: renderToastDescription(data),
+                icon: data.icon === false ? null : getToastIcon(data.type),
             });
         });
     }, []);
+}
+
+function renderToastDescription(data: FlashToast): ReactNode {
+    const description =
+        data.description ??
+        (data.title ? data.message : getToastDescription(data.type));
+
+    if (!data.details?.length && !data.note) {
+        return description;
+    }
+
+    return createElement(
+        'div',
+        { className: 'grid gap-2' },
+        [
+            createElement('p', { key: 'description' }, description),
+            data.details?.length
+                ? createElement(
+                      'dl',
+                      { key: 'details', className: 'grid gap-1 text-sm' },
+                      data.details.map((detail) =>
+                          createElement(
+                              'div',
+                              {
+                                  key: detail.label,
+                                  className:
+                                      'grid grid-cols-[auto_minmax(0,1fr)] gap-x-2',
+                              },
+                              [
+                                  createElement(
+                                      'dt',
+                                      {
+                                          key: 'label',
+                                          className: 'text-muted-foreground',
+                                      },
+                                      `${detail.label}:`,
+                                  ),
+                                  createElement(
+                                      'dd',
+                                      { key: 'value', className: 'min-w-0' },
+                                      createElement(
+                                          'strong',
+                                          {
+                                              className:
+                                                  'font-semibold text-foreground',
+                                          },
+                                          detail.value,
+                                      ),
+                                  ),
+                              ],
+                          ),
+                      ),
+                  )
+                : null,
+            data.note
+                ? createElement(
+                      'p',
+                      { key: 'note', className: 'text-muted-foreground' },
+                      createElement('em', null, data.note),
+                  )
+                : null,
+        ].filter(Boolean),
+    );
 }
 
 function getToastDescription(type: FlashToast['type']): string {

@@ -350,13 +350,20 @@ test('sidebar labels process executions as jobs', function () {
         ->not->toContain("title: 'Executions'");
 });
 
-test('flash toasts include icons and descriptions', function () {
+test('flash toasts support rich descriptions and optional icons', function () {
     $source = file_get_contents(getcwd().'/resources/js/hooks/use-flash-toast.ts');
+    $types = file_get_contents(getcwd().'/resources/js/types/ui.ts');
 
     expect($source)
-        ->toContain('description:')
-        ->toContain('icon:')
-        ->toContain('getToastIcon');
+        ->toContain('renderToastDescription(data)')
+        ->toContain('data.icon === false ? null : getToastIcon(data.type)')
+        ->toContain("'strong'")
+        ->toContain("'em'");
+
+    expect($types)
+        ->toContain('details?: FlashToastDetail[]')
+        ->toContain('icon?: false')
+        ->toContain('note?: string');
 });
 
 test('auth status messages use the shared notice component', function () {
