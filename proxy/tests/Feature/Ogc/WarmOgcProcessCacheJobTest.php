@@ -24,7 +24,7 @@ test('it warms the ogc process cache', function () {
         'https://voice.pi.ingv.it/geoinquire/processes/pybox?f=json' => Http::response(ogcFixture('process-pybox')),
     ]);
 
-    (new WarmOgcProcessCacheJob())->handle(app(OgcProcessCache::class));
+    (new WarmOgcProcessCacheJob)->handle(app(OgcProcessCache::class));
 
     $cache = app(OgcProcessCache::class);
 
@@ -33,14 +33,14 @@ test('it warms the ogc process cache', function () {
 });
 
 test('it prevents overlapping warm-up executions', function () {
-    $middleware = (new WarmOgcProcessCacheJob())->middleware();
+    $middleware = (new WarmOgcProcessCacheJob)->middleware();
 
     expect($middleware)->toHaveCount(1)
         ->and($middleware[0])->toBeInstanceOf(WithoutOverlapping::class);
 });
 
 test('it retries with progressive backoff', function () {
-    $job = new WarmOgcProcessCacheJob();
+    $job = new WarmOgcProcessCacheJob;
 
     expect($job->tries)->toBe(3)
         ->and($job->backoff())->toBe([30, 120, 300]);
