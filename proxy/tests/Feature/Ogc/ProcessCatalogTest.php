@@ -1,7 +1,9 @@
 <?php
 
+use App\Jobs\Ogc\WarmOgcProcessCacheJob;
 use App\Models\User;
 use App\Services\Ogc\OgcProcessCache;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
@@ -42,6 +44,16 @@ test('authenticated users see catalog warming state when cache is missing', func
             ->has('processes', 0));
 });
 
+test('authenticated users trigger warm-up when catalog cache is missing', function () {
+    Bus::fake();
+
+    $this->actingAs(User::factory()->create())
+        ->get('/processes')
+        ->assertOk();
+
+    Bus::assertDispatched(WarmOgcProcessCacheJob::class);
+});
+
 test('authenticated users can view cached process detail with normalized schema', function () {
     app(OgcProcessCache::class)->putProcess('conduit', ogcFixture('process-conduit'));
 
@@ -64,6 +76,16 @@ test('authenticated users see process warming state when detail cache is missing
             ->where('processStatus', 'warming')
             ->where('process', null)
             ->where('formSchema', null));
+});
+
+test('authenticated users trigger warm-up when process detail cache is missing', function () {
+    Bus::fake();
+
+    $this->actingAs(User::factory()->create())
+        ->get('/processes/conduit')
+        ->assertOk();
+
+    Bus::assertDispatched(WarmOgcProcessCacheJob::class);
 });
 
 test('process detail exposes example payload for local environments', function () {

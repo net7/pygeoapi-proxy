@@ -37,6 +37,16 @@ class OgcProcessCacheWarmupDispatcher
             return false;
         }
 
+        return $this->dispatchWarmup($command);
+    }
+
+    public function dispatchForCacheMiss(): bool
+    {
+        return $this->dispatchWarmup('cache-miss');
+    }
+
+    private function dispatchWarmup(string $source): bool
+    {
         try {
             if (! Cache::add(OgcProcessCache::WarmupDispatchedKey, true, self::DispatchFlagTtlSeconds)) {
                 return false;
@@ -47,7 +57,7 @@ class OgcProcessCacheWarmupDispatcher
             return true;
         } catch (Throwable $exception) {
             Log::warning('Unable to dispatch OGC process cache warm-up.', [
-                'command' => $command,
+                'source' => $source,
                 'exception' => $exception::class,
                 'message' => $exception->getMessage(),
             ]);

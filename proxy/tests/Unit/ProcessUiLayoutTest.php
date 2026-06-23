@@ -383,13 +383,25 @@ test('auth status messages use the shared notice component', function () {
 test('process pages expose cache warming states', function () {
     $indexSource = file_get_contents(getcwd().'/resources/js/pages/processes/index.tsx');
     $showSource = file_get_contents(getcwd().'/resources/js/pages/processes/show.tsx');
+    $pollerPath = getcwd().'/resources/js/components/ogc/cache-warmup-poller.tsx';
 
     expect($indexSource)
         ->toContain('catalogStatus')
+        ->toContain('CacheWarmupPoller')
         ->toContain('Service catalog is being prepared')
         ->toContain('Spinner')
         ->and($showSource)
         ->toContain('processStatus')
+        ->toContain('CacheWarmupPoller')
         ->toContain('Process description is being prepared')
-        ->toContain('formSchema === null');
+        ->toContain('formSchema === null')
+        ->and($pollerPath)
+        ->toBeFile();
+
+    $pollerSource = file_get_contents($pollerPath);
+
+    expect($pollerSource)
+        ->toContain("import { usePoll } from '@inertiajs/react'")
+        ->toContain('only')
+        ->toContain("mode: 'rest'");
 });

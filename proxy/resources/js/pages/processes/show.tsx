@@ -1,11 +1,8 @@
 import { Head } from '@inertiajs/react';
 
+import CacheWarmupPoller from '@/components/ogc/cache-warmup-poller';
 import DynamicProcessForm from '@/components/ogc/dynamic-process-form';
-import {
-    Alert,
-    AlertDescription,
-    AlertTitle,
-} from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/spinner';
 import { index } from '@/routes/processes';
 import type { OgcCacheStatus, OgcFormSchema } from '@/types';
@@ -21,6 +18,10 @@ export default function ProcessShow({
         return (
             <>
                 <Head title="Process preparing" />
+                <CacheWarmupPoller
+                    interval={3000}
+                    only={['process', 'processStatus', 'formSchema']}
+                />
 
                 <div className="flex min-w-0 flex-col gap-4 p-4">
                     <Alert>

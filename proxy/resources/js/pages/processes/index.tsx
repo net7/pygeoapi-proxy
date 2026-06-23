@@ -1,11 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowRightIcon, CpuIcon, PlayCircleIcon } from 'lucide-react';
 
-import {
-    Alert,
-    AlertDescription,
-    AlertTitle,
-} from '@/components/ui/alert';
+import CacheWarmupPoller from '@/components/ogc/cache-warmup-poller';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -48,16 +45,22 @@ export default function ProcessIndex({
                 </div>
 
                 {isWarming ? (
-                    <Alert>
-                        <Spinner className="text-primary" />
-                        <AlertTitle>
-                            Service catalog is being prepared
-                        </AlertTitle>
-                        <AlertDescription>
-                            The process list will appear when the background
-                            warm-up finishes.
-                        </AlertDescription>
-                    </Alert>
+                    <>
+                        <CacheWarmupPoller
+                            interval={3000}
+                            only={['catalogStatus', 'processes']}
+                        />
+                        <Alert>
+                            <Spinner className="text-primary" />
+                            <AlertTitle>
+                                Service catalog is being prepared
+                            </AlertTitle>
+                            <AlertDescription>
+                                The process list will appear when the background
+                                warm-up finishes.
+                            </AlertDescription>
+                        </Alert>
+                    </>
                 ) : (
                     <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
                         {processes.map((process) => {

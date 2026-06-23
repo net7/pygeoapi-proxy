@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Ogc;
 
 use App\Http\Controllers\Controller;
 use App\Services\Ogc\OgcProcessCache;
+use App\Services\Ogc\OgcProcessCacheWarmupDispatcher;
 use App\Services\Ogc\ProcessSchemaNormalizer;
 use Illuminate\Support\Facades\App;
 use Inertia\Inertia;
@@ -13,12 +14,17 @@ class ProcessController extends Controller
 {
     public function __construct(
         private OgcProcessCache $cache,
+        private OgcProcessCacheWarmupDispatcher $warmupDispatcher,
         private ProcessSchemaNormalizer $normalizer,
     ) {}
 
     public function index(): Response
     {
         $catalog = $this->cache->catalog();
+
+        if ($catalog === null) {
+            $this->warmupDispatcher->dispatchForCacheMiss();
+        }
 
         return Inertia::render('processes/index', [
             'catalogStatus' => $catalog === null ? 'warming' : 'ready',
@@ -31,6 +37,8 @@ class ProcessController extends Controller
         $description = $this->cache->process($process);
 
         if ($description === null) {
+            $this->warmupDispatcher->dispatchForCacheMiss();
+
             return Inertia::render('processes/show', [
                 'process' => null,
                 'processStatus' => 'warming',
