@@ -2,6 +2,7 @@
 
 use App\Enums\UserRole;
 use App\Models\ProcessExecution;
+use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +27,8 @@ test('admins can see users with job counts', function () {
         'email' => 'owner@example.com',
     ]);
     ProcessExecution::factory()->count(2)->for($user)->create();
+    SocialAccount::factory()->for($user)->create(['provider' => 'google']);
+    SocialAccount::factory()->for($user)->create(['provider' => 'orcid']);
 
     $this->actingAs($admin)
         ->get(route('admin.users.index'))
@@ -37,6 +40,11 @@ test('admins can see users with job counts', function () {
             ->where('users.data.0.email', 'owner@example.com')
             ->where('users.data.0.role', UserRole::User->value)
             ->where('users.data.0.jobs_count', 2)
+            ->has('users.data.0.socialProviders', 2)
+            ->where('users.data.0.socialProviders.0.provider', 'google')
+            ->where('users.data.0.socialProviders.0.label', 'GOOGLE')
+            ->where('users.data.0.socialProviders.1.provider', 'orcid')
+            ->where('users.data.0.socialProviders.1.label', 'ORCID')
         );
 });
 

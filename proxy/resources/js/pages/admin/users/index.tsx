@@ -41,6 +41,10 @@ import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 
 import InputError from '@/components/input-error';
+import {
+    getSocialProviderStyle,
+    SocialProviderIcon,
+} from '@/components/social-provider-icon';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -103,6 +107,11 @@ import type { Auth } from '@/types';
 type AdminUserRole = 'user' | 'admin';
 type AdminUserStatus = 'active' | 'inactive';
 
+type SocialProvider = {
+    provider: string;
+    label: string;
+};
+
 type AdminUser = {
     id: number;
     name: string;
@@ -111,6 +120,7 @@ type AdminUser = {
     is_admin: boolean;
     is_deactivated: boolean;
     deactivated_at: string | null;
+    socialProviders: SocialProvider[];
     jobs_count: number;
     jobFilter: string;
     created_at: string | null;
@@ -142,6 +152,7 @@ type PageProps = {
 const columnLabels: Record<string, string> = {
     user: 'User',
     role: 'Role',
+    socialProviders: 'Registered with',
     status: 'Status',
     jobs_count: 'Jobs',
     created_at: 'Created',
@@ -150,6 +161,7 @@ const columnLabels: Record<string, string> = {
 const columnClassNames: Record<string, string> = {
     user: 'min-w-64 whitespace-normal',
     role: 'min-w-28',
+    socialProviders: 'min-w-40',
     status: 'min-w-32',
     jobs_count: 'min-w-24 text-right',
     created_at: 'min-w-40',
@@ -192,6 +204,9 @@ export default function AdminUsersIndex({
                         user.name,
                         user.email,
                         user.role,
+                        ...user.socialProviders.map(
+                            (provider) => provider.label,
+                        ),
                         user.is_deactivated ? 'inactive' : 'active',
                     ]
                         .filter(Boolean)
@@ -231,6 +246,26 @@ export default function AdminUsersIndex({
                     !filterValue ||
                     filterValue === 'all' ||
                     row.getValue(columnId) === filterValue,
+            },
+            {
+                id: 'socialProviders',
+                accessorFn: (user) =>
+                    user.socialProviders
+                        .map((provider) => provider.label)
+                        .join(' ') || 'LOCAL',
+                header: ({ column }) => (
+                    <SortableHeader column={column} title="Registered with" />
+                ),
+                cell: ({ row }) => (
+                    <SocialProviderBadges
+                        providers={row.original.socialProviders}
+                    />
+                ),
+                filterFn: (row, columnId, filterValue) =>
+                    row
+                        .getValue<string>(columnId)
+                        .toLowerCase()
+                        .includes(String(filterValue).toLowerCase()),
             },
             {
                 id: 'status',
@@ -528,7 +563,7 @@ export default function AdminUsersIndex({
                                         );
                                     table.setPageIndex(0);
                                 }}
-                                placeholder="Search name, email, role or status..."
+                                placeholder="Search name, email, social, role or status..."
                                 className="pl-9"
                                 aria-label="Search users"
                             />
@@ -1092,6 +1127,44 @@ function SortableHeader({
             {title}
             <ArrowUpDownIcon data-icon="inline-end" />
         </Button>
+    );
+}
+
+function SocialProviderBadges({ providers }: { providers: SocialProvider[] }) {
+    if (providers.length === 0) {
+        const style = getSocialProviderStyle(null);
+
+        return (
+            <Badge
+                variant="outline"
+                className={cn('uppercase', style.badgeClassName)}
+            >
+                <SocialProviderIcon provider={null} data-icon="inline-start" />
+                LOCAL
+            </Badge>
+        );
+    }
+
+    return (
+        <div className="flex flex-wrap gap-1">
+            {providers.map((provider) => {
+                const style = getSocialProviderStyle(provider.provider);
+
+                return (
+                    <Badge
+                        key={provider.provider}
+                        variant="outline"
+                        className={cn('uppercase', style.badgeClassName)}
+                    >
+                        <SocialProviderIcon
+                            provider={provider.provider}
+                            data-icon="inline-start"
+                        />
+                        {provider.label.toUpperCase()}
+                    </Badge>
+                );
+            })}
+        </div>
     );
 }
 

@@ -2,7 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     BriefcaseBusiness,
     LayoutGrid,
-    ShieldCheck,
+    ListChecks,
     UsersRound,
     Workflow,
 } from 'lucide-react';
@@ -55,7 +55,7 @@ const administrationNavItems: NavItem[] = [
     {
         title: 'All Jobs',
         href: adminJobsIndex(),
-        icon: ShieldCheck,
+        icon: ListChecks,
     },
 ];
 

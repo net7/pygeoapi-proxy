@@ -22,6 +22,7 @@ class UserController extends Controller
         $search = trim($request->string('search')->toString());
 
         $users = User::query()
+            ->with('socialAccounts:id,user_id,provider')
             ->withCount('processExecutions')
             ->when($search !== '', function ($query) use ($search): void {
                 $query
@@ -67,7 +68,11 @@ class UserController extends Controller
     public function edit(User $user): Response
     {
         return Inertia::render('admin/users/edit', [
-            'user' => $this->userPayload($user->loadCount('processExecutions')),
+            'user' => $this->userPayload(
+                $user
+                    ->load('socialAccounts:id,user_id,provider')
+                    ->loadCount('processExecutions')
+            ),
             'roles' => $this->roles(),
         ]);
     }
@@ -119,7 +124,7 @@ class UserController extends Controller
     }
 
     /**
-     * @return array{id: int, name: string, email: string, role: string, is_admin: bool, is_deactivated: bool, deactivated_at: string|null, jobs_count: int, jobFilter: string, created_at: string|null}
+     * @return array{id: int, name: string, email: string, role: string, is_admin: bool, is_deactivated: bool, deactivated_at: string|null, socialProviders: list<array{provider: string, label: string}>, jobs_count: int, jobFilter: string, created_at: string|null}
      */
     private function userPayload(User $user): array
     {
@@ -131,10 +136,28 @@ class UserController extends Controller
             'is_admin' => $user->isAdmin(),
             'is_deactivated' => $user->isDeactivated(),
             'deactivated_at' => $user->deactivated_at?->toISOString(),
+            'socialProviders' => $this->socialProviderPayload($user),
             'jobs_count' => (int) ($user->process_executions_count ?? 0),
             'jobFilter' => Crypt::encryptString((string) $user->id),
             'created_at' => $user->created_at?->toISOString(),
         ];
+    }
+
+    /**
+     * @return list<array{provider: string, label: string}>
+     */
+    private function socialProviderPayload(User $user): array
+    {
+        return $user->socialAccounts
+            ->pluck('provider')
+            ->unique()
+            ->sort()
+            ->values()
+            ->map(fn (string $provider): array => [
+                'provider' => $provider,
+                'label' => str($provider)->upper()->toString(),
+            ])
+            ->all();
     }
 
     private function invalidateUserSessions(User $user): void
