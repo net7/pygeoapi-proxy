@@ -421,6 +421,7 @@ git commit -m "feat: add admin bootstrap command"
 - Modify: `app/Providers/FortifyServiceProvider.php`
 - Modify: `app/Actions/Auth/SocialUserResolver.php`
 - Modify: `app/Http/Controllers/Auth/SocialAuthController.php`
+- Modify: `app/Http/Controllers/Auth/EmailOtpChallengeController.php`
 - Modify: `routes/web.php`
 - Modify: `bootstrap/app.php`
 
@@ -497,6 +498,23 @@ test('social resolver does not authenticate an existing deactivated linked provi
 
     expect($result->status)->toBe('inactive');
 });
+
+test('verified social email completion returns inactive for a deactivated account', function () {
+    User::factory()->deactivated()->create(['email' => 'ada@example.org']);
+
+    $result = app(SocialUserResolver::class)->completeVerifiedEmail(new ProviderProfile(
+        provider: 'orcid',
+        providerUserId: '0000-0002-1825-0097',
+        name: 'Ada Lovelace',
+        email: null,
+        emailVerified: false,
+        avatar: null,
+        raw: [],
+    ), 'ADA@example.org');
+
+    expect($result->status)->toBe('inactive');
+    expect(SocialAccount::query()->count())->toBe(0);
+});
 ```
 
 - [ ] **Step 2: Run auth tests and verify failure**
@@ -546,15 +564,15 @@ if ($user->isDeactivated()) {
 }
 ```
 
-In `completeVerifiedEmail()`, after resolving `$user`:
+Change `completeVerifiedEmail()` to return `SocialLoginResult` instead of `User`. After resolving `$user`:
 
 ```php
 if ($user->isDeactivated()) {
-    return $user;
+    return SocialLoginResult::inactive($user);
 }
 ```
 
-Then handle inactive users in the caller that invokes `completeVerifiedEmail()`.
+Return `SocialLoginResult::authenticated($user)` after linking the provider.
 
 - [ ] **Step 5: Update SocialAuthController inactive result handling**
 
@@ -566,6 +584,23 @@ if ($result->status === SocialLoginResult::Inactive) {
         'email' => __('These credentials do not match our records.'),
     ]);
 }
+```
+
+Update `EmailOtpChallengeController::completeSocialLogin()` to work with `SocialLoginResult`:
+
+```php
+$result = $resolver->completeVerifiedEmail(
+    ProviderProfile::fromPayload($payload),
+    $challenge->email,
+);
+
+if ($result->status === SocialLoginResult::Inactive) {
+    return to_route('login')->withErrors([
+        'email' => __('These credentials do not match our records.'),
+    ]);
+}
+
+Auth::login($result->user, remember: true);
 ```
 
 - [ ] **Step 6: Update password authentication**
@@ -639,7 +674,7 @@ Expected: PASS.
 - [ ] **Step 9: Commit**
 
 ```bash
-git add app/Data/SocialLoginResult.php app/Actions/Auth/SocialUserResolver.php app/Http/Controllers/Auth/SocialAuthController.php app/Http/Middleware/EnsureUserIsActive.php app/Providers/FortifyServiceProvider.php bootstrap/app.php routes/web.php routes/settings.php tests/Feature/Auth/DeactivatedUserAuthenticationTest.php
+git add app/Data/SocialLoginResult.php app/Actions/Auth/SocialUserResolver.php app/Http/Controllers/Auth/SocialAuthController.php app/Http/Controllers/Auth/EmailOtpChallengeController.php app/Http/Middleware/EnsureUserIsActive.php app/Providers/FortifyServiceProvider.php bootstrap/app.php routes/web.php routes/settings.php tests/Feature/Auth/DeactivatedUserAuthenticationTest.php
 git commit -m "feat: block deactivated user authentication"
 ```
 
