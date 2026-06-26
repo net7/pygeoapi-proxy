@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -29,6 +30,8 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'role' => UserRole::User,
+            'deactivated_at' => null,
             'avatar_path' => null,
             'remember_token' => Str::random(10),
         ];
@@ -52,6 +55,26 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'password' => null,
             'email_verified_at' => now(),
+        ]);
+    }
+
+    /**
+     * Indicate that the user has administrator privileges.
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => UserRole::Admin,
+        ]);
+    }
+
+    /**
+     * Indicate that the user has been deactivated.
+     */
+    public function deactivated(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'deactivated_at' => now(),
         ]);
     }
 
