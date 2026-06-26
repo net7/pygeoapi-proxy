@@ -12,7 +12,7 @@ class ProcessExecutionPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->isAdmin();
     }
 
     /**
@@ -20,7 +20,7 @@ class ProcessExecutionPolicy
      */
     public function view(User $user, ProcessExecution $processExecution): bool
     {
-        return $processExecution->user()->is($user);
+        return $user->isAdmin() || $processExecution->user()->is($user);
     }
 
     /**

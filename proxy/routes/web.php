@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\JobController as AdminJobController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\EmailOtpChallengeController;
 use App\Http\Controllers\Auth\SocialAuthController;
@@ -65,6 +66,8 @@ Route::middleware(['auth', EnsureUserIsActive::class, 'verified', EnsureUserIsAd
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
+        Route::get('jobs', [AdminJobController::class, 'index'])
+            ->name('jobs.index');
         Route::get('users', [AdminUserController::class, 'index'])
             ->name('users.index');
         Route::post('users', [AdminUserController::class, 'store'])
