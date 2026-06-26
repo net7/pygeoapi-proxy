@@ -2,6 +2,7 @@
 
 use App\Models\ProcessExecution;
 use App\Models\User;
+use Illuminate\Support\Facades\Crypt;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('admin job management is restricted to administrators', function () {
@@ -57,14 +58,15 @@ test('admins can filter all jobs by user', function () {
         'process_id' => 'pybox',
         'process_title' => 'PYBOX',
     ]);
+    $ownerFilter = Crypt::encryptString((string) $owner->id);
 
     $this->actingAs($admin)
-        ->get(route('admin.jobs.index', ['user_id' => $owner->id]))
+        ->get(route('admin.jobs.index', ['user' => $ownerFilter]))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/jobs/index')
             ->has('users', 3)
-            ->where('filters.user_id', $owner->id)
+            ->where('filters.selectedUserId', $owner->id)
             ->has('executions.data', 1)
             ->where('executions.data.0.id', $execution->id)
             ->where('executions.data.0.owner.email', 'owner@example.com')
@@ -72,16 +74,24 @@ test('admins can filter all jobs by user', function () {
 
     $this->actingAs($admin)
         ->get(route('admin.jobs.index', [
-            'user_id' => $owner->id,
+            'user' => $ownerFilter,
             'search' => 'PYBOX',
         ]))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/jobs/index')
             ->where('filters.search', 'PYBOX')
-            ->where('filters.user_id', $owner->id)
+            ->where('filters.selectedUserId', $owner->id)
             ->has('executions.data', 0)
         );
+});
+
+test('admins cannot filter all jobs with a tampered user token', function () {
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.jobs.index', ['user' => '1']))
+        ->assertNotFound();
 });
 
 test('admins can view another users job detail', function () {

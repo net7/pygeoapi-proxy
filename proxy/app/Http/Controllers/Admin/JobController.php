@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ProcessExecution;
 use App\Models\User;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -14,9 +16,7 @@ class JobController extends Controller
     public function index(Request $request): Response
     {
         $search = trim($request->string('search')->toString());
-        $selectedUserId = $request->filled('user_id')
-            ? $request->integer('user_id')
-            : null;
+        $selectedUserId = $this->selectedUserId($request);
 
         $users = User::query()
             ->orderBy('name')
@@ -26,6 +26,7 @@ class JobController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'jobFilter' => Crypt::encryptString((string) $user->id),
             ])
             ->all();
 
@@ -74,8 +75,29 @@ class JobController extends Controller
             'users' => $users,
             'filters' => [
                 'search' => $search,
-                'user_id' => $selectedUserId,
+                'selectedUserId' => $selectedUserId,
             ],
         ]);
+    }
+
+    private function selectedUserId(Request $request): ?int
+    {
+        $filter = trim($request->string('user')->toString());
+
+        if ($filter === '') {
+            return null;
+        }
+
+        try {
+            $decrypted = Crypt::decryptString($filter);
+        } catch (DecryptException) {
+            abort(404);
+        }
+
+        if (! ctype_digit($decrypted)) {
+            abort(404);
+        }
+
+        return (int) $decrypted;
     }
 }

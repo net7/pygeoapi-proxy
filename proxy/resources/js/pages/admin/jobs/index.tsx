@@ -82,6 +82,7 @@ type AdminJobUser = {
     id: number;
     name: string;
     email: string;
+    jobFilter: string;
 };
 
 type PaginatedJobs = {
@@ -93,7 +94,7 @@ type PaginatedJobs = {
 
 type AdminJobFilters = {
     search: string;
-    user_id: number | null;
+    selectedUserId: number | null;
 };
 
 const columnLabels: Record<string, string> = {
@@ -299,10 +300,10 @@ export default function AdminJobsIndex({
                 });
             }
 
-            if (filters.user_id !== null) {
+            if (filters.selectedUserId !== null) {
                 initialFilters.push({
                     id: 'userId',
-                    value: String(filters.user_id),
+                    value: String(filters.selectedUserId),
                 });
             }
 
@@ -384,7 +385,9 @@ export default function AdminJobsIndex({
             | undefined) ?? '';
     const selectedUserId =
         (table.getColumn('userId')?.getFilterValue() as string | undefined) ??
-        (filters.user_id === null ? 'all' : String(filters.user_id));
+        (filters.selectedUserId === null
+            ? 'all'
+            : String(filters.selectedUserId));
     const filteredRowsCount = table.getFilteredRowModel().rows.length;
     const pageCount = Math.max(table.getPageCount(), 1);
     const hasActiveFilters =
@@ -394,9 +397,10 @@ export default function AdminJobsIndex({
 
     function selectUser(value: string): void {
         const nextUserId = value === 'all' ? undefined : value;
+        const nextUser = users.find((user) => String(user.id) === nextUserId);
         const query = {
             ...(searchFilter ? { search: searchFilter } : {}),
-            ...(nextUserId ? { user_id: nextUserId } : {}),
+            ...(nextUser ? { user: nextUser.jobFilter } : {}),
         };
 
         table.getColumn('userId')?.setFilterValue(nextUserId);
@@ -514,7 +518,7 @@ export default function AdminJobsIndex({
                         >
                             <SelectTrigger
                                 size="sm"
-                                className="w-full sm:w-72"
+                                className="w-full sm:w-96 xl:w-[28rem]"
                                 aria-label="Filter jobs by user"
                             >
                                 <SelectValue placeholder="All users" />

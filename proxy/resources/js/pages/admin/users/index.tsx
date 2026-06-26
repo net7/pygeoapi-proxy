@@ -102,6 +102,7 @@ type AdminUser = {
     is_deactivated: boolean;
     deactivated_at: string | null;
     jobs_count: number;
+    jobFilter: string;
     created_at: string | null;
 };
 
@@ -271,10 +272,15 @@ export default function AdminUsersIndex({
 
                     return (
                         <div className="flex justify-end gap-2">
-                            <Button asChild variant="outline" size="sm">
+                            <Button
+                                asChild
+                                variant="outline"
+                                size="sm"
+                                className="border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100 hover:text-sky-900 dark:border-sky-400/70 dark:bg-sky-500/15 dark:text-sky-100 dark:hover:bg-sky-500/25"
+                            >
                                 <Link
                                     href={jobsIndex({
-                                        query: { user_id: user.id },
+                                        query: { user: user.jobFilter },
                                     })}
                                 >
                                     <ListChecksIcon data-icon="inline-start" />

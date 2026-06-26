@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Inertia\Inertia;
@@ -118,7 +119,7 @@ class UserController extends Controller
     }
 
     /**
-     * @return array{id: int, name: string, email: string, role: string, is_admin: bool, is_deactivated: bool, deactivated_at: string|null, jobs_count: int, created_at: string|null}
+     * @return array{id: int, name: string, email: string, role: string, is_admin: bool, is_deactivated: bool, deactivated_at: string|null, jobs_count: int, jobFilter: string, created_at: string|null}
      */
     private function userPayload(User $user): array
     {
@@ -131,6 +132,7 @@ class UserController extends Controller
             'is_deactivated' => $user->isDeactivated(),
             'deactivated_at' => $user->deactivated_at?->toISOString(),
             'jobs_count' => (int) ($user->process_executions_count ?? 0),
+            'jobFilter' => Crypt::encryptString((string) $user->id),
             'created_at' => $user->created_at?->toISOString(),
         ];
     }
