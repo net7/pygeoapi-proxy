@@ -62,6 +62,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+    Popover,
+    PopoverContent,
+    PopoverDescription,
+    PopoverHeader,
+    PopoverTitle,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import {
     Select,
     SelectContent,
     SelectGroup,
@@ -269,6 +277,32 @@ export default function AdminUsersIndex({
                 cell: ({ row }) => {
                     const user = row.original;
                     const isSelf = user.id === auth.user?.id;
+                    const statusAction = (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            aria-disabled={isSelf}
+                            className={cn(
+                                user.is_deactivated
+                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900 dark:border-emerald-400/70 dark:bg-emerald-500/15 dark:text-emerald-100 dark:hover:bg-emerald-500/25'
+                                    : 'border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100 hover:text-amber-950 dark:border-amber-400/70 dark:bg-amber-500/15 dark:text-amber-100 dark:hover:bg-amber-500/25',
+                                isSelf && 'cursor-not-allowed opacity-50',
+                            )}
+                            onClick={() => {
+                                if (!isSelf) {
+                                    setStatusUser(user);
+                                }
+                            }}
+                        >
+                            {user.is_deactivated ? (
+                                <RotateCcwIcon data-icon="inline-start" />
+                            ) : (
+                                <UserXIcon data-icon="inline-start" />
+                            )}
+                            {user.is_deactivated ? 'RESTORE' : 'DEACTIVATE'}
+                        </Button>
+                    );
 
                     return (
                         <div className="flex justify-end gap-2">
@@ -298,25 +332,29 @@ export default function AdminUsersIndex({
                                 Edit
                             </Button>
 
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className={cn(
-                                    user.is_deactivated
-                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900 dark:border-emerald-400/70 dark:bg-emerald-500/15 dark:text-emerald-100 dark:hover:bg-emerald-500/25'
-                                        : 'border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100 hover:text-amber-950 dark:border-amber-400/70 dark:bg-amber-500/15 dark:text-amber-100 dark:hover:bg-amber-500/25',
-                                )}
-                                disabled={isSelf}
-                                onClick={() => setStatusUser(user)}
-                            >
-                                {user.is_deactivated ? (
-                                    <RotateCcwIcon data-icon="inline-start" />
-                                ) : (
-                                    <UserXIcon data-icon="inline-start" />
-                                )}
-                                {user.is_deactivated ? 'Restore' : 'Deactivate'}
-                            </Button>
+                            {isSelf ? (
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        {statusAction}
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                        align="end"
+                                        className="w-72"
+                                    >
+                                        <PopoverHeader>
+                                            <PopoverTitle>
+                                                Action unavailable
+                                            </PopoverTitle>
+                                            <PopoverDescription>
+                                                You cannot change the status of
+                                                your own account.
+                                            </PopoverDescription>
+                                        </PopoverHeader>
+                                    </PopoverContent>
+                                </Popover>
+                            ) : (
+                                statusAction
+                            )}
                         </div>
                     );
                 },
