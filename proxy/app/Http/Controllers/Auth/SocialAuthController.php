@@ -53,7 +53,15 @@ class SocialAuthController extends Controller
             return to_route('auth.social.email.create');
         }
 
-        Auth::login($result->user, remember: true);
+        $user = $result->user;
+
+        abort_unless($user !== null, 500);
+
+        if ($user->isDeactivated()) {
+            return $this->inactiveUserLoginResponse();
+        }
+
+        Auth::login($user, remember: true);
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard', absolute: false));
@@ -82,5 +90,11 @@ class SocialAuthController extends Controller
         }
 
         return $redirect;
+    }
+
+    private function inactiveUserLoginResponse(): RedirectResponse
+    {
+        return to_route('login')
+            ->withErrors(['email' => __('Your account has been deactivated.')]);
     }
 }

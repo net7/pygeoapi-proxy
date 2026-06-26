@@ -55,6 +55,7 @@ class FortifyServiceProvider extends ServiceProvider
                 ->first();
 
             if ($user !== null
+                && $user->isActive()
                 && $user->password !== null
                 && Hash::check((string) $request->input('password'), $user->password)) {
                 return $user;

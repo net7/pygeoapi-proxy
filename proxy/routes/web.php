@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\SocialEmailController;
 use App\Http\Controllers\Ogc\ProcessController;
 use App\Http\Controllers\Ogc\ProcessExecutionController;
 use App\Http\Controllers\Ogc\ProcessExecutionResultController;
+use App\Http\Middleware\EnsureUserIsActive;
 use App\Models\ProcessExecution;
 use App\Models\ProcessExecutionResult;
 use Illuminate\Support\Facades\Route;
@@ -29,7 +30,7 @@ Route::middleware('guest')->group(function () {
         ->name('auth.social.email.store');
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', EnsureUserIsActive::class, 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
 
     Route::get('processes', [ProcessController::class, 'index'])->name('processes.index');

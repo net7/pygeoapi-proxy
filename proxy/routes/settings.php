@@ -3,9 +3,10 @@
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\Settings\SensitiveConfirmationController;
+use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', EnsureUserIsActive::class])->group(function () {
     Route::redirect('settings', '/settings/profile');
 
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -17,7 +18,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('profile.avatar.show');
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', EnsureUserIsActive::class, 'verified'])->group(function () {
     Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::post('settings/sensitive-confirmation', [SensitiveConfirmationController::class, 'send'])
