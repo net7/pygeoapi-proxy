@@ -59,6 +59,8 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useTranslation } from '@/hooks/use-translation';
+import type { TranslationKey } from '@/lib/i18n/translation';
 import {
     clampProgress,
     formatJobDate,
@@ -69,6 +71,8 @@ import { cn } from '@/lib/utils';
 import { index } from '@/routes/admin/jobs';
 import { show } from '@/routes/jobs';
 import type { ProcessExecutionListItem } from '@/types';
+
+type Translate = ReturnType<typeof useTranslation>['t'];
 
 type AdminJob = ProcessExecutionListItem & {
     owner: {
@@ -97,15 +101,15 @@ type AdminJobFilters = {
     selectedUserId: number | null;
 };
 
-const columnLabels: Record<string, string> = {
-    user: 'User',
-    process: 'Process',
-    status: 'Status',
-    remoteJobId: 'Job ID',
-    message: 'Message',
-    submittedAt: 'Submitted',
-    finishedAt: 'Finished',
-    progress: 'Progress',
+const columnLabelKeys: Record<string, TranslationKey> = {
+    user: 'common.user',
+    process: 'jobs.process',
+    status: 'common.status',
+    remoteJobId: 'jobs.jobId',
+    message: 'jobs.message',
+    submittedAt: 'jobs.submitted',
+    finishedAt: 'jobs.finished',
+    progress: 'jobs.progress',
 };
 
 const columnClassNames: Record<string, string> = {
@@ -157,7 +161,9 @@ const columns: ColumnDef<AdminJob>[] = [
         id: 'user',
         accessorFn: (execution) =>
             `${execution.owner.name} ${execution.owner.email}`,
-        header: ({ column }) => <SortableHeader column={column} title="User" />,
+        header: ({ column }) => (
+            <SortableHeader column={column} titleKey="common.user" />
+        ),
         cell: ({ row }) => (
             <div className="flex min-w-0 flex-col">
                 <span className="truncate font-medium">
@@ -174,7 +180,7 @@ const columns: ColumnDef<AdminJob>[] = [
         accessorFn: (execution) =>
             execution.processTitle ?? execution.processId,
         header: ({ column }) => (
-            <SortableHeader column={column} title="Process" />
+            <SortableHeader column={column} titleKey="jobs.process" />
         ),
         cell: ({ row }) => (
             <div className="flex min-w-0 flex-col gap-1">
@@ -185,7 +191,7 @@ const columns: ColumnDef<AdminJob>[] = [
                     {row.original.processId}
                 </span>
                 <span className="line-clamp-2 max-w-xl text-xs text-muted-foreground">
-                    {row.original.message ?? 'No job message available.'}
+                    <JobMessage message={row.original.message} />
                 </span>
             </div>
         ),
@@ -193,7 +199,7 @@ const columns: ColumnDef<AdminJob>[] = [
     {
         accessorKey: 'status',
         header: ({ column }) => (
-            <SortableHeader column={column} title="Status" />
+            <SortableHeader column={column} titleKey="common.status" />
         ),
         cell: ({ row }) => <JobStatusBadge status={row.original.status} />,
         filterFn: (row, columnId, filterValue) =>
@@ -207,36 +213,27 @@ const columns: ColumnDef<AdminJob>[] = [
     {
         accessorKey: 'remoteJobId',
         header: ({ column }) => (
-            <SortableHeader column={column} title="Job ID" />
+            <SortableHeader column={column} titleKey="jobs.jobId" />
         ),
-        cell: ({ row }) => {
-            const displayJobId =
-                row.original.remoteJobId ?? `Local #${row.original.id}`;
-
-            return <CopyableJobId displayJobId={displayJobId} />;
-        },
+        cell: ({ row }) => <JobIdentifier execution={row.original} />,
     },
     {
         accessorKey: 'message',
         header: ({ column }) => (
-            <SortableHeader column={column} title="Message" />
+            <SortableHeader column={column} titleKey="jobs.message" />
         ),
         cell: ({ row }) => (
             <span className="line-clamp-2 max-w-sm text-muted-foreground">
-                {row.original.message ?? 'No job message available.'}
+                <JobMessage message={row.original.message} />
             </span>
         ),
     },
     {
         accessorKey: 'submittedAt',
         header: ({ column }) => (
-            <SortableHeader column={column} title="Submitted" />
+            <SortableHeader column={column} titleKey="jobs.submitted" />
         ),
-        cell: ({ row }) => (
-            <span className="text-muted-foreground">
-                {formatJobDate(row.original.submittedAt)}
-            </span>
-        ),
+        cell: ({ row }) => <JobDate value={row.original.submittedAt} />,
         sortingFn: (first, second) =>
             dateSortValue(first.original.submittedAt) -
             dateSortValue(second.original.submittedAt),
@@ -246,7 +243,7 @@ const columns: ColumnDef<AdminJob>[] = [
         accessorFn: (execution) =>
             execution.completedAt ?? execution.failedAt ?? null,
         header: ({ column }) => (
-            <SortableHeader column={column} title="Finished" />
+            <SortableHeader column={column} titleKey="jobs.finished" />
         ),
         cell: ({ row }) => <JobFinishedAt execution={row.original} />,
         sortingFn: (first, second) =>
@@ -262,7 +259,7 @@ const columns: ColumnDef<AdminJob>[] = [
         header: ({ column }) => (
             <SortableHeader
                 column={column}
-                title="Progress"
+                titleKey="jobs.progress"
                 className="ml-auto"
             />
         ),
@@ -270,7 +267,7 @@ const columns: ColumnDef<AdminJob>[] = [
     },
     {
         id: 'actions',
-        header: () => <span className="sr-only">Actions</span>,
+        header: () => <ActionsHeader />,
         cell: ({ row }) => <JobRowActions execution={row.original} />,
         enableHiding: false,
         enableSorting: false,
@@ -286,6 +283,7 @@ export default function AdminJobsIndex({
     filters: AdminJobFilters;
     users: AdminJobUser[];
 }) {
+    const { t } = useTranslation();
     const [sorting, setSorting] = useState<SortingState>([
         { id: 'submittedAt', desc: true },
     ]);
@@ -333,7 +331,7 @@ export default function AdminJobsIndex({
         () => [
             {
                 value: 'all',
-                label: 'ALL',
+                label: t('jobs.all'),
                 count: executions.data.length,
                 icon: ListFilterIcon,
             },
@@ -347,13 +345,13 @@ export default function AdminJobsIndex({
 
                     return {
                         value: status,
-                        label: styles.label,
+                        label: jobStatusLabel(status, t),
                         count: statusCounts[status],
                         icon: styles.icon,
                     };
                 }),
         ],
-        [executions.data.length, statusCounts],
+        [executions.data.length, statusCounts, t],
     );
 
     // eslint-disable-next-line react-hooks/incompatible-library
@@ -415,18 +413,22 @@ export default function AdminJobsIndex({
 
     return (
         <>
-            <Head title="All Jobs" />
+            <Head title={t('admin.allJobs')} />
 
             <div className="flex flex-col gap-5 p-4">
                 <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
                     <div className="flex flex-col gap-1">
                         <p className="text-sm font-medium text-muted-foreground">
-                            Administration
+                            {t('admin.administration')}
                         </p>
-                        <h1 className="text-2xl font-semibold">All Jobs</h1>
+                        <h1 className="text-2xl font-semibold">
+                            {t('admin.allJobs')}
+                        </h1>
                         <p className="text-sm text-muted-foreground">
-                            {filteredRowsCount} of {executions.data.length} jobs
-                            shown
+                            {t('admin.shownJobs', {
+                                shown: filteredRowsCount,
+                                total: executions.data.length,
+                            })}
                         </p>
                     </div>
 
@@ -454,7 +456,9 @@ export default function AdminJobsIndex({
                                 <ToggleGroupItem
                                     key={option.value}
                                     value={option.value}
-                                    aria-label={`Filter ${option.label} jobs`}
+                                    aria-label={t('jobs.filterJobs', {
+                                        status: option.label,
+                                    })}
                                 >
                                     <Icon data-icon="inline-start" />
                                     {option.label}
@@ -484,9 +488,9 @@ export default function AdminJobsIndex({
                                         );
                                     table.setPageIndex(0);
                                 }}
-                                placeholder="Search user, process, job ID, status or message..."
+                                placeholder={t('admin.searchJobsPlaceholder')}
                                 className="pl-9"
-                                aria-label="Search jobs"
+                                aria-label={t('jobs.searchAria')}
                             />
                         </div>
 
@@ -506,7 +510,7 @@ export default function AdminJobsIndex({
                                 }}
                             >
                                 <XIcon data-icon="inline-start" />
-                                Reset filters
+                                {t('jobs.resetFilters')}
                             </Button>
                         ) : null}
                     </div>
@@ -519,14 +523,16 @@ export default function AdminJobsIndex({
                             <SelectTrigger
                                 size="sm"
                                 className="w-full sm:w-96 xl:w-[28rem]"
-                                aria-label="Filter jobs by user"
+                                aria-label={t('admin.jobsByUser')}
                             >
-                                <SelectValue placeholder="All users" />
+                                <SelectValue
+                                    placeholder={t('admin.allUsers')}
+                                />
                             </SelectTrigger>
                             <SelectContent align="end">
                                 <SelectGroup>
                                     <SelectItem value="all">
-                                        All users
+                                        {t('admin.allUsers')}
                                     </SelectItem>
                                     {users.map((user) => (
                                         <SelectItem
@@ -549,7 +555,7 @@ export default function AdminJobsIndex({
                             <SelectTrigger
                                 size="sm"
                                 className="w-32"
-                                aria-label="Rows per page"
+                                aria-label={t('jobs.rowsPerPage')}
                             >
                                 <SelectValue />
                             </SelectTrigger>
@@ -560,7 +566,9 @@ export default function AdminJobsIndex({
                                             key={pageSize}
                                             value={`${pageSize}`}
                                         >
-                                            {pageSize} / page
+                                            {t('jobs.pageRows', {
+                                                count: pageSize,
+                                            })}
                                         </SelectItem>
                                     ))}
                                 </SelectGroup>
@@ -571,13 +579,13 @@ export default function AdminJobsIndex({
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm">
                                     <Columns3Icon data-icon="inline-start" />
-                                    Columns
+                                    {t('jobs.columns')}
                                     <ChevronDownIcon data-icon="inline-end" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-52">
                                 <DropdownMenuLabel>
-                                    Visible columns
+                                    {t('jobs.visibleColumns')}
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 {table
@@ -593,8 +601,9 @@ export default function AdminJobsIndex({
                                                 )
                                             }
                                         >
-                                            {columnLabels[column.id] ??
-                                                column.id}
+                                            {columnLabelKeys[column.id]
+                                                ? t(columnLabelKeys[column.id])
+                                                : column.id}
                                         </DropdownMenuCheckboxItem>
                                     ))}
                             </DropdownMenuContent>
@@ -677,7 +686,7 @@ export default function AdminJobsIndex({
                                         colSpan={columns.length}
                                         className="h-28 text-center text-muted-foreground"
                                     >
-                                        No jobs match the current filters.
+                                        {t('jobs.noJobsMatch')}
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -687,8 +696,10 @@ export default function AdminJobsIndex({
 
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <p className="text-sm text-muted-foreground">
-                        Page {table.getState().pagination.pageIndex + 1} of{' '}
-                        {pageCount}
+                        {t('jobs.pagination', {
+                            page: table.getState().pagination.pageIndex + 1,
+                            pages: pageCount,
+                        })}
                     </p>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -700,7 +711,7 @@ export default function AdminJobsIndex({
                             disabled={!table.getCanPreviousPage()}
                         >
                             <ChevronsLeftIcon data-icon="inline-start" />
-                            First
+                            {t('jobs.first')}
                         </Button>
                         <Button
                             type="button"
@@ -710,7 +721,7 @@ export default function AdminJobsIndex({
                             disabled={!table.getCanPreviousPage()}
                         >
                             <ChevronLeftIcon data-icon="inline-start" />
-                            Previous
+                            {t('common.previous')}
                         </Button>
                         <Button
                             type="button"
@@ -720,7 +731,7 @@ export default function AdminJobsIndex({
                             disabled={!table.getCanNextPage()}
                         >
                             <ChevronRightIcon data-icon="inline-start" />
-                            Next
+                            {t('common.next')}
                         </Button>
                         <Button
                             type="button"
@@ -732,7 +743,7 @@ export default function AdminJobsIndex({
                             disabled={!table.getCanNextPage()}
                         >
                             <ChevronsRightIcon data-icon="inline-start" />
-                            Last
+                            {t('jobs.last')}
                         </Button>
                     </div>
                 </div>
@@ -743,13 +754,15 @@ export default function AdminJobsIndex({
 
 function SortableHeader({
     column,
-    title,
+    titleKey,
     className,
 }: {
     column: Column<AdminJob, unknown>;
-    title: string;
+    titleKey: TranslationKey;
     className?: string;
 }) {
+    const { t } = useTranslation();
+
     return (
         <Button
             type="button"
@@ -758,15 +771,49 @@ function SortableHeader({
             className={cn('-ml-2 h-8 px-2', className)}
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-            {title}
+            {t(titleKey)}
             <ArrowUpDownIcon data-icon="inline-end" />
         </Button>
+    );
+}
+
+function ActionsHeader() {
+    const { t } = useTranslation();
+
+    return <span className="sr-only">{t('jobs.actions')}</span>;
+}
+
+function JobMessage({ message }: { message?: string | null }) {
+    const { t } = useTranslation();
+
+    return <>{message ?? t('jobs.noJobMessage')}</>;
+}
+
+function JobIdentifier({ execution }: { execution: AdminJob }) {
+    const { t } = useTranslation();
+    const displayJobId =
+        execution.remoteJobId ??
+        t('jobs.localIdentifier', {
+            id: execution.id,
+        });
+
+    return <CopyableJobId displayJobId={displayJobId} />;
+}
+
+function JobDate({ value }: { value?: string | null }) {
+    const { locale, t } = useTranslation();
+
+    return (
+        <span className="text-muted-foreground">
+            {formatJobDate(value, locale, t('common.notAvailable'))}
+        </span>
     );
 }
 
 function JobStatusBadge({ status }: { status: string }) {
     const styles = jobStatusStyles(status);
     const Icon = styles.icon;
+    const { t } = useTranslation();
 
     return (
         <Badge
@@ -774,25 +821,32 @@ function JobStatusBadge({ status }: { status: string }) {
             className={cn('tracking-wide', styles.badgeClassName)}
         >
             <Icon data-icon="inline-start" />
-            {styles.label}
+            {jobStatusLabel(status, t)}
         </Badge>
     );
 }
 
 function JobFinishedAt({ execution }: { execution: AdminJob }) {
+    const { locale, t } = useTranslation();
     const terminalTimestamp = execution.completedAt ?? execution.failedAt;
     const terminalLabel = execution.completedAt
-        ? 'Completed'
+        ? t('jobs.completed')
         : execution.failedAt
-          ? 'Failed'
-          : 'Finished';
+          ? t('jobs.failed')
+          : t('jobs.finished');
 
     return (
         <div className="flex flex-col gap-1 text-muted-foreground">
             <span className="text-xs font-medium text-foreground">
                 {terminalLabel}
             </span>
-            <span>{formatJobDate(terminalTimestamp)}</span>
+            <span>
+                {formatJobDate(
+                    terminalTimestamp,
+                    locale,
+                    t('common.notAvailable'),
+                )}
+            </span>
         </div>
     );
 }
@@ -800,11 +854,12 @@ function JobFinishedAt({ execution }: { execution: AdminJob }) {
 function JobProgress({ execution }: { execution: AdminJob }) {
     const styles = jobStatusStyles(execution.status);
     const progress = clampProgress(execution.progress);
+    const { t } = useTranslation();
 
     return (
         <div className="flex w-28 flex-col gap-2">
             <div className="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
-                <span>Progress</span>
+                <span>{t('jobs.progress')}</span>
                 <span className="tabular-nums">{progress}%</span>
             </div>
             <div
@@ -829,6 +884,8 @@ function JobProgress({ execution }: { execution: AdminJob }) {
 }
 
 function JobRowActions({ execution }: { execution: AdminJob }) {
+    const { t } = useTranslation();
+
     return (
         <Button asChild variant="default" size="sm">
             <Link
@@ -836,10 +893,24 @@ function JobRowActions({ execution }: { execution: AdminJob }) {
                 onClick={(event) => event.stopPropagation()}
             >
                 <ListChecksIcon data-icon="inline-start" />
-                Details
+                {t('jobs.details')}
             </Link>
         </Button>
     );
+}
+
+function jobStatusLabel(status: string, t: Translate): string {
+    const key = {
+        accepted: 'jobs.status.accepted',
+        failed: 'jobs.status.failed',
+        remote_missing: 'jobs.status.remoteMissing',
+        running: 'jobs.status.running',
+        submission_failed: 'jobs.status.submissionFailed',
+        submitting: 'jobs.status.submitting',
+        successful: 'jobs.status.successful',
+    }[status] as TranslationKey | undefined;
+
+    return key ? t(key) : status.replaceAll('_', ' ').toUpperCase();
 }
 
 function dateSortValue(value?: string | null): number {
@@ -856,6 +927,7 @@ AdminJobsIndex.layout = {
     breadcrumbs: [
         {
             title: 'All Jobs',
+            titleKey: 'admin.allJobs',
             href: index(),
         },
     ],

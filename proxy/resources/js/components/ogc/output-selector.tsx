@@ -14,6 +14,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/use-translation';
 import type { OgcNormalizedOutput } from '@/types';
 
 export default function OutputSelector({
@@ -25,6 +26,8 @@ export default function OutputSelector({
     value: Record<string, { transmissionMode: string }>;
     onChange: (value: Record<string, { transmissionMode: string }>) => void;
 }) {
+    const { t } = useTranslation();
+
     function toggle(outputId: string, checked: boolean) {
         const next = { ...value };
 
@@ -84,9 +87,11 @@ export default function OutputSelector({
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    <SelectItem value="value">Value</SelectItem>
+                                    <SelectItem value="value">
+                                        {t('ogc.transmissionValue')}
+                                    </SelectItem>
                                     <SelectItem value="reference">
-                                        Reference
+                                        {t('ogc.transmissionReference')}
                                     </SelectItem>
                                 </SelectGroup>
                             </SelectContent>

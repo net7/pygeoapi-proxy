@@ -6,6 +6,7 @@ import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/hooks/use-translation';
 import { store } from '@/routes/password/confirm';
 import type { PasskeyRoutePair } from '@/types/auth';
 
@@ -14,16 +15,18 @@ type Props = {
 };
 
 export default function ConfirmPassword({ passkeyConfirmRoutes }: Props) {
+    const { t } = useTranslation();
+
     return (
         <>
-            <Head title="Confirm password" />
+            <Head title={t('auth.confirmPassword.title')} />
 
             {passkeyConfirmRoutes && (
                 <PasskeyVerify
                     routes={passkeyConfirmRoutes}
-                    label="Confirm with passkey"
-                    loadingLabel="Confirming..."
-                    separator="Or confirm with password"
+                    label={t('auth.confirmPassword.passkeyLabel')}
+                    loadingLabel={t('auth.confirmPassword.passkeyLoading')}
+                    separator={t('auth.confirmPassword.passwordSeparator')}
                 />
             )}
 
@@ -31,11 +34,13 @@ export default function ConfirmPassword({ passkeyConfirmRoutes }: Props) {
                 {({ processing, errors }) => (
                     <div className="space-y-6">
                         <div className="grid gap-2">
-                            <Label htmlFor="password">Password</Label>
+                            <Label htmlFor="password">
+                                {t('auth.password')}
+                            </Label>
                             <PasswordInput
                                 id="password"
                                 name="password"
-                                placeholder="Password"
+                                placeholder={t('auth.password')}
                                 autoComplete="current-password"
                                 autoFocus
                             />
@@ -54,7 +59,7 @@ export default function ConfirmPassword({ passkeyConfirmRoutes }: Props) {
                                 ) : (
                                     <ShieldCheckIcon data-icon="inline-start" />
                                 )}
-                                Confirm password
+                                {t('auth.confirmPassword.submit')}
                             </Button>
                         </div>
                     </div>
@@ -66,6 +71,8 @@ export default function ConfirmPassword({ passkeyConfirmRoutes }: Props) {
 
 ConfirmPassword.layout = {
     title: 'Confirm password',
+    titleKey: 'auth.confirmPassword.title',
     description:
         'This is a secure area of the application. Please confirm your password before continuing.',
+    descriptionKey: 'auth.confirmPassword.description',
 };

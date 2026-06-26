@@ -9,6 +9,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useClipboard } from '@/hooks/use-clipboard';
+import { useTranslation } from '@/hooks/use-translation';
 
 export default function CopyableJobId({
     displayJobId,
@@ -16,6 +17,7 @@ export default function CopyableJobId({
     displayJobId: string;
 }) {
     const [, copy] = useClipboard();
+    const { t } = useTranslation();
 
     const copyDisplayJobId = async (
         event: MouseEvent<HTMLButtonElement>,
@@ -23,15 +25,15 @@ export default function CopyableJobId({
         event.stopPropagation();
 
         if (await copy(displayJobId)) {
-            toast.success('Job ID copied', {
+            toast.success(t('jobs.jobIdCopied'), {
                 description: displayJobId,
             });
 
             return;
         }
 
-        toast.error('Unable to copy Job ID', {
-            description: 'Clipboard access is not available.',
+        toast.error(t('jobs.jobIdCopyError'), {
+            description: t('jobs.jobIdCopyUnavailable'),
         });
     };
 
@@ -43,7 +45,9 @@ export default function CopyableJobId({
                     variant="secondary"
                     size="sm"
                     className="cursor-pointer justify-start"
-                    aria-label={`Copy job ID ${displayJobId}`}
+                    aria-label={t('jobs.jobIdCopyLabel', {
+                        jobId: displayJobId,
+                    })}
                     onClick={copyDisplayJobId}
                 >
                     <span className="font-mono whitespace-nowrap">
@@ -53,7 +57,7 @@ export default function CopyableJobId({
                 </Button>
             </TooltipTrigger>
             <TooltipContent side="right" align="center">
-                Click to copy this job ID.
+                {t('jobs.jobIdCopyTooltip')}
             </TooltipContent>
         </Tooltip>
     );

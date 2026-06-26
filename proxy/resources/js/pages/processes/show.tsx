@@ -4,6 +4,7 @@ import CacheWarmupPoller from '@/components/ogc/cache-warmup-poller';
 import DynamicProcessForm from '@/components/ogc/dynamic-process-form';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/hooks/use-translation';
 import { index } from '@/routes/processes';
 import type { OgcCacheStatus, OgcFormSchema } from '@/types';
 
@@ -14,10 +15,12 @@ export default function ProcessShow({
     formSchema: OgcFormSchema | null;
     processStatus?: OgcCacheStatus;
 }) {
+    const { t } = useTranslation();
+
     if (processStatus === 'warming' || formSchema === null) {
         return (
             <>
-                <Head title="Process preparing" />
+                <Head title={t('ogc.processPreparing')} />
                 <CacheWarmupPoller
                     interval={3000}
                     only={['process', 'processStatus', 'formSchema']}
@@ -27,11 +30,10 @@ export default function ProcessShow({
                     <Alert>
                         <Spinner className="text-primary" />
                         <AlertTitle>
-                            Process description is being prepared
+                            {t('ogc.processPreparingTitle')}
                         </AlertTitle>
                         <AlertDescription>
-                            The process form will appear when the background
-                            warm-up finishes.
+                            {t('ogc.processPreparingDescription')}
                         </AlertDescription>
                     </Alert>
                 </div>
@@ -63,6 +65,7 @@ ProcessShow.layout = {
     breadcrumbs: [
         {
             title: 'Processes',
+            titleKey: 'ogc.processesTitle',
             href: index(),
         },
     ],

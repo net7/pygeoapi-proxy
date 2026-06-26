@@ -6,6 +6,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -21,9 +22,11 @@ export default function VerifyOtp({
     verifyUrl,
     resendUrl,
 }: Props) {
+    const { t } = useTranslation();
+
     return (
         <>
-            <Head title="Verify code" />
+            <Head title={t('auth.verifyCode.submit')} />
 
             <Form
                 action={verifyUrl}
@@ -35,7 +38,9 @@ export default function VerifyOtp({
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="code">Verification code</Label>
+                                <Label htmlFor="code">
+                                    {t('auth.verifyCode.codeLabel')}
+                                </Label>
                                 <Input
                                     id="code"
                                     type="text"
@@ -57,7 +62,7 @@ export default function VerifyOtp({
                                 ) : (
                                     <ShieldCheckIcon data-icon="inline-start" />
                                 )}
-                                Verify code
+                                {t('auth.verifyCode.submit')}
                             </Button>
                         </div>
 
@@ -71,7 +76,7 @@ export default function VerifyOtp({
                             )}
                         >
                             <RefreshCwIcon data-icon="inline-start" />
-                            Send new code
+                            {t('auth.sendNewCode')}
                         </Link>
                     </>
                 )}
@@ -79,7 +84,7 @@ export default function VerifyOtp({
 
             <div className="flex flex-col gap-2 text-center text-sm text-muted-foreground">
                 <p>{email}</p>
-                <StatusNotice message={status} title="Code sent" />
+                <StatusNotice message={status} title={t('auth.codeSent')} />
             </div>
         </>
     );
@@ -87,5 +92,7 @@ export default function VerifyOtp({
 
 VerifyOtp.layout = {
     title: 'Check your email',
+    titleKey: 'auth.verifyCode.title',
     description: 'Enter the code from the verification message',
+    descriptionKey: 'auth.verifyCode.description',
 };

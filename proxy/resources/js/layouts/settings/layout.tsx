@@ -5,6 +5,7 @@ import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/hooks/use-current-url';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn, toUrl } from '@/lib/utils';
 import { edit as editAppearance } from '@/routes/appearance';
 import { edit } from '@/routes/profile';
@@ -13,11 +14,13 @@ import type { NavItem } from '@/types';
 const sidebarNavItems: NavItem[] = [
     {
         title: 'Profile',
+        titleKey: 'settings.profile.titleShort',
         href: edit(),
         icon: UserIcon,
     },
     {
         title: 'Appearance',
+        titleKey: 'settings.appearance.nav',
         href: editAppearance(),
         icon: PaletteIcon,
     },
@@ -25,19 +28,20 @@ const sidebarNavItems: NavItem[] = [
 
 export default function SettingsLayout({ children }: PropsWithChildren) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
+    const { t } = useTranslation();
 
     return (
         <div className="px-4 py-6">
             <Heading
-                title="Settings"
-                description="Manage your profile and account settings"
+                title={t('settings.layout.title')}
+                description={t('settings.layout.description')}
             />
 
             <div className="flex flex-col lg:flex-row lg:space-x-12">
                 <aside className="w-full max-w-xl lg:w-48">
                     <nav
                         className="flex flex-col space-y-1 space-x-0"
-                        aria-label="Settings"
+                        aria-label={t('settings.layout.ariaLabel')}
                     >
                         {sidebarNavItems.map((item, index) => (
                             <Button
@@ -53,7 +57,9 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                     {item.icon && (
                                         <item.icon data-icon="inline-start" />
                                     )}
-                                    {item.title}
+                                    {item.titleKey
+                                        ? t(item.titleKey)
+                                        : item.title}
                                 </Link>
                             </Button>
                         ))}

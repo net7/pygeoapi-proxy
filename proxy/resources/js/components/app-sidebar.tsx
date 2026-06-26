@@ -20,6 +20,7 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from '@/components/ui/sidebar';
+import { useTranslation } from '@/hooks/use-translation';
 import INGV_LOGO_SHORT_IMAGE from '@/images/ingv-logo-short.png';
 import { dashboard } from '@/routes';
 import { index as adminJobsIndex } from '@/routes/admin/jobs';
@@ -31,16 +32,19 @@ import type { NavItem } from '@/types';
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
+        titleKey: 'navigation.dashboard',
         href: dashboard(),
         icon: LayoutGrid,
     },
     {
         title: 'Processes',
+        titleKey: 'navigation.processes',
         href: processesIndex(),
         icon: Workflow,
     },
     {
         title: 'My Jobs',
+        titleKey: 'navigation.myJobs',
         href: jobsIndex(),
         icon: BriefcaseBusiness,
     },
@@ -49,11 +53,13 @@ const mainNavItems: NavItem[] = [
 const administrationNavItems: NavItem[] = [
     {
         title: 'All Users',
+        titleKey: 'navigation.allUsers',
         href: adminUsersIndex(),
         icon: UsersRound,
     },
     {
         title: 'All Jobs',
+        titleKey: 'navigation.allJobs',
         href: adminJobsIndex(),
         icon: ListChecks,
     },
@@ -75,6 +81,7 @@ const footerNavItems: NavItem[] = [
 export function AppSidebar() {
     const { auth } = usePage().props;
     const { state } = useSidebar();
+    const { t } = useTranslation();
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -97,7 +104,7 @@ export function AppSidebar() {
                 <NavMain items={mainNavItems} />
                 {auth.user?.is_admin && (
                     <NavMain
-                        label="Administration"
+                        label={t('navigation.administration')}
                         items={administrationNavItems}
                     />
                 )}

@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useTranslation } from '@/hooks/use-translation';
 import { store } from '@/routes/processes/jobs';
 import type {
     OgcExamplePayload,
@@ -32,6 +33,7 @@ export default function DynamicProcessForm({
 }: {
     schema: OgcFormSchema;
 }) {
+    const { t } = useTranslation();
     const initialMode = schema.jobControlOptions.includes('sync-execute')
         ? 'sync'
         : 'async';
@@ -93,16 +95,16 @@ export default function DynamicProcessForm({
             {Object.keys(errors).length > 0 ? (
                 <Alert variant="destructive" className="lg:col-span-2">
                     <AlertCircleIcon />
-                    <AlertTitle>Check the process inputs</AlertTitle>
+                    <AlertTitle>{t('ogc.checkInputs')}</AlertTitle>
                     <AlertDescription>
-                        Some values need attention before the process can run.
+                        {t('ogc.someValuesNeedAttention')}
                     </AlertDescription>
                 </Alert>
             ) : null}
 
             <Card className="min-w-0">
                 <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <CardTitle>Inputs</CardTitle>
+                    <CardTitle>{t('ogc.inputs')}</CardTitle>
                     {schema.examplePayload ? (
                         <Button
                             type="button"
@@ -112,7 +114,7 @@ export default function DynamicProcessForm({
                             onClick={applyExamplePayload}
                         >
                             <WandSparklesIcon data-icon="inline-start" />
-                            PREFILL TEST DATA
+                            {t('ogc.prefillTestData')}
                         </Button>
                     ) : null}
                 </CardHeader>
@@ -131,7 +133,7 @@ export default function DynamicProcessForm({
             <aside className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-4">
                 <Card className="min-w-0">
                     <CardHeader>
-                        <CardTitle>Execution</CardTitle>
+                        <CardTitle>{t('ogc.execution')}</CardTitle>
                     </CardHeader>
                     <CardContent className="min-w-0">
                         <ToggleGroup
@@ -148,14 +150,14 @@ export default function DynamicProcessForm({
                                 'sync-execute',
                             ) ? (
                                 <ToggleGroupItem value="sync">
-                                    Sync
+                                    {t('ogc.sync')}
                                 </ToggleGroupItem>
                             ) : null}
                             {schema.jobControlOptions.includes(
                                 'async-execute',
                             ) ? (
                                 <ToggleGroupItem value="async">
-                                    Async
+                                    {t('ogc.async')}
                                 </ToggleGroupItem>
                             ) : null}
                         </ToggleGroup>
@@ -164,7 +166,7 @@ export default function DynamicProcessForm({
 
                 <Card className="min-w-0">
                     <CardHeader>
-                        <CardTitle>Outputs</CardTitle>
+                        <CardTitle>{t('ogc.outputs')}</CardTitle>
                     </CardHeader>
                     <CardContent className="min-w-0">
                         <OutputSelector
@@ -184,7 +186,7 @@ export default function DynamicProcessForm({
                             ) : (
                                 <PlayIcon data-icon="inline-start" />
                             )}
-                            Execute
+                            {t('ogc.execute')}
                         </Button>
                     </CardFooter>
                 </Card>
@@ -218,10 +220,7 @@ function exampleInputToFormValue(
         const variant =
             field.variants?.find((candidate) =>
                 Object.keys(objectValue).some((key) =>
-                    Object.prototype.hasOwnProperty.call(
-                        candidate.fields,
-                        key,
-                    ),
+                    Object.prototype.hasOwnProperty.call(candidate.fields, key),
                 ),
             ) ?? field.variants?.[0];
 
@@ -243,7 +242,10 @@ function exampleInputToFormValue(
 }
 
 function unwrapExampleValue(value: unknown): unknown {
-    if (isRecord(value) && Object.prototype.hasOwnProperty.call(value, 'value')) {
+    if (
+        isRecord(value) &&
+        Object.prototype.hasOwnProperty.call(value, 'value')
+    ) {
         return value.value;
     }
 
@@ -264,10 +266,7 @@ function exampleOutputsToFormValues(
             exampleOutputs
                 .filter((outputId) => typeof outputId === 'string')
                 .filter((outputId) => Boolean(outputs[outputId]))
-                .map((outputId) => [
-                    outputId,
-                    { transmissionMode: 'value' },
-                ]),
+                .map((outputId) => [outputId, { transmissionMode: 'value' }]),
         );
     }
 

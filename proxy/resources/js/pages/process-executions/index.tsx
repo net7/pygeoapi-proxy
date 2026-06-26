@@ -60,6 +60,8 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useTranslation } from '@/hooks/use-translation';
+import type { TranslationKey } from '@/lib/i18n/translation';
 import {
     clampProgress,
     formatJobDate,
@@ -75,15 +77,17 @@ type PaginatedExecutions = {
     data: ProcessExecutionListItem[];
 };
 
-const columnLabels: Record<string, string> = {
-    process: 'Process',
-    status: 'Status',
-    remoteJobId: 'Job ID',
-    message: 'Message',
-    createdAt: 'Created',
-    submittedAt: 'Submitted',
-    finishedAt: 'Finished',
-    progress: 'Progress',
+type Translate = ReturnType<typeof useTranslation>['t'];
+
+const columnLabelKeys: Record<string, TranslationKey> = {
+    process: 'jobs.process',
+    status: 'common.status',
+    remoteJobId: 'jobs.jobId',
+    message: 'jobs.message',
+    createdAt: 'jobs.created',
+    submittedAt: 'jobs.submitted',
+    finishedAt: 'jobs.finished',
+    progress: 'jobs.progress',
 };
 
 const columnClassNames: Record<string, string> = {
@@ -124,7 +128,7 @@ const columns: ColumnDef<ProcessExecutionListItem>[] = [
         accessorFn: (execution) =>
             execution.processTitle ?? execution.processId,
         header: ({ column }) => (
-            <SortableHeader column={column} title="Process" />
+            <SortableHeader column={column} titleKey="jobs.process" />
         ),
         cell: ({ row }) => (
             <div className="flex min-w-0 flex-col gap-1">
@@ -135,7 +139,7 @@ const columns: ColumnDef<ProcessExecutionListItem>[] = [
                     {row.original.processId}
                 </span>
                 <span className="line-clamp-2 max-w-xl text-xs text-muted-foreground">
-                    {row.original.message ?? 'No job message available.'}
+                    <JobMessage message={row.original.message} />
                 </span>
             </div>
         ),
@@ -143,7 +147,7 @@ const columns: ColumnDef<ProcessExecutionListItem>[] = [
     {
         accessorKey: 'status',
         header: ({ column }) => (
-            <SortableHeader column={column} title="Status" />
+            <SortableHeader column={column} titleKey="common.status" />
         ),
         cell: ({ row }) => <JobStatusBadge status={row.original.status} />,
         filterFn: (row, columnId, filterValue) =>
@@ -157,36 +161,27 @@ const columns: ColumnDef<ProcessExecutionListItem>[] = [
     {
         accessorKey: 'remoteJobId',
         header: ({ column }) => (
-            <SortableHeader column={column} title="Job ID" />
+            <SortableHeader column={column} titleKey="jobs.jobId" />
         ),
-        cell: ({ row }) => {
-            const displayJobId =
-                row.original.remoteJobId ?? `Local #${row.original.id}`;
-
-            return <CopyableJobId displayJobId={displayJobId} />;
-        },
+        cell: ({ row }) => <JobIdentifier execution={row.original} />,
     },
     {
         accessorKey: 'message',
         header: ({ column }) => (
-            <SortableHeader column={column} title="Message" />
+            <SortableHeader column={column} titleKey="jobs.message" />
         ),
         cell: ({ row }) => (
             <span className="line-clamp-2 max-w-sm text-muted-foreground">
-                {row.original.message ?? 'No job message available.'}
+                <JobMessage message={row.original.message} />
             </span>
         ),
     },
     {
         accessorKey: 'createdAt',
         header: ({ column }) => (
-            <SortableHeader column={column} title="Created" />
+            <SortableHeader column={column} titleKey="jobs.created" />
         ),
-        cell: ({ row }) => (
-            <span className="text-muted-foreground">
-                {formatJobDate(row.original.createdAt)}
-            </span>
-        ),
+        cell: ({ row }) => <JobDate value={row.original.createdAt} />,
         sortingFn: (first, second) =>
             dateSortValue(first.original.createdAt) -
             dateSortValue(second.original.createdAt),
@@ -194,13 +189,9 @@ const columns: ColumnDef<ProcessExecutionListItem>[] = [
     {
         accessorKey: 'submittedAt',
         header: ({ column }) => (
-            <SortableHeader column={column} title="Submitted" />
+            <SortableHeader column={column} titleKey="jobs.submitted" />
         ),
-        cell: ({ row }) => (
-            <span className="text-muted-foreground">
-                {formatJobDate(row.original.submittedAt)}
-            </span>
-        ),
+        cell: ({ row }) => <JobDate value={row.original.submittedAt} />,
         sortingFn: (first, second) =>
             dateSortValue(first.original.submittedAt) -
             dateSortValue(second.original.submittedAt),
@@ -210,7 +201,7 @@ const columns: ColumnDef<ProcessExecutionListItem>[] = [
         accessorFn: (execution) =>
             execution.completedAt ?? execution.failedAt ?? null,
         header: ({ column }) => (
-            <SortableHeader column={column} title="Finished" />
+            <SortableHeader column={column} titleKey="jobs.finished" />
         ),
         cell: ({ row }) => <JobFinishedAt execution={row.original} />,
         sortingFn: (first, second) =>
@@ -226,7 +217,7 @@ const columns: ColumnDef<ProcessExecutionListItem>[] = [
         header: ({ column }) => (
             <SortableHeader
                 column={column}
-                title="Progress"
+                titleKey="jobs.progress"
                 className="ml-auto"
             />
         ),
@@ -234,7 +225,7 @@ const columns: ColumnDef<ProcessExecutionListItem>[] = [
     },
     {
         id: 'actions',
-        header: () => <span className="sr-only">Actions</span>,
+        header: () => <ActionsHeader />,
         cell: ({ row }) => <JobRowActions execution={row.original} />,
         enableHiding: false,
         enableSorting: false,
@@ -248,6 +239,7 @@ export default function ProcessExecutionIndex({
     executions: PaginatedExecutions;
     pollingInterval: number;
 }) {
+    const { t } = useTranslation();
     const [sorting, setSorting] = useState<SortingState>([
         { id: 'createdAt', desc: true },
     ]);
@@ -275,7 +267,7 @@ export default function ProcessExecutionIndex({
         () => [
             {
                 value: 'all',
-                label: 'ALL',
+                label: t('jobs.all'),
                 count: executions.data.length,
                 icon: ListFilterIcon,
             },
@@ -289,13 +281,13 @@ export default function ProcessExecutionIndex({
 
                     return {
                         value: status,
-                        label: styles.label,
+                        label: jobStatusLabel(status, t),
                         count: statusCounts[status],
                         icon: styles.icon,
                     };
                 }),
         ],
-        [executions.data.length, statusCounts],
+        [executions.data.length, statusCounts, t],
     );
     // eslint-disable-next-line react-hooks/incompatible-library
     const table = useReactTable({
@@ -337,23 +329,27 @@ export default function ProcessExecutionIndex({
 
     return (
         <>
-            <Head title="My Jobs" />
+            <Head title={t('jobs.title')} />
 
             <div className="flex flex-col gap-5 p-4">
                 <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
                     <div className="flex flex-col gap-1">
                         <p className="text-sm font-medium text-muted-foreground">
-                            Process runs
+                            {t('jobs.processRuns')}
                         </p>
-                        <h1 className="text-2xl font-semibold">My Jobs</h1>
+                        <h1 className="text-2xl font-semibold">
+                            {t('jobs.title')}
+                        </h1>
                         <p className="text-sm text-muted-foreground">
-                            {filteredRowsCount} of {executions.data.length} jobs
-                            shown
+                            {t('jobs.shown', {
+                                shown: filteredRowsCount,
+                                total: executions.data.length,
+                            })}
                         </p>
                         <JobPollingIndicator
                             active={hasActiveJobs}
-                            activeLabel="Polling active: refreshing running jobs"
-                            inactiveLabel="Polling inactive: no running jobs"
+                            activeLabel={t('jobs.pollingActive')}
+                            inactiveLabel={t('jobs.pollingInactive')}
                             interval={pollingInterval}
                             only={['executions', 'pollingInterval']}
                         />
@@ -383,7 +379,9 @@ export default function ProcessExecutionIndex({
                                 <ToggleGroupItem
                                     key={option.value}
                                     value={option.value}
-                                    aria-label={`Filter ${option.label} jobs`}
+                                    aria-label={t('jobs.filterJobs', {
+                                        status: option.label,
+                                    })}
                                 >
                                     <Icon data-icon="inline-start" />
                                     {option.label}
@@ -413,9 +411,9 @@ export default function ProcessExecutionIndex({
                                         );
                                     table.setPageIndex(0);
                                 }}
-                                placeholder="Search process, job ID, status or message..."
+                                placeholder={t('jobs.searchPlaceholder')}
                                 className="pl-9"
-                                aria-label="Search jobs"
+                                aria-label={t('jobs.searchAria')}
                             />
                         </div>
 
@@ -430,7 +428,7 @@ export default function ProcessExecutionIndex({
                                 }}
                             >
                                 <XIcon data-icon="inline-start" />
-                                Reset filters
+                                {t('jobs.resetFilters')}
                             </Button>
                         ) : null}
                     </div>
@@ -445,7 +443,7 @@ export default function ProcessExecutionIndex({
                             <SelectTrigger
                                 size="sm"
                                 className="w-32"
-                                aria-label="Rows per page"
+                                aria-label={t('jobs.rowsPerPage')}
                             >
                                 <SelectValue />
                             </SelectTrigger>
@@ -456,7 +454,9 @@ export default function ProcessExecutionIndex({
                                             key={pageSize}
                                             value={`${pageSize}`}
                                         >
-                                            {pageSize} / page
+                                            {t('jobs.pageRows', {
+                                                count: pageSize,
+                                            })}
                                         </SelectItem>
                                     ))}
                                 </SelectGroup>
@@ -467,13 +467,13 @@ export default function ProcessExecutionIndex({
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm">
                                     <Columns3Icon data-icon="inline-start" />
-                                    Columns
+                                    {t('jobs.columns')}
                                     <ChevronDownIcon data-icon="inline-end" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-52">
                                 <DropdownMenuLabel>
-                                    Visible columns
+                                    {t('jobs.visibleColumns')}
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 {table
@@ -489,8 +489,9 @@ export default function ProcessExecutionIndex({
                                                 )
                                             }
                                         >
-                                            {columnLabels[column.id] ??
-                                                column.id}
+                                            {columnLabelKeys[column.id]
+                                                ? t(columnLabelKeys[column.id])
+                                                : column.id}
                                         </DropdownMenuCheckboxItem>
                                     ))}
                             </DropdownMenuContent>
@@ -573,7 +574,7 @@ export default function ProcessExecutionIndex({
                                         colSpan={columns.length}
                                         className="h-28 text-center text-muted-foreground"
                                     >
-                                        No jobs match the current filters.
+                                        {t('jobs.noJobsMatch')}
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -583,8 +584,10 @@ export default function ProcessExecutionIndex({
 
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <p className="text-sm text-muted-foreground">
-                        Page {table.getState().pagination.pageIndex + 1} of{' '}
-                        {pageCount}
+                        {t('jobs.pagination', {
+                            page: table.getState().pagination.pageIndex + 1,
+                            pages: pageCount,
+                        })}
                     </p>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -596,7 +599,7 @@ export default function ProcessExecutionIndex({
                             disabled={!table.getCanPreviousPage()}
                         >
                             <ChevronsLeftIcon data-icon="inline-start" />
-                            First
+                            {t('jobs.first')}
                         </Button>
                         <Button
                             type="button"
@@ -606,7 +609,7 @@ export default function ProcessExecutionIndex({
                             disabled={!table.getCanPreviousPage()}
                         >
                             <ChevronLeftIcon data-icon="inline-start" />
-                            Previous
+                            {t('common.previous')}
                         </Button>
                         <Button
                             type="button"
@@ -616,7 +619,7 @@ export default function ProcessExecutionIndex({
                             disabled={!table.getCanNextPage()}
                         >
                             <ChevronRightIcon data-icon="inline-start" />
-                            Next
+                            {t('common.next')}
                         </Button>
                         <Button
                             type="button"
@@ -628,7 +631,7 @@ export default function ProcessExecutionIndex({
                             disabled={!table.getCanNextPage()}
                         >
                             <ChevronsRightIcon data-icon="inline-start" />
-                            Last
+                            {t('jobs.last')}
                         </Button>
                     </div>
                 </div>
@@ -641,6 +644,7 @@ ProcessExecutionIndex.layout = {
     breadcrumbs: [
         {
             title: 'My Jobs',
+            titleKey: 'jobs.title',
             href: index(),
         },
     ],
@@ -648,13 +652,15 @@ ProcessExecutionIndex.layout = {
 
 function SortableHeader({
     column,
-    title,
+    titleKey,
     className,
 }: {
     column: Column<ProcessExecutionListItem, unknown>;
-    title: string;
+    titleKey: TranslationKey;
     className?: string;
 }) {
+    const { t } = useTranslation();
+
     return (
         <Button
             type="button"
@@ -663,15 +669,49 @@ function SortableHeader({
             className={cn('-ml-2 h-8 px-2', className)}
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-            {title}
+            {t(titleKey)}
             <ArrowUpDownIcon data-icon="inline-end" />
         </Button>
+    );
+}
+
+function ActionsHeader() {
+    const { t } = useTranslation();
+
+    return <span className="sr-only">{t('jobs.actions')}</span>;
+}
+
+function JobMessage({ message }: { message?: string | null }) {
+    const { t } = useTranslation();
+
+    return <>{message ?? t('jobs.noJobMessage')}</>;
+}
+
+function JobIdentifier({ execution }: { execution: ProcessExecutionListItem }) {
+    const { t } = useTranslation();
+    const displayJobId =
+        execution.remoteJobId ??
+        t('jobs.localIdentifier', {
+            id: execution.id,
+        });
+
+    return <CopyableJobId displayJobId={displayJobId} />;
+}
+
+function JobDate({ value }: { value?: string | null }) {
+    const { locale, t } = useTranslation();
+
+    return (
+        <span className="text-muted-foreground">
+            {formatJobDate(value, locale, t('common.notAvailable'))}
+        </span>
     );
 }
 
 function JobStatusBadge({ status }: { status: string }) {
     const styles = jobStatusStyles(status);
     const StatusIcon = styles.icon;
+    const { t } = useTranslation();
 
     return (
         <Badge
@@ -679,25 +719,32 @@ function JobStatusBadge({ status }: { status: string }) {
             className={cn('tracking-wide', styles.badgeClassName)}
         >
             <StatusIcon data-icon="inline-start" />
-            {styles.label}
+            {jobStatusLabel(status, t)}
         </Badge>
     );
 }
 
 function JobFinishedAt({ execution }: { execution: ProcessExecutionListItem }) {
+    const { locale, t } = useTranslation();
     const terminalTimestamp = execution.completedAt ?? execution.failedAt;
     const terminalLabel = execution.completedAt
-        ? 'Completed'
+        ? t('jobs.completed')
         : execution.failedAt
-          ? 'Failed'
-          : 'Finished';
+          ? t('jobs.failed')
+          : t('jobs.finished');
 
     return (
         <div className="flex flex-col gap-1 text-muted-foreground">
             <span className="text-xs font-medium text-foreground">
                 {terminalLabel}
             </span>
-            <span>{formatJobDate(terminalTimestamp)}</span>
+            <span>
+                {formatJobDate(
+                    terminalTimestamp,
+                    locale,
+                    t('common.notAvailable'),
+                )}
+            </span>
         </div>
     );
 }
@@ -705,11 +752,12 @@ function JobFinishedAt({ execution }: { execution: ProcessExecutionListItem }) {
 function JobProgress({ execution }: { execution: ProcessExecutionListItem }) {
     const styles = jobStatusStyles(execution.status);
     const progress = clampProgress(execution.progress);
+    const { t } = useTranslation();
 
     return (
         <div className="flex w-28 flex-col gap-2">
             <div className="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
-                <span>Progress</span>
+                <span>{t('jobs.progress')}</span>
                 <span className="tabular-nums">{progress}%</span>
             </div>
             <div
@@ -734,6 +782,8 @@ function JobProgress({ execution }: { execution: ProcessExecutionListItem }) {
 }
 
 function JobRowActions({ execution }: { execution: ProcessExecutionListItem }) {
+    const { t } = useTranslation();
+
     return (
         <Button asChild variant="default" size="sm">
             <Link
@@ -741,10 +791,24 @@ function JobRowActions({ execution }: { execution: ProcessExecutionListItem }) {
                 onClick={(event) => event.stopPropagation()}
             >
                 <ListChecksIcon data-icon="inline-start" />
-                Details
+                {t('jobs.details')}
             </Link>
         </Button>
     );
+}
+
+function jobStatusLabel(status: string, t: Translate): string {
+    const key = {
+        accepted: 'jobs.status.accepted',
+        failed: 'jobs.status.failed',
+        remote_missing: 'jobs.status.remoteMissing',
+        running: 'jobs.status.running',
+        submission_failed: 'jobs.status.submissionFailed',
+        submitting: 'jobs.status.submitting',
+        successful: 'jobs.status.successful',
+    }[status] as TranslationKey | undefined;
+
+    return key ? t(key) : status.replaceAll('_', ' ').toUpperCase();
 }
 
 function dateSortValue(value?: string | null): number {

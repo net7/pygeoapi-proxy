@@ -3,6 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
 import { Button } from '@/components/ui/button';
 import { FieldGroup, FieldLegend, FieldSet } from '@/components/ui/field';
+import { useTranslation } from '@/hooks/use-translation';
 import type { OgcNormalizedField } from '@/types';
 
 export default function ArrayObjectField({
@@ -14,6 +15,7 @@ export default function ArrayObjectField({
     value: unknown;
     onChange: (value: unknown) => void;
 }) {
+    const { t } = useTranslation();
     const rows = Array.isArray(value) ? value : [];
 
     function updateRow(index: number, row: Record<string, unknown>) {
@@ -39,7 +41,7 @@ export default function ArrayObjectField({
                                     type="button"
                                     variant="destructive"
                                     size="icon"
-                                    aria-label="Remove row"
+                                    aria-label={t('ogc.removeRow')}
                                     onClick={() =>
                                         onChange(
                                             rows.filter(
@@ -77,7 +79,7 @@ export default function ArrayObjectField({
                 onClick={() => onChange([...rows, {}])}
             >
                 <Plus data-icon="inline-start" />
-                Add row
+                {t('ogc.addRow')}
             </Button>
         </FieldSet>
     );

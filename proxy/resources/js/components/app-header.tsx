@@ -31,6 +31,7 @@ import {
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn, toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
@@ -42,6 +43,7 @@ type Props = {
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
+        titleKey: 'navigation.dashboard',
         href: dashboard(),
         icon: LayoutGrid,
     },
@@ -67,6 +69,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const page = usePage();
     const { auth } = page.props;
     const getInitials = useInitials();
+    const { t } = useTranslation();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
 
     return (
@@ -81,7 +84,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     variant="ghost"
                                     size="icon"
                                     className="mr-2 h-[34px] w-[34px]"
-                                    aria-label="Open navigation menu"
+                                    aria-label={t('common.openNavigationMenu')}
                                 >
                                     <Menu data-icon="icon" />
                                 </Button>
@@ -91,7 +94,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 className="flex h-full w-64 flex-col items-stretch justify-between bg-sidebar"
                             >
                                 <SheetTitle className="sr-only">
-                                    Navigation menu
+                                    {t('common.navigationMenu')}
                                 </SheetTitle>
                                 <SheetHeader className="flex justify-start text-left">
                                     <AppLogoIcon height={24} />
@@ -100,16 +103,10 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     <div className="flex h-full flex-col justify-between text-sm">
                                         <div className="flex flex-col space-y-4">
                                             {mainNavItems.map((item) => (
-                                                <Link
+                                                <HeaderLinkItem
                                                     key={item.title}
-                                                    href={item.href}
-                                                    className="flex items-center space-x-2 font-medium"
-                                                >
-                                            {item.icon && (
-                                                <item.icon data-icon="inline-start" />
-                                            )}
-                                                    <span>{item.title}</span>
-                                                </Link>
+                                                    item={item}
+                                                />
                                             ))}
                                         </div>
 
@@ -166,7 +163,9 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             {item.icon && (
                                                 <item.icon data-icon="inline-start" />
                                             )}
-                                            {item.title}
+                                            {item.titleKey
+                                                ? t(item.titleKey)
+                                                : item.title}
                                         </Link>
                                         {isCurrentUrl(item.href) && (
                                             <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black dark:bg-white"></div>
@@ -183,7 +182,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 variant="ghost"
                                 size="icon"
                                 className="group h-9 w-9 cursor-pointer"
-                                aria-label="Search"
+                                aria-label={t('common.search')}
                             >
                                 <Search data-icon="icon" />
                             </Button>
@@ -217,7 +216,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 <Button
                                     variant="ghost"
                                     className="size-10 rounded-full p-1"
-                                    aria-label="Open user menu"
+                                    aria-label={t('common.openUserMenu')}
                                 >
                                     <Avatar className="size-8 overflow-hidden rounded-full">
                                         <AvatarImage
@@ -247,5 +246,21 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                 </div>
             )}
         </>
+    );
+}
+
+function HeaderLinkItem({ item }: { item: NavItem }) {
+    const { t } = useTranslation();
+    const title = item.titleKey ? t(item.titleKey) : item.title;
+
+    return (
+        <Link
+            key={item.title}
+            href={item.href}
+            className="flex items-center space-x-2 font-medium"
+        >
+            {item.icon && <item.icon data-icon="inline-start" />}
+            <span>{title}</span>
+        </Link>
     );
 }

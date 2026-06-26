@@ -5,6 +5,7 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/hooks/use-translation';
 import type { PasskeyRoutePair } from '@/types/auth';
 
 type Props = {
@@ -20,6 +21,7 @@ export default function PasskeyVerify({
     loadingLabel,
     separator,
 }: Props) {
+    const { t } = useTranslation();
     const { verify, isLoading, error, isSupported } = usePasskeyVerify({
         routes,
         onSuccess: (response) => {
@@ -47,8 +49,8 @@ export default function PasskeyVerify({
                         <KeyRound data-icon="inline-start" />
                     )}
                     {isLoading
-                        ? (loadingLabel ?? 'Authenticating...')
-                        : (label ?? 'Sign in with a passkey')}
+                        ? (loadingLabel ?? t('settings.passkeys.signInLoading'))
+                        : (label ?? t('settings.passkeys.signIn'))}
                 </Button>
                 {error && (
                     <InputError message={error} className="text-center" />
@@ -61,7 +63,7 @@ export default function PasskeyVerify({
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                     <span className="bg-background px-2 text-muted-foreground">
-                        {separator ?? 'Or continue with email'}
+                        {separator ?? t('settings.passkeys.withEmail')}
                     </span>
                 </div>
             </div>

@@ -14,6 +14,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/hooks/use-translation';
 import { index, show } from '@/routes/processes';
 import type { OgcCacheStatus, OgcProcessSummary } from '@/types';
 
@@ -24,23 +25,30 @@ export default function ProcessIndex({
     catalogStatus?: OgcCacheStatus;
     processes: OgcProcessSummary[];
 }) {
+    const { t } = useTranslation();
     const isWarming = catalogStatus === 'warming';
 
     return (
         <>
-            <Head title="Processes" />
+            <Head title={t('ogc.processesTitle')} />
 
             <div className="flex flex-col gap-5 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div className="flex flex-col gap-1">
-                        <h1 className="text-2xl font-semibold">Processes</h1>
+                        <h1 className="text-2xl font-semibold">
+                            {t('ogc.processesTitle')}
+                        </h1>
                         <p className="text-sm text-muted-foreground">
-                            Available OGC API processes from Geo-INQUIRE.
+                            {t('ogc.processesDescription')}
                         </p>
                     </div>
                     <Badge variant="secondary" className="shrink-0">
-                        {processes.length}{' '}
-                        {processes.length === 1 ? 'process' : 'processes'}
+                        {t(
+                            processes.length === 1
+                                ? 'ogc.processCountOne'
+                                : 'ogc.processCountMany',
+                            { count: processes.length },
+                        )}
                     </Badge>
                 </div>
 
@@ -53,11 +61,10 @@ export default function ProcessIndex({
                         <Alert>
                             <Spinner className="text-primary" />
                             <AlertTitle>
-                                Service catalog is being prepared
+                                {t('ogc.servicePreparingTitle')}
                             </AlertTitle>
                             <AlertDescription>
-                                The process list will appear when the background
-                                warm-up finishes.
+                                {t('ogc.servicePreparingDescription')}
                             </AlertDescription>
                         </Alert>
                     </>
@@ -66,7 +73,7 @@ export default function ProcessIndex({
                         {processes.map((process) => {
                             const description =
                                 process.description?.trim() ||
-                                'No description provided.';
+                                t('ogc.noDescription');
 
                             return (
                                 <article
@@ -109,18 +116,22 @@ export default function ProcessIndex({
                                             </p>
                                             <div className="flex flex-col gap-4">
                                                 <ProcessMetadataSection
-                                                    label="Job controls"
+                                                    label={t('ogc.jobControls')}
                                                     values={
                                                         process.jobControlOptions
                                                     }
-                                                    emptyLabel="Not advertised"
+                                                    emptyLabel={t(
+                                                        'ogc.notAdvertised',
+                                                    )}
                                                 />
                                                 <ProcessMetadataSection
-                                                    label="Output modes"
+                                                    label={t('ogc.outputModes')}
                                                     values={
                                                         process.outputTransmission
                                                     }
-                                                    emptyLabel="Default response"
+                                                    emptyLabel={t(
+                                                        'ogc.defaultResponse',
+                                                    )}
                                                 />
                                             </div>
                                         </CardContent>
@@ -133,7 +144,9 @@ export default function ProcessIndex({
                                                     <span className="flex min-w-0 items-center gap-2">
                                                         <PlayCircleIcon data-icon="inline-start" />
                                                         <span className="truncate">
-                                                            Open process
+                                                            {t(
+                                                                'ogc.openProcess',
+                                                            )}
                                                         </span>
                                                     </span>
                                                     <ArrowRightIcon data-icon="inline-end" />
@@ -189,6 +202,7 @@ ProcessIndex.layout = {
     breadcrumbs: [
         {
             title: 'Processes',
+            titleKey: 'ogc.processesTitle',
             href: index(),
         },
     ],

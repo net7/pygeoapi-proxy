@@ -41,6 +41,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'language' => app()->getLocale(),
             'auth' => [
                 'user' => $this->user($request),
                 'canRegister' => Features::enabled(Features::registration()),

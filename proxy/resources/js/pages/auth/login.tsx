@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/hooks/use-translation';
 import { store } from '@/routes/login';
 
 type Props = {
@@ -20,11 +21,12 @@ type Props = {
 
 export default function Login({ status, canResetPassword }: Props) {
     const { auth } = usePage().props;
+    const { t } = useTranslation();
     const socialProviders = auth.routes.socialProviders;
 
     return (
         <>
-            <Head title="Access or register" />
+            <Head title={t('auth.login.title')} />
 
             {auth.routes.passkeyLogin && (
                 <PasskeyVerify routes={auth.routes.passkeyLogin} />
@@ -42,7 +44,9 @@ export default function Login({ status, canResetPassword }: Props) {
                             >
                                 <a
                                     href={provider.redirect}
-                                    aria-label={`Access or register with ${provider.label}`}
+                                    aria-label={t('auth.login.socialLabel', {
+                                        provider: provider.label,
+                                    })}
                                 >
                                     <SocialProviderIcon
                                         provider={provider.provider}
@@ -62,7 +66,7 @@ export default function Login({ status, canResetPassword }: Props) {
                         <div className="flex items-center gap-3">
                             <div className="h-px flex-1 bg-border" />
                             <span className="text-xs font-medium text-muted-foreground">
-                                Oppure
+                                {t('auth.login.divider')}
                             </span>
                             <div className="h-px flex-1 bg-border" />
                         </div>
@@ -78,7 +82,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                 <div className="flex flex-col gap-6">
                                     <div className="flex flex-col gap-2">
                                         <Label htmlFor="email">
-                                            Email address
+                                            {t('auth.emailAddress')}
                                         </Label>
                                         <Input
                                             id="email"
@@ -98,7 +102,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     <div className="flex flex-col gap-2">
                                         <div className="flex items-center justify-between gap-3">
                                             <Label htmlFor="password">
-                                                Password
+                                                {t('auth.password')}
                                             </Label>
                                             {canResetPassword &&
                                                 auth.routes.passwordRequest && (
@@ -110,7 +114,9 @@ export default function Login({ status, canResetPassword }: Props) {
                                                         className="text-sm"
                                                         tabIndex={5}
                                                     >
-                                                        Forgot your password?
+                                                        {t(
+                                                            'auth.forgotYourPassword',
+                                                        )}
                                                     </TextLink>
                                                 )}
                                         </div>
@@ -120,7 +126,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                             required
                                             tabIndex={2}
                                             autoComplete="current-password"
-                                            placeholder="Password"
+                                            placeholder={t('auth.password')}
                                         />
                                         <InputError message={errors.password} />
                                     </div>
@@ -132,7 +138,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                             tabIndex={3}
                                         />
                                         <Label htmlFor="remember">
-                                            Remember me
+                                            {t('auth.rememberMe')}
                                         </Label>
                                     </div>
 
@@ -148,18 +154,18 @@ export default function Login({ status, canResetPassword }: Props) {
                                         ) : (
                                             <LogInIcon data-icon="inline-start" />
                                         )}
-                                        Log in
+                                        {t('auth.login.submit')}
                                     </Button>
                                 </div>
 
                                 {auth.routes.register && (
                                     <div className="text-center text-sm text-muted-foreground">
-                                        Don't have an account?{' '}
+                                        {t('auth.noAccount')}{' '}
                                         <TextLink
                                             href={auth.routes.register}
                                             tabIndex={5}
                                         >
-                                            Sign up
+                                            {t('auth.signUp')}
                                         </TextLink>
                                     </div>
                                 )}
@@ -169,12 +175,14 @@ export default function Login({ status, canResetPassword }: Props) {
                 </div>
             )}
 
-            <StatusNotice message={status} title="Account notice" />
+            <StatusNotice message={status} title={t('auth.accountNotice')} />
         </>
     );
 }
 
 Login.layout = {
     title: 'Accedi o registrati',
+    titleKey: 'auth.login.title',
     description: 'Continua con uno dei provider abilitati',
+    descriptionKey: 'auth.login.description',
 };

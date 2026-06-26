@@ -23,6 +23,8 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { useTranslation } from '@/hooks/use-translation';
+import type { TranslationKey } from '@/lib/i18n/translation';
 import {
     clampProgress,
     formatJobDate,
@@ -33,6 +35,8 @@ import { cn } from '@/lib/utils';
 import { index } from '@/routes/jobs';
 import type { ProcessExecutionDetail } from '@/types';
 
+type Translate = ReturnType<typeof useTranslation>['t'];
+
 export default function ProcessExecutionShow({
     execution,
     pollingInterval,
@@ -40,20 +44,25 @@ export default function ProcessExecutionShow({
     execution: ProcessExecutionDetail;
     pollingInterval: number;
 }) {
+    const { locale, t } = useTranslation();
     const styles = jobStatusStyles(execution.status);
     const StatusIcon = styles.icon;
-    const displayJobId = execution.remoteJobId ?? `Local #${execution.id}`;
+    const displayJobId =
+        execution.remoteJobId ??
+        t('jobs.localIdentifier', {
+            id: execution.id,
+        });
     const terminalTimestamp = execution.completedAt ?? execution.failedAt;
     const terminalLabel = execution.completedAt
-        ? 'Completed'
+        ? t('jobs.completed')
         : execution.failedAt
-          ? 'Failed'
-          : 'Finished';
+          ? t('jobs.failed')
+          : t('jobs.finished');
     const isPolling = !isJobTerminal(execution.status);
 
     return (
         <>
-            <Head title={`Job ${displayJobId}`} />
+            <Head title={t('jobs.documentTitle', { jobId: displayJobId })} />
 
             <div className="flex min-w-0 flex-col gap-5 p-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -66,7 +75,7 @@ export default function ProcessExecutionShow({
                         >
                             <Link href={index()}>
                                 <ArrowLeftIcon data-icon="inline-start" />
-                                Back to Jobs
+                                {t('jobs.backToJobs')}
                             </Link>
                         </Button>
 
@@ -84,7 +93,7 @@ export default function ProcessExecutionShow({
                                     )}
                                 >
                                     <StatusIcon data-icon="inline-start" />
-                                    {styles.label}
+                                    {jobStatusLabel(execution.status, t)}
                                 </Badge>
                             </div>
                             <p className="text-sm text-muted-foreground">
@@ -95,14 +104,14 @@ export default function ProcessExecutionShow({
                             </p>
                             <JobPollingIndicator
                                 active={isPolling}
-                                activeLabel="Polling active: waiting for this job to finish"
-                                inactiveLabel="Polling inactive: this job is finished"
+                                activeLabel={t('jobs.pollingShowActive')}
+                                inactiveLabel={t('jobs.pollingShowInactive')}
                                 interval={pollingInterval}
                                 only={['execution', 'pollingInterval']}
                             />
                             <div className="flex min-w-0 flex-col gap-1 text-sm sm:flex-row sm:items-center sm:gap-3">
                                 <span className="font-medium text-muted-foreground">
-                                    Job ID
+                                    {t('jobs.jobId')}
                                 </span>
                                 <CopyableJobId displayJobId={displayJobId} />
                             </div>
@@ -112,17 +121,17 @@ export default function ProcessExecutionShow({
                     <div className="grid gap-3 sm:grid-cols-3 lg:w-[32rem]">
                         <JobMetric
                             icon={HashIcon}
-                            label="Local"
+                            label={t('jobs.local')}
                             value={`#${execution.id}`}
                         />
                         <JobMetric
                             icon={ListChecksIcon}
-                            label="Results"
+                            label={t('jobs.results')}
                             value={String(execution.results.length)}
                         />
                         <JobMetric
                             icon={TimerIcon}
-                            label="Progress"
+                            label={t('jobs.progress')}
                             value={`${execution.progress}%`}
                         />
                     </div>
@@ -133,11 +142,15 @@ export default function ProcessExecutionShow({
                         <div className="flex min-w-0 items-center justify-between gap-3">
                             <div className="flex min-w-0 flex-col gap-1">
                                 <h2 className="text-lg font-semibold">
-                                    Results
+                                    {t('jobs.results')}
                                 </h2>
                                 <p className="text-sm text-muted-foreground">
-                                    {execution.results.length} output
-                                    {execution.results.length === 1 ? '' : 's'}
+                                    {t(
+                                        execution.results.length === 1
+                                            ? 'ogc.outputCountOne'
+                                            : 'ogc.outputCountMany',
+                                        { count: execution.results.length },
+                                    )}
                                 </p>
                             </div>
                             <Badge variant="secondary" className="shrink-0">
@@ -159,9 +172,11 @@ export default function ProcessExecutionShow({
                         ) : (
                             <Card className="shadow-sm dark:bg-card/95">
                                 <CardHeader>
-                                    <CardTitle>No results yet</CardTitle>
+                                    <CardTitle>
+                                        {t('jobs.noResultsTitle')}
+                                    </CardTitle>
                                     <CardDescription>
-                                        The job has not produced stored outputs.
+                                        {t('jobs.noResultsDescription')}
                                     </CardDescription>
                                 </CardHeader>
                             </Card>
@@ -176,15 +191,15 @@ export default function ProcessExecutionShow({
                             )}
                         >
                             <CardHeader>
-                                <CardTitle>Job Summary</CardTitle>
+                                <CardTitle>{t('jobs.jobSummary')}</CardTitle>
                                 <CardDescription>
-                                    Current state and timeline.
+                                    {t('jobs.currentState')}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="flex min-w-0 flex-col gap-4">
                                 <div className="flex items-center justify-between gap-3">
                                     <span className="text-xs font-semibold tracking-wide text-muted-foreground">
-                                        STATUS
+                                        {t('common.status').toUpperCase()}
                                     </span>
                                     <Badge
                                         variant="outline"
@@ -194,13 +209,13 @@ export default function ProcessExecutionShow({
                                         )}
                                     >
                                         <StatusIcon data-icon="inline-start" />
-                                        {styles.label}
+                                        {jobStatusLabel(execution.status, t)}
                                     </Badge>
                                 </div>
 
                                 <div className="flex flex-col gap-2">
                                     <div className="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
-                                        <span>Progress</span>
+                                        <span>{t('jobs.progress')}</span>
                                         <span className="tabular-nums">
                                             {execution.progress}%
                                         </span>
@@ -229,22 +244,30 @@ export default function ProcessExecutionShow({
                                 <div className="grid gap-3">
                                     <JobTimelineItem
                                         icon={CalendarClockIcon}
-                                        label="Created"
+                                        label={t('jobs.created')}
                                         value={formatJobDate(
                                             execution.createdAt,
+                                            locale,
+                                            t('common.notAvailable'),
                                         )}
                                     />
                                     <JobTimelineItem
                                         icon={Clock3Icon}
-                                        label="Submitted"
+                                        label={t('jobs.submitted')}
                                         value={formatJobDate(
                                             execution.submittedAt,
+                                            locale,
+                                            t('common.notAvailable'),
                                         )}
                                     />
                                     <JobTimelineItem
                                         icon={TimerIcon}
                                         label={terminalLabel}
-                                        value={formatJobDate(terminalTimestamp)}
+                                        value={formatJobDate(
+                                            terminalTimestamp,
+                                            locale,
+                                            t('common.notAvailable'),
+                                        )}
                                     />
                                 </div>
 
@@ -255,7 +278,7 @@ export default function ProcessExecutionShow({
                                     />
                                     <p className="min-w-0">
                                         {execution.message ??
-                                            'No job message available.'}
+                                            t('jobs.noJobMessage')}
                                     </p>
                                 </div>
                             </CardContent>
@@ -263,18 +286,18 @@ export default function ProcessExecutionShow({
 
                         <Card className="min-w-0 shadow-sm dark:border-border/70 dark:bg-card/95">
                             <CardHeader>
-                                <CardTitle>Request</CardTitle>
+                                <CardTitle>{t('jobs.request')}</CardTitle>
                                 <CardDescription>
-                                    Submitted inputs and output preferences.
+                                    {t('jobs.requestDescription')}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="flex min-w-0 flex-col gap-4">
                                 <JsonBlock
-                                    title="Inputs"
+                                    title={t('jobs.inputs')}
                                     value={execution.requestPayload}
                                 />
                                 <JsonBlock
-                                    title="Requested Outputs"
+                                    title={t('jobs.requestedOutputs')}
                                     value={execution.requestedOutputs ?? {}}
                                 />
                             </CardContent>
@@ -290,10 +313,25 @@ ProcessExecutionShow.layout = {
     breadcrumbs: [
         {
             title: 'My Jobs',
+            titleKey: 'jobs.title',
             href: index(),
         },
     ],
 };
+
+function jobStatusLabel(status: string, t: Translate): string {
+    const key = {
+        accepted: 'jobs.status.accepted',
+        failed: 'jobs.status.failed',
+        remote_missing: 'jobs.status.remoteMissing',
+        running: 'jobs.status.running',
+        submission_failed: 'jobs.status.submissionFailed',
+        submitting: 'jobs.status.submitting',
+        successful: 'jobs.status.successful',
+    }[status] as TranslationKey | undefined;
+
+    return key ? t(key) : status.replaceAll('_', ' ').toUpperCase();
+}
 
 function JobMetric({
     icon: Icon,

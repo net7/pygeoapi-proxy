@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useTranslation } from '@/hooks/use-translation';
 import type { OgcNormalizedField } from '@/types';
 
 type InputMode = 'inline' | 'reference' | 'upload';
@@ -32,6 +33,7 @@ export default function DataInputField({
     value: unknown;
     onChange: (value: unknown) => void;
 }) {
+    const { t } = useTranslation();
     const [mode, setMode] = useState<InputMode>(() =>
         initialMode(value, field),
     );
@@ -103,15 +105,19 @@ export default function DataInputField({
                 onValueChange={changeMode}
                 className="flex-wrap justify-start"
             >
-                <ToggleGroupItem value="inline">Inline</ToggleGroupItem>
+                <ToggleGroupItem value="inline">
+                    {t('ogc.inline')}
+                </ToggleGroupItem>
                 <ToggleGroupItem value="reference">URL</ToggleGroupItem>
-                <ToggleGroupItem value="upload">Upload</ToggleGroupItem>
+                <ToggleGroupItem value="upload">
+                    {t('ogc.upload')}
+                </ToggleGroupItem>
             </ToggleGroup>
 
             <FieldGroup className="min-w-0">
                 {mode === 'inline' ? (
                     <Field className="min-w-0">
-                        <FieldLabel>Value</FieldLabel>
+                        <FieldLabel>{t('ogc.value')}</FieldLabel>
                         <Textarea
                             className="min-w-0"
                             value={inlineValue(value)}
@@ -126,7 +132,7 @@ export default function DataInputField({
 
                 {mode === 'reference' ? (
                     <Field className="min-w-0">
-                        <FieldLabel>Reference URL</FieldLabel>
+                        <FieldLabel>{t('ogc.referenceUrl')}</FieldLabel>
                         {field.references && field.references.length > 0 ? (
                             <Select
                                 value={selectedReference || undefined}
@@ -162,7 +168,7 @@ export default function DataInputField({
 
                 {mode === 'upload' ? (
                     <Field className="min-w-0">
-                        <FieldLabel>File</FieldLabel>
+                        <FieldLabel>{t('ogc.file')}</FieldLabel>
                         <Input
                             type="file"
                             className="min-w-0"

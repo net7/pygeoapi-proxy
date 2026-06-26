@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useInitials } from '@/hooks/use-initials';
+import { useTranslation } from '@/hooks/use-translation';
 import { edit } from '@/routes/profile';
 import type { Auth, User } from '@/types';
 
@@ -21,19 +22,20 @@ type PageProps = {
 export default function Profile() {
     const { auth } = usePage<PageProps>().props;
     const getInitials = useInitials();
+    const { t } = useTranslation();
 
     return (
         <>
-            <Head title="Profile settings" />
+            <Head title={t('settings.profile.title')} />
 
-            <h1 className="sr-only">Profile settings</h1>
+            <h1 className="sr-only">{t('settings.profile.title')}</h1>
 
             <div className="flex flex-col gap-6">
                 <div className="flex flex-col gap-6">
                     <Heading
                         variant="small"
-                        title="Avatar"
-                        description="Upload a custom image or use your linked provider avatar"
+                        title={t('settings.profile.avatarTitle')}
+                        description={t('settings.profile.avatarDescription')}
                     />
 
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -60,7 +62,9 @@ export default function Profile() {
                                     <>
                                         <div className="grid flex-1 gap-2">
                                             <Label htmlFor="avatar">
-                                                Avatar image
+                                                {t(
+                                                    'settings.profile.avatarImage',
+                                                )}
                                             </Label>
 
                                             <Input
@@ -75,7 +79,9 @@ export default function Profile() {
                                                     className="h-2 w-full"
                                                     value={progress.percentage}
                                                     max="100"
-                                                    aria-label="Avatar upload progress"
+                                                    aria-label={t(
+                                                        'settings.profile.avatarProgress',
+                                                    )}
                                                 />
                                             )}
 
@@ -86,7 +92,7 @@ export default function Profile() {
 
                                         <Button disabled={processing}>
                                             <Upload data-icon="inline-start" />
-                                            Save avatar
+                                            {t('settings.profile.saveAvatar')}
                                         </Button>
                                     </>
                                 )}
@@ -105,7 +111,7 @@ export default function Profile() {
                                             disabled={processing}
                                         >
                                             <Trash2 data-icon="inline-start" />
-                                            Remove avatar
+                                            {t('settings.profile.removeAvatar')}
                                         </Button>
                                     )}
                                 </Form>
@@ -116,8 +122,8 @@ export default function Profile() {
 
                 <Heading
                     variant="small"
-                    title="Profile"
-                    description="Update your name and email address"
+                    title={t('settings.profile.titleShort')}
+                    description={t('settings.profile.description')}
                 />
 
                 <Form
@@ -130,7 +136,7 @@ export default function Profile() {
                     {({ processing, errors }) => (
                         <>
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Name</Label>
+                                <Label htmlFor="name">{t('common.name')}</Label>
 
                                 <Input
                                     id="name"
@@ -139,7 +145,7 @@ export default function Profile() {
                                     name="name"
                                     required
                                     autoComplete="name"
-                                    placeholder="Full name"
+                                    placeholder={t('auth.fullName')}
                                 />
 
                                 <InputError
@@ -149,7 +155,9 @@ export default function Profile() {
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                <Label htmlFor="email">
+                                    {t('auth.emailAddress')}
+                                </Label>
 
                                 <Input
                                     id="email"
@@ -159,7 +167,9 @@ export default function Profile() {
                                     name="email"
                                     required
                                     autoComplete="username"
-                                    placeholder="Email address"
+                                    placeholder={t(
+                                        'settings.profile.emailPlaceholder',
+                                    )}
                                 />
 
                                 <InputError
@@ -174,7 +184,7 @@ export default function Profile() {
                                     data-test="update-profile-button"
                                 >
                                     <SaveIcon data-icon="inline-start" />
-                                    Save
+                                    {t('common.save')}
                                 </Button>
                             </div>
                         </>
@@ -196,6 +206,7 @@ Profile.layout = {
     breadcrumbs: [
         {
             title: 'Profile settings',
+            titleKey: 'settings.profile.breadcrumb',
             href: edit(),
         },
     ],

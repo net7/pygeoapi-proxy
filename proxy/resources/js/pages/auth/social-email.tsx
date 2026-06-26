@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/hooks/use-translation';
 
 type Props = {
     email?: string;
@@ -14,9 +15,11 @@ type Props = {
 };
 
 export default function SocialEmail({ email = '', status, submitUrl }: Props) {
+    const { t } = useTranslation();
+
     return (
         <>
-            <Head title="Verify email" />
+            <Head title={t('auth.socialEmail.title')} />
 
             <Form
                 action={submitUrl}
@@ -28,7 +31,9 @@ export default function SocialEmail({ email = '', status, submitUrl }: Props) {
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                <Label htmlFor="email">
+                                    {t('auth.emailAddress')}
+                                </Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -48,11 +53,14 @@ export default function SocialEmail({ email = '', status, submitUrl }: Props) {
                                 ) : (
                                     <MailCheckIcon data-icon="inline-start" />
                                 )}
-                                Send code
+                                {t('auth.sendCode')}
                             </Button>
                         </div>
 
-                        <StatusNotice message={status} title="Code sent" />
+                        <StatusNotice
+                            message={status}
+                            title={t('auth.codeSent')}
+                        />
                     </>
                 )}
             </Form>
@@ -62,5 +70,7 @@ export default function SocialEmail({ email = '', status, submitUrl }: Props) {
 
 SocialEmail.layout = {
     title: 'Verify your email',
+    titleKey: 'auth.socialEmail.title',
     description: 'Enter the email address to link with this account',
+    descriptionKey: 'auth.socialEmail.description',
 };

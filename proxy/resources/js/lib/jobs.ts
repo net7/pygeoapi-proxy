@@ -140,15 +140,16 @@ export function jobStatusSortIndex(status: string): number {
 export function formatJobDate(
     value?: string | null,
     locale?: Intl.LocalesArgument,
+    unavailableLabel = 'Not available',
 ): string {
     if (!value) {
-        return 'Not available';
+        return unavailableLabel;
     }
 
     const date = new Date(value);
 
     if (Number.isNaN(date.getTime())) {
-        return 'Not available';
+        return unavailableLabel;
     }
 
     return new Intl.DateTimeFormat(locale ?? browserDateLocale(), {

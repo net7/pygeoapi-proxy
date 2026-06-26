@@ -94,6 +94,8 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useTranslation } from '@/hooks/use-translation';
+import type { TranslationKey } from '@/lib/i18n/translation';
 import { cn } from '@/lib/utils';
 import { index as jobsIndex } from '@/routes/admin/jobs';
 import {
@@ -104,6 +106,8 @@ import {
     update as updateUser,
 } from '@/routes/admin/users';
 import type { Auth } from '@/types';
+
+type Translate = ReturnType<typeof useTranslation>['t'];
 
 type AdminUserRole = 'user' | 'admin';
 type AdminUserStatus = 'active' | 'inactive';
@@ -150,13 +154,13 @@ type PageProps = {
     auth: Auth;
 };
 
-const columnLabels: Record<string, string> = {
-    user: 'User',
-    role: 'Role',
-    socialProviders: 'Registered with',
-    status: 'Status',
-    jobs_count: 'Jobs',
-    created_at: 'Created',
+const columnLabelKeys: Record<string, TranslationKey> = {
+    user: 'common.user',
+    role: 'common.role',
+    socialProviders: 'admin.registeredWith',
+    status: 'common.status',
+    jobs_count: 'admin.userJobs',
+    created_at: 'jobs.created',
 };
 
 const columnClassNames: Record<string, string> = {
@@ -179,6 +183,7 @@ export default function AdminUsersIndex({
     filters: { search: string };
 }) {
     const { auth } = usePage<PageProps>().props;
+    const { locale, t } = useTranslation();
     const [createOpen, setCreateOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
     const [statusUser, setStatusUser] = useState<AdminUser | null>(null);
@@ -224,7 +229,7 @@ export default function AdminUsersIndex({
                 id: 'user',
                 accessorFn: (user) => `${user.name} ${user.email}`,
                 header: ({ column }) => (
-                    <SortableHeader column={column} title="User" />
+                    <SortableHeader column={column} titleKey="common.user" />
                 ),
                 cell: ({ row }) => (
                     <div className="flex min-w-0 flex-col">
@@ -240,7 +245,7 @@ export default function AdminUsersIndex({
             {
                 accessorKey: 'role',
                 header: ({ column }) => (
-                    <SortableHeader column={column} title="Role" />
+                    <SortableHeader column={column} titleKey="common.role" />
                 ),
                 cell: ({ row }) => <RoleBadge role={row.original.role} />,
                 filterFn: (row, columnId, filterValue) =>
@@ -255,7 +260,10 @@ export default function AdminUsersIndex({
                         .map((provider) => provider.label)
                         .join(' ') || 'LOCAL',
                 header: ({ column }) => (
-                    <SortableHeader column={column} title="Registered with" />
+                    <SortableHeader
+                        column={column}
+                        titleKey="admin.registeredWith"
+                    />
                 ),
                 cell: ({ row }) => (
                     <SocialProviderBadges
@@ -273,7 +281,7 @@ export default function AdminUsersIndex({
                 accessorFn: (user): AdminUserStatus =>
                     user.is_deactivated ? 'inactive' : 'active',
                 header: ({ column }) => (
-                    <SortableHeader column={column} title="Status" />
+                    <SortableHeader column={column} titleKey="common.status" />
                 ),
                 cell: ({ row }) => <UserStatusBadge user={row.original} />,
                 filterFn: (row, columnId, filterValue) =>
@@ -286,7 +294,7 @@ export default function AdminUsersIndex({
                 header: ({ column }) => (
                     <SortableHeader
                         column={column}
-                        title="Jobs"
+                        titleKey="admin.userJobs"
                         className="ml-auto"
                     />
                 ),
@@ -299,11 +307,15 @@ export default function AdminUsersIndex({
             {
                 accessorKey: 'created_at',
                 header: ({ column }) => (
-                    <SortableHeader column={column} title="Created" />
+                    <SortableHeader column={column} titleKey="jobs.created" />
                 ),
                 cell: ({ row }) => (
                     <span className="text-muted-foreground">
-                        {formatDate(row.original.created_at)}
+                        {formatDate(
+                            row.original.created_at,
+                            locale,
+                            t('common.notAvailable'),
+                        )}
                     </span>
                 ),
                 sortingFn: (first, second) =>
@@ -312,7 +324,9 @@ export default function AdminUsersIndex({
             },
             {
                 id: 'actions',
-                header: () => <span className="sr-only">Actions</span>,
+                header: () => (
+                    <span className="sr-only">{t('jobs.actions')}</span>
+                ),
                 cell: ({ row }) => {
                     const user = row.original;
                     const isSelf = user.id === auth.user?.id;
@@ -339,7 +353,9 @@ export default function AdminUsersIndex({
                             ) : (
                                 <UserXIcon data-icon="inline-start" />
                             )}
-                            {user.is_deactivated ? 'RESTORE' : 'DEACTIVATE'}
+                            {user.is_deactivated
+                                ? t('admin.restore')
+                                : t('admin.deactivate').toUpperCase()}
                         </Button>
                     );
 
@@ -357,7 +373,7 @@ export default function AdminUsersIndex({
                                     })}
                                 >
                                     <ListChecksIcon data-icon="inline-start" />
-                                    Jobs
+                                    {t('admin.viewUserJobs')}
                                 </Link>
                             </Button>
 
@@ -368,7 +384,7 @@ export default function AdminUsersIndex({
                                 onClick={() => setEditingUser(user)}
                             >
                                 <PencilIcon data-icon="inline-start" />
-                                Edit
+                                {t('common.edit')}
                             </Button>
 
                             {isSelf ? (
@@ -382,11 +398,12 @@ export default function AdminUsersIndex({
                                     >
                                         <PopoverHeader>
                                             <PopoverTitle>
-                                                Action unavailable
+                                                {t('admin.actionUnavailable')}
                                             </PopoverTitle>
                                             <PopoverDescription>
-                                                You cannot change the status of
-                                                your own account.
+                                                {t(
+                                                    'admin.userSelfStatusUnavailable',
+                                                )}
                                             </PopoverDescription>
                                         </PopoverHeader>
                                     </PopoverContent>
@@ -401,7 +418,7 @@ export default function AdminUsersIndex({
                 enableSorting: false,
             },
         ],
-        [auth.user?.id],
+        [auth.user?.id, locale, t],
     );
 
     const statusCounts = useMemo(() => {
@@ -467,18 +484,22 @@ export default function AdminUsersIndex({
 
     return (
         <>
-            <Head title="All Users" />
+            <Head title={t('admin.allUsers')} />
 
             <div className="flex flex-col gap-5 p-4">
                 <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
                     <div className="flex flex-col gap-1">
                         <p className="text-sm font-medium text-muted-foreground">
-                            Administration
+                            {t('admin.administration')}
                         </p>
-                        <h1 className="text-2xl font-semibold">All Users</h1>
+                        <h1 className="text-2xl font-semibold">
+                            {t('admin.allUsers')}
+                        </h1>
                         <p className="text-sm text-muted-foreground">
-                            {filteredRowsCount} of {users.data.length} users
-                            shown
+                            {t('admin.shownUsers', {
+                                shown: filteredRowsCount,
+                                total: users.data.length,
+                            })}
                         </p>
                     </div>
 
@@ -505,19 +526,19 @@ export default function AdminUsersIndex({
                             {[
                                 {
                                     value: 'all',
-                                    label: 'ALL',
+                                    label: t('jobs.all'),
                                     count: users.data.length,
                                     icon: ListFilterIcon,
                                 },
                                 {
                                     value: 'active',
-                                    label: 'ACTIVE',
+                                    label: t('admin.statusActive'),
                                     count: statusCounts.active,
                                     icon: CheckCircle2Icon,
                                 },
                                 {
                                     value: 'inactive',
-                                    label: 'INACTIVE',
+                                    label: t('admin.statusInactive'),
                                     count: statusCounts.inactive,
                                     icon: UserXIcon,
                                 },
@@ -528,7 +549,9 @@ export default function AdminUsersIndex({
                                     <ToggleGroupItem
                                         key={option.value}
                                         value={option.value}
-                                        aria-label={`Filter ${option.label} users`}
+                                        aria-label={t('admin.filterUsers', {
+                                            status: option.label,
+                                        })}
                                     >
                                         <Icon data-icon="inline-start" />
                                         {option.label}
@@ -545,7 +568,7 @@ export default function AdminUsersIndex({
 
                         <Button onClick={() => setCreateOpen(true)}>
                             <PlusIcon data-icon="inline-start" />
-                            Create user
+                            {t('admin.createUser')}
                         </Button>
                     </div>
                 </div>
@@ -564,9 +587,9 @@ export default function AdminUsersIndex({
                                         );
                                     table.setPageIndex(0);
                                 }}
-                                placeholder="Search name, email, social, role or status..."
+                                placeholder={t('admin.searchUsersPlaceholder')}
                                 className="pl-9"
-                                aria-label="Search users"
+                                aria-label={t('admin.searchUsers')}
                             />
                         </div>
 
@@ -581,7 +604,7 @@ export default function AdminUsersIndex({
                                 }}
                             >
                                 <XIcon data-icon="inline-start" />
-                                Reset filters
+                                {t('jobs.resetFilters')}
                             </Button>
                         ) : null}
                     </div>
@@ -601,20 +624,22 @@ export default function AdminUsersIndex({
                             <SelectTrigger
                                 size="sm"
                                 className="w-36"
-                                aria-label="Role filter"
+                                aria-label={t('admin.roleFilter')}
                             >
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent align="end">
                                 <SelectGroup>
                                     <SelectItem value="all">
-                                        All roles
+                                        {t('admin.allRoles')}
                                     </SelectItem>
                                     <SelectItem value="admin">
-                                        Admin ({roleCounts.admin})
+                                        {roleLabel('admin', t)} (
+                                        {roleCounts.admin})
                                     </SelectItem>
                                     <SelectItem value="user">
-                                        User ({roleCounts.user})
+                                        {roleLabel('user', t)} (
+                                        {roleCounts.user})
                                     </SelectItem>
                                 </SelectGroup>
                             </SelectContent>
@@ -629,7 +654,7 @@ export default function AdminUsersIndex({
                             <SelectTrigger
                                 size="sm"
                                 className="w-32"
-                                aria-label="Rows per page"
+                                aria-label={t('jobs.rowsPerPage')}
                             >
                                 <SelectValue />
                             </SelectTrigger>
@@ -640,7 +665,9 @@ export default function AdminUsersIndex({
                                             key={pageSize}
                                             value={`${pageSize}`}
                                         >
-                                            {pageSize} / page
+                                            {t('jobs.pageRows', {
+                                                count: pageSize,
+                                            })}
                                         </SelectItem>
                                     ))}
                                 </SelectGroup>
@@ -651,13 +678,13 @@ export default function AdminUsersIndex({
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm">
                                     <Columns3Icon data-icon="inline-start" />
-                                    Columns
+                                    {t('jobs.columns')}
                                     <ChevronDownIcon data-icon="inline-end" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-52">
                                 <DropdownMenuLabel>
-                                    Visible columns
+                                    {t('jobs.visibleColumns')}
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 {table
@@ -673,8 +700,9 @@ export default function AdminUsersIndex({
                                                 )
                                             }
                                         >
-                                            {columnLabels[column.id] ??
-                                                column.id}
+                                            {columnLabelKeys[column.id]
+                                                ? t(columnLabelKeys[column.id])
+                                                : column.id}
                                         </DropdownMenuCheckboxItem>
                                     ))}
                             </DropdownMenuContent>
@@ -740,7 +768,7 @@ export default function AdminUsersIndex({
                                         colSpan={columns.length}
                                         className="h-28 text-center text-muted-foreground"
                                     >
-                                        No users match the current filters.
+                                        {t('admin.usersNoMatch')}
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -750,8 +778,10 @@ export default function AdminUsersIndex({
 
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <p className="text-sm text-muted-foreground">
-                        Page {table.getState().pagination.pageIndex + 1} of{' '}
-                        {pageCount}
+                        {t('jobs.pagination', {
+                            page: table.getState().pagination.pageIndex + 1,
+                            pages: pageCount,
+                        })}
                     </p>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -763,7 +793,7 @@ export default function AdminUsersIndex({
                             disabled={!table.getCanPreviousPage()}
                         >
                             <ChevronsLeftIcon data-icon="inline-start" />
-                            First
+                            {t('jobs.first')}
                         </Button>
                         <Button
                             type="button"
@@ -773,7 +803,7 @@ export default function AdminUsersIndex({
                             disabled={!table.getCanPreviousPage()}
                         >
                             <ChevronLeftIcon data-icon="inline-start" />
-                            Previous
+                            {t('common.previous')}
                         </Button>
                         <Button
                             type="button"
@@ -783,7 +813,7 @@ export default function AdminUsersIndex({
                             disabled={!table.getCanNextPage()}
                         >
                             <ChevronRightIcon data-icon="inline-start" />
-                            Next
+                            {t('common.next')}
                         </Button>
                         <Button
                             type="button"
@@ -795,7 +825,7 @@ export default function AdminUsersIndex({
                             disabled={!table.getCanNextPage()}
                         >
                             <ChevronsRightIcon data-icon="inline-start" />
-                            Last
+                            {t('jobs.last')}
                         </Button>
                     </div>
                 </div>
@@ -851,6 +881,7 @@ function UserFormDialog({
     user?: AdminUser;
     lockRole?: boolean;
 }) {
+    const { t } = useTranslation();
     const isEditing = user !== undefined;
     const form = useForm<UserFormData>(
         isEditing ? updateUser(user.id) : store(),
@@ -908,13 +939,13 @@ function UserFormDialog({
                         <div className="min-w-0 space-y-1">
                             <DialogTitle>
                                 {isEditing
-                                    ? 'Edit user details'
-                                    : 'Create user'}
+                                    ? t('admin.editUserDetails')
+                                    : t('admin.createUser')}
                             </DialogTitle>
                             <DialogDescription className="break-words">
                                 {isEditing
                                     ? user.email
-                                    : 'A setup link will be sent.'}
+                                    : t('admin.createUserDescription')}
                             </DialogDescription>
                         </div>
                     </div>
@@ -923,7 +954,9 @@ function UserFormDialog({
                 <form onSubmit={submit} className="flex flex-col gap-5">
                     <div className="grid gap-4 px-6 pt-5 sm:grid-cols-2">
                         <div className="grid gap-2">
-                            <Label htmlFor="admin-user-name">Name</Label>
+                            <Label htmlFor="admin-user-name">
+                                {t('common.name')}
+                            </Label>
                             <Input
                                 id="admin-user-name"
                                 value={form.data.name}
@@ -938,7 +971,9 @@ function UserFormDialog({
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="admin-user-email">Email</Label>
+                            <Label htmlFor="admin-user-email">
+                                {t('common.email')}
+                            </Label>
                             <Input
                                 id="admin-user-email"
                                 type="email"
@@ -954,7 +989,9 @@ function UserFormDialog({
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="admin-user-role">Role</Label>
+                            <Label htmlFor="admin-user-role">
+                                {t('common.role')}
+                            </Label>
                             <Select
                                 value={form.data.role}
                                 disabled={lockRole}
@@ -976,7 +1013,7 @@ function UserFormDialog({
                                                 key={role.value}
                                                 value={role.value}
                                             >
-                                                {role.label}
+                                                {roleLabel(role.value, t)}
                                             </SelectItem>
                                         ))}
                                     </SelectGroup>
@@ -988,7 +1025,7 @@ function UserFormDialog({
                         {emailChanged && (
                             <div className="grid gap-2">
                                 <Label htmlFor="admin-user-email-confirmation">
-                                    Confirm email
+                                    {t('admin.confirmEmail')}
                                 </Label>
                                 <Input
                                     id="admin-user-email-confirmation"
@@ -1013,44 +1050,20 @@ function UserFormDialog({
 
                     {isEditing && (
                         <div className="px-6">
-                            <Alert className="w-full max-w-full min-w-0 border-emerald-200 bg-emerald-50 text-emerald-950 [&>svg]:size-5 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-emerald-100">
+                            <Alert className="w-full max-w-full min-w-0 border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-emerald-100 [&>svg]:size-5">
                                 <InfoIcon className="mt-0.5 size-5 text-emerald-600 dark:text-emerald-300" />
                                 <AlertTitle>
-                                    How social sign-in reconciliation works
+                                    {t('admin.socialReconciliation')}
                                 </AlertTitle>
                                 <AlertDescription className="min-w-0 text-emerald-900/80 dark:text-emerald-100/80">
                                     <ul className="min-w-0 list-disc space-y-1 pl-4 break-words">
+                                        <li>{t('admin.providerLinked')}</li>
+                                        <li>{t('admin.providerEmail')}</li>
                                         <li>
-                                            Provider identity already linked:
-                                            future sign-ins keep using this
-                                            user, even if the account email
-                                            changes.
+                                            {t('admin.noTrustedProviderEmail')}
                                         </li>
-                                        <li>
-                                            Verified provider email: if no
-                                            provider link exists yet, the
-                                            normalized email is matched to an
-                                            existing user; otherwise a new
-                                            social-only user is created.
-                                        </li>
-                                        <li>
-                                            No trusted provider email: the user
-                                            must confirm an address with OTP,
-                                            then that normalized address is
-                                            matched or created.
-                                        </li>
-                                        <li>
-                                            Changing this email: new unlinked
-                                            provider logins with the new
-                                            verified email reconcile to this
-                                            user, while logins still reporting
-                                            the old email may match another
-                                            account or create a separate one.
-                                        </li>
-                                        <li>
-                                            Email already used: saving is
-                                            blocked by the unique email rule.
-                                        </li>
+                                        <li>{t('admin.emailChanged')}</li>
+                                        <li>{t('admin.emailAlreadyUsed')}</li>
                                     </ul>
                                 </AlertDescription>
                             </Alert>
@@ -1060,7 +1073,7 @@ function UserFormDialog({
                     <DialogFooter className="border-t bg-muted/20 px-6 py-4">
                         <DialogClose asChild>
                             <Button type="button" variant="outline">
-                                Cancel
+                                {t('common.cancel')}
                             </Button>
                         </DialogClose>
                         <Button type="submit" disabled={form.processing}>
@@ -1069,7 +1082,7 @@ function UserFormDialog({
                             ) : (
                                 <SaveIcon data-icon="inline-start" />
                             )}
-                            Save
+                            {t('common.save')}
                         </Button>
                     </DialogFooter>
                 </form>
@@ -1087,6 +1100,7 @@ function UserStatusDialog({
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }) {
+    const { t } = useTranslation();
     const isRestoring = user.is_deactivated;
     const StatusIcon = isRestoring ? UserCheckIcon : UserXIcon;
     const statusTone = isRestoring
@@ -1095,18 +1109,16 @@ function UserStatusDialog({
                   'border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-emerald-100',
               iconClassName:
                   'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200',
-              title: 'Activate this user?',
-              description:
-                  'This user will regain access to the application.',
+              title: t('admin.activateTitle'),
+              description: t('admin.statusRestoreDescription'),
           }
         : {
               panelClassName:
                   'border-red-200 bg-red-50 text-red-950 dark:border-red-900/60 dark:bg-red-950/35 dark:text-red-100',
               iconClassName:
                   'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-200',
-              title: 'Deactivate this user?',
-              description:
-                  'This user will immediately lose access to the application.',
+              title: t('admin.deactivateTitle'),
+              description: t('admin.statusDeactivateDescription'),
           };
 
     function submit() {
@@ -1134,13 +1146,15 @@ function UserStatusDialog({
             <DialogContent className="overflow-hidden p-0 sm:max-w-md">
                 <DialogHeader className="px-6 pt-6 pr-12 text-left">
                     <DialogTitle>
-                        {isRestoring ? 'Activate user' : 'Deactivate user'}
+                        {isRestoring
+                            ? t('admin.activateUser')
+                            : t('admin.deactivateUser')}
                     </DialogTitle>
                     <DialogDescription className="space-y-0.5 break-words">
                         <span className="block font-semibold text-foreground">
                             {user.name}
                         </span>
-                        <span className="block font-mono text-xs italic text-muted-foreground">
+                        <span className="block font-mono text-xs text-muted-foreground italic">
                             {user.email}
                         </span>
                     </DialogDescription>
@@ -1172,13 +1186,13 @@ function UserStatusDialog({
                             <div className="mt-3 space-y-1 rounded-md border border-current/15 bg-white/55 px-3 py-2 dark:bg-black/10">
                                 <p
                                     data-slot="status-user-name"
-                                    className="break-words text-sm font-semibold"
+                                    className="text-sm font-semibold break-words"
                                 >
                                     {user.name}
                                 </p>
                                 <p
                                     data-slot="status-user-email"
-                                    className="break-all font-mono text-xs italic opacity-75"
+                                    className="font-mono text-xs break-all italic opacity-75"
                                 >
                                     {user.email}
                                 </p>
@@ -1190,7 +1204,7 @@ function UserStatusDialog({
                 <DialogFooter className="border-t bg-muted/20 px-6 py-4">
                     <DialogClose asChild>
                         <Button type="button" variant="outline">
-                            Cancel
+                            {t('common.cancel')}
                         </Button>
                     </DialogClose>
                     <Button
@@ -1203,7 +1217,9 @@ function UserStatusDialog({
                         ) : (
                             <UserXIcon data-icon="inline-start" />
                         )}
-                        {isRestoring ? 'Activate' : 'Deactivate'}
+                        {isRestoring
+                            ? t('admin.activate')
+                            : t('admin.deactivate')}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -1213,13 +1229,15 @@ function UserStatusDialog({
 
 function SortableHeader({
     column,
-    title,
+    titleKey,
     className,
 }: {
     column: Column<AdminUser, unknown>;
-    title: string;
+    titleKey: TranslationKey;
     className?: string;
 }) {
+    const { t } = useTranslation();
+
     return (
         <Button
             type="button"
@@ -1228,13 +1246,15 @@ function SortableHeader({
             className={cn('-ml-2 h-8 px-2', className)}
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-            {title}
+            {t(titleKey)}
             <ArrowUpDownIcon data-icon="inline-end" />
         </Button>
     );
 }
 
 function SocialProviderBadges({ providers }: { providers: SocialProvider[] }) {
+    const { t } = useTranslation();
+
     if (providers.length === 0) {
         const style = getSocialProviderStyle(null);
 
@@ -1244,7 +1264,7 @@ function SocialProviderBadges({ providers }: { providers: SocialProvider[] }) {
                 className={cn('uppercase', style.badgeClassName)}
             >
                 <SocialProviderIcon provider={null} data-icon="inline-start" />
-                LOCAL
+                {t('admin.local')}
             </Badge>
         );
     }
@@ -1273,6 +1293,7 @@ function SocialProviderBadges({ providers }: { providers: SocialProvider[] }) {
 }
 
 function RoleBadge({ role }: { role: AdminUserRole }) {
+    const { t } = useTranslation();
     const Icon = role === 'admin' ? ShieldCheckIcon : UserIcon;
 
     return (
@@ -1281,17 +1302,19 @@ function RoleBadge({ role }: { role: AdminUserRole }) {
             className={cn('uppercase', role === 'user' && 'bg-background')}
         >
             <Icon data-icon="inline-start" />
-            {role.toUpperCase()}
+            {roleLabel(role, t).toUpperCase()}
         </Badge>
     );
 }
 
 function UserStatusBadge({ user }: { user: AdminUser }) {
+    const { t } = useTranslation();
+
     if (user.is_deactivated) {
         return (
             <Badge variant="destructive" className="uppercase">
                 <UserXIcon data-icon="inline-start" />
-                INACTIVE
+                {t('admin.statusInactive')}
             </Badge>
         );
     }
@@ -1302,20 +1325,24 @@ function UserStatusBadge({ user }: { user: AdminUser }) {
             className="border-emerald-200 bg-emerald-100 text-emerald-800 uppercase dark:border-emerald-400/70 dark:bg-emerald-500/15 dark:text-emerald-100"
         >
             <CheckCircle2Icon data-icon="inline-start" />
-            ACTIVE
+            {t('admin.statusActive')}
         </Badge>
     );
 }
 
-function formatDate(value: string | null) {
+function formatDate(value: string | null, locale: string, unavailable: string) {
     if (!value) {
-        return 'Not available';
+        return unavailable;
     }
 
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat(locale, {
         dateStyle: 'medium',
         timeStyle: 'short',
     }).format(new Date(value));
+}
+
+function roleLabel(role: AdminUserRole, t: Translate): string {
+    return role === 'admin' ? t('admin.roleAdmin') : t('common.user');
 }
 
 function dateSortValue(value?: string | null): number {
@@ -1332,6 +1359,7 @@ AdminUsersIndex.layout = {
     breadcrumbs: [
         {
             title: 'All Users',
+            titleKey: 'admin.allUsers',
             href: index(),
         },
     ],

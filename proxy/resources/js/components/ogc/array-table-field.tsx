@@ -11,6 +11,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useTranslation } from '@/hooks/use-translation';
 import type { OgcNormalizedField } from '@/types';
 
 export default function ArrayTableField({
@@ -22,6 +23,7 @@ export default function ArrayTableField({
     value: unknown;
     onChange: (value: unknown) => void;
 }) {
+    const { t } = useTranslation();
     const rows = Array.isArray(value) ? value : [];
     const columns = field.columns ?? [];
     const tableMinWidth = `${Math.max(columns.length * 8 + 3, 32)}rem`;
@@ -90,7 +92,7 @@ export default function ArrayTableField({
                                             type="button"
                                             variant="destructive"
                                             size="icon"
-                                            aria-label="Remove row"
+                                            aria-label={t('ogc.removeRow')}
                                             onClick={() =>
                                                 onChange(
                                                     rows.filter(
@@ -115,7 +117,7 @@ export default function ArrayTableField({
                 onClick={() => onChange([...rows, columns.map(() => '')])}
             >
                 <Plus data-icon="inline-start" />
-                Add row
+                {t('ogc.addRow')}
             </Button>
         </FieldSet>
     );

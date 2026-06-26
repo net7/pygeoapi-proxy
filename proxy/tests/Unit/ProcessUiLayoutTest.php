@@ -7,8 +7,8 @@ test('process form keeps inputs beside execution controls on desktop', function 
         ->toContain('lg:grid-cols-[minmax(0,1fr)_22rem]')
         ->toContain('lg:sticky')
         ->toContain('@/routes/processes/jobs')
-        ->toContain('Execution')
-        ->toContain('Outputs');
+        ->toContain('ogc.execution')
+        ->toContain('ogc.outputs');
 });
 
 test('process index cards are optimized for scanning', function () {
@@ -20,13 +20,13 @@ test('process index cards are optimized for scanning', function () {
         ->toContain('h-full overflow-hidden')
         ->toContain('group-hover:border-primary/40')
         ->toContain('min-h-[3.75rem]')
-        ->toContain('No description provided.')
-        ->toContain('{processes.length}')
+        ->toContain('ogc.noDescription')
+        ->toContain('processes.length')
         ->toContain('process.version')
         ->toContain('process.outputTransmission')
-        ->toContain('Job controls')
-        ->toContain('Output modes')
-        ->toContain('Open process')
+        ->toContain('ogc.jobControls')
+        ->toContain('ogc.outputModes')
+        ->toContain('ogc.openProcess')
         ->toContain('ArrowRightIcon')
         ->toContain('data-icon="inline-end"')
         ->not->toContain('<Card key={process.id}>');
@@ -37,7 +37,7 @@ test('process form exposes a local development prefill action', function () {
 
     expect($source)
         ->toContain('examplePayload')
-        ->toContain('PREFILL TEST DATA')
+        ->toContain('ogc.prefillTestData')
         ->toContain('bg-amber-100')
         ->toContain('applyExamplePayload')
         ->toContain('WandSparklesIcon')
@@ -62,29 +62,29 @@ test('array table fields keep a practical responsive width', function () {
 
 test('text buttons include representative icons', function () {
     $requirements = [
-        'resources/js/pages/process-executions/index.tsx' => ['Details' => 'ListChecksIcon'],
-        'resources/js/pages/auth/login.tsx' => ['Log in' => 'LogInIcon'],
-        'resources/js/pages/auth/register.tsx' => ['Create account' => 'UserPlusIcon'],
-        'resources/js/pages/auth/forgot-password.tsx' => ['Email password reset link' => 'MailIcon'],
-        'resources/js/pages/auth/reset-password.tsx' => ['Reset password' => 'KeyRoundIcon'],
-        'resources/js/pages/auth/confirm-password.tsx' => ['Confirm password' => 'ShieldCheckIcon'],
-        'resources/js/pages/settings/profile.tsx' => ['Save' => 'SaveIcon'],
-        'resources/js/pages/settings/security.tsx' => ['Save' => 'ShieldCheckIcon'],
+        'resources/js/pages/process-executions/index.tsx' => ['jobs.details' => 'ListChecksIcon'],
+        'resources/js/pages/auth/login.tsx' => ['auth.login.submit' => 'LogInIcon'],
+        'resources/js/pages/auth/register.tsx' => ['auth.createAccount' => 'UserPlusIcon'],
+        'resources/js/pages/auth/forgot-password.tsx' => ['auth.forgotPassword.submit' => 'MailIcon'],
+        'resources/js/pages/auth/reset-password.tsx' => ['auth.resetPassword.submit' => 'KeyRoundIcon'],
+        'resources/js/pages/auth/confirm-password.tsx' => ['auth.confirmPassword.submit' => 'ShieldCheckIcon'],
+        'resources/js/pages/settings/profile.tsx' => ['common.save' => 'SaveIcon'],
+        'resources/js/pages/settings/security.tsx' => ['common.save' => 'ShieldCheckIcon'],
         'resources/js/components/delete-user.tsx' => [
-            'Cancel' => 'XIcon',
-            'Delete account' => 'Trash2Icon',
-            'Send confirmation code' => 'MailCheckIcon',
+            'common.cancel' => 'XIcon',
+            'settings.deleteAccount.title' => 'Trash2Icon',
+            'settings.deleteAccount.sendCode' => 'MailCheckIcon',
         ],
         'resources/js/components/passkey-register.tsx' => [
-            'Add passkey' => 'KeyRoundIcon',
-            'Register passkey' => 'KeyRoundIcon',
-            'Cancel' => 'XIcon',
+            'settings.passkeys.add' => 'KeyRoundIcon',
+            'settings.passkeys.register' => 'KeyRoundIcon',
+            'common.cancel' => 'XIcon',
         ],
         'resources/js/components/passkey-item.tsx' => [
-            'Cancel' => 'XIcon',
-            'Remove passkey' => 'Trash2',
+            'common.cancel' => 'XIcon',
+            'settings.passkeys.remove' => 'Trash2',
         ],
-        'resources/js/components/ogc/dynamic-process-form.tsx' => ['Execute' => 'PlayIcon'],
+        'resources/js/components/ogc/dynamic-process-form.tsx' => ['ogc.execute' => 'PlayIcon'],
     ];
 
     foreach ($requirements as $path => $expectedIcons) {
@@ -149,6 +149,12 @@ test('interactive button and link surfaces use pointer cursors', function () {
         'resources/js/components/appearance-tabs.tsx' => [
             'cursor-pointer',
         ],
+        'resources/js/components/language-tabs.tsx' => [
+            'cursor-pointer',
+            'LanguagesIcon',
+            'languageMetadata',
+            'updateLanguage',
+        ],
     ];
 
     foreach ($requirements as $path => $expectedClasses) {
@@ -167,7 +173,7 @@ test('jobs index exposes a filterable status table', function () {
     $copyableJobIdSource = file_get_contents(getcwd().'/resources/js/components/ogc/copyable-job-id.tsx');
 
     expect($source)
-        ->toContain('My Jobs')
+        ->toContain('jobs.title')
         ->toContain('@/routes/jobs')
         ->toContain('@tanstack/react-table')
         ->toContain('ColumnDef')
@@ -189,7 +195,7 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('SearchIcon')
         ->toContain('sm:w-[34rem]')
         ->toContain('xl:w-[42rem]')
-        ->toContain('Search process, job ID, status or message...')
+        ->toContain('jobs.searchPlaceholder')
         ->toContain('ArrowUpDownIcon')
         ->toContain('statusOptions')
         ->toContain('columnFilters')
@@ -253,11 +259,11 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('@/hooks/use-clipboard')
         ->toContain('CopyIcon')
         ->toContain('TooltipContent')
-        ->toContain('Copy job ID')
-        ->toContain('Click to copy this job ID.')
+        ->toContain('jobs.jobIdCopyLabel')
+        ->toContain('jobs.jobIdCopyTooltip')
         ->toContain('side="right"')
         ->toContain('align="center"')
-        ->toContain('Job ID copied')
+        ->toContain('jobs.jobIdCopied')
         ->toContain('copy(displayJobId)')
         ->toContain('cursor-pointer justify-start')
         ->toContain('font-mono')
@@ -295,7 +301,7 @@ test('remove and delete buttons use destructive styling', function () {
         'resources/js/components/ogc/array-object-field.tsx',
     ] as $path) {
         expect(file_get_contents(getcwd().'/'.$path))
-            ->toContain('aria-label="Remove row"')
+            ->toContain('ogc.removeRow')
             ->toContain('variant="destructive"');
     }
 
@@ -314,13 +320,13 @@ test('job detail prioritizes results and keeps request data beside them', functi
         ->toContain('@/components/ogc/copyable-job-id')
         ->toContain('@/routes/jobs')
         ->toContain('jobStatusStyles')
-        ->toContain('Job ID')
+        ->toContain('jobs.jobId')
         ->toContain('remoteJobId')
         ->toContain('<CopyableJobId displayJobId={displayJobId} />')
-        ->toContain('STATUS')
-        ->toContain('Requested Outputs')
-        ->toContain('Results')
-        ->toContain('Request')
+        ->toContain('common.status')
+        ->toContain('jobs.requestedOutputs')
+        ->toContain('jobs.results')
+        ->toContain('jobs.request')
         ->not->toContain('<code className="min-w-0 truncate');
 });
 
@@ -335,15 +341,15 @@ test('job pages poll while executions are active', function () {
         ->toContain('hasActiveJobs')
         ->toContain('isJobTerminal')
         ->toContain('<JobPollingIndicator')
-        ->toContain('Polling active: refreshing running jobs')
-        ->toContain('Polling inactive: no running jobs');
+        ->toContain('jobs.pollingActive')
+        ->toContain('jobs.pollingInactive');
 
     expect($showSource)
         ->toContain('pollingInterval')
         ->toContain('isJobTerminal(execution.status)')
         ->toContain('<JobPollingIndicator')
-        ->toContain('Polling active: waiting for this job to finish')
-        ->toContain('Polling inactive: this job is finished');
+        ->toContain('jobs.pollingShowActive')
+        ->toContain('jobs.pollingShowInactive');
 
     expect($indicatorSource)
         ->toContain("import { usePoll } from '@inertiajs/react'")
@@ -449,12 +455,12 @@ test('process pages expose cache warming states', function () {
     expect($indexSource)
         ->toContain('catalogStatus')
         ->toContain('CacheWarmupPoller')
-        ->toContain('Service catalog is being prepared')
+        ->toContain('ogc.servicePreparingTitle')
         ->toContain('Spinner')
         ->and($showSource)
         ->toContain('processStatus')
         ->toContain('CacheWarmupPoller')
-        ->toContain('Process description is being prepared')
+        ->toContain('ogc.processPreparingTitle')
         ->toContain('formSchema === null')
         ->and($pollerPath)
         ->toBeFile();

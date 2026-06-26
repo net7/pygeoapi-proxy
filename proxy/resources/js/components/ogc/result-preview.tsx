@@ -16,6 +16,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useTranslation } from '@/hooks/use-translation';
 import { download } from '@/routes/jobs/results';
 import type { ProcessExecutionResult } from '@/types';
 
@@ -26,6 +27,7 @@ export default function ResultPreview({
     executionId: number;
     result: ProcessExecutionResult;
 }) {
+    const { t } = useTranslation();
     const preview = result.preview;
     const canDownload =
         result.cacheStatus === 'cached' ||
@@ -43,7 +45,7 @@ export default function ResultPreview({
                         <Button asChild variant="outline">
                             <a href={download.url([executionId, result.id])}>
                                 <Download data-icon="inline-start" />
-                                Download
+                                {t('common.download')}
                             </a>
                         </Button>
                     ) : null}
@@ -64,12 +66,12 @@ export default function ResultPreview({
                 ) : null}
                 {preview?.kind === 'binary' ? (
                     <p className="text-sm text-muted-foreground">
-                        Preview unavailable for this media type.
+                        {t('ogc.previewUnavailableMedia')}
                     </p>
                 ) : null}
                 {!preview ? (
                     <p className="text-sm text-muted-foreground">
-                        Preview unavailable.
+                        {t('ogc.previewUnavailable')}
                     </p>
                 ) : null}
             </CardContent>

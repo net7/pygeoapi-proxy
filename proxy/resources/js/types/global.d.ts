@@ -1,3 +1,4 @@
+import type { Language } from '@/lib/i18n/languages';
 import type { Auth } from '@/types/auth';
 
 declare module 'react' {
@@ -11,6 +12,7 @@ declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {
             name: string;
+            language: Language;
             auth: Auth;
             sidebarOpen: boolean;
             [key: string]: unknown;
