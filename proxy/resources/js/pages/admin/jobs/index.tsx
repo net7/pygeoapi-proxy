@@ -78,11 +78,22 @@ type AdminJob = ProcessExecutionListItem & {
     };
 };
 
+type AdminJobUser = {
+    id: number;
+    name: string;
+    email: string;
+};
+
 type PaginatedJobs = {
     data: AdminJob[];
     from: number | null;
     to: number | null;
     total: number;
+};
+
+type AdminJobFilters = {
+    search: string;
+    user_id: number | null;
 };
 
 const columnLabels: Record<string, string> = {
@@ -128,6 +139,16 @@ const columns: ColumnDef<AdminJob>[] = [
                 .getValue<string>(columnId)
                 .toLowerCase()
                 .includes(String(filterValue).toLowerCase()),
+        enableHiding: false,
+        enableSorting: false,
+    },
+    {
+        id: 'userId',
+        accessorFn: (execution) => execution.owner.id,
+        filterFn: (row, columnId, filterValue) =>
+            !filterValue ||
+            filterValue === 'all' ||
+            String(row.getValue<number>(columnId)) === String(filterValue),
         enableHiding: false,
         enableSorting: false,
     },
@@ -258,20 +279,41 @@ const columns: ColumnDef<AdminJob>[] = [
 export default function AdminJobsIndex({
     executions,
     filters,
+    users,
 }: {
     executions: PaginatedJobs;
-    filters: { search: string };
+    filters: AdminJobFilters;
+    users: AdminJobUser[];
 }) {
     const [sorting, setSorting] = useState<SortingState>([
         { id: 'submittedAt', desc: true },
     ]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-        filters.search ? [{ id: 'jobSearch', value: filters.search }] : [],
+        () => {
+            const initialFilters: ColumnFiltersState = [];
+
+            if (filters.search) {
+                initialFilters.push({
+                    id: 'jobSearch',
+                    value: filters.search,
+                });
+            }
+
+            if (filters.user_id !== null) {
+                initialFilters.push({
+                    id: 'userId',
+                    value: String(filters.user_id),
+                });
+            }
+
+            return initialFilters;
+        },
     );
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
         finishedAt: false,
         jobSearch: false,
         message: false,
+        userId: false,
     });
     const [pagination, setPagination] = useState<PaginationState>({
         pageIndex: 0,
@@ -340,9 +382,32 @@ export default function AdminJobsIndex({
         (table.getColumn('jobSearch')?.getFilterValue() as
             | string
             | undefined) ?? '';
+    const selectedUserId =
+        (table.getColumn('userId')?.getFilterValue() as string | undefined) ??
+        (filters.user_id === null ? 'all' : String(filters.user_id));
     const filteredRowsCount = table.getFilteredRowModel().rows.length;
     const pageCount = Math.max(table.getPageCount(), 1);
-    const hasActiveFilters = statusFilter !== 'all' || searchFilter !== '';
+    const hasActiveFilters =
+        statusFilter !== 'all' ||
+        searchFilter !== '' ||
+        selectedUserId !== 'all';
+
+    function selectUser(value: string): void {
+        const nextUserId = value === 'all' ? undefined : value;
+        const query = {
+            ...(searchFilter ? { search: searchFilter } : {}),
+            ...(nextUserId ? { user_id: nextUserId } : {}),
+        };
+
+        table.getColumn('userId')?.setFilterValue(nextUserId);
+        table.setPageIndex(0);
+
+        router.get(
+            index.url({ query }),
+            {},
+            { preserveScroll: true, replace: true },
+        );
+    }
 
     return (
         <>
@@ -429,6 +494,11 @@ export default function AdminJobsIndex({
                                 onClick={() => {
                                     table.resetColumnFilters();
                                     table.setPageIndex(0);
+                                    router.get(
+                                        index.url(),
+                                        {},
+                                        { preserveScroll: true, replace: true },
+                                    );
                                 }}
                             >
                                 <XIcon data-icon="inline-start" />
@@ -438,6 +508,34 @@ export default function AdminJobsIndex({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                        <Select
+                            value={selectedUserId}
+                            onValueChange={selectUser}
+                        >
+                            <SelectTrigger
+                                size="sm"
+                                className="w-full sm:w-72"
+                                aria-label="Filter jobs by user"
+                            >
+                                <SelectValue placeholder="All users" />
+                            </SelectTrigger>
+                            <SelectContent align="end">
+                                <SelectGroup>
+                                    <SelectItem value="all">
+                                        All users
+                                    </SelectItem>
+                                    {users.map((user) => (
+                                        <SelectItem
+                                            key={user.id}
+                                            value={`${user.id}`}
+                                        >
+                                            {user.name} ({user.email})
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+
                         <Select
                             value={`${table.getState().pagination.pageSize}`}
                             onValueChange={(value) => {

@@ -1,4 +1,4 @@
-import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     flexRender,
     getCoreRowModel,
@@ -24,6 +24,7 @@ import {
     ChevronsLeftIcon,
     ChevronsRightIcon,
     Columns3Icon,
+    ListChecksIcon,
     ListFilterIcon,
     PencilIcon,
     PlusIcon,
@@ -79,6 +80,7 @@ import {
 } from '@/components/ui/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
+import { index as jobsIndex } from '@/routes/admin/jobs';
 import {
     destroy as destroyUser,
     index,
@@ -139,7 +141,7 @@ const columnClassNames: Record<string, string> = {
     status: 'min-w-32',
     jobs_count: 'min-w-24 text-right',
     created_at: 'min-w-40',
-    actions: 'w-56 text-right',
+    actions: 'min-w-80 text-right',
 };
 
 export default function AdminUsersIndex({
@@ -269,6 +271,17 @@ export default function AdminUsersIndex({
 
                     return (
                         <div className="flex justify-end gap-2">
+                            <Button asChild variant="outline" size="sm">
+                                <Link
+                                    href={jobsIndex({
+                                        query: { user_id: user.id },
+                                    })}
+                                >
+                                    <ListChecksIcon data-icon="inline-start" />
+                                    Jobs
+                                </Link>
+                            </Button>
+
                             <Button
                                 type="button"
                                 variant="outline"
@@ -283,6 +296,11 @@ export default function AdminUsersIndex({
                                 type="button"
                                 variant="outline"
                                 size="sm"
+                                className={cn(
+                                    user.is_deactivated
+                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900 dark:border-emerald-400/70 dark:bg-emerald-500/15 dark:text-emerald-100 dark:hover:bg-emerald-500/25'
+                                        : 'border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100 hover:text-amber-950 dark:border-amber-400/70 dark:bg-amber-500/15 dark:text-amber-100 dark:hover:bg-amber-500/25',
+                                )}
                                 disabled={isSelf}
                                 onClick={() => setStatusUser(user)}
                             >
@@ -962,24 +980,32 @@ function RoleBadge({ role }: { role: AdminUserRole }) {
 
     return (
         <Badge
-            variant={role === 'admin' ? 'default' : 'secondary'}
-            className="uppercase"
+            variant={role === 'admin' ? 'destructive' : 'outline'}
+            className={cn('uppercase', role === 'user' && 'bg-background')}
         >
             <Icon data-icon="inline-start" />
-            {role}
+            {role.toUpperCase()}
         </Badge>
     );
 }
 
 function UserStatusBadge({ user }: { user: AdminUser }) {
     if (user.is_deactivated) {
-        return <Badge variant="destructive">Inactive</Badge>;
+        return (
+            <Badge variant="destructive" className="uppercase">
+                <UserXIcon data-icon="inline-start" />
+                INACTIVE
+            </Badge>
+        );
     }
 
     return (
-        <Badge variant="outline">
+        <Badge
+            variant="outline"
+            className="border-emerald-200 bg-emerald-100 text-emerald-800 uppercase dark:border-emerald-400/70 dark:bg-emerald-500/15 dark:text-emerald-100"
+        >
             <CheckCircle2Icon data-icon="inline-start" />
-            Active
+            ACTIVE
         </Badge>
     );
 }
