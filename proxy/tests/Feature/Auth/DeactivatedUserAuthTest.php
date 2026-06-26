@@ -7,6 +7,8 @@ use App\Models\EmailOtpChallenge;
 use App\Models\User;
 use App\Support\AuthFeatures;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Passkeys\Passkey;
+use Laravel\Passkeys\Passkeys;
 use Laravel\Socialite\Contracts\Factory as SocialiteFactory;
 use Laravel\Socialite\Two\User as SocialiteUser;
 use Mockery\MockInterface;
@@ -98,4 +100,17 @@ test('deactivated users cannot authenticate after social email verification', fu
         ->assertSessionHasErrors('email');
 
     $this->assertGuest();
+});
+
+test('deactivated users cannot authenticate with passkeys', function () {
+    $activeUser = User::factory()->create();
+    $activePasskey = new Passkey;
+    $activePasskey->setRelation('user', $activeUser);
+
+    $deactivatedUser = User::factory()->deactivated()->create();
+    $deactivatedPasskey = new Passkey;
+    $deactivatedPasskey->setRelation('user', $deactivatedUser);
+
+    expect(Passkeys::allowsLogin(request(), $activePasskey))->toBeTrue()
+        ->and(Passkeys::allowsLogin(request(), $deactivatedPasskey))->toBeFalse();
 });
