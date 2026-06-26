@@ -4,5 +4,30 @@ test('admin user badge uses the shadcn badge component and uppercase label', fun
     $component = file_get_contents(dirname(__DIR__, 2).'/resources/js/components/user-info.tsx');
 
     expect($component)->toContain("import { Badge } from '@/components/ui/badge';")
+        ->and($component)->toContain('variant="default"')
         ->and($component)->toContain('ADMIN');
+});
+
+test('admin sidebar groups all users and all jobs under administration', function () {
+    $sidebar = file_get_contents(dirname(__DIR__, 2).'/resources/js/components/app-sidebar.tsx');
+
+    expect($sidebar)->toContain('label="Administration"')
+        ->and($sidebar)->toContain("title: 'All Users'")
+        ->and($sidebar)->toContain("title: 'All Jobs'")
+        ->and($sidebar)->not->toContain("title: 'Admin Users'")
+        ->and($sidebar)->not->toContain("title: 'Admin Jobs'");
+});
+
+test('admin tables use tanstack filtering and expected labels', function () {
+    $users = file_get_contents(dirname(__DIR__, 2).'/resources/js/pages/admin/users/index.tsx');
+    $jobs = file_get_contents(dirname(__DIR__, 2).'/resources/js/pages/admin/jobs/index.tsx');
+
+    expect($users)->toContain("from '@tanstack/react-table'")
+        ->and($users)->toContain('getFilteredRowModel')
+        ->and($users)->toContain('All Users')
+        ->and($jobs)->toContain("from '@tanstack/react-table'")
+        ->and($jobs)->toContain('getFilteredRowModel')
+        ->and($jobs)->toContain("user: 'User'")
+        ->and($jobs)->not->toContain('Owner')
+        ->and($jobs)->toContain('styles.rowClassName');
 });

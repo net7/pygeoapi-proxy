@@ -25,7 +25,7 @@ export function UserInfo({
                     <span className="truncate font-medium">{user.name}</span>
                     {user.is_admin && (
                         <Badge
-                            variant="secondary"
+                            variant="default"
                             className="h-5 shrink-0 px-1.5 text-[10px] uppercase"
                         >
                             ADMIN

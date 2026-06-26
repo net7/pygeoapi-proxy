@@ -46,6 +46,19 @@ const mainNavItems: NavItem[] = [
     },
 ];
 
+const administrationNavItems: NavItem[] = [
+    {
+        title: 'All Users',
+        href: adminUsersIndex(),
+        icon: UsersRound,
+    },
+    {
+        title: 'All Jobs',
+        href: adminJobsIndex(),
+        icon: ShieldCheck,
+    },
+];
+
 const footerNavItems: NavItem[] = [
     // {
     //     title: 'Repository',
@@ -62,21 +75,6 @@ const footerNavItems: NavItem[] = [
 export function AppSidebar() {
     const { auth } = usePage().props;
     const { state } = useSidebar();
-    const navItems = auth.user?.is_admin
-        ? [
-              ...mainNavItems,
-              {
-                  title: 'Admin Users',
-                  href: adminUsersIndex(),
-                  icon: UsersRound,
-              },
-              {
-                  title: 'Admin Jobs',
-                  href: adminJobsIndex(),
-                  icon: ShieldCheck,
-              },
-          ]
-        : mainNavItems;
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -96,7 +94,13 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={navItems} />
+                <NavMain items={mainNavItems} />
+                {auth.user?.is_admin && (
+                    <NavMain
+                        label="Administration"
+                        items={administrationNavItems}
+                    />
+                )}
             </SidebarContent>
 
             <SidebarFooter>
