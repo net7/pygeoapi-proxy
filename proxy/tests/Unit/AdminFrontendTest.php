@@ -4,7 +4,7 @@ test('admin user badge uses the shadcn badge component and uppercase label', fun
     $component = file_get_contents(dirname(__DIR__, 2).'/resources/js/components/user-info.tsx');
 
     expect($component)->toContain("import { Badge } from '@/components/ui/badge';")
-        ->and($component)->toContain('variant="default"')
+        ->and($component)->toContain('variant="destructive"')
         ->and($component)->toContain('ADMIN');
 });
 
