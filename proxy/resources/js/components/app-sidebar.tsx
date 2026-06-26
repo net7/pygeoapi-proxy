@@ -1,5 +1,11 @@
-import { Link } from '@inertiajs/react';
-import { BriefcaseBusiness, LayoutGrid, Workflow } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import {
+    BriefcaseBusiness,
+    LayoutGrid,
+    ShieldCheck,
+    UsersRound,
+    Workflow,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -16,6 +22,8 @@ import {
 } from '@/components/ui/sidebar';
 import INGV_LOGO_SHORT_IMAGE from '@/images/ingv-logo-short.png';
 import { dashboard } from '@/routes';
+import { index as adminJobsIndex } from '@/routes/admin/jobs';
+import { index as adminUsersIndex } from '@/routes/admin/users';
 import { index as jobsIndex } from '@/routes/jobs';
 import { index as processesIndex } from '@/routes/processes';
 import type { NavItem } from '@/types';
@@ -52,7 +60,23 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+    const { auth } = usePage().props;
     const { state } = useSidebar();
+    const navItems = auth.user?.is_admin
+        ? [
+              ...mainNavItems,
+              {
+                  title: 'Admin Users',
+                  href: adminUsersIndex(),
+                  icon: UsersRound,
+              },
+              {
+                  title: 'Admin Jobs',
+                  href: adminJobsIndex(),
+                  icon: ShieldCheck,
+              },
+          ]
+        : mainNavItems;
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -72,7 +96,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain items={navItems} />
             </SidebarContent>
 
             <SidebarFooter>
