@@ -99,6 +99,67 @@ test('text buttons include representative icons', function () {
     }
 });
 
+test('interactive button and link surfaces use pointer cursors', function () {
+    $requirements = [
+        'resources/js/components/ui/button.tsx' => [
+            'cursor-pointer',
+            'disabled:cursor-not-allowed',
+        ],
+        'resources/js/components/ui/toggle.tsx' => [
+            'cursor-pointer',
+            'disabled:cursor-not-allowed',
+        ],
+        'resources/js/components/ui/checkbox.tsx' => [
+            'cursor-pointer',
+            'disabled:cursor-not-allowed',
+        ],
+        'resources/js/components/ui/select.tsx' => [
+            'cursor-pointer',
+            'disabled:cursor-not-allowed',
+        ],
+        'resources/js/components/ui/sidebar.tsx' => [
+            'cursor-pointer',
+            'disabled:cursor-not-allowed',
+        ],
+        'resources/js/components/ui/navigation-menu.tsx' => [
+            'cursor-pointer',
+            'disabled:cursor-not-allowed',
+        ],
+        'resources/js/components/ui/dropdown-menu.tsx' => [
+            'cursor-pointer',
+            'data-[disabled]:cursor-not-allowed',
+        ],
+        'resources/js/components/ui/dialog.tsx' => [
+            'cursor-pointer',
+            'disabled:cursor-not-allowed',
+        ],
+        'resources/js/components/ui/sheet.tsx' => [
+            'cursor-pointer',
+            'disabled:cursor-not-allowed',
+        ],
+        'resources/js/components/ui/breadcrumb.tsx' => [
+            'cursor-pointer',
+        ],
+        'resources/js/components/text-link.tsx' => [
+            'cursor-pointer',
+        ],
+        'resources/js/components/password-input.tsx' => [
+            'cursor-pointer',
+        ],
+        'resources/js/components/appearance-tabs.tsx' => [
+            'cursor-pointer',
+        ],
+    ];
+
+    foreach ($requirements as $path => $expectedClasses) {
+        $source = file_get_contents(getcwd().'/'.$path);
+
+        foreach ($expectedClasses as $expectedClass) {
+            expect($source)->toContain($expectedClass);
+        }
+    }
+});
+
 test('jobs index exposes a filterable status table', function () {
     $source = file_get_contents(getcwd().'/resources/js/pages/process-executions/index.tsx');
     $normalizedSource = preg_replace('/\s+/', '', $source) ?? '';
