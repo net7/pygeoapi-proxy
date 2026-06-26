@@ -865,7 +865,7 @@ function UserFormDialog({
     const originalEmail = user?.email.toLowerCase() ?? '';
     const emailChanged = isEditing && normalizedEmail !== originalEmail;
     const headerIconClassName = isEditing
-        ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-200'
+        ? 'bg-muted text-muted-foreground'
         : 'bg-primary/10 text-primary';
 
     function submit(event: FormEvent<HTMLFormElement>) {
@@ -891,13 +891,7 @@ function UserFormDialog({
                     isEditing && 'sm:max-w-2xl',
                 )}
             >
-                <DialogHeader
-                    className={cn(
-                        'border-b bg-muted/30 px-6 py-5 pr-12',
-                        isEditing &&
-                            'border-sky-100 bg-sky-50/70 dark:border-sky-900/50 dark:bg-sky-950/20',
-                    )}
-                >
+                <DialogHeader className="border-b bg-muted/30 px-6 py-5 pr-12">
                     <div className="flex items-start gap-3 text-left">
                         <span
                             className={cn(
@@ -1018,45 +1012,49 @@ function UserFormDialog({
                     </div>
 
                     {isEditing && (
-                        <Alert className="mx-6 border-sky-200 bg-sky-50 text-sky-950 [&>svg]:size-5 dark:border-sky-900/60 dark:bg-sky-950/35 dark:text-sky-100">
-                            <InfoIcon className="mt-0.5 size-5 text-sky-600 dark:text-sky-300" />
-                            <AlertTitle>
-                                How social sign-in reconciliation works
-                            </AlertTitle>
-                            <AlertDescription className="text-sky-900/80 dark:text-sky-100/80">
-                                <ul className="ml-4 list-disc space-y-1">
-                                    <li>
-                                        Provider identity already linked: future
-                                        sign-ins keep using this user, even if
-                                        the account email changes.
-                                    </li>
-                                    <li>
-                                        Verified provider email: if no provider
-                                        link exists yet, the normalized email is
-                                        matched to an existing user; otherwise a
-                                        new social-only user is created.
-                                    </li>
-                                    <li>
-                                        No trusted provider email: the user must
-                                        confirm an address with OTP, then that
-                                        normalized address is matched or
-                                        created.
-                                    </li>
-                                    <li>
-                                        Changing this email: new unlinked
-                                        provider logins with the new verified
-                                        email reconcile to this user, while
-                                        logins still reporting the old email may
-                                        match another account or create a
-                                        separate one.
-                                    </li>
-                                    <li>
-                                        Email already used: saving is blocked by
-                                        the unique email rule.
-                                    </li>
-                                </ul>
-                            </AlertDescription>
-                        </Alert>
+                        <div className="px-6">
+                            <Alert className="w-full max-w-full min-w-0 border-emerald-200 bg-emerald-50 text-emerald-950 [&>svg]:size-5 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-emerald-100">
+                                <InfoIcon className="mt-0.5 size-5 text-emerald-600 dark:text-emerald-300" />
+                                <AlertTitle>
+                                    How social sign-in reconciliation works
+                                </AlertTitle>
+                                <AlertDescription className="min-w-0 text-emerald-900/80 dark:text-emerald-100/80">
+                                    <ul className="min-w-0 list-disc space-y-1 pl-4 break-words">
+                                        <li>
+                                            Provider identity already linked:
+                                            future sign-ins keep using this
+                                            user, even if the account email
+                                            changes.
+                                        </li>
+                                        <li>
+                                            Verified provider email: if no
+                                            provider link exists yet, the
+                                            normalized email is matched to an
+                                            existing user; otherwise a new
+                                            social-only user is created.
+                                        </li>
+                                        <li>
+                                            No trusted provider email: the user
+                                            must confirm an address with OTP,
+                                            then that normalized address is
+                                            matched or created.
+                                        </li>
+                                        <li>
+                                            Changing this email: new unlinked
+                                            provider logins with the new
+                                            verified email reconcile to this
+                                            user, while logins still reporting
+                                            the old email may match another
+                                            account or create a separate one.
+                                        </li>
+                                        <li>
+                                            Email already used: saving is
+                                            blocked by the unique email rule.
+                                        </li>
+                                    </ul>
+                                </AlertDescription>
+                            </Alert>
+                        </div>
                     )}
 
                     <DialogFooter className="border-t bg-muted/20 px-6 py-4">

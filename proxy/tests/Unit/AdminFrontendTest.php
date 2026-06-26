@@ -74,15 +74,20 @@ test('admin edit user modal explains email reconciliation and requires confirmat
         ->toContain('email_confirmation')
         ->toContain('Confirm email')
         ->toContain('Edit user details')
+        ->toContain("'bg-muted text-muted-foreground'")
+        ->toContain('className="px-6"')
+        ->toContain('w-full max-w-full min-w-0')
         ->toContain('[&>svg]:size-5')
-        ->toContain('InfoIcon className="mt-0.5 size-5 text-sky-600 dark:text-sky-300"')
-        ->toContain('border-sky-200 bg-sky-50 text-sky-950 [&>svg]:size-5 dark:border-sky-900/60 dark:bg-sky-950/35 dark:text-sky-100')
+        ->toContain('InfoIcon className="mt-0.5 size-5 text-emerald-600 dark:text-emerald-300"')
+        ->toContain('border-emerald-200 bg-emerald-50 text-emerald-950 [&>svg]:size-5 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-emerald-100')
         ->toContain('How social sign-in reconciliation works')
         ->toContain('Provider identity already linked')
         ->toContain('Verified provider email')
         ->toContain('No trusted provider email')
         ->toContain('Changing this email')
-        ->toContain('Email already used');
+        ->toContain('Email already used')
+        ->not->toContain('border-sky-100 bg-sky-50/70')
+        ->not->toContain('mx-6 border-sky-200');
 });
 
 test('admin user status modal uses contextual confirmation panels', function () {
