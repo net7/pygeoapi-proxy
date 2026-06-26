@@ -73,10 +73,31 @@ test('admin edit user modal explains email reconciliation and requires confirmat
     expect($source)
         ->toContain('email_confirmation')
         ->toContain('Confirm email')
+        ->toContain('Edit user details')
+        ->toContain('[&>svg]:size-5')
+        ->toContain('InfoIcon className="mt-0.5 size-5 text-sky-600 dark:text-sky-300"')
+        ->toContain('border-sky-200 bg-sky-50 text-sky-950 [&>svg]:size-5 dark:border-sky-900/60 dark:bg-sky-950/35 dark:text-sky-100')
         ->toContain('How social sign-in reconciliation works')
         ->toContain('Provider identity already linked')
         ->toContain('Verified provider email')
         ->toContain('No trusted provider email')
         ->toContain('Changing this email')
         ->toContain('Email already used');
+});
+
+test('admin user status modal uses contextual confirmation panels', function () {
+    $source = file_get_contents(dirname(__DIR__, 2).'/resources/js/pages/admin/users/index.tsx');
+
+    expect($source)
+        ->toContain('UserCheckIcon')
+        ->toContain('const StatusIcon = isRestoring ? UserCheckIcon : UserXIcon;')
+        ->toContain('data-icon="dialog-status"')
+        ->toContain('border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-emerald-100')
+        ->toContain('border-red-200 bg-red-50 text-red-950 dark:border-red-900/60 dark:bg-red-950/35 dark:text-red-100')
+        ->toContain('This user will regain access to the application.')
+        ->toContain('This user will immediately lose access to the application.')
+        ->toContain('status-user-name')
+        ->toContain('status-user-email')
+        ->toContain('font-semibold')
+        ->toContain('font-mono text-xs italic');
 });

@@ -34,6 +34,7 @@ import {
     ShieldCheckIcon,
     InfoIcon,
     UserIcon,
+    UserCheckIcon,
     UserXIcon,
     XIcon,
 } from 'lucide-react';
@@ -863,6 +864,9 @@ function UserFormDialog({
     const normalizedEmail = form.data.email.trim().toLowerCase();
     const originalEmail = user?.email.toLowerCase() ?? '';
     const emailChanged = isEditing && normalizedEmail !== originalEmail;
+    const headerIconClassName = isEditing
+        ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-200'
+        : 'bg-primary/10 text-primary';
 
     function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -882,81 +886,144 @@ function UserFormDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
-                className={cn('sm:max-w-lg', isEditing && 'sm:max-w-2xl')}
+                className={cn(
+                    'overflow-hidden p-0 sm:max-w-lg',
+                    isEditing && 'sm:max-w-2xl',
+                )}
             >
-                <DialogHeader>
-                    <DialogTitle>
-                        {isEditing ? 'Edit user' : 'Create user'}
-                    </DialogTitle>
-                    <DialogDescription>
-                        {isEditing ? user.email : 'A setup link will be sent.'}
-                    </DialogDescription>
+                <DialogHeader
+                    className={cn(
+                        'border-b bg-muted/30 px-6 py-5 pr-12',
+                        isEditing &&
+                            'border-sky-100 bg-sky-50/70 dark:border-sky-900/50 dark:bg-sky-950/20',
+                    )}
+                >
+                    <div className="flex items-start gap-3 text-left">
+                        <span
+                            className={cn(
+                                'flex size-10 shrink-0 items-center justify-center rounded-lg',
+                                headerIconClassName,
+                            )}
+                        >
+                            {isEditing ? (
+                                <InfoIcon className="size-5" />
+                            ) : (
+                                <PlusIcon className="size-5" />
+                            )}
+                        </span>
+                        <div className="min-w-0 space-y-1">
+                            <DialogTitle>
+                                {isEditing
+                                    ? 'Edit user details'
+                                    : 'Create user'}
+                            </DialogTitle>
+                            <DialogDescription className="break-words">
+                                {isEditing
+                                    ? user.email
+                                    : 'A setup link will be sent.'}
+                            </DialogDescription>
+                        </div>
+                    </div>
                 </DialogHeader>
 
-                <form onSubmit={submit} className="flex flex-col gap-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="admin-user-name">Name</Label>
-                        <Input
-                            id="admin-user-name"
-                            value={form.data.name}
-                            onChange={(event) =>
-                                form.setData('name', event.target.value)
-                            }
-                            onBlur={() => form.validate('name')}
-                            autoComplete="name"
-                            required
-                        />
-                        <InputError message={form.errors.name} />
-                    </div>
-
-                    <div className="grid gap-2">
-                        <Label htmlFor="admin-user-email">Email</Label>
-                        <Input
-                            id="admin-user-email"
-                            type="email"
-                            value={form.data.email}
-                            onChange={(event) =>
-                                form.setData('email', event.target.value)
-                            }
-                            onBlur={() => form.validate('email')}
-                            autoComplete="email"
-                            required
-                        />
-                        <InputError message={form.errors.email} />
-                    </div>
-
-                    {emailChanged && (
+                <form onSubmit={submit} className="flex flex-col gap-5">
+                    <div className="grid gap-4 px-6 pt-5 sm:grid-cols-2">
                         <div className="grid gap-2">
-                            <Label htmlFor="admin-user-email-confirmation">
-                                Confirm email
-                            </Label>
+                            <Label htmlFor="admin-user-name">Name</Label>
                             <Input
-                                id="admin-user-email-confirmation"
-                                type="email"
-                                value={form.data.email_confirmation}
+                                id="admin-user-name"
+                                value={form.data.name}
                                 onChange={(event) =>
-                                    form.setData(
-                                        'email_confirmation',
-                                        event.target.value,
-                                    )
+                                    form.setData('name', event.target.value)
                                 }
-                                onBlur={() => form.validate('email')}
-                                autoComplete="off"
+                                onBlur={() => form.validate('name')}
+                                autoComplete="name"
                                 required
                             />
-                            <InputError
-                                message={form.errors.email_confirmation}
-                            />
+                            <InputError message={form.errors.name} />
                         </div>
-                    )}
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="admin-user-email">Email</Label>
+                            <Input
+                                id="admin-user-email"
+                                type="email"
+                                value={form.data.email}
+                                onChange={(event) =>
+                                    form.setData('email', event.target.value)
+                                }
+                                onBlur={() => form.validate('email')}
+                                autoComplete="email"
+                                required
+                            />
+                            <InputError message={form.errors.email} />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="admin-user-role">Role</Label>
+                            <Select
+                                value={form.data.role}
+                                disabled={lockRole}
+                                onValueChange={(value) => {
+                                    form.setData(
+                                        'role',
+                                        value as AdminUserRole,
+                                    );
+                                    form.validate('role');
+                                }}
+                            >
+                                <SelectTrigger id="admin-user-role">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        {roles.map((role) => (
+                                            <SelectItem
+                                                key={role.value}
+                                                value={role.value}
+                                            >
+                                                {role.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                            <InputError message={form.errors.role} />
+                        </div>
+
+                        {emailChanged && (
+                            <div className="grid gap-2">
+                                <Label htmlFor="admin-user-email-confirmation">
+                                    Confirm email
+                                </Label>
+                                <Input
+                                    id="admin-user-email-confirmation"
+                                    type="email"
+                                    value={form.data.email_confirmation}
+                                    onChange={(event) =>
+                                        form.setData(
+                                            'email_confirmation',
+                                            event.target.value,
+                                        )
+                                    }
+                                    onBlur={() => form.validate('email')}
+                                    autoComplete="off"
+                                    required
+                                />
+                                <InputError
+                                    message={form.errors.email_confirmation}
+                                />
+                            </div>
+                        )}
+                    </div>
 
                     {isEditing && (
-                        <Alert>
-                            <InfoIcon />
+                        <Alert className="mx-6 border-sky-200 bg-sky-50 text-sky-950 [&>svg]:size-5 dark:border-sky-900/60 dark:bg-sky-950/35 dark:text-sky-100">
+                            <InfoIcon className="mt-0.5 size-5 text-sky-600 dark:text-sky-300" />
                             <AlertTitle>
                                 How social sign-in reconciliation works
                             </AlertTitle>
-                            <AlertDescription>
+                            <AlertDescription className="text-sky-900/80 dark:text-sky-100/80">
                                 <ul className="ml-4 list-disc space-y-1">
                                     <li>
                                         Provider identity already linked: future
@@ -992,36 +1059,7 @@ function UserFormDialog({
                         </Alert>
                     )}
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="admin-user-role">Role</Label>
-                        <Select
-                            value={form.data.role}
-                            disabled={lockRole}
-                            onValueChange={(value) => {
-                                form.setData('role', value as AdminUserRole);
-                                form.validate('role');
-                            }}
-                        >
-                            <SelectTrigger id="admin-user-role">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    {roles.map((role) => (
-                                        <SelectItem
-                                            key={role.value}
-                                            value={role.value}
-                                        >
-                                            {role.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                        <InputError message={form.errors.role} />
-                    </div>
-
-                    <DialogFooter className="gap-2">
+                    <DialogFooter className="border-t bg-muted/20 px-6 py-4">
                         <DialogClose asChild>
                             <Button type="button" variant="outline">
                                 Cancel
@@ -1052,6 +1090,26 @@ function UserStatusDialog({
     onOpenChange: (open: boolean) => void;
 }) {
     const isRestoring = user.is_deactivated;
+    const StatusIcon = isRestoring ? UserCheckIcon : UserXIcon;
+    const statusTone = isRestoring
+        ? {
+              panelClassName:
+                  'border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-emerald-100',
+              iconClassName:
+                  'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200',
+              title: 'Activate this user?',
+              description:
+                  'This user will regain access to the application.',
+          }
+        : {
+              panelClassName:
+                  'border-red-200 bg-red-50 text-red-950 dark:border-red-900/60 dark:bg-red-950/35 dark:text-red-100',
+              iconClassName:
+                  'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-200',
+              title: 'Deactivate this user?',
+              description:
+                  'This user will immediately lose access to the application.',
+          };
 
     function submit() {
         if (isRestoring) {
@@ -1075,15 +1133,63 @@ function UserStatusDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
+            <DialogContent className="overflow-hidden p-0 sm:max-w-md">
+                <DialogHeader className="px-6 pt-6 pr-12 text-left">
                     <DialogTitle>
-                        {isRestoring ? 'Restore user' : 'Deactivate user'}
+                        {isRestoring ? 'Activate user' : 'Deactivate user'}
                     </DialogTitle>
-                    <DialogDescription>{user.email}</DialogDescription>
+                    <DialogDescription className="space-y-0.5 break-words">
+                        <span className="block font-semibold text-foreground">
+                            {user.name}
+                        </span>
+                        <span className="block font-mono text-xs italic text-muted-foreground">
+                            {user.email}
+                        </span>
+                    </DialogDescription>
                 </DialogHeader>
 
-                <DialogFooter className="gap-2">
+                <div
+                    className={cn(
+                        'mx-6 rounded-lg border p-4',
+                        statusTone.panelClassName,
+                    )}
+                >
+                    <div className="flex items-start gap-3">
+                        <span
+                            className={cn(
+                                'flex size-11 shrink-0 items-center justify-center rounded-lg',
+                                statusTone.iconClassName,
+                            )}
+                        >
+                            <StatusIcon
+                                data-icon="dialog-status"
+                                className="size-5"
+                            />
+                        </span>
+                        <div className="min-w-0 space-y-1">
+                            <p className="font-medium">{statusTone.title}</p>
+                            <p className="text-sm opacity-80">
+                                {statusTone.description}
+                            </p>
+                            <div className="mt-3 space-y-1 rounded-md border border-current/15 bg-white/55 px-3 py-2 dark:bg-black/10">
+                                <p
+                                    data-slot="status-user-name"
+                                    className="break-words text-sm font-semibold"
+                                >
+                                    {user.name}
+                                </p>
+                                <p
+                                    data-slot="status-user-email"
+                                    className="break-all font-mono text-xs italic opacity-75"
+                                >
+                                    {user.email}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <DialogFooter className="border-t bg-muted/20 px-6 py-4">
                     <DialogClose asChild>
                         <Button type="button" variant="outline">
                             Cancel
@@ -1095,11 +1201,11 @@ function UserStatusDialog({
                         onClick={submit}
                     >
                         {isRestoring ? (
-                            <RotateCcwIcon data-icon="inline-start" />
+                            <UserCheckIcon data-icon="inline-start" />
                         ) : (
                             <UserXIcon data-icon="inline-start" />
                         )}
-                        {isRestoring ? 'Restore' : 'Deactivate'}
+                        {isRestoring ? 'Activate' : 'Deactivate'}
                     </Button>
                 </DialogFooter>
             </DialogContent>
