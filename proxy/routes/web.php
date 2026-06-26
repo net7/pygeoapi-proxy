@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\EmailOtpChallengeController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\Auth\SocialEmailController;
@@ -7,8 +8,10 @@ use App\Http\Controllers\Ogc\ProcessController;
 use App\Http\Controllers\Ogc\ProcessExecutionController;
 use App\Http\Controllers\Ogc\ProcessExecutionResultController;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Models\ProcessExecution;
 use App\Models\ProcessExecutionResult;
+use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
@@ -57,6 +60,26 @@ Route::middleware(['auth', EnsureUserIsActive::class, 'verified'])->group(functi
     )
         ->name('process-executions.results.download');
 });
+
+Route::middleware(['auth', EnsureUserIsActive::class, 'verified', EnsureUserIsAdmin::class])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('users', [AdminUserController::class, 'index'])
+            ->name('users.index');
+        Route::post('users', [AdminUserController::class, 'store'])
+            ->middleware(HandlePrecognitiveRequests::class)
+            ->name('users.store');
+        Route::get('users/{user}/edit', [AdminUserController::class, 'edit'])
+            ->name('users.edit');
+        Route::patch('users/{user}', [AdminUserController::class, 'update'])
+            ->middleware(HandlePrecognitiveRequests::class)
+            ->name('users.update');
+        Route::delete('users/{user}', [AdminUserController::class, 'destroy'])
+            ->name('users.destroy');
+        Route::patch('users/{user}/restore', [AdminUserController::class, 'restore'])
+            ->name('users.restore');
+    });
 
 Route::get('verify/{challenge}', [EmailOtpChallengeController::class, 'show'])
     ->middleware('signed')
