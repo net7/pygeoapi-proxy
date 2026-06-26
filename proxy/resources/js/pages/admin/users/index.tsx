@@ -32,6 +32,7 @@ import {
     SaveIcon,
     SearchIcon,
     ShieldCheckIcon,
+    InfoIcon,
     UserIcon,
     UserXIcon,
     XIcon,
@@ -40,6 +41,7 @@ import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 
 import InputError from '@/components/input-error';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -129,6 +131,7 @@ type PaginatedUsers = {
 type UserFormData = {
     name: string;
     email: string;
+    email_confirmation: string;
     role: AdminUserRole;
 };
 
@@ -818,9 +821,13 @@ function UserFormDialog({
         {
             name: user?.name ?? '',
             email: user?.email ?? '',
+            email_confirmation: '',
             role: user?.role ?? 'user',
         },
     );
+    const normalizedEmail = form.data.email.trim().toLowerCase();
+    const originalEmail = user?.email.toLowerCase() ?? '';
+    const emailChanged = isEditing && normalizedEmail !== originalEmail;
 
     function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -839,7 +846,9 @@ function UserFormDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent
+                className={cn('sm:max-w-lg', isEditing && 'sm:max-w-2xl')}
+            >
                 <DialogHeader>
                     <DialogTitle>
                         {isEditing ? 'Edit user' : 'Create user'}
@@ -880,6 +889,73 @@ function UserFormDialog({
                         />
                         <InputError message={form.errors.email} />
                     </div>
+
+                    {emailChanged && (
+                        <div className="grid gap-2">
+                            <Label htmlFor="admin-user-email-confirmation">
+                                Confirm email
+                            </Label>
+                            <Input
+                                id="admin-user-email-confirmation"
+                                type="email"
+                                value={form.data.email_confirmation}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'email_confirmation',
+                                        event.target.value,
+                                    )
+                                }
+                                onBlur={() => form.validate('email')}
+                                autoComplete="off"
+                                required
+                            />
+                            <InputError
+                                message={form.errors.email_confirmation}
+                            />
+                        </div>
+                    )}
+
+                    {isEditing && (
+                        <Alert>
+                            <InfoIcon />
+                            <AlertTitle>
+                                How social sign-in reconciliation works
+                            </AlertTitle>
+                            <AlertDescription>
+                                <ul className="ml-4 list-disc space-y-1">
+                                    <li>
+                                        Provider identity already linked: future
+                                        sign-ins keep using this user, even if
+                                        the account email changes.
+                                    </li>
+                                    <li>
+                                        Verified provider email: if no provider
+                                        link exists yet, the normalized email is
+                                        matched to an existing user; otherwise a
+                                        new social-only user is created.
+                                    </li>
+                                    <li>
+                                        No trusted provider email: the user must
+                                        confirm an address with OTP, then that
+                                        normalized address is matched or
+                                        created.
+                                    </li>
+                                    <li>
+                                        Changing this email: new unlinked
+                                        provider logins with the new verified
+                                        email reconcile to this user, while
+                                        logins still reporting the old email may
+                                        match another account or create a
+                                        separate one.
+                                    </li>
+                                    <li>
+                                        Email already used: saving is blocked by
+                                        the unique email rule.
+                                    </li>
+                                </ul>
+                            </AlertDescription>
+                        </Alert>
+                    )}
 
                     <div className="grid gap-2">
                         <Label htmlFor="admin-user-role">Role</Label>

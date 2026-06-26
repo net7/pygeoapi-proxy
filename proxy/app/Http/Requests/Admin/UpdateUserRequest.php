@@ -30,9 +30,30 @@ class UpdateUserRequest extends FormRequest
         /** @var User $user */
         $user = $this->route('user');
 
+        $emailRules = [
+            'required',
+            'string',
+            'lowercase',
+            'email',
+            'max:255',
+            Rule::unique(User::class)->ignore($user),
+        ];
+
+        if ($this->emailChanged($user)) {
+            $emailRules[] = 'confirmed';
+        }
+
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)->ignore($user)],
+            'email' => $emailRules,
+            'email_confirmation' => [
+                Rule::requiredIf(fn (): bool => $this->emailChanged($user)),
+                'nullable',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+            ],
             'role' => ['required', Rule::enum(UserRole::class)],
         ];
     }
@@ -52,10 +73,21 @@ class UpdateUserRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if ($this->has('email')) {
-            $this->merge([
-                'email' => Str::lower(trim((string) $this->input('email'))),
-            ]);
+        $normalized = [];
+
+        foreach (['email', 'email_confirmation'] as $field) {
+            if ($this->has($field)) {
+                $normalized[$field] = Str::lower(trim((string) $this->input($field)));
+            }
         }
+
+        if ($normalized !== []) {
+            $this->merge($normalized);
+        }
+    }
+
+    private function emailChanged(User $user): bool
+    {
+        return (string) $this->input('email') !== Str::lower((string) $user->email);
     }
 }

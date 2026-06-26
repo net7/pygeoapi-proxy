@@ -54,3 +54,17 @@ test('admin tables use tanstack filtering and expected labels', function () {
         ->and($jobs)->not->toContain('Owner')
         ->and($jobs)->toContain('styles.rowClassName');
 });
+
+test('admin edit user modal explains email reconciliation and requires confirmation', function () {
+    $source = file_get_contents(dirname(__DIR__, 2).'/resources/js/pages/admin/users/index.tsx');
+
+    expect($source)
+        ->toContain('email_confirmation')
+        ->toContain('Confirm email')
+        ->toContain('How social sign-in reconciliation works')
+        ->toContain('Provider identity already linked')
+        ->toContain('Verified provider email')
+        ->toContain('No trusted provider email')
+        ->toContain('Changing this email')
+        ->toContain('Email already used');
+});

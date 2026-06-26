@@ -92,6 +92,7 @@ test('admins can update users but cannot demote themselves', function () {
         ->patch(route('admin.users.update', $user), [
             'name' => 'Updated User',
             'email' => 'Updated.User@Example.com',
+            'email_confirmation' => 'updated.user@example.com',
             'role' => UserRole::Admin->value,
         ])
         ->assertRedirect(route('admin.users.index'));
@@ -109,6 +110,43 @@ test('admins can update users but cannot demote themselves', function () {
         ->assertSessionHasErrors('role');
 
     expect($admin->fresh()->role)->toBe(UserRole::Admin);
+});
+
+test('admins must confirm changed user emails', function () {
+    $admin = User::factory()->admin()->create();
+    $user = User::factory()->create(['email' => 'original@example.com']);
+
+    $this->actingAs($admin)
+        ->patch(route('admin.users.update', $user), [
+            'name' => $user->name,
+            'email' => 'changed@example.com',
+            'role' => UserRole::User->value,
+        ])
+        ->assertSessionHasErrors('email');
+
+    expect($user->fresh()->email)->toBe('original@example.com');
+
+    $this->actingAs($admin)
+        ->patch(route('admin.users.update', $user), [
+            'name' => $user->name,
+            'email' => 'changed@example.com',
+            'email_confirmation' => 'other@example.com',
+            'role' => UserRole::User->value,
+        ])
+        ->assertSessionHasErrors('email');
+
+    expect($user->fresh()->email)->toBe('original@example.com');
+
+    $this->actingAs($admin)
+        ->patch(route('admin.users.update', $user), [
+            'name' => $user->name,
+            'email' => 'Changed@Example.com',
+            'email_confirmation' => 'changed@example.com',
+            'role' => UserRole::User->value,
+        ])
+        ->assertRedirect(route('admin.users.index'));
+
+    expect($user->fresh()->email)->toBe('changed@example.com');
 });
 
 test('admins can deactivate and restore users but cannot deactivate themselves', function () {
