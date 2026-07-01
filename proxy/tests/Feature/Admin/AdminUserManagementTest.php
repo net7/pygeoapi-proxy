@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('admin user management is restricted to administrators', function () {
@@ -21,10 +22,14 @@ test('admin user management is restricted to administrators', function () {
 });
 
 test('admins can see users with job counts', function () {
+    Storage::fake('public');
+    Storage::disk('public')->put('avatars/process-owner.jpg', 'avatar');
+
     $admin = User::factory()->admin()->create();
     $user = User::factory()->create([
         'name' => 'Process Owner',
         'email' => 'owner@example.com',
+        'avatar_path' => 'avatars/process-owner.jpg',
     ]);
     ProcessExecution::factory()->count(2)->for($user)->create();
     SocialAccount::factory()->for($user)->create(['provider' => 'google']);
@@ -38,6 +43,7 @@ test('admins can see users with job counts', function () {
             ->has('users.data', 2)
             ->where('users.data.0.name', 'Process Owner')
             ->where('users.data.0.email', 'owner@example.com')
+            ->where('users.data.0.avatar', route('profile.avatar.show', ['path' => 'avatars/process-owner.jpg'], absolute: false))
             ->where('users.data.0.role', UserRole::User->value)
             ->where('users.data.0.jobs_count', 2)
             ->has('users.data.0.socialProviders', 2)

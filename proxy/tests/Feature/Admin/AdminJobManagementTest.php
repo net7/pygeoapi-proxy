@@ -3,6 +3,7 @@
 use App\Models\ProcessExecution;
 use App\Models\User;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('admin job management is restricted to administrators', function () {
@@ -17,10 +18,14 @@ test('admin job management is restricted to administrators', function () {
 });
 
 test('admins can see all jobs with owners', function () {
+    Storage::fake('public');
+    Storage::disk('public')->put('avatars/process-owner.jpg', 'avatar');
+
     $admin = User::factory()->admin()->create();
     $owner = User::factory()->create([
         'name' => 'Process Owner',
         'email' => 'owner@example.com',
+        'avatar_path' => 'avatars/process-owner.jpg',
     ]);
     $execution = ProcessExecution::factory()->for($owner)->create([
         'process_id' => 'conduit',
@@ -37,6 +42,7 @@ test('admins can see all jobs with owners', function () {
             ->where('executions.data.0.processId', 'conduit')
             ->where('executions.data.0.owner.name', 'Process Owner')
             ->where('executions.data.0.owner.email', 'owner@example.com')
+            ->where('executions.data.0.owner.avatar', route('profile.avatar.show', ['path' => 'avatars/process-owner.jpg'], absolute: false))
         );
 });
 

@@ -62,6 +62,9 @@ test('admin tables use tanstack filtering and expected labels', function () {
         ->and($users)->toContain('<PopoverTrigger asChild>')
         ->and($users)->toContain('aria-disabled={isSelf}')
         ->and($users)->toContain('admin.userSelfStatusUnavailable')
+        ->and($users)->toContain("from '@/components/ui/avatar'")
+        ->and($users)->toContain('AdminUserIdentity')
+        ->and($users)->toContain('<AvatarImage src={user.avatar ?? undefined} alt={user.name} />')
         ->and($jobs)->toContain("from '@tanstack/react-table'")
         ->and($jobs)->toContain('getFilteredRowModel')
         ->and($jobs)->toContain("user: 'common.user'")
@@ -71,7 +74,10 @@ test('admin tables use tanstack filtering and expected labels', function () {
         ->and($jobs)->not->toContain('user_id')
         ->and($jobs)->toContain('admin.jobsByUser')
         ->and($jobs)->not->toContain('Owner')
-        ->and($jobs)->toContain('styles.rowClassName');
+        ->and($jobs)->toContain('styles.rowClassName')
+        ->and($jobs)->toContain("from '@/components/ui/avatar'")
+        ->and($jobs)->toContain('AdminJobUserIdentity')
+        ->and($jobs)->toContain('<AvatarImage src={owner.avatar ?? undefined} alt={owner.name} />');
 });
 
 test('admin edit user modal explains email reconciliation and requires confirmation', function () {

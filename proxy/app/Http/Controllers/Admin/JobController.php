@@ -31,7 +31,10 @@ class JobController extends Controller
             ->all();
 
         $executions = ProcessExecution::query()
-            ->with('user:id,name,email')
+            ->with([
+                'user:id,name,email,avatar_path',
+                'user.socialAccounts:id,user_id,avatar,updated_at',
+            ])
             ->when($selectedUserId !== null, function ($query) use ($selectedUserId): void {
                 $query->where('user_id', $selectedUserId);
             })
@@ -67,6 +70,7 @@ class JobController extends Controller
                     'id' => $execution->user->id,
                     'name' => $execution->user->name,
                     'email' => $execution->user->email,
+                    'avatar' => $execution->user->avatar(),
                 ],
             ]);
 

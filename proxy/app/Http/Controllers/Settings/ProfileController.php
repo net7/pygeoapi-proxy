@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileAvatarUpdateRequest;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Models\User;
 use App\Support\AuthFeatures;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -57,7 +58,10 @@ class ProfileController extends Controller
      */
     public function showAvatar(Request $request, string $path): BinaryFileResponse
     {
-        abort_unless($request->user()->avatar_path === $path, 404);
+        $canViewAvatar = $request->user()->avatar_path === $path
+            || ($request->user()->isAdmin() && User::query()->where('avatar_path', $path)->exists());
+
+        abort_unless($canViewAvatar, 404);
         abort_unless(Storage::disk('public')->exists($path), 404);
 
         return response()->file(Storage::disk('public')->path($path));

@@ -31,6 +31,7 @@ import {
 import { useMemo, useState } from 'react';
 
 import CopyableJobId from '@/components/ogc/copyable-job-id';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -59,6 +60,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useInitials } from '@/hooks/use-initials';
 import { useTranslation } from '@/hooks/use-translation';
 import type { TranslationKey } from '@/lib/i18n/translation';
 import {
@@ -79,6 +81,7 @@ type AdminJob = ProcessExecutionListItem & {
         id: number;
         name: string;
         email: string;
+        avatar: string | null;
     };
 };
 
@@ -165,14 +168,7 @@ const columns: ColumnDef<AdminJob>[] = [
             <SortableHeader column={column} titleKey="common.user" />
         ),
         cell: ({ row }) => (
-            <div className="flex min-w-0 flex-col">
-                <span className="truncate font-medium">
-                    {row.original.owner.name}
-                </span>
-                <span className="truncate text-xs text-muted-foreground">
-                    {row.original.owner.email}
-                </span>
-            </div>
+            <AdminJobUserIdentity owner={row.original.owner} />
         ),
     },
     {
@@ -781,6 +777,27 @@ function ActionsHeader() {
     const { t } = useTranslation();
 
     return <span className="sr-only">{t('jobs.actions')}</span>;
+}
+
+function AdminJobUserIdentity({ owner }: { owner: AdminJob['owner'] }) {
+    const getInitials = useInitials();
+
+    return (
+        <div className="flex min-w-0 items-center gap-3">
+            <Avatar className="size-8 rounded-full">
+                <AvatarImage src={owner.avatar ?? undefined} alt={owner.name} />
+                <AvatarFallback className="rounded-full bg-muted text-xs font-medium text-muted-foreground">
+                    {getInitials(owner.name)}
+                </AvatarFallback>
+            </Avatar>
+            <div className="flex min-w-0 flex-col">
+                <span className="truncate font-medium">{owner.name}</span>
+                <span className="truncate text-xs text-muted-foreground">
+                    {owner.email}
+                </span>
+            </div>
+        </div>
+    );
 }
 
 function JobMessage({ message }: { message?: string | null }) {

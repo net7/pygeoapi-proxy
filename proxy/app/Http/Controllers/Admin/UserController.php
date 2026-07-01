@@ -22,7 +22,7 @@ class UserController extends Controller
         $search = trim($request->string('search')->toString());
 
         $users = User::query()
-            ->with('socialAccounts:id,user_id,provider')
+            ->with('socialAccounts:id,user_id,provider,avatar,updated_at')
             ->withCount('processExecutions')
             ->when($search !== '', function ($query) use ($search): void {
                 $query
@@ -70,7 +70,7 @@ class UserController extends Controller
         return Inertia::render('admin/users/edit', [
             'user' => $this->userPayload(
                 $user
-                    ->load('socialAccounts:id,user_id,provider')
+                    ->load('socialAccounts:id,user_id,provider,avatar,updated_at')
                     ->loadCount('processExecutions')
             ),
             'roles' => $this->roles(),
@@ -124,7 +124,7 @@ class UserController extends Controller
     }
 
     /**
-     * @return array{id: int, name: string, email: string, role: string, is_admin: bool, is_deactivated: bool, deactivated_at: string|null, socialProviders: list<array{provider: string, label: string}>, jobs_count: int, jobFilter: string, created_at: string|null}
+     * @return array{id: int, name: string, email: string, avatar: string|null, role: string, is_admin: bool, is_deactivated: bool, deactivated_at: string|null, socialProviders: list<array{provider: string, label: string}>, jobs_count: int, jobFilter: string, created_at: string|null}
      */
     private function userPayload(User $user): array
     {
@@ -132,6 +132,7 @@ class UserController extends Controller
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
+            'avatar' => $user->avatar(),
             'role' => $user->role->value,
             'is_admin' => $user->isAdmin(),
             'is_deactivated' => $user->isDeactivated(),

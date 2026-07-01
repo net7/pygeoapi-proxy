@@ -106,6 +106,28 @@ test('profile avatar can be served over http', function () {
         ->assertOk();
 });
 
+test('admins can view another users local profile avatar', function () {
+    Storage::fake('public');
+    Storage::disk('public')->put('avatars/local-avatar.jpg', 'avatar');
+
+    $admin = User::factory()->admin()->create();
+    $owner = User::factory()->create([
+        'avatar_path' => 'avatars/local-avatar.jpg',
+    ]);
+    $user = User::factory()->create();
+    $avatarUrl = $owner->avatar();
+
+    $this
+        ->actingAs($admin)
+        ->get($avatarUrl)
+        ->assertOk();
+
+    $this
+        ->actingAs($user)
+        ->get($avatarUrl)
+        ->assertNotFound();
+});
+
 test('profile avatar can be removed to reveal provider avatar', function () {
     Storage::fake('public');
     Storage::disk('public')->put('avatars/local-avatar.jpg', 'avatar');

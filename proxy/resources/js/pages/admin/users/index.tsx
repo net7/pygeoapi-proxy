@@ -47,6 +47,7 @@ import {
     SocialProviderIcon,
 } from '@/components/social-provider-icon';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -94,6 +95,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useInitials } from '@/hooks/use-initials';
 import { useTranslation } from '@/hooks/use-translation';
 import type { TranslationKey } from '@/lib/i18n/translation';
 import { cn } from '@/lib/utils';
@@ -121,6 +123,7 @@ type AdminUser = {
     id: number;
     name: string;
     email: string;
+    avatar: string | null;
     role: AdminUserRole;
     is_admin: boolean;
     is_deactivated: boolean;
@@ -231,16 +234,7 @@ export default function AdminUsersIndex({
                 header: ({ column }) => (
                     <SortableHeader column={column} titleKey="common.user" />
                 ),
-                cell: ({ row }) => (
-                    <div className="flex min-w-0 flex-col">
-                        <span className="truncate font-medium">
-                            {row.original.name}
-                        </span>
-                        <span className="truncate text-xs text-muted-foreground">
-                            {row.original.email}
-                        </span>
-                    </div>
-                ),
+                cell: ({ row }) => <AdminUserIdentity user={row.original} />,
             },
             {
                 accessorKey: 'role',
@@ -1249,6 +1243,31 @@ function SortableHeader({
             {t(titleKey)}
             <ArrowUpDownIcon data-icon="inline-end" />
         </Button>
+    );
+}
+
+function AdminUserIdentity({
+    user,
+}: {
+    user: Pick<AdminUser, 'name' | 'email' | 'avatar'>;
+}) {
+    const getInitials = useInitials();
+
+    return (
+        <div className="flex min-w-0 items-center gap-3">
+            <Avatar className="size-8 rounded-full">
+                <AvatarImage src={user.avatar ?? undefined} alt={user.name} />
+                <AvatarFallback className="rounded-full bg-muted text-xs font-medium text-muted-foreground">
+                    {getInitials(user.name)}
+                </AvatarFallback>
+            </Avatar>
+            <div className="flex min-w-0 flex-col">
+                <span className="truncate font-medium">{user.name}</span>
+                <span className="truncate text-xs text-muted-foreground">
+                    {user.email}
+                </span>
+            </div>
+        </div>
     );
 }
 

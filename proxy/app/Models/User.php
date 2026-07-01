@@ -63,6 +63,15 @@ class User extends Authenticatable implements PasskeyUser
             return route('profile.avatar.show', ['path' => $this->avatar_path], absolute: false);
         }
 
+        if ($this->relationLoaded('socialAccounts')) {
+            $providerAvatar = $this->socialAccounts
+                ->whereNotNull('avatar')
+                ->sortByDesc('updated_at')
+                ->first()?->avatar;
+
+            return $providerAvatar === null ? null : (string) $providerAvatar;
+        }
+
         $providerAvatar = $this->socialAccounts()
             ->whereNotNull('avatar')
             ->latest('updated_at')
