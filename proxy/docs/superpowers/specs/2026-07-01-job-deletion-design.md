@@ -54,7 +54,8 @@ The controller:
 - Authorizes with `Gate::authorize('delete', $processExecution)`.
 - Calls the action.
 - Flashes a success toast when deletion completes.
-- Redirects to `jobs.index`.
+- Redirects to `jobs.index` by default.
+- Supports a whitelisted `redirect=back` query parameter for list contexts so `/jobs` and `/admin/jobs` can refresh in place without adding a second backend route.
 - Catches remote deletion failures that should block local deletion, flashes a generic error toast, and redirects back without deleting the local execution.
 
 Use one canonical route:
@@ -94,7 +95,7 @@ On confirm:
 
 After success:
 
-- From `/jobs` and `/admin/jobs`, refresh the list data and close the dialog.
+- From `/jobs` and `/admin/jobs`, submit with `redirect=back`, refresh the current list, and close the dialog.
 - From `/jobs/{id}`, redirect to `/jobs`.
 - Show a success toast.
 
