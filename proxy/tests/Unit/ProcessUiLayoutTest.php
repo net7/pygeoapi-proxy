@@ -231,12 +231,19 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('styles.rowClassName')
         ->toContain('@/components/ogc/delete-job-dialog')
         ->toContain('DeleteJobButton')
-        ->toContain("actions: 'w-52 text-right'")
+        ->toContain("actions: 'w-24 text-right'")
         ->toContain('submittedAt')
         ->toContain('completedAt')
         ->toContain('failedAt')
         ->toContain('Badge')
-        ->toContain('<Button asChild variant="default" size="sm">')
+        ->toContain('asChild')
+        ->toContain('variant="default"')
+        ->toContain('size="icon"')
+        ->toContain('aria-label={t(\'jobs.details\')}')
+        ->toContain('title={t(\'jobs.details\')}')
+        ->toContain('<span className="sr-only">{t(\'jobs.details\')}</span>')
+        ->toContain('redirectBack')
+        ->toContain('showLabel={false}')
         ->not->toContain('max-w-52 truncate')
         ->not->toContain("remoteJobId: 'w-[300px] max-w-[300px]'")
         ->not->toContain('max-w-[300px]')
@@ -329,7 +336,28 @@ test('job detail prioritizes results and keeps request data beside them', functi
         ->toContain('jobs.requestedOutputs')
         ->toContain('jobs.results')
         ->toContain('jobs.request')
+        ->toContain('className="flex justify-end"')
+        ->toContain('DeleteJobButton')
+        ->toContain('className="w-full sm:w-auto"')
         ->not->toContain('<code className="min-w-0 truncate');
+});
+
+test('delete job dialog supports compact actions and optional owner context', function () {
+    $source = file_get_contents(getcwd().'/resources/js/components/ogc/delete-job-dialog.tsx');
+
+    expect($source)
+        ->toContain('showLabel?: boolean')
+        ->toContain('owner?: DeleteJobOwner')
+        ->toContain('size={showLabel ? \'sm\' : \'icon\'}')
+        ->toContain('aria-label={t(\'jobs.delete\')}')
+        ->toContain('title={t(\'jobs.delete\')}')
+        ->toContain('<span className="sr-only">{t(\'jobs.delete\')}</span>')
+        ->toContain('sm:max-w-xl')
+        ->toContain('owner ? (')
+        ->toContain("{t('common.user')}")
+        ->toContain('{owner.name}')
+        ->toContain('{owner.email}')
+        ->not->toContain('sm:max-w-md');
 });
 
 test('job pages poll while executions are active', function () {

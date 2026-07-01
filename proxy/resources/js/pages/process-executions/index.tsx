@@ -100,7 +100,7 @@ const columnClassNames: Record<string, string> = {
     submittedAt: 'min-w-36',
     finishedAt: 'min-w-40',
     progress: 'min-w-32',
-    actions: 'w-52 text-right',
+    actions: 'w-24 text-right',
 };
 
 const columns: ColumnDef<ProcessExecutionListItem>[] = [
@@ -787,17 +787,27 @@ function JobRowActions({ execution }: { execution: ProcessExecutionListItem }) {
 
     return (
         <div className="flex justify-end gap-2">
-            <Button asChild variant="default" size="sm">
+            <Button
+                asChild
+                variant="default"
+                size="icon"
+                aria-label={t('jobs.details')}
+                title={t('jobs.details')}
+            >
                 <Link
                     href={show(execution.id)}
                     onClick={(event) => event.stopPropagation()}
                 >
-                    <ListChecksIcon data-icon="inline-start" />
-                    {t('jobs.details')}
+                    <ListChecksIcon data-icon="icon" />
+                    <span className="sr-only">{t('jobs.details')}</span>
                 </Link>
             </Button>
 
-            <DeleteJobButton execution={execution} redirectBack />
+            <DeleteJobButton
+                execution={execution}
+                redirectBack
+                showLabel={false}
+            />
         </div>
     );
 }

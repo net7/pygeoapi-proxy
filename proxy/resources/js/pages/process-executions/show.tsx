@@ -96,10 +96,6 @@ export default function ProcessExecutionShow({
                                     <StatusIcon data-icon="inline-start" />
                                     {jobStatusLabel(execution.status, t)}
                                 </Badge>
-                                <DeleteJobButton
-                                    execution={execution}
-                                    className="shrink-0"
-                                />
                             </div>
                             <p className="text-sm text-muted-foreground">
                                 {execution.processId}
@@ -123,22 +119,31 @@ export default function ProcessExecutionShow({
                         </div>
                     </div>
 
-                    <div className="grid gap-3 sm:grid-cols-3 lg:w-[32rem]">
-                        <JobMetric
-                            icon={HashIcon}
-                            label={t('jobs.local')}
-                            value={`#${execution.id}`}
-                        />
-                        <JobMetric
-                            icon={ListChecksIcon}
-                            label={t('jobs.results')}
-                            value={String(execution.results.length)}
-                        />
-                        <JobMetric
-                            icon={TimerIcon}
-                            label={t('jobs.progress')}
-                            value={`${execution.progress}%`}
-                        />
+                    <div className="flex flex-col gap-3 lg:w-[32rem]">
+                        <div className="flex justify-end">
+                            <DeleteJobButton
+                                execution={execution}
+                                className="w-full sm:w-auto"
+                            />
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-3">
+                            <JobMetric
+                                icon={HashIcon}
+                                label={t('jobs.local')}
+                                value={`#${execution.id}`}
+                            />
+                            <JobMetric
+                                icon={ListChecksIcon}
+                                label={t('jobs.results')}
+                                value={String(execution.results.length)}
+                            />
+                            <JobMetric
+                                icon={TimerIcon}
+                                label={t('jobs.progress')}
+                                value={`${execution.progress}%`}
+                            />
+                        </div>
                     </div>
                 </div>
 

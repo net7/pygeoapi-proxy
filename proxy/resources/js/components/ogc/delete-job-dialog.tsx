@@ -18,15 +18,24 @@ import { cn } from '@/lib/utils';
 import { destroy } from '@/routes/jobs';
 import type { ProcessExecutionListItem } from '@/types';
 
+type DeleteJobOwner = {
+    name: string;
+    email: string;
+};
+
 type DeleteJobButtonProps = {
     execution: ProcessExecutionListItem;
+    owner?: DeleteJobOwner;
     redirectBack?: boolean;
+    showLabel?: boolean;
     className?: string;
 };
 
 export function DeleteJobButton({
     execution,
+    owner,
     redirectBack = false,
+    showLabel = true,
     className,
 }: DeleteJobButtonProps) {
     const { t } = useTranslation();
@@ -53,20 +62,26 @@ export function DeleteJobButton({
             <Button
                 type="button"
                 variant="destructive"
-                size="sm"
+                size={showLabel ? 'sm' : 'icon'}
                 className={className}
+                aria-label={t('jobs.delete')}
+                title={t('jobs.delete')}
                 onClick={(event) => {
                     event.stopPropagation();
                     setOpen(true);
                 }}
             >
-                <Trash2Icon data-icon="inline-start" />
-                {t('jobs.delete')}
+                <Trash2Icon data-icon={showLabel ? 'inline-start' : 'icon'} />
+                {showLabel ? (
+                    t('jobs.delete')
+                ) : (
+                    <span className="sr-only">{t('jobs.delete')}</span>
+                )}
             </Button>
 
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent
-                    className="overflow-hidden p-0 sm:max-w-md"
+                    className="overflow-hidden p-0 sm:max-w-xl"
                     onClick={(event) => event.stopPropagation()}
                 >
                     <DialogHeader className="px-6 pt-6 pr-12 text-left">
@@ -117,6 +132,21 @@ export function DeleteJobButton({
                                                 t('common.notAvailable')}
                                         </dd>
                                     </div>
+                                    {owner ? (
+                                        <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2">
+                                            <dt className="text-muted-foreground">
+                                                {t('common.user')}
+                                            </dt>
+                                            <dd className="min-w-0">
+                                                <span className="block truncate font-semibold">
+                                                    {owner.name}
+                                                </span>
+                                                <span className="block truncate font-mono text-xs text-muted-foreground">
+                                                    {owner.email}
+                                                </span>
+                                            </dd>
+                                        </div>
+                                    ) : null}
                                 </dl>
                                 <p className="text-xs opacity-80">
                                     {t('jobs.deleteRemoteNote')}

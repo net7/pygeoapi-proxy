@@ -77,7 +77,9 @@ test('admin tables use tanstack filtering and expected labels', function () {
         ->and($jobs)->toContain('styles.rowClassName')
         ->and($jobs)->toContain("from '@/components/ui/avatar'")
         ->and($jobs)->toContain('AdminJobUserIdentity')
-        ->and($jobs)->toContain('<AvatarImage src={owner.avatar ?? undefined} alt={owner.name} />');
+        ->and($jobs)->toContain('<AvatarImage src={owner.avatar ?? undefined} alt={owner.name} />')
+        ->and($jobs)->toContain('owner={execution.owner}')
+        ->and($jobs)->toContain('showLabel={false}');
 });
 
 test('admin edit user modal explains email reconciliation and requires confirmation', function () {
