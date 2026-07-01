@@ -31,6 +31,7 @@ import {
 import { useMemo, useState } from 'react';
 
 import CopyableJobId from '@/components/ogc/copyable-job-id';
+import { DeleteJobButton } from '@/components/ogc/delete-job-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -124,7 +125,7 @@ const columnClassNames: Record<string, string> = {
     submittedAt: 'min-w-36',
     finishedAt: 'min-w-40',
     progress: 'min-w-32',
-    actions: 'w-28 text-right',
+    actions: 'w-52 text-right',
 };
 
 const columns: ColumnDef<AdminJob>[] = [
@@ -904,15 +905,19 @@ function JobRowActions({ execution }: { execution: AdminJob }) {
     const { t } = useTranslation();
 
     return (
-        <Button asChild variant="default" size="sm">
-            <Link
-                href={show(execution.id)}
-                onClick={(event) => event.stopPropagation()}
-            >
-                <ListChecksIcon data-icon="inline-start" />
-                {t('jobs.details')}
-            </Link>
-        </Button>
+        <div className="flex justify-end gap-2">
+            <Button asChild variant="default" size="sm">
+                <Link
+                    href={show(execution.id)}
+                    onClick={(event) => event.stopPropagation()}
+                >
+                    <ListChecksIcon data-icon="inline-start" />
+                    {t('jobs.details')}
+                </Link>
+            </Button>
+
+            <DeleteJobButton execution={execution} redirectBack />
+        </div>
     );
 }
 
