@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { AlertTriangleIcon, Trash2Icon } from 'lucide-react';
 import { useState } from 'react';
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -13,6 +14,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
+import { useInitials } from '@/hooks/use-initials';
 import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import { destroy } from '@/routes/jobs';
@@ -21,6 +23,7 @@ import type { ProcessExecutionListItem } from '@/types';
 type DeleteJobOwner = {
     name: string;
     email: string;
+    avatar?: string | null;
 };
 
 type DeleteJobButtonProps = {
@@ -41,7 +44,6 @@ export function DeleteJobButton({
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const [processing, setProcessing] = useState(false);
-    const processLabel = execution.processTitle ?? execution.processId;
     const action = destroy(
         execution.id,
         redirectBack ? { query: { redirect: 'back' } } : undefined,
@@ -86,13 +88,8 @@ export function DeleteJobButton({
                 >
                     <DialogHeader className="px-6 pt-6 pr-12 text-left">
                         <DialogTitle>{t('jobs.deleteTitle')}</DialogTitle>
-                        <DialogDescription className="space-y-0.5 break-words">
-                            <span className="block font-semibold text-foreground">
-                                {processLabel}
-                            </span>
-                            <span className="block font-mono text-xs text-muted-foreground italic">
-                                {execution.processId}
-                            </span>
+                        <DialogDescription className="break-words text-sm">
+                            {t('jobs.deleteDescription')}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -104,53 +101,11 @@ export function DeleteJobButton({
                                     className="size-5"
                                 />
                             </span>
-                            <div className="min-w-0 space-y-2">
-                                <p className="text-sm">
-                                    {t('jobs.deleteDescription')}
-                                </p>
-                                <dl className="grid gap-1 rounded-md border border-current/15 bg-white/55 px-3 py-2 text-sm dark:bg-black/10">
-                                    <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2">
-                                        <dt className="text-muted-foreground">
-                                            {t('jobs.localJobId')}
-                                        </dt>
-                                        <dd className="font-mono font-semibold break-all">
-                                            #{execution.id}
-                                        </dd>
-                                    </div>
-                                    <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2">
-                                        <dt className="text-muted-foreground">
-                                            {t('jobs.remoteJobId')}
-                                        </dt>
-                                        <dd
-                                            className={cn(
-                                                'font-mono font-semibold break-all',
-                                                !execution.remoteJobId &&
-                                                    'font-sans text-muted-foreground',
-                                            )}
-                                        >
-                                            {execution.remoteJobId ??
-                                                t('common.notAvailable')}
-                                        </dd>
-                                    </div>
-                                    {owner ? (
-                                        <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2">
-                                            <dt className="text-muted-foreground">
-                                                {t('common.user')}
-                                            </dt>
-                                            <dd className="min-w-0">
-                                                <span className="block truncate font-semibold">
-                                                    {owner.name}
-                                                </span>
-                                                <span className="block truncate font-mono text-xs text-muted-foreground">
-                                                    {owner.email}
-                                                </span>
-                                            </dd>
-                                        </div>
-                                    ) : null}
-                                </dl>
-                                <p className="text-xs opacity-80">
-                                    {t('jobs.deleteRemoteNote')}
-                                </p>
+                            <div className="min-w-0 flex-1">
+                                <DeleteJobSummary
+                                    execution={execution}
+                                    owner={owner}
+                                />
                             </div>
                         </div>
                     </div>
@@ -182,5 +137,89 @@ export function DeleteJobButton({
                 </DialogContent>
             </Dialog>
         </>
+    );
+}
+
+function DeleteJobSummary({
+    execution,
+    owner,
+}: {
+    execution: ProcessExecutionListItem;
+    owner?: DeleteJobOwner;
+}) {
+    const { t } = useTranslation();
+
+    return (
+        <table className="table w-full table-fixed overflow-hidden rounded-md border border-current/15 bg-white/65 text-sm dark:bg-black/10">
+            <tbody>
+                <tr className="table-row border-b border-current/10">
+                    <th
+                        scope="row"
+                        className="table-cell w-32 px-3 py-2 text-left align-middle text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                    >
+                        {t('jobs.localJobId')}
+                    </th>
+                    <td className="table-cell px-3 py-2 align-middle font-mono font-semibold break-all">
+                        #{execution.id}
+                    </td>
+                </tr>
+                <tr
+                    className={cn(
+                        'table-row',
+                        owner && 'border-b border-current/10',
+                    )}
+                >
+                    <th
+                        scope="row"
+                        className="table-cell w-32 px-3 py-2 text-left align-middle text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                    >
+                        {t('jobs.remoteJobId')}
+                    </th>
+                    <td
+                        className={cn(
+                            'table-cell px-3 py-2 align-middle font-mono font-semibold break-all',
+                            !execution.remoteJobId &&
+                                'font-sans text-muted-foreground',
+                        )}
+                    >
+                        {execution.remoteJobId ?? t('common.notAvailable')}
+                    </td>
+                </tr>
+                {owner ? (
+                    <tr className="table-row">
+                        <th
+                            scope="row"
+                            className="table-cell w-32 px-3 py-2 text-left align-middle text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        >
+                            {t('common.user')}
+                        </th>
+                        <td className="table-cell min-w-0 px-3 py-2 align-middle">
+                            <DeleteJobOwnerIdentity owner={owner} />
+                        </td>
+                    </tr>
+                ) : null}
+            </tbody>
+        </table>
+    );
+}
+
+function DeleteJobOwnerIdentity({ owner }: { owner: DeleteJobOwner }) {
+    const getInitials = useInitials();
+
+    return (
+        <div className="flex min-w-0 items-center gap-3">
+            <Avatar className="size-8 rounded-full">
+                <AvatarImage src={owner.avatar ?? undefined} alt={owner.name} />
+                <AvatarFallback className="rounded-full bg-white/80 text-xs font-medium text-red-900 dark:bg-red-950/50 dark:text-red-100">
+                    {getInitials(owner.name)}
+                </AvatarFallback>
+            </Avatar>
+            <div className="flex min-w-0 flex-col">
+                <span className="truncate font-semibold">{owner.name}</span>
+                <span className="truncate text-xs text-muted-foreground">
+                    {owner.email}
+                </span>
+            </div>
+        </div>
     );
 }

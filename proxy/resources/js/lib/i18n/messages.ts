@@ -197,12 +197,10 @@ const it = {
         created: 'Creato',
         currentState: 'Stato attuale e timeline.',
         delete: 'Elimina',
-        deleteConfirm: 'Elimina lavoro',
+        deleteConfirm: 'Elimina',
         deleteDescription:
-            'Il lavoro verrà rimosso dalla piattaforma. Se esiste un ID remoto, proveremo a cancellarlo anche dal servizio OGC.',
-        deleteRemoteNote:
-            'Se il lavoro remoto non esiste più, la cancellazione locale continuerà.',
-        deleteTitle: 'Eliminare questo lavoro?',
+            'Questa azione rimuove il lavoro dalla piattaforma. L’operazione non può essere annullata.',
+        deleteTitle: 'Eliminare il lavoro?',
         details: 'Dettagli',
         failed: 'Fallito',
         filterJobs: 'Filtra lavori {status}',
@@ -566,11 +564,9 @@ const en = {
         created: 'Created',
         currentState: 'Current state and timeline.',
         delete: 'Delete',
-        deleteConfirm: 'Delete job',
+        deleteConfirm: 'Delete',
         deleteDescription:
-            'The job will be removed from the platform. If a remote ID exists, we will try to delete it from the OGC service as well.',
-        deleteRemoteNote:
-            'If the remote job no longer exists, local deletion will continue.',
+            'This action removes the job from the platform. It cannot be undone.',
         deleteTitle: 'Delete this job?',
         details: 'Details',
         failed: 'Failed',

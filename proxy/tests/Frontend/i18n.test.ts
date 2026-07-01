@@ -53,6 +53,13 @@ describe('i18n', () => {
         expect(translate('it', 'admin.userJobs')).toBe('Lavori');
         expect(translate('it', 'admin.viewUserJobs')).toBe('Vedi lavori');
         expect(translate('it', 'jobs.jobId')).toBe('ID lavoro');
+        expect(translate('it', 'jobs.deleteConfirm')).toBe('Elimina');
+        expect(translate('it', 'jobs.deleteDescription')).toBe(
+            'Questa azione rimuove il lavoro dalla piattaforma. L’operazione non può essere annullata.',
+        );
+        expect(translate('it', 'jobs.deleteDescription')).not.toContain(
+            'servizio',
+        );
 
         const italianJobLabels = flattenMessages(messages.it).filter(
             ([, value]) => /\bjobs?\b/i.test(value),
