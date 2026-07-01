@@ -376,6 +376,47 @@ test('job detail prioritizes results and keeps request data beside them', functi
         ->not->toContain('<code className="min-w-0 truncate');
 });
 
+test('job note editor appears on create and detail screens', function () {
+    $formSource = file_get_contents(getcwd().'/resources/js/components/ogc/dynamic-process-form.tsx');
+    $showSource = file_get_contents(getcwd().'/resources/js/pages/process-executions/show.tsx');
+    $editorPath = getcwd().'/resources/js/components/ogc/job-note-editor.tsx';
+    $cardPath = getcwd().'/resources/js/components/ogc/job-note-card.tsx';
+
+    expect($formSource)
+        ->toContain('@/components/ogc/job-note-editor')
+        ->toContain('note: null')
+        ->toContain("setData('note', note)");
+
+    expect($showSource)
+        ->toContain('@/components/ogc/job-note-card')
+        ->toContain('<JobNoteCard execution={execution} />');
+
+    expect($editorPath)->toBeFile()
+        ->and($cardPath)->toBeFile();
+
+    $editorSource = file_get_contents($editorPath);
+    $cardSource = file_get_contents($cardPath);
+
+    expect($editorSource)
+        ->toContain('@tiptap/react')
+        ->toContain('@tiptap/starter-kit')
+        ->toContain('@tiptap/extension-link')
+        ->toContain('BoldIcon')
+        ->toContain('ItalicIcon')
+        ->toContain('ListIcon')
+        ->toContain('ListOrderedIcon')
+        ->toContain('QuoteIcon')
+        ->toContain('LinkIcon')
+        ->toContain('Undo2Icon')
+        ->toContain('Redo2Icon');
+
+    expect($cardSource)
+        ->toContain('@/routes/jobs/note')
+        ->toContain('DialogTitle')
+        ->toContain("t('jobs.noteUpdatedAt')")
+        ->toContain("t('jobs.editNote')");
+});
+
 test('delete job dialog supports compact actions and optional owner context', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/delete-job-dialog.tsx');
 
