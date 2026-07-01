@@ -1,14 +1,17 @@
 <?php
 
-test('process form keeps inputs beside execution controls on desktop', function () {
+test('process form keeps inputs beside output submission on desktop without execution mode controls', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/dynamic-process-form.tsx');
 
     expect($source)
         ->toContain('lg:grid-cols-[minmax(0,1fr)_22rem]')
         ->toContain('lg:sticky')
         ->toContain('@/routes/processes/jobs')
-        ->toContain('ogc.execution')
-        ->toContain('ogc.outputs');
+        ->toContain('ogc.outputs')
+        ->not->toContain('ogc.execution')
+        ->not->toContain('ToggleGroup')
+        ->not->toContain('ToggleGroupItem')
+        ->not->toContain('sync-execute');
 });
 
 test('process index cards are optimized for scanning', function () {
@@ -23,12 +26,14 @@ test('process index cards are optimized for scanning', function () {
         ->toContain('ogc.noDescription')
         ->toContain('processes.length')
         ->toContain('process.version')
-        ->toContain('process.outputTransmission')
-        ->toContain('ogc.jobControls')
-        ->toContain('ogc.outputModes')
         ->toContain('ogc.openProcess')
         ->toContain('ArrowRightIcon')
         ->toContain('data-icon="inline-end"')
+        ->not->toContain('process.jobControlOptions')
+        ->not->toContain('process.outputTransmission')
+        ->not->toContain('ogc.jobControls')
+        ->not->toContain('ogc.outputModes')
+        ->not->toContain('ProcessMetadataSection')
         ->not->toContain('<Card key={process.id}>');
 });
 

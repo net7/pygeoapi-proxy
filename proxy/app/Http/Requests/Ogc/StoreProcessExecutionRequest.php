@@ -4,7 +4,6 @@ namespace App\Http\Requests\Ogc;
 
 use App\Enums\Ogc\ExecutionMode;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class StoreProcessExecutionRequest extends FormRequest
 {
@@ -19,7 +18,6 @@ class StoreProcessExecutionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'mode' => ['required', Rule::enum(ExecutionMode::class)],
             'inputs' => ['required', 'array'],
             'outputs' => ['nullable', 'array'],
         ];
@@ -38,7 +36,7 @@ class StoreProcessExecutionRequest extends FormRequest
 
     public function executionMode(): ExecutionMode
     {
-        return ExecutionMode::from((string) $this->validated('mode'));
+        return ExecutionMode::Async;
     }
 
     /**

@@ -13,7 +13,6 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useTranslation } from '@/hooks/use-translation';
 import { store } from '@/routes/processes/jobs';
 import type {
@@ -23,7 +22,6 @@ import type {
 } from '@/types';
 
 type FormData = {
-    mode: 'sync' | 'async';
     inputs: Record<string, any>;
     outputs: Record<string, { transmissionMode: string }>;
 };
@@ -34,12 +32,8 @@ export default function DynamicProcessForm({
     schema: OgcFormSchema;
 }) {
     const { t } = useTranslation();
-    const initialMode = schema.jobControlOptions.includes('sync-execute')
-        ? 'sync'
-        : 'async';
     const { data, setData, submit, transform, processing, errors } =
         useForm<FormData>({
-            mode: initialMode,
             inputs: initialInputValues(schema.fields),
             outputs: Object.fromEntries(
                 Object.keys(schema.outputs).map((outputId) => [
@@ -131,39 +125,6 @@ export default function DynamicProcessForm({
             </Card>
 
             <aside className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-4">
-                <Card className="min-w-0">
-                    <CardHeader>
-                        <CardTitle>{t('ogc.execution')}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="min-w-0">
-                        <ToggleGroup
-                            type="single"
-                            value={data.mode}
-                            onValueChange={(value) => {
-                                if (value === 'sync' || value === 'async') {
-                                    setData('mode', value);
-                                }
-                            }}
-                            className="w-full justify-start"
-                        >
-                            {schema.jobControlOptions.includes(
-                                'sync-execute',
-                            ) ? (
-                                <ToggleGroupItem value="sync">
-                                    {t('ogc.sync')}
-                                </ToggleGroupItem>
-                            ) : null}
-                            {schema.jobControlOptions.includes(
-                                'async-execute',
-                            ) ? (
-                                <ToggleGroupItem value="async">
-                                    {t('ogc.async')}
-                                </ToggleGroupItem>
-                            ) : null}
-                        </ToggleGroup>
-                    </CardContent>
-                </Card>
-
                 <Card className="min-w-0">
                     <CardHeader>
                         <CardTitle>{t('ogc.outputs')}</CardTitle>

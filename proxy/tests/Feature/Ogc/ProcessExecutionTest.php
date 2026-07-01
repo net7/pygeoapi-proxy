@@ -13,7 +13,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 
-test('starting a process creates a local execution and redirects without remote submission', function () {
+test('starting a process creates an async local execution and redirects without remote submission', function () {
     Bus::fake();
     Http::preventStrayRequests();
 
@@ -22,7 +22,6 @@ test('starting a process creates a local execution and redirects without remote 
     app(OgcProcessCache::class)->putProcess('conduit', $process);
 
     $payload = [
-        'mode' => 'sync',
         'inputs' => ['melt_composition' => ['value' => ['sio2' => 0.7, 'tio2' => 0.01]]],
         'outputs' => ['gas' => ['transmissionMode' => 'value']],
     ];
@@ -41,7 +40,7 @@ test('starting a process creates a local execution and redirects without remote 
         ->assertInertiaFlash('toast.details.1.label', 'Local job')
         ->assertInertiaFlash('toast.details.1.value', "#{$execution->id}")
         ->assertInertiaFlash('toast.details.2.label', 'Mode')
-        ->assertInertiaFlash('toast.details.2.value', 'sync')
+        ->assertInertiaFlash('toast.details.2.value', 'async')
         ->assertInertiaFlash('toast.details.3.label', 'Initial status')
         ->assertInertiaFlash('toast.details.3.value', 'submitting')
         ->assertInertiaFlash('toast.note', 'Remote submission is running in the background. This page will update automatically.');
@@ -49,7 +48,7 @@ test('starting a process creates a local execution and redirects without remote 
     expect($execution->user->is($user))->toBeTrue()
         ->and($execution->process_id)->toBe('conduit')
         ->and($execution->process_title)->toBe($process['title'])
-        ->and($execution->execution_mode)->toBe(ExecutionMode::Sync)
+        ->and($execution->execution_mode)->toBe(ExecutionMode::Async)
         ->and($execution->status)->toBe(ExecutionStatus::Submitting)
         ->and($execution->progress)->toBe(0)
         ->and($execution->request_payload['inputs'])->toBe($payload['inputs'])
@@ -63,12 +62,33 @@ test('starting a process creates a local execution and redirects without remote 
     Http::assertNothingSent();
 });
 
+test('starting a process ignores a client requested synchronous mode', function () {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    app(OgcProcessCache::class)->putProcess('conduit', ogcFixture('process-conduit'));
+
+    $response = $this->actingAs($user)->post(route('processes.jobs.store', 'conduit'), [
+        'mode' => 'sync',
+        'inputs' => ['melt_composition' => ['value' => ['sio2' => 0.7, 'tio2' => 0.01]]],
+        'outputs' => ['gas' => ['transmissionMode' => 'value']],
+    ]);
+
+    $execution = ProcessExecution::query()->sole();
+
+    $response
+        ->assertRedirect(route('jobs.show', $execution))
+        ->assertInertiaFlash('toast.details.2.value', 'async');
+
+    expect($execution->execution_mode)->toBe(ExecutionMode::Async);
+});
+
 test('starting a process does not fall back to pygeoapi when process cache is missing', function () {
     Bus::fake();
     Http::preventStrayRequests();
 
     $response = $this->actingAs(User::factory()->create())->post(route('processes.jobs.store', 'conduit'), [
-        'mode' => 'async',
         'inputs' => ['lat' => 14.47],
         'outputs' => ['gas' => ['transmissionMode' => 'value']],
     ]);

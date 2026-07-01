@@ -114,26 +114,6 @@ export default function ProcessIndex({
                                             <p className="line-clamp-3 min-h-[3.75rem] text-sm text-muted-foreground">
                                                 {description}
                                             </p>
-                                            <div className="flex flex-col gap-4">
-                                                <ProcessMetadataSection
-                                                    label={t('ogc.jobControls')}
-                                                    values={
-                                                        process.jobControlOptions
-                                                    }
-                                                    emptyLabel={t(
-                                                        'ogc.notAdvertised',
-                                                    )}
-                                                />
-                                                <ProcessMetadataSection
-                                                    label={t('ogc.outputModes')}
-                                                    values={
-                                                        process.outputTransmission
-                                                    }
-                                                    emptyLabel={t(
-                                                        'ogc.defaultResponse',
-                                                    )}
-                                                />
-                                            </div>
                                         </CardContent>
                                         <CardFooter className="mt-auto px-6 pt-0">
                                             <Button
@@ -161,40 +141,6 @@ export default function ProcessIndex({
                 )}
             </div>
         </>
-    );
-}
-
-function ProcessMetadataSection({
-    emptyLabel,
-    label,
-    values,
-}: {
-    emptyLabel: string;
-    label: string;
-    values?: string[];
-}) {
-    const visibleValues = values?.filter(Boolean) ?? [];
-
-    return (
-        <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-3 text-xs font-medium">
-                <span>{label}</span>
-                <span className="text-muted-foreground">
-                    {visibleValues.length}
-                </span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-                {visibleValues.length > 0 ? (
-                    visibleValues.map((value) => (
-                        <Badge key={value} variant="secondary">
-                            {value}
-                        </Badge>
-                    ))
-                ) : (
-                    <Badge variant="outline">{emptyLabel}</Badge>
-                )}
-            </div>
-        </div>
     );
 }
 
