@@ -9,9 +9,15 @@ use App\Jobs\Ogc\SubmitProcessExecutionJob;
 use App\Models\ProcessExecution;
 use App\Models\User;
 use App\Services\Ogc\OgcProcessCache;
+use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
+
+afterEach(function () {
+    Carbon::setTestNow();
+});
 
 test('starting a process creates an async local execution and redirects without remote submission', function () {
     Bus::fake();
@@ -60,6 +66,64 @@ test('starting a process creates an async local execution and redirects without 
         && $job->payload['outputs'] === $payload['outputs']);
 
     Http::assertNothingSent();
+});
+
+test('starting a process stores an optional user note without sending it to the remote payload', function () {
+    Bus::fake();
+    Http::preventStrayRequests();
+    Carbon::setTestNow(CarbonImmutable::parse('2026-07-01 10:15:00'));
+
+    $user = User::factory()->create();
+    $process = ogcFixture('process-conduit');
+    app(OgcProcessCache::class)->putProcess('conduit', $process);
+
+    $note = [
+        'type' => 'doc',
+        'content' => [
+            [
+                'type' => 'paragraph',
+                'content' => [
+                    ['type' => 'text', 'text' => 'Check calibration before publishing results.'],
+                ],
+            ],
+        ],
+    ];
+
+    $payload = [
+        'inputs' => ['melt_composition' => ['value' => ['sio2' => 0.7, 'tio2' => 0.01]]],
+        'outputs' => ['gas' => ['transmissionMode' => 'value']],
+        'note' => $note,
+    ];
+
+    $this->actingAs($user)->post(route('processes.jobs.store', 'conduit'), $payload);
+
+    $execution = ProcessExecution::query()->sole();
+
+    expect($execution->note)->toBe($note)
+        ->and($execution->note_updated_at?->toIso8601String())->toBe('2026-07-01T10:15:00+00:00');
+
+    Bus::assertDispatched(SubmitProcessExecutionJob::class, fn (SubmitProcessExecutionJob $job): bool => $job->processExecutionId === $execution->id
+        && ! array_key_exists('note', $job->payload)
+        && $job->payload['inputs'] === $payload['inputs']
+        && $job->payload['outputs'] === $payload['outputs']);
+});
+
+test('starting a process without a note leaves note timestamps empty', function () {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    app(OgcProcessCache::class)->putProcess('conduit', ogcFixture('process-conduit'));
+
+    $this->actingAs($user)->post(route('processes.jobs.store', 'conduit'), [
+        'inputs' => ['melt_composition' => ['value' => ['sio2' => 0.7, 'tio2' => 0.01]]],
+        'outputs' => ['gas' => ['transmissionMode' => 'value']],
+    ]);
+
+    $execution = ProcessExecution::query()->sole();
+
+    expect($execution->note)->toBeNull()
+        ->and($execution->note_updated_at)->toBeNull();
 });
 
 test('starting a process ignores a client requested synchronous mode', function () {
