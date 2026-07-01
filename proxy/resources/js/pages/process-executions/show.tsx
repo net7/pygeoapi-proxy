@@ -12,6 +12,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 
 import CopyableJobId from '@/components/ogc/copyable-job-id';
+import { DeleteJobButton } from '@/components/ogc/delete-job-dialog';
 import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
 import ResultPreview from '@/components/ogc/result-preview';
 import { Badge } from '@/components/ui/badge';
@@ -95,6 +96,10 @@ export default function ProcessExecutionShow({
                                     <StatusIcon data-icon="inline-start" />
                                     {jobStatusLabel(execution.status, t)}
                                 </Badge>
+                                <DeleteJobButton
+                                    execution={execution}
+                                    className="shrink-0"
+                                />
                             </div>
                             <p className="text-sm text-muted-foreground">
                                 {execution.processId}
