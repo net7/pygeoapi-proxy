@@ -2,12 +2,12 @@
 
 namespace App\Http\Requests\Ogc;
 
-use App\Enums\Ogc\ExecutionMode;
 use App\Support\TiptapDocument;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
-class StoreProcessExecutionRequest extends FormRequest
+class UpdateProcessExecutionNoteRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -15,13 +15,13 @@ class StoreProcessExecutionRequest extends FormRequest
     }
 
     /**
-     * @return array<string, mixed>
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'inputs' => ['required', 'array'],
-            'outputs' => ['nullable', 'array'],
             'note' => ['nullable', 'array'],
             'note.type' => ['required_with:note', 'string', 'in:doc'],
             'note.content' => ['sometimes', 'array'],
@@ -56,42 +56,5 @@ class StoreProcessExecutionRequest extends FormRequest
         $note = $this->validated('note');
 
         return is_array($note) ? TiptapDocument::sanitize($note) : null;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function executionPayload(): array
-    {
-        return array_filter([
-            'inputs' => $this->validated('inputs'),
-            'outputs' => $this->normalizeOutputs($this->validated('outputs')),
-        ], fn (mixed $value): bool => $value !== null);
-    }
-
-    public function executionMode(): ExecutionMode
-    {
-        return ExecutionMode::Async;
-    }
-
-    /**
-     * @param  array<int|string, mixed>|null  $outputs
-     * @return array<string, mixed>|null
-     */
-    private function normalizeOutputs(?array $outputs): ?array
-    {
-        if ($outputs === null) {
-            return null;
-        }
-
-        if (array_is_list($outputs)) {
-            return collect($outputs)
-                ->mapWithKeys(fn (mixed $output): array => [
-                    (string) $output => ['transmissionMode' => 'value'],
-                ])
-                ->all();
-        }
-
-        return $outputs;
     }
 }

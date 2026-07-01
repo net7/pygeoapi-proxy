@@ -36,7 +36,7 @@ class ProcessExecutionPolicy
      */
     public function update(User $user, ProcessExecution $processExecution): bool
     {
-        return false;
+        return $user->isAdmin() || $processExecution->user()->is($user);
     }
 
     /**

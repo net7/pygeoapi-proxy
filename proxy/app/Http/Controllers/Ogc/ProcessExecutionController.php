@@ -6,6 +6,7 @@ use App\Actions\Ogc\CreateProcessExecution;
 use App\Actions\Ogc\DeleteProcessExecution;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Ogc\StoreProcessExecutionRequest;
+use App\Http\Requests\Ogc\UpdateProcessExecutionNoteRequest;
 use App\Jobs\Ogc\SubmitProcessExecutionJob;
 use App\Models\ProcessExecution;
 use App\Models\User;
@@ -68,6 +69,7 @@ class ProcessExecutionController extends Controller
             process: $processDescription,
             payload: $payload,
             mode: $mode,
+            note: $request->note(),
         );
 
         SubmitProcessExecutionJob::dispatch($execution->id, $payload);
@@ -119,6 +121,8 @@ class ProcessExecutionController extends Controller
                 'status' => $processExecution->status->value,
                 'progress' => $processExecution->progress,
                 'message' => $processExecution->message,
+                'note' => $processExecution->note,
+                'noteUpdatedAt' => $processExecution->note_updated_at?->toIso8601String(),
                 'requestPayload' => $processExecution->request_payload,
                 'requestedOutputs' => $processExecution->requested_outputs,
                 'createdAt' => $processExecution->created_at?->toIso8601String(),
@@ -136,6 +140,27 @@ class ProcessExecutionController extends Controller
                 ])->all(),
             ],
         ]);
+    }
+
+    public function updateNote(UpdateProcessExecutionNoteRequest $request, ProcessExecution $processExecution): RedirectResponse
+    {
+        Gate::authorize('update', $processExecution);
+
+        $note = $request->note();
+
+        $processExecution->forceFill([
+            'note' => $note,
+            'note_updated_at' => $note === null && $processExecution->note === null ? null : now(),
+        ])->save();
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'title' => __('Note saved'),
+            'message' => __('The job note has been saved.'),
+            'icon' => false,
+        ]);
+
+        return back();
     }
 
     public function destroy(
