@@ -13,6 +13,7 @@ import type { LucideIcon } from 'lucide-react';
 
 import CopyableJobId from '@/components/ogc/copyable-job-id';
 import { DeleteJobButton } from '@/components/ogc/delete-job-dialog';
+import { JobNoteCard } from '@/components/ogc/job-note-card';
 import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
 import ResultPreview from '@/components/ogc/result-preview';
 import { Badge } from '@/components/ui/badge';
@@ -293,6 +294,8 @@ export default function ProcessExecutionShow({
                                 </div>
                             </CardContent>
                         </Card>
+
+                        <JobNoteCard execution={execution} />
 
                         <Card className="min-w-0 shadow-sm dark:border-border/70 dark:bg-card/95">
                             <CardHeader>

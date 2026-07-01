@@ -1,17 +1,12 @@
 import { useForm } from '@inertiajs/react';
 import { AlertCircleIcon, PlayIcon, WandSparklesIcon } from 'lucide-react';
 
+import { JobNoteEditor } from '@/components/ogc/job-note-editor';
 import OutputSelector from '@/components/ogc/output-selector';
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
 import { store } from '@/routes/processes/jobs';
@@ -19,11 +14,13 @@ import type {
     OgcExamplePayload,
     OgcFormSchema,
     OgcNormalizedField,
+    TiptapDocument,
 } from '@/types';
 
 type FormData = {
     inputs: Record<string, any>;
     outputs: Record<string, { transmissionMode: string }>;
+    note: TiptapDocument | null;
 };
 
 export default function DynamicProcessForm({
@@ -41,6 +38,7 @@ export default function DynamicProcessForm({
                     { transmissionMode: 'value' },
                 ]),
             ),
+            note: null,
         });
 
     function setInput(name: string, value: unknown) {
@@ -136,21 +134,28 @@ export default function DynamicProcessForm({
                             onChange={(outputs) => setData('outputs', outputs)}
                         />
                     </CardContent>
-                    <CardFooter>
-                        <Button
-                            type="submit"
-                            disabled={processing}
-                            className="w-full"
-                        >
-                            {processing ? (
-                                <Spinner data-icon="inline-start" />
-                            ) : (
-                                <PlayIcon data-icon="inline-start" />
-                            )}
-                            {t('ogc.execute')}
-                        </Button>
-                    </CardFooter>
                 </Card>
+
+                <Card className="min-w-0">
+                    <CardHeader>
+                        <CardTitle>{t('jobs.note')}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="min-w-0">
+                        <JobNoteEditor
+                            value={data.note}
+                            onChange={(note) => setData('note', note)}
+                        />
+                    </CardContent>
+                </Card>
+
+                <Button type="submit" disabled={processing} className="w-full">
+                    {processing ? (
+                        <Spinner data-icon="inline-start" />
+                    ) : (
+                        <PlayIcon data-icon="inline-start" />
+                    )}
+                    {t('ogc.execute')}
+                </Button>
             </aside>
         </form>
     );

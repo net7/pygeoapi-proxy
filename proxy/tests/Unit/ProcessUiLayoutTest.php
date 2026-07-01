@@ -413,7 +413,7 @@ test('job note editor appears on create and detail screens', function () {
     expect($cardSource)
         ->toContain('@/routes/jobs/note')
         ->toContain('DialogTitle')
-        ->toContain("t('jobs.noteUpdatedAt')")
+        ->toContain("t('jobs.noteUpdatedAt',")
         ->toContain("t('jobs.editNote')");
 });
 

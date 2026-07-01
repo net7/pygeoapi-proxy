@@ -78,6 +78,11 @@ export type OgcFormSchema = {
     examplePayload?: OgcExamplePayload | null;
 };
 
+export type TiptapDocument = {
+    type: 'doc';
+    content?: Array<Record<string, any>>;
+};
+
 export type ProcessExecutionListItem = {
     id: number;
     remoteJobId?: string | null;
@@ -104,6 +109,8 @@ export type ProcessExecutionResult = {
 
 export type ProcessExecutionDetail = ProcessExecutionListItem & {
     processVersion?: string | null;
+    note?: TiptapDocument | null;
+    noteUpdatedAt?: string | null;
     requestPayload: Record<string, unknown>;
     requestedOutputs?: Record<string, unknown> | null;
     results: ProcessExecutionResult[];
