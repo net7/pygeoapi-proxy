@@ -168,9 +168,7 @@ const columns: ColumnDef<AdminJob>[] = [
         header: ({ column }) => (
             <SortableHeader column={column} titleKey="common.user" />
         ),
-        cell: ({ row }) => (
-            <AdminJobUserIdentity owner={row.original.owner} />
-        ),
+        cell: ({ row }) => <AdminJobUserIdentity owner={row.original.owner} />,
     },
     {
         id: 'process',
@@ -376,8 +374,7 @@ export default function AdminJobsIndex({
         'all';
     const searchFilter =
         (table.getColumn('jobSearch')?.getFilterValue() as
-            | string
-            | undefined) ?? '';
+            string | undefined) ?? '';
     const selectedUserId =
         (table.getColumn('userId')?.getFilterValue() as string | undefined) ??
         (filters.selectedUserId === null
@@ -683,7 +680,9 @@ export default function AdminJobsIndex({
                                         colSpan={columns.length}
                                         className="h-28 text-center text-muted-foreground"
                                     >
-                                        {t('jobs.noJobsMatch')}
+                                        {hasActiveFilters
+                                            ? t('jobs.noJobsMatch')
+                                            : t('admin.noUserJobsStarted')}
                                     </TableCell>
                                 </TableRow>
                             )}

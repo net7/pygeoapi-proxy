@@ -25,6 +25,7 @@ import {
     Columns3Icon,
     ListChecksIcon,
     ListFilterIcon,
+    PlayIcon,
     SearchIcon,
     XIcon,
 } from 'lucide-react';
@@ -72,6 +73,7 @@ import {
 } from '@/lib/jobs';
 import { cn } from '@/lib/utils';
 import { index, show } from '@/routes/jobs';
+import { index as processesIndex } from '@/routes/processes';
 import type { ProcessExecutionListItem } from '@/types';
 
 type PaginatedExecutions = {
@@ -315,8 +317,7 @@ export default function ProcessExecutionIndex({
         'all';
     const searchFilter =
         (table.getColumn('jobSearch')?.getFilterValue() as
-            | string
-            | undefined) ?? '';
+            string | undefined) ?? '';
     const filteredRowsCount = table.getFilteredRowModel().rows.length;
     const pageCount = Math.max(table.getPageCount(), 1);
     const hasActiveFilters = statusFilter !== 'all' || searchFilter !== '';
@@ -573,9 +574,27 @@ export default function ProcessExecutionIndex({
                                 <TableRow>
                                     <TableCell
                                         colSpan={columns.length}
-                                        className="h-28 text-center text-muted-foreground"
+                                        className="h-36 text-center"
                                     >
-                                        {t('jobs.noJobsMatch')}
+                                        {hasActiveFilters ? (
+                                            <span className="text-muted-foreground">
+                                                {t('jobs.noJobsMatch')}
+                                            </span>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center gap-3 text-center">
+                                                <p className="text-sm text-muted-foreground">
+                                                    {t('jobs.noJobsStarted')}
+                                                </p>
+                                                <Button asChild size="sm">
+                                                    <Link
+                                                        href={processesIndex()}
+                                                    >
+                                                        <PlayIcon data-icon="inline-start" />
+                                                        {t('jobs.startProcess')}
+                                                    </Link>
+                                                </Button>
+                                            </div>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             )}

@@ -293,6 +293,35 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('new Intl.DateTimeFormat(locale ?? browserDateLocale()');
 });
 
+test('job tables show contextual empty states', function () {
+    $jobsIndexSource = file_get_contents(getcwd().'/resources/js/pages/process-executions/index.tsx');
+    $adminJobsIndexSource = file_get_contents(getcwd().'/resources/js/pages/admin/jobs/index.tsx');
+    $messagesSource = file_get_contents(getcwd().'/resources/js/lib/i18n/messages.ts');
+
+    expect($jobsIndexSource)
+        ->toContain("import { index as processesIndex } from '@/routes/processes'")
+        ->toContain('href={processesIndex()}')
+        ->toContain("t('jobs.noJobsStarted')")
+        ->toContain("'jobs.startProcess'")
+        ->toContain('hasActiveFilters ?')
+        ->toContain("t('jobs.noJobsMatch')");
+
+    expect($adminJobsIndexSource)
+        ->toContain("t('admin.noUserJobsStarted')")
+        ->toContain('hasActiveFilters ?')
+        ->toContain("t('jobs.noJobsMatch')")
+        ->not->toContain("t('jobs.startProcess')")
+        ->not->toContain('processesIndex');
+
+    expect($messagesSource)
+        ->toContain("noJobsStarted: 'Non hai ancora avviato lavori.'")
+        ->toContain("startProcess: 'Avvia un processo'")
+        ->toContain("noUserJobsStarted: 'Nessun lavoro avviato dagli utenti.'")
+        ->toContain("noJobsStarted: 'You have not started any jobs yet.'")
+        ->toContain("startProcess: 'Start a process'")
+        ->toContain("noUserJobsStarted: 'No jobs have been started by users.'");
+});
+
 test('clipboard hook falls back when async clipboard is unavailable', function () {
     $source = file_get_contents(getcwd().'/resources/js/hooks/use-clipboard.ts');
 

@@ -146,6 +146,7 @@ const it = {
         filterUsers: 'Filtra utenti {status}',
         jobsByUser: 'Filtra lavori per utente',
         local: 'LOCALE',
+        noUserJobsStarted: 'Nessun lavoro avviato dagli utenti.',
         noTrustedProviderEmail:
             'Email provider non attendibile: l’utente deve confermare un indirizzo con OTP, poi l’indirizzo normalizzato viene associato o creato.',
         providerEmail:
@@ -222,6 +223,7 @@ const it = {
         message: 'Messaggio',
         noJobMessage: 'Nessun messaggio disponibile per il lavoro.',
         noJobsMatch: 'Nessun lavoro corrisponde ai filtri correnti.',
+        noJobsStarted: 'Non hai ancora avviato lavori.',
         noResultsDescription: 'Il lavoro non ha prodotto output salvati.',
         noResultsTitle: 'Nessun risultato disponibile',
         pageRows: '{count} / pagina',
@@ -252,6 +254,7 @@ const it = {
             submitting: 'INVIO',
             successful: 'COMPLETATO',
         },
+        startProcess: 'Avvia un processo',
         submitted: 'Inviato',
         title: 'I miei lavori',
         visibleColumns: 'Colonne visibili',
@@ -513,6 +516,7 @@ const en = {
         filterUsers: 'Filter {status} users',
         jobsByUser: 'Filter jobs by user',
         local: 'LOCAL',
+        noUserJobsStarted: 'No jobs have been started by users.',
         noTrustedProviderEmail:
             'No trusted provider email: the user must confirm an address with OTP, then that normalized address is matched or created.',
         providerEmail:
@@ -589,6 +593,7 @@ const en = {
         message: 'Message',
         noJobMessage: 'No job message available.',
         noJobsMatch: 'No jobs match the current filters.',
+        noJobsStarted: 'You have not started any jobs yet.',
         noResultsDescription: 'The job has not produced stored outputs.',
         noResultsTitle: 'No results yet',
         pageRows: '{count} / page',
@@ -619,6 +624,7 @@ const en = {
             submitting: 'SUBMITTING',
             successful: 'SUCCESSFUL',
         },
+        startProcess: 'Start a process',
         submitted: 'Submitted',
         title: 'My Jobs',
         visibleColumns: 'Visible columns',
