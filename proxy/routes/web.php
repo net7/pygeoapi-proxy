@@ -48,6 +48,8 @@ Route::middleware(['auth', EnsureUserIsActive::class, 'verified'])->group(functi
         ->name('jobs.index');
     Route::get('jobs/{processExecution}', [ProcessExecutionController::class, 'show'])
         ->name('jobs.show');
+    Route::delete('jobs/{processExecution}', [ProcessExecutionController::class, 'destroy'])
+        ->name('jobs.destroy');
     Route::get('jobs/{processExecution}/results/{result}/download', [ProcessExecutionResultController::class, 'download'])
         ->name('jobs.results.download');
 

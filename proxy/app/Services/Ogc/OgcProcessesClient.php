@@ -55,6 +55,13 @@ class OgcProcessesClient
         return $this->getJson("/jobs/{$jobId}", ['f' => 'json']);
     }
 
+    public function deleteJob(string $jobId): Response
+    {
+        return $this->request()
+            ->delete($this->path("/jobs/{$jobId}"))
+            ->throw();
+    }
+
     public function jobResults(string $jobId): Response
     {
         return $this->request()

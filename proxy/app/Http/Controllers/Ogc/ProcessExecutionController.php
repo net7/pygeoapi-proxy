@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Ogc;
 
 use App\Actions\Ogc\CreateProcessExecution;
+use App\Actions\Ogc\DeleteProcessExecution;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Ogc\StoreProcessExecutionRequest;
 use App\Jobs\Ogc\SubmitProcessExecutionJob;
 use App\Models\ProcessExecution;
 use App\Models\User;
 use App\Services\Ogc\OgcProcessCache;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -133,6 +136,57 @@ class ProcessExecutionController extends Controller
                 ])->all(),
             ],
         ]);
+    }
+
+    public function destroy(
+        Request $request,
+        ProcessExecution $processExecution,
+        DeleteProcessExecution $deleteProcessExecution,
+    ): RedirectResponse {
+        Gate::authorize('delete', $processExecution);
+
+        $processLabel = $processExecution->process_title ?? $processExecution->process_id;
+        $localJobId = $processExecution->id;
+
+        try {
+            $deleteProcessExecution->handle($processExecution);
+        } catch (ConnectionException|RequestException $exception) {
+            report($exception);
+
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'title' => __('Job could not be deleted'),
+                'message' => __('The remote service did not confirm deletion.'),
+                'description' => __('The job is still available. Please try again later.'),
+                'icon' => false,
+            ]);
+
+            return back();
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'title' => __('Job deleted'),
+            'message' => __('The job has been deleted.'),
+            'description' => __('The local job and its saved results were removed.'),
+            'icon' => false,
+            'details' => [
+                [
+                    'label' => __('Process'),
+                    'value' => $processLabel,
+                ],
+                [
+                    'label' => __('Local job'),
+                    'value' => "#{$localJobId}",
+                ],
+            ],
+        ]);
+
+        if ($request->string('redirect')->toString() === 'back') {
+            return back();
+        }
+
+        return to_route('jobs.index');
     }
 
     private function pollingInterval(): int
