@@ -133,12 +133,31 @@ const it = {
         allRoles: 'Tutti i ruoli',
         allUsers: 'Tutti gli utenti',
         confirmEmail: 'Conferma email',
+        copyUserEmail: 'Copia email',
         createUser: 'Crea utente',
         createUserDescription: 'Verrà inviato un link di configurazione.',
         deactivate: 'Disattiva',
         deactivateTitle: 'Disattivare questo utente?',
         deactivateUser: 'Disattiva utente',
         editUserDetails: 'Modifica dettagli utente',
+        forceDelete: 'Elimina',
+        forceDeleteConfirm: 'Elimina definitivamente',
+        forceDeleteDescription:
+            'Questa operazione eliminerà definitivamente l’utente e tutti i dati collegati.',
+        forceDeleteEmailCopied: 'Email utente copiata',
+        forceDeleteEmailCopyError: 'Impossibile copiare l’email utente',
+        forceDeleteEmailCopyUnavailable:
+            'Accesso agli appunti non disponibile.',
+        forceDeleteEmailMismatch:
+            'Inserisci esattamente l’email dell’utente per continuare.',
+        forceDeleteJobsCount: '{count} lavori verranno eliminati.',
+        forceDeleteTitle: 'Eliminare definitivamente questo utente?',
+        forceDeleteTypedEmail: 'Digita l’email per confermare',
+        forceDeleteUnavailable:
+            'Non puoi eliminare definitivamente il tuo account.',
+        forceDeleteWarningDescription:
+            'Verranno rimossi utente, tutti i lavori, risultati, sessioni, account social, passkey e avatar locale. L’operazione non può essere annullata.',
+        forceDeleteWarningTitle: 'Operazione irreversibile',
         emailAlreadyUsed:
             'Email già usata: il salvataggio viene bloccato dalla regola di unicità email.',
         emailChanged:
@@ -523,12 +542,29 @@ const en = {
         allRoles: 'All roles',
         allUsers: 'All Users',
         confirmEmail: 'Confirm email',
+        copyUserEmail: 'Copy email',
         createUser: 'Create user',
         createUserDescription: 'A setup link will be sent.',
         deactivate: 'Deactivate',
         deactivateTitle: 'Deactivate this user?',
         deactivateUser: 'Deactivate user',
         editUserDetails: 'Edit user details',
+        forceDelete: 'Delete',
+        forceDeleteConfirm: 'Permanently delete',
+        forceDeleteDescription:
+            'This operation will permanently delete the user and all related data.',
+        forceDeleteEmailCopied: 'User email copied',
+        forceDeleteEmailCopyError: 'Unable to copy the user email',
+        forceDeleteEmailCopyUnavailable: 'Clipboard access is not available.',
+        forceDeleteEmailMismatch: 'Type the user email exactly to continue.',
+        forceDeleteJobsCount: '{count} jobs will be deleted.',
+        forceDeleteTitle: 'Permanently delete this user?',
+        forceDeleteTypedEmail: 'Type the email to confirm',
+        forceDeleteUnavailable:
+            'You cannot permanently delete your own account.',
+        forceDeleteWarningDescription:
+            'This removes the user, all jobs, results, sessions, social accounts, passkeys, and local avatar. This cannot be undone.',
+        forceDeleteWarningTitle: 'Irreversible operation',
         emailAlreadyUsed:
             'Email already used: saving is blocked by the unique email rule.',
         emailChanged:

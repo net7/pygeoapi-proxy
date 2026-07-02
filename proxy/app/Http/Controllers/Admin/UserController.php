@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\Admin\DeleteUser;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ForceDeleteUserRequest;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -109,6 +113,47 @@ class UserController extends Controller
         return to_route('admin.users.index');
     }
 
+    public function forceDestroy(ForceDeleteUserRequest $request, User $user, DeleteUser $deleteUser): RedirectResponse
+    {
+        $name = $user->name;
+        $email = $user->email;
+
+        try {
+            $deleteUser->handle($user);
+        } catch (ConnectionException|RequestException $exception) {
+            report($exception);
+
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'title' => __('User could not be deleted'),
+                'message' => __('A remote job could not be deleted.'),
+                'description' => __('The user is still available. Some jobs may already have been removed; refresh and try again later.'),
+                'icon' => false,
+            ]);
+
+            return back();
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'title' => __('User deleted'),
+            'message' => __('The user and related data have been permanently deleted.'),
+            'icon' => false,
+            'details' => [
+                [
+                    'label' => __('User'),
+                    'value' => $name,
+                ],
+                [
+                    'label' => __('Email'),
+                    'value' => $email,
+                ],
+            ],
+        ]);
+
+        return to_route('admin.users.index');
+    }
+
     /**
      * @return array<int, array{value: string, label: string}>
      */
@@ -163,7 +208,7 @@ class UserController extends Controller
 
     private function invalidateUserSessions(User $user): void
     {
-        DB::table('sessions')
+        DB::table((string) config('session.table', 'sessions'))
             ->where('user_id', $user->id)
             ->delete();
     }

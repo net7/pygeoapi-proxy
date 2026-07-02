@@ -82,6 +82,8 @@ Route::middleware(['auth', EnsureUserIsActive::class, 'verified', EnsureUserIsAd
         Route::patch('users/{user}', [AdminUserController::class, 'update'])
             ->middleware(HandlePrecognitiveRequests::class)
             ->name('users.update');
+        Route::delete('users/{user}/force', [AdminUserController::class, 'forceDestroy'])
+            ->name('users.force-destroy');
         Route::delete('users/{user}', [AdminUserController::class, 'destroy'])
             ->name('users.destroy');
         Route::patch('users/{user}/restore', [AdminUserController::class, 'restore'])

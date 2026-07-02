@@ -16,6 +16,7 @@ import type {
     VisibilityState,
 } from '@tanstack/react-table';
 import {
+    AlertTriangleIcon,
     ArrowUpDownIcon,
     CheckCircle2Icon,
     ChevronDownIcon,
@@ -24,6 +25,7 @@ import {
     ChevronsLeftIcon,
     ChevronsRightIcon,
     Columns3Icon,
+    CopyIcon,
     ListChecksIcon,
     ListFilterIcon,
     PencilIcon,
@@ -33,6 +35,7 @@ import {
     SearchIcon,
     ShieldCheckIcon,
     InfoIcon,
+    Trash2Icon,
     UserIcon,
     UserCheckIcon,
     UserXIcon,
@@ -40,6 +43,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
+import { toast } from 'sonner';
 
 import InputError from '@/components/input-error';
 import {
@@ -67,6 +71,13 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    Field,
+    FieldDescription,
+    FieldError,
+    FieldGroup,
+    FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -95,6 +106,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useClipboard } from '@/hooks/use-clipboard';
 import { useInitials } from '@/hooks/use-initials';
 import { useTranslation } from '@/hooks/use-translation';
 import type { TranslationKey } from '@/lib/i18n/translation';
@@ -102,6 +114,7 @@ import { cn } from '@/lib/utils';
 import { index as jobsIndex } from '@/routes/admin/jobs';
 import {
     destroy as destroyUser,
+    forceDestroy,
     index,
     restore as restoreUser,
     store,
@@ -153,6 +166,10 @@ type UserFormData = {
     role: AdminUserRole;
 };
 
+type ForceDeleteUserFormData = {
+    email_confirmation: string;
+};
+
 type PageProps = {
     auth: Auth;
 };
@@ -173,7 +190,7 @@ const columnClassNames: Record<string, string> = {
     status: 'min-w-32',
     jobs_count: 'min-w-24 text-right',
     created_at: 'min-w-40',
-    actions: 'min-w-80 text-right',
+    actions: 'min-w-[34rem] text-right',
 };
 
 export default function AdminUsersIndex({
@@ -190,6 +207,8 @@ export default function AdminUsersIndex({
     const [createOpen, setCreateOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
     const [statusUser, setStatusUser] = useState<AdminUser | null>(null);
+    const [forceDeletingUser, setForceDeletingUser] =
+        useState<AdminUser | null>(null);
     const [sorting, setSorting] = useState<SortingState>([
         { id: 'created_at', desc: true },
     ]);
@@ -324,6 +343,25 @@ export default function AdminUsersIndex({
                 cell: ({ row }) => {
                     const user = row.original;
                     const isSelf = user.id === auth.user?.id;
+                    const forceDeleteAction = (
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            aria-disabled={isSelf}
+                            className={cn(
+                                isSelf && 'cursor-not-allowed opacity-50',
+                            )}
+                            onClick={() => {
+                                if (!isSelf) {
+                                    setForceDeletingUser(user);
+                                }
+                            }}
+                        >
+                            <Trash2Icon data-icon="inline-start" />
+                            {t('admin.forceDelete')}
+                        </Button>
+                    );
                     const statusAction = (
                         <Button
                             type="button"
@@ -354,7 +392,7 @@ export default function AdminUsersIndex({
                     );
 
                     return (
-                        <div className="flex justify-end gap-2">
+                        <div className="flex flex-wrap justify-end gap-2">
                             <Button
                                 asChild
                                 variant="outline"
@@ -404,6 +442,31 @@ export default function AdminUsersIndex({
                                 </Popover>
                             ) : (
                                 statusAction
+                            )}
+
+                            {isSelf ? (
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        {forceDeleteAction}
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                        align="end"
+                                        className="w-72"
+                                    >
+                                        <PopoverHeader>
+                                            <PopoverTitle>
+                                                {t('admin.actionUnavailable')}
+                                            </PopoverTitle>
+                                            <PopoverDescription>
+                                                {t(
+                                                    'admin.forceDeleteUnavailable',
+                                                )}
+                                            </PopoverDescription>
+                                        </PopoverHeader>
+                                    </PopoverContent>
+                                </Popover>
+                            ) : (
+                                forceDeleteAction
                             )}
                         </div>
                     );
@@ -469,8 +532,7 @@ export default function AdminUsersIndex({
         'all';
     const searchFilter =
         (table.getColumn('userSearch')?.getFilterValue() as
-            | string
-            | undefined) ?? '';
+            string | undefined) ?? '';
     const filteredRowsCount = table.getFilteredRowModel().rows.length;
     const pageCount = Math.max(table.getPageCount(), 1);
     const hasActiveFilters =
@@ -858,6 +920,18 @@ export default function AdminUsersIndex({
                     }}
                 />
             )}
+
+            {forceDeletingUser && (
+                <ForceDeleteUserDialog
+                    user={forceDeletingUser}
+                    open={forceDeletingUser !== null}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setForceDeletingUser(null);
+                        }
+                    }}
+                />
+            )}
         </>
     );
 }
@@ -1216,6 +1290,189 @@ function UserStatusDialog({
                             : t('admin.deactivate')}
                     </Button>
                 </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function ForceDeleteUserDialog({
+    user,
+    open,
+    onOpenChange,
+}: {
+    user: AdminUser;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const { t } = useTranslation();
+    const [, copy] = useClipboard();
+    const form = useForm<ForceDeleteUserFormData>(forceDestroy(user.id), {
+        email_confirmation: '',
+    });
+    const userError = (form.errors as Record<string, string | undefined>).user;
+    const fieldId = `force-delete-email-confirmation-${user.id}`;
+    const confirmationMatches = form.data.email_confirmation === user.email;
+
+    function handleOpenChange(nextOpen: boolean): void {
+        if (!nextOpen) {
+            form.reset();
+            form.clearErrors();
+        }
+
+        onOpenChange(nextOpen);
+    }
+
+    async function copyEmail(): Promise<void> {
+        if (await copy(user.email)) {
+            toast.success(t('admin.forceDeleteEmailCopied'), {
+                description: user.email,
+            });
+
+            return;
+        }
+
+        toast.error(t('admin.forceDeleteEmailCopyError'), {
+            description: t('admin.forceDeleteEmailCopyUnavailable'),
+        });
+    }
+
+    function submit(event: FormEvent<HTMLFormElement>): void {
+        event.preventDefault();
+
+        if (!confirmationMatches) {
+            return;
+        }
+
+        form.submit({
+            preserveScroll: true,
+            onSuccess: () => {
+                form.reset();
+                onOpenChange(false);
+                router.reload({ only: ['users'] });
+            },
+        });
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+            <DialogContent className="overflow-hidden p-0 sm:max-w-xl">
+                <DialogHeader className="px-6 pt-6 pr-12 text-left">
+                    <DialogTitle>{t('admin.forceDeleteTitle')}</DialogTitle>
+                    <DialogDescription className="break-words">
+                        {t('admin.forceDeleteDescription')}
+                    </DialogDescription>
+                </DialogHeader>
+
+                <form onSubmit={submit} className="flex flex-col gap-5">
+                    <div className="flex flex-col gap-4 px-6">
+                        <div className="rounded-md border bg-muted/30 p-3">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="min-w-0">
+                                    <p className="text-sm font-semibold break-words">
+                                        {user.name}
+                                    </p>
+                                    <p className="font-mono text-xs break-all text-muted-foreground">
+                                        {user.email}
+                                    </p>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="shrink-0"
+                                    onClick={copyEmail}
+                                >
+                                    <CopyIcon data-icon="inline-start" />
+                                    {t('admin.copyUserEmail')}
+                                </Button>
+                            </div>
+                        </div>
+
+                        <Alert variant="destructive">
+                            <AlertTriangleIcon />
+                            <AlertTitle>
+                                {t('admin.forceDeleteWarningTitle')}
+                            </AlertTitle>
+                            <AlertDescription>
+                                <p>
+                                    {t('admin.forceDeleteWarningDescription')}
+                                </p>
+                                <Badge variant="secondary" className="mt-2">
+                                    {t('admin.forceDeleteJobsCount', {
+                                        count: user.jobs_count,
+                                    })}
+                                </Badge>
+                            </AlertDescription>
+                        </Alert>
+
+                        {userError ? (
+                            <Alert variant="destructive">
+                                <AlertTriangleIcon />
+                                <AlertTitle>
+                                    {t('admin.actionUnavailable')}
+                                </AlertTitle>
+                                <AlertDescription>{userError}</AlertDescription>
+                            </Alert>
+                        ) : null}
+
+                        <FieldGroup>
+                            <Field
+                                data-invalid={Boolean(
+                                    form.errors.email_confirmation,
+                                )}
+                            >
+                                <FieldLabel htmlFor={fieldId}>
+                                    {t('admin.forceDeleteTypedEmail')}
+                                </FieldLabel>
+                                <Input
+                                    id={fieldId}
+                                    type="email"
+                                    value={form.data.email_confirmation}
+                                    onChange={(event) =>
+                                        form.setData(
+                                            'email_confirmation',
+                                            event.target.value,
+                                        )
+                                    }
+                                    aria-invalid={Boolean(
+                                        form.errors.email_confirmation,
+                                    )}
+                                    autoComplete="off"
+                                />
+                                <FieldDescription>
+                                    {t('admin.forceDeleteEmailMismatch')}
+                                </FieldDescription>
+                                <FieldError>
+                                    {form.errors.email_confirmation}
+                                </FieldError>
+                            </Field>
+                        </FieldGroup>
+                    </div>
+
+                    <DialogFooter className="border-t bg-muted/20 px-6 py-4">
+                        <DialogClose asChild>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={form.processing}
+                            >
+                                {t('common.cancel')}
+                            </Button>
+                        </DialogClose>
+                        <Button
+                            type="submit"
+                            variant="destructive"
+                            disabled={form.processing || !confirmationMatches}
+                        >
+                            {form.processing ? (
+                                <Spinner data-icon="inline-start" />
+                            ) : (
+                                <Trash2Icon data-icon="inline-start" />
+                            )}
+                            {t('admin.forceDeleteConfirm')}
+                        </Button>
+                    </DialogFooter>
+                </form>
             </DialogContent>
         </Dialog>
     );

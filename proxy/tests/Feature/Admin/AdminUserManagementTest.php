@@ -2,10 +2,13 @@
 
 use App\Enums\UserRole;
 use App\Models\ProcessExecution;
+use App\Models\ProcessExecutionResult;
 use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -194,4 +197,132 @@ test('admins can deactivate and restore users but cannot deactivate themselves',
         ->assertSessionHasErrors('user');
 
     expect($admin->fresh()->isActive())->toBeTrue();
+});
+
+test('admins can permanently delete users and all related data', function () {
+    config(['services.ogc_processes.base_url' => 'https://voice.pi.ingv.it/geoinquire/']);
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/jobs/remote-one' => Http::response(null, 204),
+        'https://voice.pi.ingv.it/geoinquire/jobs/remote-missing' => Http::response(['description' => 'Missing'], 404),
+    ]);
+
+    Storage::fake('public');
+    Storage::disk('public')->put('avatars/target.jpg', 'avatar');
+
+    $admin = User::factory()->admin()->create();
+    $user = User::factory()->create([
+        'email' => 'target@example.com',
+        'avatar_path' => 'avatars/target.jpg',
+    ]);
+    $remoteExecution = ProcessExecution::factory()->for($user)->create(['remote_job_id' => 'remote-one']);
+    $missingRemoteExecution = ProcessExecution::factory()->for($user)->create(['remote_job_id' => 'remote-missing']);
+    $localExecution = ProcessExecution::factory()->for($user)->create(['remote_job_id' => null]);
+    ProcessExecutionResult::factory()->for($remoteExecution)->create();
+    SocialAccount::factory()->for($user)->create();
+    DB::table('passkeys')->insert([
+        'user_id' => $user->id,
+        'name' => 'Target passkey',
+        'credential_id' => 'target-passkey-credential',
+        'credential' => json_encode(['id' => 'target-passkey-credential']),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    DB::table('sessions')->insert([
+        'id' => 'force-delete-target-session',
+        'user_id' => $user->id,
+        'ip_address' => '127.0.0.1',
+        'user_agent' => 'Pest',
+        'payload' => 'payload',
+        'last_activity' => now()->timestamp,
+    ]);
+
+    $this->actingAs($admin)
+        ->from(route('admin.users.index'))
+        ->delete(route('admin.users.force-destroy', $user), [
+            'email_confirmation' => 'target@example.com',
+        ])
+        ->assertRedirect(route('admin.users.index'));
+
+    $this->assertModelMissing($user);
+    $this->assertDatabaseMissing('process_executions', ['id' => $remoteExecution->id]);
+    $this->assertDatabaseMissing('process_executions', ['id' => $missingRemoteExecution->id]);
+    $this->assertDatabaseMissing('process_executions', ['id' => $localExecution->id]);
+    $this->assertDatabaseMissing('sessions', ['id' => 'force-delete-target-session']);
+    $this->assertDatabaseMissing('social_accounts', ['user_id' => $user->id]);
+    $this->assertDatabaseMissing('passkeys', ['user_id' => $user->id]);
+    Storage::disk('public')->assertMissing('avatars/target.jpg');
+
+    Http::assertSent(fn (Request $request): bool => $request->method() === 'DELETE'
+        && $request->url() === 'https://voice.pi.ingv.it/geoinquire/jobs/remote-one');
+    Http::assertSent(fn (Request $request): bool => $request->method() === 'DELETE'
+        && $request->url() === 'https://voice.pi.ingv.it/geoinquire/jobs/remote-missing');
+});
+
+test('permanent user deletion requires matching email confirmation', function () {
+    $admin = User::factory()->admin()->create();
+    $user = User::factory()->create(['email' => 'target@example.com']);
+
+    $this->actingAs($admin)
+        ->from(route('admin.users.index'))
+        ->delete(route('admin.users.force-destroy', $user), [
+            'email_confirmation' => 'wrong@example.com',
+        ])
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHasErrors('email_confirmation');
+
+    $this->assertModelExists($user);
+});
+
+test('admins cannot permanently delete themselves', function () {
+    $admin = User::factory()->admin()->create(['email' => 'admin@example.com']);
+
+    $this->actingAs($admin)
+        ->from(route('admin.users.index'))
+        ->delete(route('admin.users.force-destroy', $admin), [
+            'email_confirmation' => 'admin@example.com',
+        ])
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHasErrors('user');
+
+    $this->assertModelExists($admin);
+});
+
+test('remote job deletion failure stops permanent user deletion', function () {
+    config(['services.ogc_processes.base_url' => 'https://voice.pi.ingv.it/geoinquire/']);
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/jobs/remote-one' => Http::response(null, 204),
+        'https://voice.pi.ingv.it/geoinquire/jobs/remote-failing' => Http::response(['description' => 'Unavailable'], 500),
+    ]);
+
+    $admin = User::factory()->admin()->create();
+    $user = User::factory()->create(['email' => 'target@example.com']);
+    $deletedExecution = ProcessExecution::factory()->for($user)->create(['remote_job_id' => 'remote-one']);
+    $failingExecution = ProcessExecution::factory()->for($user)->create(['remote_job_id' => 'remote-failing']);
+
+    $this->actingAs($admin)
+        ->from(route('admin.users.index'))
+        ->delete(route('admin.users.force-destroy', $user), [
+            'email_confirmation' => 'target@example.com',
+        ])
+        ->assertRedirect(route('admin.users.index'));
+
+    $this->assertModelExists($user);
+    $this->assertDatabaseMissing('process_executions', ['id' => $deletedExecution->id]);
+    $this->assertDatabaseHas('process_executions', ['id' => $failingExecution->id]);
+});
+
+test('normal users cannot permanently delete users', function () {
+    $user = User::factory()->create();
+    $target = User::factory()->create(['email' => 'target@example.com']);
+
+    $this->actingAs($user)
+        ->delete(route('admin.users.force-destroy', $target), [
+            'email_confirmation' => 'target@example.com',
+        ])
+        ->assertForbidden();
+
+    $this->assertModelExists($target);
 });
