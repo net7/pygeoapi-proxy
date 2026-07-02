@@ -6,8 +6,6 @@ services:
       AUTORUN_ENABLED: "false"
       PHP_OPCACHE_ENABLE: "0"
       PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
-    extra_hosts: &laravel-develop-extra-hosts
-      - "${APP_HOST:-ingv.test}:host-gateway"
     volumes: &laravel-develop-volumes
       - ./proxy:/var/www/html
 
@@ -18,7 +16,6 @@ services:
       AUTORUN_ENABLED: "false"
       PHP_OPCACHE_ENABLE: "0"
       PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
-    extra_hosts: *laravel-develop-extra-hosts
     volumes: *laravel-develop-volumes
 
   scheduler:
@@ -28,7 +25,6 @@ services:
       AUTORUN_ENABLED: "false"
       PHP_OPCACHE_ENABLE: "0"
       PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
-    extra_hosts: *laravel-develop-extra-hosts
     volumes: *laravel-develop-volumes
 
   reverb:
@@ -38,7 +34,6 @@ services:
       AUTORUN_ENABLED: "false"
       PHP_OPCACHE_ENABLE: "0"
       PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
-    extra_hosts: *laravel-develop-extra-hosts
     volumes: *laravel-develop-volumes
 
   vite:
@@ -47,15 +42,15 @@ services:
     working_dir: /var/www/html
     command: ["sh", "-c", "if [ ! -x node_modules/.bin/vite ]; then bun install --frozen-lockfile; fi; bun run dev -- --host 0.0.0.0 --port $${VITE_DEV_SERVER_PORT:-5173} --strictPort"]
     environment:
-      APP_URL: ${APP_URL:-http://ingv.test}
+      APP_URL: ${APP_URL:-http://localhost:8088}
       VITE_APP_NAME: ${VITE_APP_NAME:-Pygeoapi Proxy}
       VITE_REVERB_APP_KEY: ${REVERB_APP_KEY:-develop-reverb-key}
-      VITE_REVERB_HOST: ${REVERB_HOST:-ingv.test}
+      VITE_REVERB_HOST: ${REVERB_HOST:-localhost}
       VITE_REVERB_PORT: ${REVERB_PORT:-8089}
       VITE_REVERB_SCHEME: ${REVERB_SCHEME:-http}
-      VITE_DEV_SERVER_URL: ${VITE_DEV_SERVER_URL:-http://ingv.test:5174}
-      VITE_DEV_SERVER_HOST: ${VITE_DEV_SERVER_HOST:-ingv.test}
-      VITE_DEV_SERVER_ALLOWED_HOSTS: ${VITE_DEV_SERVER_ALLOWED_HOSTS:-ingv.test}
+      VITE_DEV_SERVER_URL: ${VITE_DEV_SERVER_URL:-http://localhost:5174}
+      VITE_DEV_SERVER_HOST: ${VITE_DEV_SERVER_HOST:-localhost}
+      VITE_DEV_SERVER_ALLOWED_HOSTS: ${VITE_DEV_SERVER_ALLOWED_HOSTS:-localhost}
       VITE_DEV_SERVER_PORT: ${VITE_DEV_SERVER_PORT:-5173}
       VITE_DEV_SERVER_CLIENT_PORT: ${VITE_DEV_SERVER_CLIENT_PORT:-5174}
       PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-2G}
@@ -81,7 +76,6 @@ services:
     volumes:
       - ./proxy:/var/www/html
       - vite-node-modules:/var/www/html/node_modules
-    extra_hosts: *laravel-develop-extra-hosts
     networks:
       - pygeoapi-proxy
     restart: unless-stopped

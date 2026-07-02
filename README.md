@@ -317,10 +317,10 @@ make pygeoapi-validate
 
 Con i valori di default in `develop`:
 
-- Laravel APP_URL: `http://ingv.test`
+- Laravel APP_URL: `http://localhost:8088`
 - Laravel porta container diretta: `http://localhost:8088`
-- Reverb: `http://ingv.test:8089`
-- Vite: `http://ingv.test:5174`
+- Reverb: `http://localhost:8089`
+- Vite: `http://localhost:5174`
 - pygeoapi: `http://localhost:5000`
 - phpMyAdmin: `http://localhost:8090`
 - Mailpit: `http://localhost:8026`
@@ -358,7 +358,7 @@ usa un volume Docker dedicato per evitare di riusare dipendenze native installat
 sull'host macOS dentro il container Linux.
 
 Vite ascolta dentro il container su `0.0.0.0:5173`, ma pubblica gli URL browser
-con `VITE_DEV_SERVER_URL=http://ingv.test:5174`. Non usare `0.0.0.0` come URL
+con `VITE_DEV_SERVER_URL=http://localhost:5174`. Non usare `0.0.0.0` come URL
 nel browser: e' solo un indirizzo di bind del processo.
 
 Quando cambiano servizi Compose, porte, variabili `.env.*.example`, comandi
