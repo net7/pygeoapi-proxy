@@ -53,9 +53,6 @@ test('admin tables use tanstack filtering and expected labels', function () {
         ->and($users)->toContain('jobsIndex({')
         ->and($users)->toContain('query: { user: user.jobFilter }')
         ->and($users)->not->toContain('query: { user_id: user.id }')
-        ->and($users)->toContain('border-sky-200 bg-sky-50 text-sky-800')
-        ->and($users)->toContain('border-amber-200 bg-amber-50 text-amber-900')
-        ->and($users)->toContain('border-emerald-200 bg-emerald-50 text-emerald-800')
         ->and($users)->toContain('admin.restore')
         ->and($users)->toContain('admin.deactivate')
         ->and($users)->toContain("from '@/components/ui/popover'")
@@ -80,6 +77,22 @@ test('admin tables use tanstack filtering and expected labels', function () {
         ->and($jobs)->toContain('<AvatarImage src={owner.avatar ?? undefined} alt={owner.name} />')
         ->and($jobs)->toContain('owner={execution.owner}')
         ->and($jobs)->toContain('showLabel={false}');
+});
+
+test('admin user table collapses row actions into a uniform dropdown', function () {
+    $users = file_get_contents(dirname(__DIR__, 2).'/resources/js/pages/admin/users/index.tsx');
+
+    expect($users)
+        ->toContain('MoreHorizontalIcon')
+        ->toContain('DropdownMenuGroup')
+        ->toContain('DropdownMenuItem')
+        ->toContain("actions: 'w-12 text-right'")
+        ->toContain("aria-label={t('common.more')}")
+        ->toContain('variant="destructive"')
+        ->not->toContain("actions: 'min-w-[34rem] text-right'")
+        ->not->toContain('border-sky-200 bg-sky-50 text-sky-800')
+        ->not->toContain('border-amber-200 bg-amber-50 text-amber-900')
+        ->not->toContain('border-emerald-200 bg-emerald-50 text-emerald-800');
 });
 
 test('admin edit user modal explains email reconciliation and requires confirmation', function () {

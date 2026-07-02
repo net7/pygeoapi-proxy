@@ -28,6 +28,7 @@ import {
     CopyIcon,
     ListChecksIcon,
     ListFilterIcon,
+    MoreHorizontalIcon,
     PencilIcon,
     PlusIcon,
     RotateCcwIcon,
@@ -67,6 +68,8 @@ import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
@@ -190,7 +193,7 @@ const columnClassNames: Record<string, string> = {
     status: 'min-w-32',
     jobs_count: 'min-w-24 text-right',
     created_at: 'min-w-40',
-    actions: 'min-w-[34rem] text-right',
+    actions: 'w-12 text-right',
 };
 
 export default function AdminUsersIndex({
@@ -343,132 +346,147 @@ export default function AdminUsersIndex({
                 cell: ({ row }) => {
                     const user = row.original;
                     const isSelf = user.id === auth.user?.id;
-                    const forceDeleteAction = (
-                        <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            aria-disabled={isSelf}
-                            className={cn(
-                                isSelf && 'cursor-not-allowed opacity-50',
-                            )}
-                            onClick={() => {
-                                if (!isSelf) {
-                                    setForceDeletingUser(user);
-                                }
-                            }}
-                        >
-                            <Trash2Icon data-icon="inline-start" />
-                            {t('admin.forceDelete')}
-                        </Button>
-                    );
+                    const StatusIcon = user.is_deactivated
+                        ? RotateCcwIcon
+                        : UserXIcon;
                     const statusAction = (
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
+                        <DropdownMenuItem
                             aria-disabled={isSelf}
                             className={cn(
-                                user.is_deactivated
-                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900 dark:border-emerald-400/70 dark:bg-emerald-500/15 dark:text-emerald-100 dark:hover:bg-emerald-500/25'
-                                    : 'border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100 hover:text-amber-950 dark:border-amber-400/70 dark:bg-amber-500/15 dark:text-amber-100 dark:hover:bg-amber-500/25',
                                 isSelf && 'cursor-not-allowed opacity-50',
                             )}
-                            onClick={() => {
-                                if (!isSelf) {
-                                    setStatusUser(user);
+                            onSelect={(event) => {
+                                if (isSelf) {
+                                    event.preventDefault();
+
+                                    return;
                                 }
+
+                                setStatusUser(user);
                             }}
                         >
-                            {user.is_deactivated ? (
-                                <RotateCcwIcon data-icon="inline-start" />
-                            ) : (
-                                <UserXIcon data-icon="inline-start" />
-                            )}
+                            <StatusIcon />
                             {user.is_deactivated
                                 ? t('admin.restore')
-                                : t('admin.deactivate').toUpperCase()}
-                        </Button>
+                                : t('admin.deactivate')}
+                        </DropdownMenuItem>
+                    );
+                    const forceDeleteAction = (
+                        <DropdownMenuItem
+                            variant="destructive"
+                            aria-disabled={isSelf}
+                            className={cn(
+                                isSelf && 'cursor-not-allowed opacity-50',
+                            )}
+                            onSelect={(event) => {
+                                if (isSelf) {
+                                    event.preventDefault();
+
+                                    return;
+                                }
+
+                                setForceDeletingUser(user);
+                            }}
+                        >
+                            <Trash2Icon />
+                            {t('admin.forceDelete')}
+                        </DropdownMenuItem>
                     );
 
                     return (
-                        <div className="flex flex-wrap justify-end gap-2">
-                            <Button
-                                asChild
-                                variant="outline"
-                                size="sm"
-                                className="border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100 hover:text-sky-900 dark:border-sky-400/70 dark:bg-sky-500/15 dark:text-sky-100 dark:hover:bg-sky-500/25"
-                            >
-                                <Link
-                                    href={jobsIndex({
-                                        query: { user: user.jobFilter },
-                                    })}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={t('common.more')}
+                                    title={t('jobs.actions')}
                                 >
-                                    <ListChecksIcon data-icon="inline-start" />
-                                    {t('admin.viewUserJobs')}
-                                </Link>
-                            </Button>
-
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setEditingUser(user)}
-                            >
-                                <PencilIcon data-icon="inline-start" />
-                                {t('common.edit')}
-                            </Button>
-
-                            {isSelf ? (
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        {statusAction}
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                        align="end"
-                                        className="w-72"
+                                    <MoreHorizontalIcon data-icon="icon" />
+                                    <span className="sr-only">
+                                        {t('jobs.actions')}
+                                    </span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                                <DropdownMenuLabel>
+                                    {t('jobs.actions')}
+                                </DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem asChild>
+                                        <Link
+                                            className="block w-full cursor-pointer"
+                                            href={jobsIndex({
+                                                query: { user: user.jobFilter },
+                                            })}
+                                        >
+                                            <ListChecksIcon />
+                                            {t('admin.viewUserJobs')}
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onSelect={() => setEditingUser(user)}
                                     >
-                                        <PopoverHeader>
-                                            <PopoverTitle>
-                                                {t('admin.actionUnavailable')}
-                                            </PopoverTitle>
-                                            <PopoverDescription>
-                                                {t(
-                                                    'admin.userSelfStatusUnavailable',
-                                                )}
-                                            </PopoverDescription>
-                                        </PopoverHeader>
-                                    </PopoverContent>
-                                </Popover>
-                            ) : (
-                                statusAction
-                            )}
-
-                            {isSelf ? (
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        {forceDeleteAction}
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                        align="end"
-                                        className="w-72"
-                                    >
-                                        <PopoverHeader>
-                                            <PopoverTitle>
-                                                {t('admin.actionUnavailable')}
-                                            </PopoverTitle>
-                                            <PopoverDescription>
-                                                {t(
-                                                    'admin.forceDeleteUnavailable',
-                                                )}
-                                            </PopoverDescription>
-                                        </PopoverHeader>
-                                    </PopoverContent>
-                                </Popover>
-                            ) : (
-                                forceDeleteAction
-                            )}
-                        </div>
+                                        <PencilIcon />
+                                        {t('common.edit')}
+                                    </DropdownMenuItem>
+                                    {isSelf ? (
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                {statusAction}
+                                            </PopoverTrigger>
+                                            <PopoverContent
+                                                align="end"
+                                                className="w-72"
+                                            >
+                                                <PopoverHeader>
+                                                    <PopoverTitle>
+                                                        {t(
+                                                            'admin.actionUnavailable',
+                                                        )}
+                                                    </PopoverTitle>
+                                                    <PopoverDescription>
+                                                        {t(
+                                                            'admin.userSelfStatusUnavailable',
+                                                        )}
+                                                    </PopoverDescription>
+                                                </PopoverHeader>
+                                            </PopoverContent>
+                                        </Popover>
+                                    ) : (
+                                        statusAction
+                                    )}
+                                    {isSelf ? (
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                {forceDeleteAction}
+                                            </PopoverTrigger>
+                                            <PopoverContent
+                                                align="end"
+                                                className="w-72"
+                                            >
+                                                <PopoverHeader>
+                                                    <PopoverTitle>
+                                                        {t(
+                                                            'admin.actionUnavailable',
+                                                        )}
+                                                    </PopoverTitle>
+                                                    <PopoverDescription>
+                                                        {t(
+                                                            'admin.forceDeleteUnavailable',
+                                                        )}
+                                                    </PopoverDescription>
+                                                </PopoverHeader>
+                                            </PopoverContent>
+                                        </Popover>
+                                    ) : (
+                                        forceDeleteAction
+                                    )}
+                                </DropdownMenuGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     );
                 },
                 enableHiding: false,
