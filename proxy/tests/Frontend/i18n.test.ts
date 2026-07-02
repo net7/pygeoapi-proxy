@@ -48,18 +48,24 @@ describe('i18n', () => {
         ).toBe('Page 2 of 8');
     });
 
-    test('uses italian wording for job labels', () => {
-        expect(translate('it', 'navigation.myJobs')).toBe('I miei lavori');
-        expect(translate('it', 'admin.userJobs')).toBe('Lavori');
-        expect(translate('it', 'admin.viewUserJobs')).toBe('Vedi lavori');
-        expect(translate('it', 'jobs.jobId')).toBe('ID lavoro');
+    test('uses italian process wording for job labels', () => {
+        expect(translate('it', 'navigation.myJobs')).toBe('I miei processi');
+        expect(translate('it', 'admin.userJobs')).toBe('Processi');
+        expect(translate('it', 'admin.viewUserJobs')).toBe('Vedi processi');
+        expect(translate('it', 'jobs.jobId')).toBe('ID processo');
         expect(translate('it', 'jobs.deleteConfirm')).toBe('Elimina');
         expect(translate('it', 'jobs.deleteDescription')).toBe(
-            'Questa azione rimuove il lavoro dalla piattaforma. L’operazione non può essere annullata.',
+            'Questa azione rimuove il processo dalla piattaforma. L’operazione non può essere annullata.',
         );
         expect(translate('it', 'jobs.deleteDescription')).not.toContain(
             'servizio',
         );
+
+        const italianLegacyJobNouns = flattenMessages(messages.it).filter(
+            ([, value]) => /\blavor[oi]\b/i.test(value),
+        );
+
+        expect(italianLegacyJobNouns).toEqual([]);
 
         const italianJobLabels = flattenMessages(messages.it).filter(
             ([, value]) => /\bjobs?\b/i.test(value),
