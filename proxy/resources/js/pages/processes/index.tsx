@@ -15,17 +15,20 @@ import {
 } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
+import { formatJobDate } from '@/lib/jobs';
 import { index, show } from '@/routes/processes';
 import type { OgcCacheStatus, OgcProcessSummary } from '@/types';
 
 export default function ProcessIndex({
     catalogStatus = 'ready',
+    catalogLastUpdatedAt = null,
     processes,
 }: {
     catalogStatus?: OgcCacheStatus;
+    catalogLastUpdatedAt?: string | null;
     processes: OgcProcessSummary[];
 }) {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
     const isWarming = catalogStatus === 'warming';
 
     return (
@@ -41,6 +44,17 @@ export default function ProcessIndex({
                         <p className="text-sm text-muted-foreground">
                             {t('ogc.processesDescription')}
                         </p>
+                        {catalogLastUpdatedAt ? (
+                            <p className="text-xs text-muted-foreground">
+                                {t('ogc.servicesLastUpdatedAt', {
+                                    date: formatJobDate(
+                                        catalogLastUpdatedAt,
+                                        locale,
+                                        t('common.notAvailable'),
+                                    ),
+                                })}
+                            </p>
+                        ) : null}
                     </div>
                     <Badge variant="secondary" className="shrink-0">
                         {t(
@@ -56,7 +70,11 @@ export default function ProcessIndex({
                     <>
                         <CacheWarmupPoller
                             interval={3000}
-                            only={['catalogStatus', 'processes']}
+                            only={[
+                                'catalogStatus',
+                                'catalogLastUpdatedAt',
+                                'processes',
+                            ]}
                         />
                         <Alert>
                             <Spinner className="text-primary" />

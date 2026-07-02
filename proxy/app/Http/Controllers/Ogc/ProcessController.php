@@ -22,12 +22,13 @@ class ProcessController extends Controller
     {
         $catalog = $this->cache->catalog();
 
-        if ($catalog === null) {
+        if (! $this->cache->hasFreshCatalog()) {
             $this->warmupDispatcher->dispatchForCacheMiss();
         }
 
         return Inertia::render('processes/index', [
             'catalogStatus' => $catalog === null ? 'warming' : 'ready',
+            'catalogLastUpdatedAt' => $this->cache->catalogLastUpdatedAt(),
             'processes' => $catalog['processes'] ?? [],
         ]);
     }
@@ -36,12 +37,15 @@ class ProcessController extends Controller
     {
         $description = $this->cache->process($process);
 
-        if ($description === null) {
+        if (! $this->cache->hasFreshProcess($process)) {
             $this->warmupDispatcher->dispatchForCacheMiss();
+        }
 
+        if ($description === null) {
             return Inertia::render('processes/show', [
                 'process' => null,
                 'processStatus' => 'warming',
+                'processLastUpdatedAt' => null,
                 'formSchema' => null,
             ]);
         }
@@ -54,6 +58,7 @@ class ProcessController extends Controller
         return Inertia::render('processes/show', [
             'process' => $description,
             'processStatus' => 'ready',
+            'processLastUpdatedAt' => $this->cache->processLastUpdatedAt($process),
             'formSchema' => $formSchema,
         ]);
     }

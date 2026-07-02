@@ -640,3 +640,21 @@ test('process pages expose cache warming states', function () {
         ->toContain('only')
         ->toContain("mode: 'rest'");
 });
+
+test('process pages show service configuration update dates', function () {
+    $indexSource = file_get_contents(getcwd().'/resources/js/pages/processes/index.tsx');
+    $showSource = file_get_contents(getcwd().'/resources/js/pages/processes/show.tsx');
+    $messagesSource = file_get_contents(getcwd().'/resources/js/lib/i18n/messages.ts');
+
+    expect($indexSource)
+        ->toContain('catalogLastUpdatedAt')
+        ->toContain('formatJobDate')
+        ->toContain('ogc.servicesLastUpdatedAt')
+        ->and($showSource)
+        ->toContain('processLastUpdatedAt')
+        ->toContain('formatJobDate')
+        ->toContain('ogc.servicesLastUpdatedAt')
+        ->and($messagesSource)
+        ->toContain('Ultimo aggiornamento servizi')
+        ->toContain('Services last updated');
+});

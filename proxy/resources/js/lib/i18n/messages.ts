@@ -339,6 +339,7 @@ const it = {
         servicePreparingDescription:
             'La lista processi apparirà al termine del warm-up in background.',
         servicePreparingTitle: 'Catalogo servizi in preparazione',
+        servicesLastUpdatedAt: 'Ultimo aggiornamento servizi: {date}',
         someValuesNeedAttention:
             'Alcuni valori richiedono attenzione prima di eseguire il processo.',
         sync: 'Sincrono',
@@ -749,6 +750,7 @@ const en = {
         servicePreparingDescription:
             'The process list will appear when the background warm-up finishes.',
         servicePreparingTitle: 'Service catalog is being prepared',
+        servicesLastUpdatedAt: 'Services last updated: {date}',
         someValuesNeedAttention:
             'Some values need attention before the process can run.',
         sync: 'Sync',
