@@ -35,8 +35,6 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware(['auth', EnsureUserIsActive::class, 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
-
     Route::get('processes', [ProcessController::class, 'index'])->name('processes.index');
     Route::get('processes/{process}', [ProcessController::class, 'show'])->name('processes.show');
     Route::post('processes/{process}/jobs', [ProcessExecutionController::class, 'store'])

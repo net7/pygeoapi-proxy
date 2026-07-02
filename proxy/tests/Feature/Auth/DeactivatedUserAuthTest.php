@@ -30,7 +30,7 @@ test('deactivated authenticated users are logged out', function () {
     $user = User::factory()->deactivated()->create();
 
     $this->actingAs($user)
-        ->get(route('dashboard'))
+        ->get(route('jobs.index'))
         ->assertRedirect(route('login'))
         ->assertSessionHasErrors('email');
 

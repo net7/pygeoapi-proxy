@@ -11,6 +11,14 @@ test('login screen can be rendered', function () {
     $response->assertOk();
 });
 
+test('authenticated users are redirected away from login to their jobs', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('login'))
+        ->assertRedirect(route('jobs.index', absolute: false));
+});
+
 test('users can authenticate using the login screen', function () {
     config(['fortify.features' => [AuthFeatures::passwordLogin()]]);
 
@@ -22,7 +30,7 @@ test('users can authenticate using the login screen', function () {
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $response->assertRedirect(route('jobs.index', absolute: false));
 });
 
 test('users with two factor enabled are redirected to two factor challenge', function () {

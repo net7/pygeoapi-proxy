@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
+import { index as jobsIndex } from '@/routes/jobs';
 import type { PasskeyRoutePair } from '@/types/auth';
 
 type Props = {
@@ -25,7 +26,7 @@ export default function PasskeyVerify({
     const { verify, isLoading, error, isSupported } = usePasskeyVerify({
         routes,
         onSuccess: (response) => {
-            router.visit(response.redirect ?? '/dashboard');
+            router.visit(response.redirect ?? jobsIndex.url());
         },
     });
 

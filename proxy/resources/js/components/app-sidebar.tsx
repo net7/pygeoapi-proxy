@@ -1,7 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     BriefcaseBusiness,
-    LayoutGrid,
     ListChecks,
     UsersRound,
     Workflow,
@@ -22,7 +21,6 @@ import {
 } from '@/components/ui/sidebar';
 import { useTranslation } from '@/hooks/use-translation';
 import INGV_LOGO_SHORT_IMAGE from '@/images/ingv-logo-short.png';
-import { dashboard } from '@/routes';
 import { index as adminJobsIndex } from '@/routes/admin/jobs';
 import { index as adminUsersIndex } from '@/routes/admin/users';
 import { index as jobsIndex } from '@/routes/jobs';
@@ -31,22 +29,16 @@ import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
-        titleKey: 'navigation.dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
+        title: 'My Jobs',
+        titleKey: 'navigation.myJobs',
+        href: jobsIndex(),
+        icon: BriefcaseBusiness,
     },
     {
         title: 'Processes',
         titleKey: 'navigation.processes',
         href: processesIndex(),
         icon: Workflow,
-    },
-    {
-        title: 'My Jobs',
-        titleKey: 'navigation.myJobs',
-        href: jobsIndex(),
-        icon: BriefcaseBusiness,
     },
 ];
 
@@ -89,7 +81,7 @@ export function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
+                            <Link href={jobsIndex()} prefetch>
                                 <AppLogo
                                     collapsed={state === 'collapsed'}
                                     collapsedLogoSrc={INGV_LOGO_SHORT_IMAGE}

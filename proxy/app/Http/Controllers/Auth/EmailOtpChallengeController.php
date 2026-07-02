@@ -77,6 +77,6 @@ class EmailOtpChallengeController extends Controller
         session()->forget('social_auth.pending_profile');
         session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended(route('jobs.index', absolute: false));
     }
 }

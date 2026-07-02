@@ -54,7 +54,6 @@ const it = {
         administration: 'Amministrazione',
         allJobs: 'Tutti i processi',
         allUsers: 'Tutti gli utenti',
-        dashboard: 'Dashboard',
         logout: 'Esci',
         myJobs: 'I miei processi',
         platform: 'Piattaforma',
@@ -194,9 +193,6 @@ const it = {
         userJobs: 'Processi',
         usersNoMatch: 'Nessun utente corrisponde ai filtri correnti.',
         viewUserJobs: 'Vedi processi',
-    },
-    dashboard: {
-        title: 'Dashboard',
     },
     welcome: {
         deployNow: 'Distribuisci ora',
@@ -466,7 +462,6 @@ const en = {
         administration: 'Administration',
         allJobs: 'All Jobs',
         allUsers: 'All Users',
-        dashboard: 'Dashboard',
         logout: 'Log out',
         myJobs: 'My Jobs',
         platform: 'Platform',
@@ -601,9 +596,6 @@ const en = {
         userJobs: 'Jobs',
         usersNoMatch: 'No users match the current filters.',
         viewUserJobs: 'View jobs',
-    },
-    dashboard: {
-        title: 'Dashboard',
     },
     welcome: {
         deployNow: 'Deploy now',

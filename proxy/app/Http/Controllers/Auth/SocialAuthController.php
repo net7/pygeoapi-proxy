@@ -64,7 +64,7 @@ class SocialAuthController extends Controller
         Auth::login($user, remember: true);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended(route('jobs.index', absolute: false));
     }
 
     private function googleProfile(SocialiteFactory $socialite): ProviderProfile

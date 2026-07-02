@@ -79,7 +79,7 @@ test('google callback logs in resolved user', function () {
     });
 
     $this->get(route('auth.social.callback', ['provider' => 'google']))
-        ->assertRedirect(route('dashboard', absolute: false));
+        ->assertRedirect(route('jobs.index', absolute: false));
 
     $this->assertAuthenticatedAs($user);
 });

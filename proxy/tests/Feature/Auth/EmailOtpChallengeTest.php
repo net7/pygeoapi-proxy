@@ -51,7 +51,7 @@ test('otp submission completes pending social login', function () {
 
     $this->post(route('auth.otp.verify', ['challenge' => $challenge]), [
         'code' => '123456',
-    ])->assertRedirect(route('dashboard', absolute: false));
+    ])->assertRedirect(route('jobs.index', absolute: false));
 
     $this->assertAuthenticatedAs($user);
 });

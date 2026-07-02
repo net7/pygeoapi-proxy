@@ -27,7 +27,7 @@ test('inertia shares the current language', function () {
 
     $this->actingAs($user)
         ->withUnencryptedCookie('language', 'en')
-        ->get(route('dashboard'))
+        ->get(route('jobs.index'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page->where('language', 'en'));
 });

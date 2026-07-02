@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Menu, Search } from 'lucide-react';
+import { BriefcaseBusiness, Menu, Search } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Breadcrumbs } from '@/components/breadcrumbs';
@@ -33,7 +33,7 @@ import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
 import { useTranslation } from '@/hooks/use-translation';
 import { cn, toUrl } from '@/lib/utils';
-import { dashboard } from '@/routes';
+import { index as jobsIndex } from '@/routes/jobs';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
 type Props = {
@@ -42,10 +42,10 @@ type Props = {
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
-        titleKey: 'navigation.dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
+        title: 'My Jobs',
+        titleKey: 'navigation.myJobs',
+        href: jobsIndex(),
+        icon: BriefcaseBusiness,
     },
 ];
 
@@ -133,7 +133,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </div>
 
                     <Link
-                        href={dashboard()}
+                        href={jobsIndex()}
                         prefetch
                         className="flex items-center space-x-2"
                     >

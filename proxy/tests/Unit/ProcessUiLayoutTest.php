@@ -319,9 +319,9 @@ test('job tables show contextual empty states', function () {
         ->not->toContain('processesIndex');
 
     expect($messagesSource)
-        ->toContain("noJobsStarted: 'Non hai ancora avviato lavori.'")
+        ->toContain("noJobsStarted: 'Non hai ancora avviato processi.'")
         ->toContain("startProcess: 'Avvia un processo'")
-        ->toContain("noUserJobsStarted: 'Nessun lavoro avviato dagli utenti.'")
+        ->toContain("noUserJobsStarted: 'Nessun processo avviato dagli utenti.'")
         ->toContain("noJobsStarted: 'You have not started any jobs yet.'")
         ->toContain("startProcess: 'Start a process'")
         ->toContain("noUserJobsStarted: 'No jobs have been started by users.'");
