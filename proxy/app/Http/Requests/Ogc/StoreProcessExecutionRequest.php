@@ -20,6 +20,7 @@ class StoreProcessExecutionRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'name' => ['nullable', 'string', 'max:255'],
             'inputs' => ['required', 'array'],
             'outputs' => ['nullable', 'array'],
             'note' => ['nullable', 'array'],
@@ -46,6 +47,19 @@ class StoreProcessExecutionRequest extends FormRequest
                 }
             },
         ];
+    }
+
+    public function processName(): ?string
+    {
+        $name = $this->validated('name');
+
+        if (! is_string($name)) {
+            return null;
+        }
+
+        $name = trim($name);
+
+        return $name === '' ? null : $name;
     }
 
     /**

@@ -10,9 +10,11 @@ import {
     TimerIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 import CopyableJobId from '@/components/ogc/copyable-job-id';
 import { DeleteJobButton } from '@/components/ogc/delete-job-dialog';
+import { JobNameCard } from '@/components/ogc/job-name-card';
 import { JobNoteCard } from '@/components/ogc/job-note-card';
 import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
 import ResultPreview from '@/components/ogc/result-preview';
@@ -64,7 +66,11 @@ export default function ProcessExecutionShow({
 
     return (
         <>
-            <Head title={t('jobs.documentTitle', { jobId: displayJobId })} />
+            <Head
+                title={t('jobs.documentTitle', {
+                    jobId: execution.displayName,
+                })}
+            />
 
             <div className="flex min-w-0 flex-col gap-5 p-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -84,8 +90,7 @@ export default function ProcessExecutionShow({
                         <div className="flex min-w-0 flex-col gap-2">
                             <div className="flex flex-wrap items-center gap-2">
                                 <h1 className="min-w-0 text-2xl font-semibold">
-                                    {execution.processTitle ??
-                                        execution.processId}
+                                    {execution.displayName}
                                 </h1>
                                 <Badge
                                     variant="outline"
@@ -99,10 +104,14 @@ export default function ProcessExecutionShow({
                                 </Badge>
                             </div>
                             <p className="text-sm text-muted-foreground">
-                                {execution.processId}
-                                {execution.processVersion
-                                    ? ` v${execution.processVersion}`
-                                    : ''}
+                                {execution.processTitle ?? execution.processId}{' '}
+                                <span className="text-muted-foreground/70">
+                                    ({execution.processId}
+                                    {execution.processVersion
+                                        ? ` v${execution.processVersion}`
+                                        : ''}
+                                    )
+                                </span>
                             </p>
                             <JobPollingIndicator
                                 active={isPolling}
@@ -148,175 +157,159 @@ export default function ProcessExecutionShow({
                     </div>
                 </div>
 
-                <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_24rem] xl:items-start">
-                    <section className="flex min-w-0 flex-col gap-3">
-                        <div className="flex min-w-0 items-center justify-between gap-3">
-                            <div className="flex min-w-0 flex-col gap-1">
-                                <h2 className="text-lg font-semibold">
-                                    {t('jobs.results')}
-                                </h2>
-                                <p className="text-sm text-muted-foreground">
-                                    {t(
-                                        execution.results.length === 1
-                                            ? 'ogc.outputCountOne'
-                                            : 'ogc.outputCountMany',
-                                        { count: execution.results.length },
+                <JobNameCard execution={execution} />
+
+                <Card
+                    className={cn(
+                        'min-w-0 border-l-4 shadow-sm',
+                        styles.cardClassName,
+                    )}
+                >
+                    <CardHeader>
+                        <CardTitle>{t('jobs.jobSummary')}</CardTitle>
+                        <CardDescription>
+                            {t('jobs.currentState')}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
+                        <div className="flex min-w-0 flex-col gap-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <span className="text-xs font-semibold tracking-wide text-muted-foreground">
+                                    {t('common.status').toUpperCase()}
+                                </span>
+                                <Badge
+                                    variant="outline"
+                                    className={cn(
+                                        'tracking-wide',
+                                        styles.badgeClassName,
                                     )}
+                                >
+                                    <StatusIcon data-icon="inline-start" />
+                                    {jobStatusLabel(execution.status, t)}
+                                </Badge>
+                            </div>
+
+                            <div className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
+                                    <span>{t('jobs.progress')}</span>
+                                    <span className="tabular-nums">
+                                        {execution.progress}%
+                                    </span>
+                                </div>
+                                <div
+                                    className="h-2 overflow-hidden rounded-full bg-muted"
+                                    role="progressbar"
+                                    aria-valuemin={0}
+                                    aria-valuemax={100}
+                                    aria-valuenow={clampProgress(
+                                        execution.progress,
+                                    )}
+                                >
+                                    <div
+                                        className={cn(
+                                            'h-full rounded-full transition-[width]',
+                                            styles.progressClassName,
+                                        )}
+                                        style={{
+                                            width: `${clampProgress(execution.progress)}%`,
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-2 rounded-md bg-muted p-3 text-sm text-muted-foreground dark:bg-muted/60">
+                                <InfoIcon
+                                    aria-hidden="true"
+                                    className="mt-0.5 size-4 shrink-0"
+                                />
+                                <p className="min-w-0">
+                                    {execution.message ??
+                                        t('jobs.noJobMessage')}
                                 </p>
                             </div>
-                            <Badge variant="secondary" className="shrink-0">
-                                <PackageCheckIcon data-icon="inline-start" />
-                                {execution.results.length}
-                            </Badge>
                         </div>
 
-                        {execution.results.length > 0 ? (
-                            <div className="flex min-w-0 flex-col gap-3">
-                                {execution.results.map((result) => (
-                                    <ResultPreview
-                                        key={result.id}
-                                        executionId={execution.id}
-                                        result={result}
-                                    />
-                                ))}
-                            </div>
-                        ) : (
-                            <Card className="shadow-sm dark:bg-card/95">
-                                <CardHeader>
-                                    <CardTitle>
-                                        {t('jobs.noResultsTitle')}
-                                    </CardTitle>
-                                    <CardDescription>
-                                        {t('jobs.noResultsDescription')}
-                                    </CardDescription>
-                                </CardHeader>
-                            </Card>
-                        )}
-                    </section>
+                        <div className="grid gap-3">
+                            <JobTimelineItem
+                                icon={CalendarClockIcon}
+                                label={t('jobs.created')}
+                                value={formatJobDate(
+                                    execution.createdAt,
+                                    locale,
+                                    t('common.notAvailable'),
+                                )}
+                            />
+                            <JobTimelineItem
+                                icon={Clock3Icon}
+                                label={t('jobs.submitted')}
+                                value={formatJobDate(
+                                    execution.submittedAt,
+                                    locale,
+                                    t('common.notAvailable'),
+                                )}
+                            />
+                            <JobTimelineItem
+                                icon={TimerIcon}
+                                label={terminalLabel}
+                                value={formatJobDate(
+                                    terminalTimestamp,
+                                    locale,
+                                    t('common.notAvailable'),
+                                )}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
 
-                    <aside className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-4">
-                        <Card
-                            className={cn(
-                                'min-w-0 border-l-4 shadow-sm',
-                                styles.cardClassName,
-                            )}
-                        >
-                            <CardHeader>
-                                <CardTitle>{t('jobs.jobSummary')}</CardTitle>
-                                <CardDescription>
-                                    {t('jobs.currentState')}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex min-w-0 flex-col gap-4">
-                                <div className="flex items-center justify-between gap-3">
-                                    <span className="text-xs font-semibold tracking-wide text-muted-foreground">
-                                        {t('common.status').toUpperCase()}
-                                    </span>
-                                    <Badge
-                                        variant="outline"
-                                        className={cn(
-                                            'tracking-wide',
-                                            styles.badgeClassName,
-                                        )}
-                                    >
-                                        <StatusIcon data-icon="inline-start" />
-                                        {jobStatusLabel(execution.status, t)}
-                                    </Badge>
-                                </div>
+                <DetailSection
+                    title={t('jobs.inputs')}
+                    description={t('jobs.inputsDescription')}
+                >
+                    <JsonBlock
+                        title={t('jobs.inputs')}
+                        value={execution.requestPayload}
+                    />
+                </DetailSection>
 
-                                <div className="flex flex-col gap-2">
-                                    <div className="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
-                                        <span>{t('jobs.progress')}</span>
-                                        <span className="tabular-nums">
-                                            {execution.progress}%
-                                        </span>
-                                    </div>
-                                    <div
-                                        className="h-2 overflow-hidden rounded-full bg-muted"
-                                        role="progressbar"
-                                        aria-valuemin={0}
-                                        aria-valuemax={100}
-                                        aria-valuenow={clampProgress(
-                                            execution.progress,
-                                        )}
-                                    >
-                                        <div
-                                            className={cn(
-                                                'h-full rounded-full transition-[width]',
-                                                styles.progressClassName,
-                                            )}
-                                            style={{
-                                                width: `${clampProgress(execution.progress)}%`,
-                                            }}
-                                        />
-                                    </div>
-                                </div>
+                <DetailSection
+                    title={t('ogc.outputs')}
+                    description={t(
+                        execution.results.length === 1
+                            ? 'ogc.outputCountOne'
+                            : 'ogc.outputCountMany',
+                        { count: execution.results.length },
+                    )}
+                    badge={
+                        <Badge variant="secondary" className="shrink-0">
+                            <PackageCheckIcon data-icon="inline-start" />
+                            {execution.results.length}
+                        </Badge>
+                    }
+                >
+                    <JsonBlock
+                        title={t('jobs.requestedOutputs')}
+                        value={execution.requestedOutputs ?? {}}
+                    />
 
-                                <div className="grid gap-3">
-                                    <JobTimelineItem
-                                        icon={CalendarClockIcon}
-                                        label={t('jobs.created')}
-                                        value={formatJobDate(
-                                            execution.createdAt,
-                                            locale,
-                                            t('common.notAvailable'),
-                                        )}
-                                    />
-                                    <JobTimelineItem
-                                        icon={Clock3Icon}
-                                        label={t('jobs.submitted')}
-                                        value={formatJobDate(
-                                            execution.submittedAt,
-                                            locale,
-                                            t('common.notAvailable'),
-                                        )}
-                                    />
-                                    <JobTimelineItem
-                                        icon={TimerIcon}
-                                        label={terminalLabel}
-                                        value={formatJobDate(
-                                            terminalTimestamp,
-                                            locale,
-                                            t('common.notAvailable'),
-                                        )}
-                                    />
-                                </div>
-
-                                <div className="flex items-start gap-2 rounded-md bg-muted p-3 text-sm text-muted-foreground dark:bg-muted/60">
-                                    <InfoIcon
-                                        aria-hidden="true"
-                                        className="mt-0.5 size-4 shrink-0"
-                                    />
-                                    <p className="min-w-0">
-                                        {execution.message ??
-                                            t('jobs.noJobMessage')}
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <JobNoteCard execution={execution} />
-
-                        <Card className="min-w-0 shadow-sm dark:border-border/70 dark:bg-card/95">
-                            <CardHeader>
-                                <CardTitle>{t('jobs.request')}</CardTitle>
-                                <CardDescription>
-                                    {t('jobs.requestDescription')}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex min-w-0 flex-col gap-4">
-                                <JsonBlock
-                                    title={t('jobs.inputs')}
-                                    value={execution.requestPayload}
+                    {execution.results.length > 0 ? (
+                        <div className="flex min-w-0 flex-col gap-3">
+                            {execution.results.map((result) => (
+                                <ResultPreview
+                                    key={result.id}
+                                    executionId={execution.id}
+                                    result={result}
                                 />
-                                <JsonBlock
-                                    title={t('jobs.requestedOutputs')}
-                                    value={execution.requestedOutputs ?? {}}
-                                />
-                            </CardContent>
-                        </Card>
-                    </aside>
-                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <AlertResultsEmpty
+                            title={t('jobs.noResultsTitle')}
+                            description={t('jobs.noResultsDescription')}
+                        />
+                    )}
+                </DetailSection>
+
+                <JobNoteCard execution={execution} />
             </div>
         </>
     );
@@ -344,6 +337,48 @@ function jobStatusLabel(status: string, t: Translate): string {
     }[status] as TranslationKey | undefined;
 
     return key ? t(key) : status.replaceAll('_', ' ').toUpperCase();
+}
+
+function DetailSection({
+    title,
+    description,
+    badge,
+    children,
+}: {
+    title: string;
+    description: string;
+    badge?: ReactNode;
+    children: ReactNode;
+}) {
+    return (
+        <Card className="min-w-0 shadow-sm dark:border-border/70 dark:bg-card/95">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                    <CardTitle>{title}</CardTitle>
+                    <CardDescription>{description}</CardDescription>
+                </div>
+                {badge}
+            </CardHeader>
+            <CardContent className="flex min-w-0 flex-col gap-4">
+                {children}
+            </CardContent>
+        </Card>
+    );
+}
+
+function AlertResultsEmpty({
+    title,
+    description,
+}: {
+    title: string;
+    description: string;
+}) {
+    return (
+        <div className="rounded-md border bg-muted/40 p-4 dark:bg-muted/30">
+            <h3 className="text-sm font-semibold">{title}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        </div>
+    );
 }
 
 function JobMetric({

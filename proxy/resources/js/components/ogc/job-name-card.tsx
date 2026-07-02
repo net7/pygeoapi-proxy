@@ -2,7 +2,7 @@ import { useForm } from '@inertiajs/react';
 import { PencilIcon } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 
-import { JobNoteEditor } from '@/components/ogc/job-note-editor';
+import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -20,31 +20,34 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
-import { update } from '@/routes/jobs/note';
-import type { ProcessExecutionDetail, TiptapDocument } from '@/types';
+import { update } from '@/routes/jobs/name';
+import type { ProcessExecutionDetail } from '@/types';
 
-type NoteForm = {
-    note: TiptapDocument | null;
+type NameForm = {
+    name: string;
 };
 
-export function JobNoteCard({
+export function JobNameCard({
     execution,
 }: {
     execution: ProcessExecutionDetail;
 }) {
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
-    const { data, setData, patch, processing, reset } = useForm<NoteForm>({
-        note: execution.note ?? null,
-    });
+    const { data, setData, patch, processing, reset, errors } =
+        useForm<NameForm>({
+            name: execution.name ?? '',
+        });
 
     useEffect(() => {
         if (open) {
-            setData('note', execution.note ?? null);
+            setData('name', execution.name ?? '');
         }
-    }, [execution.note, open, setData]);
+    }, [execution.name, open, setData]);
 
     function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -58,19 +61,18 @@ export function JobNoteCard({
     return (
         <Card className="min-w-0 shadow-sm dark:border-border/70 dark:bg-card/95">
             <CardHeader>
-                <CardTitle>{t('jobs.note')}</CardTitle>
-                <CardDescription>{t('jobs.noteDescription')}</CardDescription>
+                <CardTitle>{t('jobs.processName')}</CardTitle>
+                <CardDescription>
+                    {t('jobs.processNameDescription')}
+                </CardDescription>
             </CardHeader>
             <CardContent className="flex min-w-0 flex-col gap-3">
-                <div className="min-h-16 rounded-md border bg-background px-3 py-2 dark:bg-muted/30">
-                    {execution.note ? (
-                        <JobNoteEditor value={execution.note} readOnly />
-                    ) : (
-                        <p className="text-sm text-muted-foreground">
-                            {t('jobs.noNote')}
-                        </p>
-                    )}
-                </div>
+                <Input
+                    value={execution.displayName}
+                    readOnly
+                    aria-label={t('jobs.processName')}
+                    className="bg-muted/40 font-medium dark:bg-muted/30"
+                />
                 <Dialog
                     open={open}
                     onOpenChange={(nextOpen) => {
@@ -89,26 +91,36 @@ export function JobNoteCard({
                             className="w-full sm:w-fit"
                         >
                             <PencilIcon data-icon="inline-start" />
-                            {t('jobs.editNote')}
+                            {t('jobs.editProcessName')}
                         </Button>
                     </DialogTrigger>
-                    <DialogContent
-                        className="sm:max-w-2xl"
-                        onOpenAutoFocus={(event) => event.preventDefault()}
-                    >
+                    <DialogContent className="sm:max-w-lg">
                         <form className="flex flex-col gap-4" onSubmit={submit}>
                             <DialogHeader>
-                                <DialogTitle>{t('jobs.editNote')}</DialogTitle>
+                                <DialogTitle>
+                                    {t('jobs.editProcessName')}
+                                </DialogTitle>
                                 <DialogDescription>
-                                    {t('jobs.editNoteDescription')}
+                                    {t('jobs.editProcessNameDescription')}
                                 </DialogDescription>
                             </DialogHeader>
 
-                            <JobNoteEditor
-                                autoFocus
-                                value={data.note}
-                                onChange={(note) => setData('note', note)}
-                            />
+                            <div className="flex min-w-0 flex-col gap-2">
+                                <Label htmlFor="job-process-name">
+                                    {t('jobs.processName')}
+                                </Label>
+                                <Input
+                                    id="job-process-name"
+                                    value={data.name}
+                                    onChange={(event) =>
+                                        setData('name', event.target.value)
+                                    }
+                                    placeholder={execution.displayName}
+                                    maxLength={255}
+                                    aria-invalid={Boolean(errors.name)}
+                                />
+                                <InputError message={errors.name} />
+                            </div>
 
                             <DialogFooter>
                                 <Button
@@ -122,7 +134,7 @@ export function JobNoteCard({
                                     {processing ? (
                                         <Spinner data-icon="inline-start" />
                                     ) : null}
-                                    {t('jobs.saveNote')}
+                                    {t('jobs.saveProcessName')}
                                 </Button>
                             </DialogFooter>
                         </form>

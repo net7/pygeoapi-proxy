@@ -19,6 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { htmlPatternForInput } from '@/lib/html-pattern';
 import type { OgcNormalizedField } from '@/types';
 
 export default function SchemaFieldRenderer({
@@ -123,7 +124,10 @@ export default function SchemaFieldRenderer({
                 min={field.minimum ?? field.exclusiveMinimum ?? undefined}
                 max={field.maximum ?? field.exclusiveMaximum ?? undefined}
                 step={field.type === 'number' ? 'any' : undefined}
-                pattern={field.pattern ?? undefined}
+                pattern={htmlPatternForInput({
+                    type: field.type,
+                    pattern: field.pattern,
+                })}
                 onChange={(event) => {
                     const raw = event.target.value;
 

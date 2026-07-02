@@ -1,14 +1,21 @@
 <?php
 
-test('process form keeps inputs beside output submission on desktop without execution mode controls', function () {
+test('process form stacks name inputs outputs and note as full width sections', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/dynamic-process-form.tsx');
 
     expect($source)
-        ->toContain('lg:grid-cols-[minmax(0,1fr)_22rem]')
-        ->toContain('lg:sticky')
+        ->toContain("name: ''")
+        ->toContain("t('jobs.processName')")
+        ->toContain("t('jobs.processNamePlaceholder')")
+        ->toContain("t('jobs.noteDescription')")
+        ->toContain('aria-label={t(\'jobs.processName\')}')
         ->toContain('@/routes/processes/jobs')
+        ->toContain('ogc.inputs')
         ->toContain('ogc.outputs')
         ->not->toContain('ogc.execution')
+        ->not->toContain('<Label htmlFor="process-name">')
+        ->not->toContain('lg:grid-cols-[minmax(0,1fr)_22rem]')
+        ->not->toContain('lg:sticky')
         ->not->toContain('ToggleGroup')
         ->not->toContain('ToggleGroupItem')
         ->not->toContain('sync-execute');
@@ -51,9 +58,19 @@ test('process form exposes a local development prefill action', function () {
 
 test('decimal process number inputs are valid after prefill', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/schema-field-renderer.tsx');
+    $tableSource = file_get_contents(getcwd().'/resources/js/components/ogc/array-table-field.tsx');
 
     expect($source)
-        ->toContain("step={field.type === 'number' ? 'any' : undefined}");
+        ->toContain("step={field.type === 'number' ? 'any' : undefined}")
+        ->toContain('@/lib/html-pattern')
+        ->toContain('htmlPatternForInput({')
+        ->not->toContain('pattern={field.pattern ?? undefined}');
+
+    expect($tableSource)
+        ->toContain('@/lib/html-pattern')
+        ->toContain('htmlPatternForInput({')
+        ->toContain("column.type === 'number'")
+        ->not->toContain('column.pattern ?? undefined');
 });
 
 test('array table fields keep a practical responsive width', function () {
@@ -355,12 +372,15 @@ test('remove and delete buttons use destructive styling', function () {
         ->not->toContain('<Trash2 className=');
 });
 
-test('job detail prioritizes results and keeps request data beside them', function () {
+test('job detail uses full width input output and note sections in order', function () {
     $source = file_get_contents(getcwd().'/resources/js/pages/process-executions/show.tsx');
+    $inputPosition = strpos($source, "title={t('jobs.inputs')}");
+    $outputPosition = strpos($source, "title={t('ogc.outputs')}");
+    $notePosition = strpos($source, '<JobNoteCard execution={execution} />');
 
     expect($source)
-        ->toContain('xl:grid-cols-[minmax(0,1fr)_24rem]')
         ->toContain('@/components/ogc/copyable-job-id')
+        ->toContain('@/components/ogc/job-name-card')
         ->toContain('@/routes/jobs')
         ->toContain('jobStatusStyles')
         ->toContain('jobs.jobId')
@@ -369,38 +389,53 @@ test('job detail prioritizes results and keeps request data beside them', functi
         ->toContain('common.status')
         ->toContain('jobs.requestedOutputs')
         ->toContain('jobs.results')
-        ->toContain('jobs.request')
         ->toContain('className="flex justify-end"')
         ->toContain('DeleteJobButton')
         ->toContain('className="w-full sm:w-auto"')
+        ->not->toContain('xl:grid-cols-[minmax(0,1fr)_24rem]')
+        ->not->toContain('xl:sticky')
         ->not->toContain('<code className="min-w-0 truncate');
+
+    expect($inputPosition)->not->toBeFalse()
+        ->and($outputPosition)->not->toBeFalse()
+        ->and($notePosition)->not->toBeFalse()
+        ->and($inputPosition)->toBeLessThan($outputPosition)
+        ->and($outputPosition)->toBeLessThan($notePosition);
 });
 
-test('job note editor appears on create and detail screens', function () {
+test('job editable metadata appears on create and detail screens', function () {
     $formSource = file_get_contents(getcwd().'/resources/js/components/ogc/dynamic-process-form.tsx');
     $showSource = file_get_contents(getcwd().'/resources/js/pages/process-executions/show.tsx');
     $editorPath = getcwd().'/resources/js/components/ogc/job-note-editor.tsx';
     $cardPath = getcwd().'/resources/js/components/ogc/job-note-card.tsx';
+    $nameCardPath = getcwd().'/resources/js/components/ogc/job-name-card.tsx';
 
     expect($formSource)
         ->toContain('@/components/ogc/job-note-editor')
+        ->toContain("name: ''")
+        ->toContain("setData('name', event.target.value)")
         ->toContain('note: null')
         ->toContain("setData('note', note)");
 
     expect($showSource)
         ->toContain('@/components/ogc/job-note-card')
+        ->toContain('@/components/ogc/job-name-card')
+        ->toContain('<JobNameCard execution={execution} />')
         ->toContain('<JobNoteCard execution={execution} />');
 
     expect($editorPath)->toBeFile()
-        ->and($cardPath)->toBeFile();
+        ->and($cardPath)->toBeFile()
+        ->and($nameCardPath)->toBeFile();
 
     $editorSource = file_get_contents($editorPath);
     $cardSource = file_get_contents($cardPath);
+    $nameCardSource = file_get_contents($nameCardPath);
 
     expect($editorSource)
         ->toContain('@tiptap/react')
         ->toContain('@tiptap/starter-kit')
         ->toContain('@tiptap/extension-link')
+        ->toContain('link: false')
         ->toContain('BoldIcon')
         ->toContain('ItalicIcon')
         ->toContain('ListIcon')
@@ -412,9 +447,24 @@ test('job note editor appears on create and detail screens', function () {
 
     expect($cardSource)
         ->toContain('@/routes/jobs/note')
+        ->toContain('onOpenAutoFocus={(event) => event.preventDefault()}')
+        ->toContain('<JobNoteEditor')
+        ->toContain('autoFocus')
         ->toContain('DialogTitle')
-        ->toContain("t('jobs.noteUpdatedAt',")
+        ->toContain("t('jobs.noteDescription')")
         ->toContain("t('jobs.editNote')");
+
+    expect($editorSource)
+        ->toContain('autoFocus = false')
+        ->toContain("editor.commands.focus('end')")
+        ->toContain('requestAnimationFrame')
+        ->toContain('cancelAnimationFrame');
+
+    expect($nameCardSource)
+        ->toContain('@/routes/jobs/name')
+        ->toContain("t('jobs.editProcessName')")
+        ->toContain("t('jobs.saveProcessName')")
+        ->toContain('PencilIcon');
 });
 
 test('delete job dialog supports compact actions and optional owner context', function () {
@@ -513,7 +563,7 @@ test('job pages use readable dark mode status surfaces', function () {
         ->toContain('variant="secondary"');
 
     expect($showSource)
-        ->toContain('shadow-sm dark:bg-card/95')
+        ->toContain('dark:border-border/70 dark:bg-card/95')
         ->toContain('dark:bg-muted/60')
         ->toContain('ring-1 ring-border/50 dark:bg-muted/50');
 

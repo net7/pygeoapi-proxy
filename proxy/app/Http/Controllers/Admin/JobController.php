@@ -41,7 +41,8 @@ class JobController extends Controller
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($query) use ($search): void {
                     $query
-                        ->where('process_id', 'like', "%{$search}%")
+                        ->where('name', 'like', "%{$search}%")
+                        ->orWhere('process_id', 'like', "%{$search}%")
                         ->orWhere('process_title', 'like', "%{$search}%")
                         ->orWhere('remote_job_id', 'like', "%{$search}%")
                         ->orWhereHas('user', function ($query) use ($search): void {
@@ -56,6 +57,8 @@ class JobController extends Controller
             ->withQueryString()
             ->through(fn (ProcessExecution $execution): array => [
                 'id' => $execution->id,
+                'name' => $execution->name,
+                'displayName' => $execution->displayName(),
                 'remoteJobId' => $execution->remote_job_id,
                 'processId' => $execution->process_id,
                 'processTitle' => $execution->process_title,

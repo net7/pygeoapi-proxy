@@ -6,6 +6,7 @@ use App\Actions\Ogc\CreateProcessExecution;
 use App\Actions\Ogc\DeleteProcessExecution;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Ogc\StoreProcessExecutionRequest;
+use App\Http\Requests\Ogc\UpdateProcessExecutionNameRequest;
 use App\Http\Requests\Ogc\UpdateProcessExecutionNoteRequest;
 use App\Jobs\Ogc\SubmitProcessExecutionJob;
 use App\Models\ProcessExecution;
@@ -34,6 +35,8 @@ class ProcessExecutionController extends Controller
                 ->paginate(15)
                 ->through(fn (ProcessExecution $execution): array => [
                     'id' => $execution->id,
+                    'name' => $execution->name,
+                    'displayName' => $execution->displayName(),
                     'remoteJobId' => $execution->remote_job_id,
                     'processId' => $execution->process_id,
                     'processTitle' => $execution->process_title,
@@ -70,6 +73,7 @@ class ProcessExecutionController extends Controller
             payload: $payload,
             mode: $mode,
             note: $request->note(),
+            name: $request->processName(),
         );
 
         SubmitProcessExecutionJob::dispatch($execution->id, $payload);
@@ -114,6 +118,8 @@ class ProcessExecutionController extends Controller
             'pollingInterval' => $this->pollingInterval(),
             'execution' => [
                 'id' => $processExecution->id,
+                'name' => $processExecution->name,
+                'displayName' => $processExecution->displayName(),
                 'remoteJobId' => $processExecution->remote_job_id,
                 'processId' => $processExecution->process_id,
                 'processTitle' => $processExecution->process_title,
@@ -140,6 +146,24 @@ class ProcessExecutionController extends Controller
                 ])->all(),
             ],
         ]);
+    }
+
+    public function updateName(UpdateProcessExecutionNameRequest $request, ProcessExecution $processExecution): RedirectResponse
+    {
+        Gate::authorize('update', $processExecution);
+
+        $processExecution->forceFill([
+            'name' => $request->processName(),
+        ])->save();
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'title' => __('Process name saved'),
+            'message' => __('The process name has been saved.'),
+            'icon' => false,
+        ]);
+
+        return back();
     }
 
     public function updateNote(UpdateProcessExecutionNoteRequest $request, ProcessExecution $processExecution): RedirectResponse

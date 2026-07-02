@@ -85,6 +85,8 @@ export type TiptapDocument = {
 
 export type ProcessExecutionListItem = {
     id: number;
+    name?: string | null;
+    displayName: string;
     remoteJobId?: string | null;
     processId: string;
     processTitle?: string | null;

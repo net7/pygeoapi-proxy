@@ -12,6 +12,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useTranslation } from '@/hooks/use-translation';
+import { htmlPatternForInput } from '@/lib/html-pattern';
 import type { OgcNormalizedField } from '@/types';
 
 export default function ArrayTableField({
@@ -70,13 +71,25 @@ export default function ArrayTableField({
                                     {columns.map((column, columnIndex) => (
                                         <TableCell key={column.key}>
                                             <Input
+                                                type={
+                                                    column.type === 'number' ||
+                                                    column.type === 'integer'
+                                                        ? 'number'
+                                                        : 'text'
+                                                }
                                                 value={String(
                                                     rowValues[columnIndex] ??
                                                         '',
                                                 )}
-                                                pattern={
-                                                    column.pattern ?? undefined
+                                                step={
+                                                    column.type === 'number'
+                                                        ? 'any'
+                                                        : undefined
                                                 }
+                                                pattern={htmlPatternForInput({
+                                                    type: column.type,
+                                                    pattern: column.pattern,
+                                                })}
                                                 onChange={(event) =>
                                                     updateCell(
                                                         rowIndex,

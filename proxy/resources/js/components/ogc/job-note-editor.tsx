@@ -39,6 +39,7 @@ const noteExtensions = [
         heading: false,
         codeBlock: false,
         horizontalRule: false,
+        link: false,
     }),
     Link.configure({
         autolink: false,
@@ -55,11 +56,13 @@ export function JobNoteEditor({
     value,
     onChange,
     readOnly = false,
+    autoFocus = false,
     className,
 }: {
     value?: TiptapDocument | null;
     onChange?: (note: TiptapDocument) => void;
     readOnly?: boolean;
+    autoFocus?: boolean;
     className?: string;
 }) {
     const { t } = useTranslation();
@@ -103,6 +106,18 @@ export function JobNoteEditor({
             });
         }
     }, [editor, value]);
+
+    useEffect(() => {
+        if (!editor || readOnly || !autoFocus) {
+            return;
+        }
+
+        const frame = window.requestAnimationFrame(() => {
+            editor.commands.focus('end');
+        });
+
+        return () => window.cancelAnimationFrame(frame);
+    }, [autoFocus, editor, readOnly]);
 
     if (!editor) {
         return null;

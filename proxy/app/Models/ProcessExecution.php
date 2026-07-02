@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'user_id',
+    'name',
     'process_id',
     'process_title',
     'process_version',
@@ -38,6 +39,20 @@ class ProcessExecution extends Model
 {
     /** @use HasFactory<ProcessExecutionFactory> */
     use HasFactory;
+
+    public function displayName(): string
+    {
+        $name = trim((string) $this->name);
+
+        if ($name !== '') {
+            return $name;
+        }
+
+        $processName = $this->process_title ?: $this->process_id;
+        $createdAt = $this->created_at?->timezone((string) config('app.timezone'))->format('d/m/Y H:i');
+
+        return trim("{$processName} {$createdAt}");
+    }
 
     /**
      * @return BelongsTo<User, ProcessExecution>

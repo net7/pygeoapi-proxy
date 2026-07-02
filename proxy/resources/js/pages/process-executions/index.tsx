@@ -111,6 +111,8 @@ const columns: ColumnDef<ProcessExecutionListItem>[] = [
         accessorFn: (execution) =>
             [
                 execution.processTitle,
+                execution.name,
+                execution.displayName,
                 execution.processId,
                 execution.remoteJobId,
                 execution.message,
@@ -128,17 +130,15 @@ const columns: ColumnDef<ProcessExecutionListItem>[] = [
     },
     {
         id: 'process',
-        accessorFn: (execution) =>
-            execution.processTitle ?? execution.processId,
+        accessorFn: (execution) => execution.displayName,
         header: ({ column }) => (
             <SortableHeader column={column} titleKey="jobs.process" />
         ),
         cell: ({ row }) => (
             <div className="flex min-w-0 flex-col gap-1">
-                <span className="font-medium">
-                    {row.original.processTitle ?? row.original.processId}
-                </span>
+                <span className="font-medium">{row.original.displayName}</span>
                 <span className="text-xs text-muted-foreground">
+                    {row.original.processTitle ?? row.original.processId} -{' '}
                     {row.original.processId}
                 </span>
                 <span className="line-clamp-2 max-w-xl text-xs text-muted-foreground">

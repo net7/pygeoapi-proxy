@@ -14,10 +14,11 @@ class CreateProcessExecution
      * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>|null  $note
      */
-    public function handle(User $user, array $process, array $payload, ExecutionMode $mode, ?array $note = null): ProcessExecution
+    public function handle(User $user, array $process, array $payload, ExecutionMode $mode, ?array $note = null, ?string $name = null): ProcessExecution
     {
         return ProcessExecution::create([
             'user_id' => $user->id,
+            'name' => $name,
             'process_id' => (string) $process['id'],
             'process_title' => $process['title'] ?? $process['id'],
             'process_version' => $process['version'] ?? null,
