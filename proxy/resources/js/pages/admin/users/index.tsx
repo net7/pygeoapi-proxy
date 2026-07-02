@@ -113,6 +113,7 @@ import { useClipboard } from '@/hooks/use-clipboard';
 import { useInitials } from '@/hooks/use-initials';
 import { useTranslation } from '@/hooks/use-translation';
 import type { TranslationKey } from '@/lib/i18n/translation';
+import { formatJobDate } from '@/lib/jobs';
 import { cn } from '@/lib/utils';
 import { index as jobsIndex } from '@/routes/admin/jobs';
 import {
@@ -327,7 +328,7 @@ export default function AdminUsersIndex({
                 ),
                 cell: ({ row }) => (
                     <span className="text-muted-foreground">
-                        {formatDate(
+                        {formatJobDate(
                             row.original.created_at,
                             locale,
                             t('common.notAvailable'),
@@ -1622,17 +1623,6 @@ function UserStatusBadge({ user }: { user: AdminUser }) {
             {t('admin.statusActive')}
         </Badge>
     );
-}
-
-function formatDate(value: string | null, locale: string, unavailable: string) {
-    if (!value) {
-        return unavailable;
-    }
-
-    return new Intl.DateTimeFormat(locale, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    }).format(new Date(value));
 }
 
 function roleLabel(role: AdminUserRole, t: Translate): string {

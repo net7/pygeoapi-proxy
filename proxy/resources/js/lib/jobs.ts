@@ -139,37 +139,71 @@ export function jobStatusSortIndex(status: string): number {
 
 export function formatJobDate(
     value?: string | null,
-    locale?: Intl.LocalesArgument,
-    unavailableLabel = 'Not available',
+    ...options: [locale?: Intl.LocalesArgument, unavailableLabel?: string]
 ): string {
-    if (!value) {
-        return unavailableLabel;
-    }
+    const unavailableLabel = options[1] ?? 'Not available';
 
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-        return unavailableLabel;
-    }
-
-    return new Intl.DateTimeFormat(locale ?? browserDateLocale(), {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    }).format(date);
+    return formatDateValue(value, unavailableLabel);
 }
 
 export function clampProgress(progress: number): number {
     return Math.min(Math.max(progress, 0), 100);
 }
 
-function browserDateLocale(): Intl.LocalesArgument | undefined {
-    if (typeof navigator === 'undefined') {
-        return undefined;
+function formatDateValue(
+    value: string | null | undefined,
+    unavailableLabel = 'Not available',
+): string {
+    if (!value) {
+        return unavailableLabel;
     }
 
-    if (navigator.languages.length > 0) {
-        return navigator.languages;
+    const trimmedValue = value.trim();
+    const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmedValue);
+
+    if (dateOnlyMatch) {
+        const [, year, month, day] = dateOnlyMatch.map(Number);
+
+        if (!isValidDateParts(year, month, day)) {
+            return unavailableLabel;
+        }
+
+        return formatDateParts(year, month, day);
     }
 
-    return navigator.language;
+    const date = new Date(trimmedValue);
+
+    if (Number.isNaN(date.getTime())) {
+        return unavailableLabel;
+    }
+
+    const formattedDate = formatDateParts(
+        date.getFullYear(),
+        date.getMonth() + 1,
+        date.getDate(),
+    );
+
+    if (!/[T\s]\d{1,2}:\d{2}/.test(trimmedValue)) {
+        return formattedDate;
+    }
+
+    return `${formattedDate} ${padDatePart(date.getHours())}:${padDatePart(date.getMinutes())}`;
+}
+
+function formatDateParts(year: number, month: number, day: number): string {
+    return `${padDatePart(day)}/${padDatePart(month)}/${year}`;
+}
+
+function isValidDateParts(year: number, month: number, day: number): boolean {
+    const date = new Date(Date.UTC(year, month - 1, day));
+
+    return (
+        date.getUTCFullYear() === year &&
+        date.getUTCMonth() === month - 1 &&
+        date.getUTCDate() === day
+    );
+}
+
+function padDatePart(value: number): string {
+    return String(value).padStart(2, '0');
 }
