@@ -4,20 +4,45 @@ import { wayfinder } from '@laravel/vite-plugin-wayfinder';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 
-export default defineConfig(({ command }) => {
-    const appUrl = process.env.APP_URL ?? 'http://localhost:8088';
-    const viteDevServerUrl =
-        process.env.VITE_DEV_SERVER_URL ?? 'http://localhost:5174';
+const originFromUrl = (url?: string) => {
+    if (!url) {
+        return null;
+    }
+
+    try {
+        return new URL(url).origin;
+    } catch {
+        return null;
+    }
+};
+
+const envList = (value?: string) =>
+    (value ?? '')
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+export default defineConfig(({ command, mode }) => {
+    const env = loadEnv(mode, process.cwd(), '');
+    const appUrl = env.APP_URL ?? 'http://localhost:8088';
+    const corsOrigins = [
+        originFromUrl(appUrl),
+        originFromUrl(env.ORCID_REDIRECT_URI),
+        ...envList(env.VITE_DEV_SERVER_CORS_ORIGINS),
+    ].filter((origin, index, origins): origin is string => {
+        return typeof origin === 'string' && origins.indexOf(origin) === index;
+    });
+    const viteDevServerUrl = env.VITE_DEV_SERVER_URL ?? 'http://localhost:5174';
     const viteDevServer = new URL(viteDevServerUrl);
     const viteDevServerHost =
-        process.env.VITE_DEV_SERVER_HOST ?? viteDevServer.hostname;
+        env.VITE_DEV_SERVER_HOST ?? viteDevServer.hostname;
     const viteDevServerClientPort = Number(
-        process.env.VITE_DEV_SERVER_CLIENT_PORT ?? (viteDevServer.port || 5174),
+        env.VITE_DEV_SERVER_CLIENT_PORT ?? (viteDevServer.port || 5174),
     );
     const viteDevServerAllowedHosts = (
-        process.env.VITE_DEV_SERVER_ALLOWED_HOSTS ?? viteDevServerHost
+        env.VITE_DEV_SERVER_ALLOWED_HOSTS ?? viteDevServerHost
     )
         .split(',')
         .map((host) => host.trim())
@@ -60,7 +85,7 @@ export default defineConfig(({ command }) => {
             ? {
                   server: {
                       host: '0.0.0.0',
-                      port: Number(process.env.VITE_DEV_SERVER_PORT ?? 5173),
+                      port: Number(env.VITE_DEV_SERVER_PORT ?? 5173),
                       strictPort: true,
                       origin: viteDevServerUrl,
                       allowedHosts: viteDevServerAllowedHosts,
@@ -69,7 +94,7 @@ export default defineConfig(({ command }) => {
                           clientPort: viteDevServerClientPort,
                       },
                       cors: {
-                          origin: [appUrl],
+                          origin: corsOrigins,
                       },
                   },
               }

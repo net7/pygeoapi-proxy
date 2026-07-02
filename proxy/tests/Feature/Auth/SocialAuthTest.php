@@ -34,7 +34,10 @@ test('google redirect uses socialite driver', function () {
 });
 
 test('orcid redirect returns inertia location for inertia requests', function () {
-    config(['fortify.features' => [AuthFeatures::orcid()]]);
+    config([
+        'fortify.features' => [AuthFeatures::orcid()],
+        'services.orcid.redirect' => 'http://localhost/auth/orcid/callback',
+    ]);
 
     $redirect = new RedirectResponse('https://orcid.org/oauth/authorize?client_id=orcid-client');
     $manifest = public_path('build/manifest.json');
@@ -51,6 +54,20 @@ test('orcid redirect returns inertia location for inertia requests', function ()
         ->get(route('auth.social.redirect', ['provider' => 'orcid']))
         ->assertConflict()
         ->assertHeader('X-Inertia-Location', 'https://orcid.org/oauth/authorize?client_id=orcid-client');
+});
+
+test('orcid redirect moves localhost requests to the configured callback host before starting oauth', function () {
+    config([
+        'fortify.features' => [AuthFeatures::orcid()],
+        'services.orcid.redirect' => 'http://ingv.test:8088/auth/orcid/callback',
+    ]);
+
+    $this
+        ->withServerVariables(['HTTP_HOST' => 'localhost:8088'])
+        ->get('/auth/orcid/redirect')
+        ->assertRedirect('http://ingv.test:8088/auth/orcid/redirect');
+
+    expect(session()->has('orcid_oauth_state'))->toBeFalse();
 });
 
 test('google callback logs in resolved user', function () {
