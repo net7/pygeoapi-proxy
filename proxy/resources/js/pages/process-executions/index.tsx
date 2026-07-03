@@ -12,6 +12,7 @@ import type {
     ColumnDef,
     ColumnFiltersState,
     PaginationState,
+    RowSelectionState,
     SortingState,
     VisibilityState,
 } from '@tanstack/react-table';
@@ -27,10 +28,16 @@ import {
     ListFilterIcon,
     PlayIcon,
     SearchIcon,
+    Trash2Icon,
     XIcon,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import {
+    DataTableBulkActions,
+    type BulkActionPayload,
+} from '@/components/data-table-bulk-actions';
+import { createSelectColumn } from '@/components/data-table-select-column';
 import CopyableJobId from '@/components/ogc/copyable-job-id';
 import { DeleteJobButton } from '@/components/ogc/delete-job-dialog';
 import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
@@ -72,7 +79,7 @@ import {
     jobStatusStyles,
 } from '@/lib/jobs';
 import { cn } from '@/lib/utils';
-import { index, show } from '@/routes/jobs';
+import { bulkDestroy, index, show } from '@/routes/jobs';
 import { index as processesIndex } from '@/routes/processes';
 import type { ProcessExecutionListItem } from '@/types';
 
@@ -94,6 +101,7 @@ const columnLabelKeys: Record<string, TranslationKey> = {
 };
 
 const columnClassNames: Record<string, string> = {
+    select: 'w-12',
     process: 'min-w-56 whitespace-normal',
     status: 'min-w-32',
     remoteJobId: 'whitespace-nowrap',
@@ -128,6 +136,7 @@ const columns: ColumnDef<ProcessExecutionListItem>[] = [
         enableHiding: false,
         enableSorting: false,
     },
+    createSelectColumn<ProcessExecutionListItem>(),
     {
         id: 'process',
         accessorFn: (execution) => execution.displayName,
@@ -257,6 +266,8 @@ export default function ProcessExecutionIndex({
         pageIndex: 0,
         pageSize: 10,
     });
+    const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+    const [bulkProcessing, setBulkProcessing] = useState(false);
     const statusCounts = useMemo(() => {
         const counts: Record<string, number> = {};
 
@@ -300,6 +311,7 @@ export default function ProcessExecutionIndex({
         onColumnFiltersChange: setColumnFilters,
         onColumnVisibilityChange: setColumnVisibility,
         onPaginationChange: setPagination,
+        onRowSelectionChange: setRowSelection,
         onSortingChange: setSorting,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
@@ -309,9 +321,13 @@ export default function ProcessExecutionIndex({
             columnFilters,
             columnVisibility,
             pagination,
+            rowSelection,
             sorting,
         },
     });
+    const selectedExecutions = table
+        .getFilteredSelectedRowModel()
+        .rows.map((row) => row.original);
     const statusFilter =
         (table.getColumn('status')?.getFilterValue() as string | undefined) ??
         'all';
@@ -328,6 +344,23 @@ export default function ProcessExecutionIndex({
             ),
         [executions.data],
     );
+
+    function bulkDeleteSelectedJobs(): void {
+        const ids = selectedExecutions.map((execution) => execution.id);
+
+        if (ids.length === 0) {
+            return;
+        }
+
+        setBulkProcessing(true);
+
+        router.delete<BulkActionPayload>(bulkDestroy.url(), {
+            data: { ids },
+            preserveScroll: true,
+            onSuccess: () => table.resetRowSelection(),
+            onFinish: () => setBulkProcessing(false),
+        });
+    }
 
     return (
         <>
@@ -436,6 +469,26 @@ export default function ProcessExecutionIndex({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                        <DataTableBulkActions
+                            selectedCount={selectedExecutions.length}
+                            processing={bulkProcessing}
+                            onClearSelection={() => table.resetRowSelection()}
+                            actions={[
+                                {
+                                    id: 'delete',
+                                    label: t('jobs.bulkDelete'),
+                                    title: t('jobs.bulkDeleteTitle'),
+                                    description: t(
+                                        'jobs.bulkDeleteDescription',
+                                    ),
+                                    confirmLabel: t('jobs.bulkDeleteConfirm'),
+                                    icon: Trash2Icon,
+                                    variant: 'destructive',
+                                    onConfirm: bulkDeleteSelectedJobs,
+                                },
+                            ]}
+                        />
+
                         <Select
                             value={`${table.getState().pagination.pageSize}`}
                             onValueChange={(value) => {

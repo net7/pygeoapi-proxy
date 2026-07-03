@@ -7,6 +7,7 @@ import {
     InfoIcon,
     ListChecksIcon,
     PackageCheckIcon,
+    ShieldCheckIcon,
     TimerIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -261,15 +262,26 @@ export default function ProcessExecutionShow({
                     </CardContent>
                 </Card>
 
-                <DetailSection
-                    title={t('jobs.inputs')}
-                    description={t('jobs.inputsDescription')}
-                >
-                    <JsonBlock
+                {execution.requestPayload !== undefined ? (
+                    <DetailSection
                         title={t('jobs.inputs')}
-                        value={execution.requestPayload}
-                    />
-                </DetailSection>
+                        description={t('jobs.inputsDescription')}
+                        badge={
+                            <Badge
+                                variant="destructive"
+                                className="h-5 shrink-0 px-1.5 text-[10px] uppercase"
+                            >
+                                <ShieldCheckIcon data-icon="inline-start" />
+                                {t('jobs.adminOnlySection')}
+                            </Badge>
+                        }
+                    >
+                        <JsonBlock
+                            title={t('jobs.inputs')}
+                            value={execution.requestPayload}
+                        />
+                    </DetailSection>
+                ) : null}
 
                 <DetailSection
                     title={t('ogc.outputs')}

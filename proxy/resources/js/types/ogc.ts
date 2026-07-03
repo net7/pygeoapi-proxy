@@ -113,7 +113,7 @@ export type ProcessExecutionDetail = ProcessExecutionListItem & {
     processVersion?: string | null;
     note?: TiptapDocument | null;
     noteUpdatedAt?: string | null;
-    requestPayload: Record<string, unknown>;
+    requestPayload?: Record<string, unknown> | null;
     requestedOutputs?: Record<string, unknown> | null;
     results: ProcessExecutionResult[];
 };

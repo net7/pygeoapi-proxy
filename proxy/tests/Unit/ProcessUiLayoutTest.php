@@ -188,6 +188,20 @@ test('interactive button and link surfaces use pointer cursors', function () {
     }
 });
 
+test('checkbox checked states render a visible indicator', function () {
+    $source = file_get_contents(getcwd().'/resources/js/components/ui/checkbox.tsx');
+
+    expect($source)
+        ->toContain('data-[state=checked]:border-primary')
+        ->toContain('data-[state=checked]:bg-primary')
+        ->toContain('data-[state=checked]:text-primary-foreground')
+        ->toContain('data-[state=indeterminate]:border-primary')
+        ->toContain('data-[state=indeterminate]:bg-primary')
+        ->toContain('data-[state=indeterminate]:text-primary-foreground')
+        ->toContain('grid place-content-center text-current')
+        ->toContain('<CheckIcon className="size-3.5" />');
+});
+
 test('jobs index exposes a filterable status table', function () {
     $source = file_get_contents(getcwd().'/resources/js/pages/process-executions/index.tsx');
     $normalizedSource = preg_replace('/\s+/', '', $source) ?? '';
@@ -254,6 +268,15 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('@/components/ogc/delete-job-dialog')
         ->toContain('DeleteJobButton')
         ->toContain("actions: 'w-24 text-right'")
+        ->toContain("select: 'w-12'")
+        ->toContain('RowSelectionState')
+        ->toContain('rowSelection')
+        ->toContain('onRowSelectionChange')
+        ->toContain('getFilteredSelectedRowModel')
+        ->toContain('createSelectColumn<ProcessExecutionListItem>()')
+        ->toContain('DataTableBulkActions')
+        ->toContain('bulkDestroy.url()')
+        ->toContain('table.resetRowSelection()')
         ->toContain('submittedAt')
         ->toContain('completedAt')
         ->toContain('failedAt')
@@ -270,14 +293,6 @@ test('jobs index exposes a filterable status table', function () {
         ->not->toContain("remoteJobId: 'w-[300px] max-w-[300px]'")
         ->not->toContain('max-w-[300px]')
         ->not->toContain('border-l-4 align-top')
-        ->not->toContain('import { Checkbox }')
-        ->not->toContain('RowSelectionState')
-        ->not->toContain('rowSelection')
-        ->not->toContain('getFilteredSelectedRowModel')
-        ->not->toContain('getIsSelected')
-        ->not->toContain('toggleAllPageRowsSelected')
-        ->not->toContain('Select all jobs')
-        ->not->toContain('Select job')
         ->not->toContain('sticky right-0')
         ->not->toContain('bg-inherit')
         ->not->toContain('filteredExecutions')
@@ -313,6 +328,54 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('browserDateLocale()')
         ->toContain('navigator.languages')
         ->toContain('new Intl.DateTimeFormat(locale ?? browserDateLocale()');
+});
+
+test('job tables expose shadcn row selection and bulk delete actions', function () {
+    $jobsIndexSource = file_get_contents(getcwd().'/resources/js/pages/process-executions/index.tsx');
+    $adminJobsIndexSource = file_get_contents(getcwd().'/resources/js/pages/admin/jobs/index.tsx');
+    $selectColumnSource = file_get_contents(getcwd().'/resources/js/components/data-table-select-column.tsx');
+    $bulkActionsSource = file_get_contents(getcwd().'/resources/js/components/data-table-bulk-actions.tsx');
+    $messagesSource = file_get_contents(getcwd().'/resources/js/lib/i18n/messages.ts');
+
+    foreach ([$jobsIndexSource, $adminJobsIndexSource] as $source) {
+        expect($source)
+            ->toContain('RowSelectionState')
+            ->toContain('rowSelection')
+            ->toContain('onRowSelectionChange')
+            ->toContain('getFilteredSelectedRowModel')
+            ->toContain('createSelectColumn')
+            ->toContain('DataTableBulkActions')
+            ->toContain('bulkDestroy.url()')
+            ->toContain('router.delete<BulkActionPayload>')
+            ->toContain('table.resetRowSelection()')
+            ->toContain("select: 'w-12'");
+    }
+
+    expect($selectColumnSource)
+        ->toContain("import { Checkbox } from '@/components/ui/checkbox';")
+        ->toContain('table.getIsAllPageRowsSelected()')
+        ->toContain('table.getIsSomePageRowsSelected()')
+        ->toContain('table.toggleAllPageRowsSelected(Boolean(value))')
+        ->toContain('row.getIsSelected()')
+        ->toContain('row.toggleSelected(Boolean(value))')
+        ->toContain('event.stopPropagation()')
+        ->toContain('enableSorting: false')
+        ->toContain('enableHiding: false');
+
+    expect($bulkActionsSource)
+        ->toContain('DropdownMenuGroup')
+        ->toContain('DialogTitle')
+        ->toContain('DialogDescription')
+        ->toContain('Spinner data-icon="inline-start"')
+        ->toContain('common.bulkActions')
+        ->toContain('common.selectedRows')
+        ->toContain('common.clearSelection');
+
+    expect($messagesSource)
+        ->toContain("bulkDelete: 'Elimina selezionati'")
+        ->toContain("bulkDelete: 'Delete selected'")
+        ->toContain("selectedRows: '{count} selezionati'")
+        ->toContain("selectedRows: '{count} selected'");
 });
 
 test('job tables show contextual empty states', function () {
@@ -389,6 +452,11 @@ test('job detail uses full width input output and note sections in order', funct
         ->toContain('common.status')
         ->toContain('jobs.requestedOutputs')
         ->toContain('jobs.results')
+        ->toContain("t('jobs.adminOnlySection')")
+        ->toContain('ShieldCheckIcon')
+        ->toContain('<ShieldCheckIcon data-icon="inline-start" />')
+        ->toContain('variant="destructive"')
+        ->toContain('className="h-5 shrink-0 px-1.5 text-[10px] uppercase"')
         ->toContain('className="flex justify-end"')
         ->toContain('DeleteJobButton')
         ->toContain('className="w-full sm:w-auto"')

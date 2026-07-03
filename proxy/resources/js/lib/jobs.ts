@@ -141,9 +141,9 @@ export function formatJobDate(
     value?: string | null,
     ...options: [locale?: Intl.LocalesArgument, unavailableLabel?: string]
 ): string {
-    const unavailableLabel = options[1] ?? 'Not available';
+    const [locale, unavailableLabel = 'Not available'] = options;
 
-    return formatDateValue(value, unavailableLabel);
+    return formatDateValue(value, locale, unavailableLabel);
 }
 
 export function clampProgress(progress: number): number {
@@ -152,6 +152,7 @@ export function clampProgress(progress: number): number {
 
 function formatDateValue(
     value: string | null | undefined,
+    locale: Intl.LocalesArgument | undefined,
     unavailableLabel = 'Not available',
 ): string {
     if (!value) {
@@ -168,7 +169,7 @@ function formatDateValue(
             return unavailableLabel;
         }
 
-        return formatDateParts(year, month, day);
+        return formatDateParts(new Date(year, month - 1, day), locale, false);
     }
 
     const date = new Date(trimmedValue);
@@ -177,21 +178,44 @@ function formatDateValue(
         return unavailableLabel;
     }
 
-    const formattedDate = formatDateParts(
-        date.getFullYear(),
-        date.getMonth() + 1,
-        date.getDate(),
+    return formatDateParts(
+        date,
+        locale,
+        /[T\s]\d{1,2}:\d{2}/.test(trimmedValue),
     );
+}
 
-    if (!/[T\s]\d{1,2}:\d{2}/.test(trimmedValue)) {
+function formatDateParts(
+    date: Date,
+    locale: Intl.LocalesArgument | undefined,
+    includeTime: boolean,
+): string {
+    const formatter = new Intl.DateTimeFormat(locale ?? browserDateLocale(), {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        ...(includeTime
+            ? ({
+                  hour: '2-digit',
+                  hourCycle: 'h23',
+                  minute: '2-digit',
+              } satisfies Intl.DateTimeFormatOptions)
+            : {}),
+    });
+    const parts = formatter.formatToParts(date);
+    const formattedDate = parts
+        .filter((part) => ['day', 'month', 'year'].includes(part.type))
+        .map((part) => part.value)
+        .join('/');
+
+    if (!includeTime) {
         return formattedDate;
     }
 
-    return `${formattedDate} ${padDatePart(date.getHours())}:${padDatePart(date.getMinutes())}`;
-}
+    const hour = parts.find((part) => part.type === 'hour')?.value ?? '00';
+    const minute = parts.find((part) => part.type === 'minute')?.value ?? '00';
 
-function formatDateParts(year: number, month: number, day: number): string {
-    return `${padDatePart(day)}/${padDatePart(month)}/${year}`;
+    return `${formattedDate} ${hour}:${minute}`;
 }
 
 function isValidDateParts(year: number, month: number, day: number): boolean {
@@ -204,6 +228,12 @@ function isValidDateParts(year: number, month: number, day: number): boolean {
     );
 }
 
-function padDatePart(value: number): string {
-    return String(value).padStart(2, '0');
+function browserDateLocale(): Intl.LocalesArgument {
+    if (typeof navigator === 'undefined') {
+        return undefined;
+    }
+
+    return navigator.languages.length > 0
+        ? navigator.languages
+        : navigator.language;
 }

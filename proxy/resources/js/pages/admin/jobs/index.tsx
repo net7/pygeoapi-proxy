@@ -12,6 +12,7 @@ import type {
     ColumnDef,
     ColumnFiltersState,
     PaginationState,
+    RowSelectionState,
     SortingState,
     VisibilityState,
 } from '@tanstack/react-table';
@@ -26,10 +27,16 @@ import {
     ListChecksIcon,
     ListFilterIcon,
     SearchIcon,
+    Trash2Icon,
     XIcon,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import {
+    DataTableBulkActions,
+    type BulkActionPayload,
+} from '@/components/data-table-bulk-actions';
+import { createSelectColumn } from '@/components/data-table-select-column';
 import CopyableJobId from '@/components/ogc/copyable-job-id';
 import { DeleteJobButton } from '@/components/ogc/delete-job-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -72,7 +79,7 @@ import {
 } from '@/lib/jobs';
 import { cn } from '@/lib/utils';
 import { index } from '@/routes/admin/jobs';
-import { show } from '@/routes/jobs';
+import { bulkDestroy, show } from '@/routes/jobs';
 import type { ProcessExecutionListItem } from '@/types';
 
 type Translate = ReturnType<typeof useTranslation>['t'];
@@ -117,6 +124,7 @@ const columnLabelKeys: Record<string, TranslationKey> = {
 };
 
 const columnClassNames: Record<string, string> = {
+    select: 'w-12',
     user: 'min-w-56 whitespace-normal',
     process: 'min-w-56 whitespace-normal',
     status: 'min-w-32',
@@ -163,6 +171,7 @@ const columns: ColumnDef<AdminJob>[] = [
         enableHiding: false,
         enableSorting: false,
     },
+    createSelectColumn<AdminJob>(),
     {
         id: 'user',
         accessorFn: (execution) =>
@@ -313,6 +322,8 @@ export default function AdminJobsIndex({
         pageIndex: 0,
         pageSize: 10,
     });
+    const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+    const [bulkProcessing, setBulkProcessing] = useState(false);
     const statusCounts = useMemo(() => {
         const counts: Record<string, number> = {};
 
@@ -357,6 +368,7 @@ export default function AdminJobsIndex({
         onColumnFiltersChange: setColumnFilters,
         onColumnVisibilityChange: setColumnVisibility,
         onPaginationChange: setPagination,
+        onRowSelectionChange: setRowSelection,
         onSortingChange: setSorting,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
@@ -366,9 +378,13 @@ export default function AdminJobsIndex({
             columnFilters,
             columnVisibility,
             pagination,
+            rowSelection,
             sorting,
         },
     });
+    const selectedExecutions = table
+        .getFilteredSelectedRowModel()
+        .rows.map((row) => row.original);
     const statusFilter =
         (table.getColumn('status')?.getFilterValue() as string | undefined) ??
         'all';
@@ -386,6 +402,23 @@ export default function AdminJobsIndex({
         statusFilter !== 'all' ||
         searchFilter !== '' ||
         selectedUserId !== 'all';
+
+    function bulkDeleteSelectedJobs(): void {
+        const ids = selectedExecutions.map((execution) => execution.id);
+
+        if (ids.length === 0) {
+            return;
+        }
+
+        setBulkProcessing(true);
+
+        router.delete<BulkActionPayload>(bulkDestroy.url(), {
+            data: { ids },
+            preserveScroll: true,
+            onSuccess: () => table.resetRowSelection(),
+            onFinish: () => setBulkProcessing(false),
+        });
+    }
 
     function selectUser(value: string): void {
         const nextUserId = value === 'all' ? undefined : value;
@@ -510,6 +543,26 @@ export default function AdminJobsIndex({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                        <DataTableBulkActions
+                            selectedCount={selectedExecutions.length}
+                            processing={bulkProcessing}
+                            onClearSelection={() => table.resetRowSelection()}
+                            actions={[
+                                {
+                                    id: 'delete',
+                                    label: t('jobs.bulkDelete'),
+                                    title: t('jobs.bulkDeleteTitle'),
+                                    description: t(
+                                        'jobs.bulkDeleteDescription',
+                                    ),
+                                    confirmLabel: t('jobs.bulkDeleteConfirm'),
+                                    icon: Trash2Icon,
+                                    variant: 'destructive',
+                                    onConfirm: bulkDeleteSelectedJobs,
+                                },
+                            ]}
+                        />
+
                         <Select
                             value={selectedUserId}
                             onValueChange={selectUser}

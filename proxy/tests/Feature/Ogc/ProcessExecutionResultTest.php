@@ -35,6 +35,48 @@ test('users can view their execution detail', function () {
             ->has('execution.results', 1));
 });
 
+test('non admin users cannot see execution input data', function () {
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create([
+        'request_payload' => [
+            'inputs' => [
+                'melt_composition' => [
+                    'value' => ['sio2' => 0.7],
+                ],
+            ],
+        ],
+    ]);
+
+    $this->actingAs($user)
+        ->get("/jobs/{$execution->id}")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('process-executions/show')
+            ->where('execution.id', $execution->id)
+            ->missing('execution.requestPayload'));
+});
+
+test('admin users can see execution input data', function () {
+    $admin = User::factory()->admin()->create();
+    $execution = ProcessExecution::factory()->create([
+        'request_payload' => [
+            'inputs' => [
+                'melt_composition' => [
+                    'value' => ['sio2' => 0.7],
+                ],
+            ],
+        ],
+    ]);
+
+    $this->actingAs($admin)
+        ->get("/jobs/{$execution->id}")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('process-executions/show')
+            ->where('execution.id', $execution->id)
+            ->where('execution.requestPayload.inputs.melt_composition.value.sio2', 0.7));
+});
+
 test('users can view their job list with timeline timestamps', function () {
     Carbon::setTestNow('2026-06-10 12:30:00');
     config(['services.ogc_processes.polling_interval' => 2500]);

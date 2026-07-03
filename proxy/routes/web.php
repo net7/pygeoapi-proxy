@@ -44,6 +44,8 @@ Route::middleware(['auth', EnsureUserIsActive::class, 'verified'])->group(functi
 
     Route::get('jobs', [ProcessExecutionController::class, 'index'])
         ->name('jobs.index');
+    Route::delete('jobs', [ProcessExecutionController::class, 'bulkDestroy'])
+        ->name('jobs.bulk-destroy');
     Route::get('jobs/{processExecution}', [ProcessExecutionController::class, 'show'])
         ->name('jobs.show');
     Route::patch('jobs/{processExecution}/name', [ProcessExecutionController::class, 'updateName'])
@@ -77,6 +79,10 @@ Route::middleware(['auth', EnsureUserIsActive::class, 'verified', EnsureUserIsAd
         Route::post('users', [AdminUserController::class, 'store'])
             ->middleware(HandlePrecognitiveRequests::class)
             ->name('users.store');
+        Route::delete('users', [AdminUserController::class, 'bulkDestroy'])
+            ->name('users.bulk-destroy');
+        Route::patch('users/restore', [AdminUserController::class, 'bulkRestore'])
+            ->name('users.bulk-restore');
         Route::get('users/{user}/edit', [AdminUserController::class, 'edit'])
             ->name('users.edit');
         Route::patch('users/{user}', [AdminUserController::class, 'update'])

@@ -40,12 +40,12 @@ describe('i18n', () => {
     test('translates keys and interpolates values', () => {
         expect(translate('it', 'common.save')).toBe('Salva');
         expect(translate('en', 'common.save')).toBe('Save');
-        expect(
-            translate('it', 'jobs.pagination', { page: 2, pages: 8 }),
-        ).toBe('Pagina 2 di 8');
-        expect(
-            translate('en', 'jobs.pagination', { page: 2, pages: 8 }),
-        ).toBe('Page 2 of 8');
+        expect(translate('it', 'jobs.pagination', { page: 2, pages: 8 })).toBe(
+            'Pagina 2 di 8',
+        );
+        expect(translate('en', 'jobs.pagination', { page: 2, pages: 8 })).toBe(
+            'Page 2 of 8',
+        );
     });
 
     test('uses italian process wording for job labels', () => {
@@ -56,6 +56,12 @@ describe('i18n', () => {
         expect(translate('it', 'jobs.deleteConfirm')).toBe('Elimina');
         expect(translate('it', 'jobs.deleteDescription')).toBe(
             'Questa azione rimuove il processo dalla piattaforma. L’operazione non può essere annullata.',
+        );
+        expect(translate('it', 'jobs.adminOnlySection')).toBe(
+            'VISIBILE SOLO AGLI ADMIN',
+        );
+        expect(translate('en', 'jobs.adminOnlySection')).toBe(
+            'VISIBILE SOLO AGLI ADMIN',
         );
         expect(translate('it', 'jobs.deleteDescription')).not.toContain(
             'servizio',

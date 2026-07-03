@@ -199,6 +199,92 @@ test('admins can deactivate and restore users but cannot deactivate themselves',
     expect($admin->fresh()->isActive())->toBeTrue();
 });
 
+test('admins can bulk deactivate users and invalidate their sessions', function () {
+    $admin = User::factory()->admin()->create();
+    $firstUser = User::factory()->create();
+    $secondUser = User::factory()->create();
+
+    DB::table('sessions')->insert([
+        [
+            'id' => 'first-bulk-session',
+            'user_id' => $firstUser->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'Pest',
+            'payload' => 'payload',
+            'last_activity' => now()->timestamp,
+        ],
+        [
+            'id' => 'second-bulk-session',
+            'user_id' => $secondUser->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'Pest',
+            'payload' => 'payload',
+            'last_activity' => now()->timestamp,
+        ],
+    ]);
+
+    $this->actingAs($admin)
+        ->from(route('admin.users.index'))
+        ->delete(route('admin.users.bulk-destroy'), [
+            'ids' => [$firstUser->id, $secondUser->id],
+        ])
+        ->assertRedirect(route('admin.users.index'))
+        ->assertInertiaFlash('toast.title', 'Users deactivated')
+        ->assertInertiaFlash('toast.details.0.value', '2');
+
+    expect($firstUser->fresh()->isDeactivated())->toBeTrue()
+        ->and($secondUser->fresh()->isDeactivated())->toBeTrue()
+        ->and(DB::table('sessions')->whereIn('user_id', [$firstUser->id, $secondUser->id])->exists())->toBeFalse();
+});
+
+test('admins can bulk restore users', function () {
+    $admin = User::factory()->admin()->create();
+    $firstUser = User::factory()->create(['deactivated_at' => now()]);
+    $secondUser = User::factory()->create(['deactivated_at' => now()]);
+
+    $this->actingAs($admin)
+        ->from(route('admin.users.index'))
+        ->patch(route('admin.users.bulk-restore'), [
+            'ids' => [$firstUser->id, $secondUser->id],
+        ])
+        ->assertRedirect(route('admin.users.index'))
+        ->assertInertiaFlash('toast.title', 'Users restored')
+        ->assertInertiaFlash('toast.details.0.value', '2');
+
+    expect($firstUser->fresh()->isActive())->toBeTrue()
+        ->and($secondUser->fresh()->isActive())->toBeTrue();
+});
+
+test('admins cannot include themselves in bulk user status actions', function () {
+    $admin = User::factory()->admin()->create();
+    $target = User::factory()->create();
+
+    $this->actingAs($admin)
+        ->from(route('admin.users.index'))
+        ->delete(route('admin.users.bulk-destroy'), [
+            'ids' => [$admin->id, $target->id],
+        ])
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHasErrors('user');
+
+    expect($admin->fresh()->isActive())->toBeTrue()
+        ->and($target->fresh()->isActive())->toBeTrue();
+
+    $admin->forceFill(['deactivated_at' => null])->save();
+    $target->forceFill(['deactivated_at' => now()])->save();
+
+    $this->actingAs($admin)
+        ->from(route('admin.users.index'))
+        ->patch(route('admin.users.bulk-restore'), [
+            'ids' => [$admin->id, $target->id],
+        ])
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHasErrors('user');
+
+    expect($admin->fresh()->isActive())->toBeTrue()
+        ->and($target->fresh()->isDeactivated())->toBeTrue();
+});
+
 test('admins can permanently delete users and all related data', function () {
     config(['services.ogc_processes.base_url' => 'https://voice.pi.ingv.it/geoinquire/']);
     Http::preventStrayRequests();

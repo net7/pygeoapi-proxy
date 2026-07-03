@@ -13,6 +13,15 @@ describe('formatJobDate', () => {
         expect(formatJobDate('2020-01-01', 'en-US')).toBe('01/01/2020');
     });
 
+    test('uses the requested locale date order', () => {
+        expect(formatJobDate('2020-03-04T10:05:00', 'en-US')).toBe(
+            '03/04/2020 10:05',
+        );
+        expect(formatJobDate('2020-03-04T10:05:00', 'it-IT')).toBe(
+            '04/03/2020 10:05',
+        );
+    });
+
     test('uses the unavailable label for empty or invalid dates', () => {
         expect(formatJobDate(null, 'en-US', 'Non disponibile')).toBe(
             'Non disponibile',

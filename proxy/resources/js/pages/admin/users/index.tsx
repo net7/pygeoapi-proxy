@@ -12,6 +12,7 @@ import type {
     ColumnDef,
     ColumnFiltersState,
     PaginationState,
+    RowSelectionState,
     SortingState,
     VisibilityState,
 } from '@tanstack/react-table';
@@ -46,6 +47,11 @@ import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 
+import {
+    DataTableBulkActions,
+    type BulkActionPayload,
+} from '@/components/data-table-bulk-actions';
+import { createSelectColumn } from '@/components/data-table-select-column';
 import InputError from '@/components/input-error';
 import {
     getSocialProviderStyle,
@@ -117,6 +123,8 @@ import { formatJobDate } from '@/lib/jobs';
 import { cn } from '@/lib/utils';
 import { index as jobsIndex } from '@/routes/admin/jobs';
 import {
+    bulkDestroy,
+    bulkRestore,
     destroy as destroyUser,
     forceDestroy,
     index,
@@ -188,6 +196,7 @@ const columnLabelKeys: Record<string, TranslationKey> = {
 };
 
 const columnClassNames: Record<string, string> = {
+    select: 'w-12',
     user: 'min-w-64 whitespace-normal',
     role: 'min-w-28',
     socialProviders: 'min-w-40',
@@ -226,6 +235,8 @@ export default function AdminUsersIndex({
         pageIndex: 0,
         pageSize: 10,
     });
+    const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+    const [bulkProcessing, setBulkProcessing] = useState(false);
 
     const columns = useMemo<ColumnDef<AdminUser>[]>(
         () => [
@@ -251,6 +262,7 @@ export default function AdminUsersIndex({
                 enableHiding: false,
                 enableSorting: false,
             },
+            createSelectColumn<AdminUser>(),
             {
                 id: 'user',
                 accessorFn: (user) => `${user.name} ${user.email}`,
@@ -530,6 +542,7 @@ export default function AdminUsersIndex({
         onColumnFiltersChange: setColumnFilters,
         onColumnVisibilityChange: setColumnVisibility,
         onPaginationChange: setPagination,
+        onRowSelectionChange: setRowSelection,
         onSortingChange: setSorting,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
@@ -539,9 +552,13 @@ export default function AdminUsersIndex({
             columnFilters,
             columnVisibility,
             pagination,
+            rowSelection,
             sorting,
         },
     });
+    const selectedUsers = table
+        .getFilteredSelectedRowModel()
+        .rows.map((row) => row.original);
 
     const statusFilter =
         (table.getColumn('status')?.getFilterValue() as string | undefined) ??
@@ -556,6 +573,43 @@ export default function AdminUsersIndex({
     const pageCount = Math.max(table.getPageCount(), 1);
     const hasActiveFilters =
         statusFilter !== 'all' || roleFilter !== 'all' || searchFilter !== '';
+
+    function bulkDeactivateSelectedUsers(): void {
+        const ids = selectedUsers.map((user) => user.id);
+
+        if (ids.length === 0) {
+            return;
+        }
+
+        setBulkProcessing(true);
+
+        router.delete<BulkActionPayload>(bulkDestroy.url(), {
+            data: { ids },
+            preserveScroll: true,
+            onSuccess: () => table.resetRowSelection(),
+            onFinish: () => setBulkProcessing(false),
+        });
+    }
+
+    function bulkRestoreSelectedUsers(): void {
+        const ids = selectedUsers.map((user) => user.id);
+
+        if (ids.length === 0) {
+            return;
+        }
+
+        setBulkProcessing(true);
+
+        router.patch<BulkActionPayload>(
+            bulkRestore.url(),
+            { ids },
+            {
+                preserveScroll: true,
+                onSuccess: () => table.resetRowSelection(),
+                onFinish: () => setBulkProcessing(false),
+            },
+        );
+    }
 
     return (
         <>
@@ -685,6 +739,39 @@ export default function AdminUsersIndex({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                        <DataTableBulkActions
+                            selectedCount={selectedUsers.length}
+                            processing={bulkProcessing}
+                            onClearSelection={() => table.resetRowSelection()}
+                            actions={[
+                                {
+                                    id: 'deactivate',
+                                    label: t('admin.bulkDeactivate'),
+                                    title: t('admin.bulkDeactivateTitle'),
+                                    description: t(
+                                        'admin.bulkDeactivateDescription',
+                                    ),
+                                    confirmLabel: t(
+                                        'admin.bulkDeactivateConfirm',
+                                    ),
+                                    icon: UserXIcon,
+                                    variant: 'destructive',
+                                    onConfirm: bulkDeactivateSelectedUsers,
+                                },
+                                {
+                                    id: 'restore',
+                                    label: t('admin.bulkRestore'),
+                                    title: t('admin.bulkRestoreTitle'),
+                                    description: t(
+                                        'admin.bulkRestoreDescription',
+                                    ),
+                                    confirmLabel: t('admin.bulkRestoreConfirm'),
+                                    icon: UserCheckIcon,
+                                    onConfirm: bulkRestoreSelectedUsers,
+                                },
+                            ]}
+                        />
+
                         <Select
                             value={roleFilter}
                             onValueChange={(value) => {

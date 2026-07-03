@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\Admin\DeleteUser;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\BulkUserStatusRequest;
 use App\Http\Requests\Admin\ForceDeleteUserRequest;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
@@ -13,6 +14,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
@@ -113,6 +115,56 @@ class UserController extends Controller
         return to_route('admin.users.index');
     }
 
+    public function bulkDestroy(BulkUserStatusRequest $request): RedirectResponse
+    {
+        $users = $this->bulkUsers($request->userIds());
+        $deactivatedAt = now();
+
+        foreach ($users as $user) {
+            $user->forceFill(['deactivated_at' => $deactivatedAt])->save();
+            $this->invalidateUserSessions($user);
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'title' => __('Users deactivated'),
+            'message' => __('The selected users have been deactivated.'),
+            'icon' => false,
+            'details' => [
+                [
+                    'label' => __('Deactivated users'),
+                    'value' => (string) $users->count(),
+                ],
+            ],
+        ]);
+
+        return back();
+    }
+
+    public function bulkRestore(BulkUserStatusRequest $request): RedirectResponse
+    {
+        $users = $this->bulkUsers($request->userIds());
+
+        foreach ($users as $user) {
+            $user->forceFill(['deactivated_at' => null])->save();
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'title' => __('Users restored'),
+            'message' => __('The selected users have been restored.'),
+            'icon' => false,
+            'details' => [
+                [
+                    'label' => __('Restored users'),
+                    'value' => (string) $users->count(),
+                ],
+            ],
+        ]);
+
+        return back();
+    }
+
     public function forceDestroy(ForceDeleteUserRequest $request, User $user, DeleteUser $deleteUser): RedirectResponse
     {
         $name = $user->name;
@@ -211,5 +263,21 @@ class UserController extends Controller
         DB::table((string) config('session.table', 'sessions'))
             ->where('user_id', $user->id)
             ->delete();
+    }
+
+    /**
+     * @param  list<int>  $ids
+     * @return Collection<int, User>
+     */
+    private function bulkUsers(array $ids): Collection
+    {
+        $users = User::query()
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('id');
+
+        return collect($ids)
+            ->map(fn (int $id): User => $users->get($id))
+            ->values();
     }
 }

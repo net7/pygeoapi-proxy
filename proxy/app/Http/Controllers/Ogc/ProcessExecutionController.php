@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Ogc;
 use App\Actions\Ogc\CreateProcessExecution;
 use App\Actions\Ogc\DeleteProcessExecution;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Ogc\BulkDestroyProcessExecutionRequest;
 use App\Http\Requests\Ogc\StoreProcessExecutionRequest;
 use App\Http\Requests\Ogc\UpdateProcessExecutionNameRequest;
 use App\Http\Requests\Ogc\UpdateProcessExecutionNoteRequest;
@@ -108,43 +109,51 @@ class ProcessExecutionController extends Controller
         return redirect()->route('jobs.show', $execution);
     }
 
-    public function show(ProcessExecution $processExecution): Response
+    public function show(Request $request, ProcessExecution $processExecution): Response
     {
         Gate::authorize('view', $processExecution);
 
+        $user = $request->user();
+        assert($user instanceof User);
+
         $processExecution->load('results');
+
+        $execution = [
+            'id' => $processExecution->id,
+            'name' => $processExecution->name,
+            'displayName' => $processExecution->displayName(),
+            'remoteJobId' => $processExecution->remote_job_id,
+            'processId' => $processExecution->process_id,
+            'processTitle' => $processExecution->process_title,
+            'processVersion' => $processExecution->process_version,
+            'status' => $processExecution->status->value,
+            'progress' => $processExecution->progress,
+            'message' => $processExecution->message,
+            'note' => $processExecution->note,
+            'noteUpdatedAt' => $processExecution->note_updated_at?->toIso8601String(),
+            'requestedOutputs' => $processExecution->requested_outputs,
+            'createdAt' => $processExecution->created_at?->toIso8601String(),
+            'submittedAt' => $processExecution->submitted_at?->toIso8601String(),
+            'completedAt' => $processExecution->completed_at?->toIso8601String(),
+            'failedAt' => $processExecution->failed_at?->toIso8601String(),
+            'results' => $processExecution->results->map(fn ($result): array => [
+                'id' => $result->id,
+                'outputId' => $result->output_id,
+                'title' => $result->title,
+                'description' => $result->description,
+                'mediaType' => $result->media_type,
+                'cacheStatus' => $result->cache_status->value,
+                'preview' => $result->preview,
+            ])->all(),
+        ];
+
+        if ($user->isAdmin()) {
+            $execution['requestPayload'] = $processExecution->request_payload;
+        }
 
         return Inertia::render('process-executions/show', [
             'pollingInterval' => $this->pollingInterval(),
-            'execution' => [
-                'id' => $processExecution->id,
-                'name' => $processExecution->name,
-                'displayName' => $processExecution->displayName(),
-                'remoteJobId' => $processExecution->remote_job_id,
-                'processId' => $processExecution->process_id,
-                'processTitle' => $processExecution->process_title,
-                'processVersion' => $processExecution->process_version,
-                'status' => $processExecution->status->value,
-                'progress' => $processExecution->progress,
-                'message' => $processExecution->message,
-                'note' => $processExecution->note,
-                'noteUpdatedAt' => $processExecution->note_updated_at?->toIso8601String(),
-                'requestPayload' => $processExecution->request_payload,
-                'requestedOutputs' => $processExecution->requested_outputs,
-                'createdAt' => $processExecution->created_at?->toIso8601String(),
-                'submittedAt' => $processExecution->submitted_at?->toIso8601String(),
-                'completedAt' => $processExecution->completed_at?->toIso8601String(),
-                'failedAt' => $processExecution->failed_at?->toIso8601String(),
-                'results' => $processExecution->results->map(fn ($result): array => [
-                    'id' => $result->id,
-                    'outputId' => $result->output_id,
-                    'title' => $result->title,
-                    'description' => $result->description,
-                    'mediaType' => $result->media_type,
-                    'cacheStatus' => $result->cache_status->value,
-                    'preview' => $result->preview,
-                ])->all(),
-            ],
+            'execution' => $execution,
         ]);
     }
 
@@ -236,6 +245,57 @@ class ProcessExecutionController extends Controller
         }
 
         return to_route('jobs.index');
+    }
+
+    public function bulkDestroy(
+        BulkDestroyProcessExecutionRequest $request,
+        DeleteProcessExecution $deleteProcessExecution,
+    ): RedirectResponse {
+        $ids = $request->executionIds();
+        $executions = ProcessExecution::query()
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('id');
+        $deletedCount = 0;
+
+        try {
+            foreach ($ids as $id) {
+                /** @var ProcessExecution $execution */
+                $execution = $executions->get($id);
+
+                Gate::authorize('delete', $execution);
+
+                $deleteProcessExecution->handle($execution);
+                $deletedCount++;
+            }
+        } catch (ConnectionException|RequestException $exception) {
+            report($exception);
+
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'title' => __('Jobs could not be deleted'),
+                'message' => __('The remote service did not confirm deletion.'),
+                'description' => __('Some selected jobs may still be available. Refresh and try again later.'),
+                'icon' => false,
+            ]);
+
+            return back();
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'title' => __('Jobs deleted'),
+            'message' => __('The selected jobs have been deleted.'),
+            'icon' => false,
+            'details' => [
+                [
+                    'label' => __('Deleted jobs'),
+                    'value' => (string) $deletedCount,
+                ],
+            ],
+        ]);
+
+        return back();
     }
 
     private function pollingInterval(): int

@@ -135,3 +135,33 @@ test('admin user status modal uses contextual confirmation panels', function () 
         ->toContain('font-mono text-xs')
         ->toContain('italic opacity-75');
 });
+
+test('admin tables expose bulk actions for jobs and users', function () {
+    $users = file_get_contents(dirname(__DIR__, 2).'/resources/js/pages/admin/users/index.tsx');
+    $jobs = file_get_contents(dirname(__DIR__, 2).'/resources/js/pages/admin/jobs/index.tsx');
+    $messages = file_get_contents(dirname(__DIR__, 2).'/resources/js/lib/i18n/messages.ts');
+
+    expect($jobs)
+        ->toContain('RowSelectionState')
+        ->toContain('createSelectColumn<AdminJob>()')
+        ->toContain('DataTableBulkActions')
+        ->toContain('bulkDestroy.url()')
+        ->toContain("select: 'w-12'");
+
+    expect($users)
+        ->toContain('RowSelectionState')
+        ->toContain('createSelectColumn<AdminUser>()')
+        ->toContain('DataTableBulkActions')
+        ->toContain('bulkDestroy.url()')
+        ->toContain('bulkRestore.url()')
+        ->toContain('admin.bulkDeactivate')
+        ->toContain('admin.bulkRestore')
+        ->toContain("select: 'w-12'")
+        ->not->toContain('forceDestroy.url(), { data: { ids');
+
+    expect($messages)
+        ->toContain("bulkDeactivate: 'Disattiva selezionati'")
+        ->toContain("bulkRestore: 'Ripristina selezionati'")
+        ->toContain("bulkDeactivate: 'Deactivate selected'")
+        ->toContain("bulkRestore: 'Restore selected'");
+});
