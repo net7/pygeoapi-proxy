@@ -519,6 +519,7 @@ test('job editable metadata appears on create and detail screens', function () {
     $editorSource = file_get_contents($editorPath);
     $cardSource = file_get_contents($cardPath);
     $nameDialogSource = file_get_contents($nameDialogPath);
+    $cssSource = file_get_contents(getcwd().'/resources/css/app.css');
 
     expect($editorSource)
         ->toContain('@tiptap/react')
@@ -530,18 +531,33 @@ test('job editable metadata appears on create and detail screens', function () {
         ->toContain('ListIcon')
         ->toContain('ListOrderedIcon')
         ->toContain('QuoteIcon')
+        ->toContain('Code2Icon')
         ->toContain('LinkIcon')
         ->toContain('Undo2Icon')
-        ->toContain('Redo2Icon');
+        ->toContain('Redo2Icon')
+        ->toContain("t('jobs.noteToolbar.codeBlock')")
+        ->toContain('editor.chain().focus().toggleCodeBlock().run()')
+        ->toContain("editor.isActive('codeBlock')")
+        ->not->toContain('codeBlock: false');
+
+    expect($cssSource)
+        ->toContain('.prose-note pre')
+        ->toContain('.prose-note code');
 
     expect($cardSource)
         ->toContain('@/routes/jobs/note')
         ->toContain('onOpenAutoFocus={(event) => event.preventDefault()}')
+        ->toContain('CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"')
+        ->toContain('<div className="min-w-0">')
         ->toContain('<JobNoteEditor')
         ->toContain('autoFocus')
         ->toContain('DialogTitle')
-        ->toContain("t('jobs.noteDescription')")
-        ->toContain("t('jobs.editNote')");
+        ->toContain("t('jobs.editNoteDescription')")
+        ->toContain("t('jobs.editNote')")
+        ->toContain('className="w-full sm:w-fit"')
+        ->toContain('CardContent className="min-w-0"')
+        ->not->toContain("t('jobs.noteDescription')")
+        ->not->toContain('min-h-16 rounded-md border bg-background px-3 py-2 dark:bg-muted/30');
 
     expect($editorSource)
         ->toContain('autoFocus = false')

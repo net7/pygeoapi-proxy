@@ -85,7 +85,7 @@ class TiptapDocument
             return ['type' => 'hardBreak'];
         }
 
-        if (! in_array($type, ['paragraph', 'bulletList', 'orderedList', 'listItem', 'blockquote'], true)) {
+        if (! in_array($type, ['paragraph', 'bulletList', 'orderedList', 'listItem', 'blockquote', 'codeBlock'], true)) {
             return null;
         }
 

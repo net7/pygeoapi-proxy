@@ -176,6 +176,19 @@
     color: var(--muted-foreground);
 }
 
+.prose-note pre {
+    margin-block: 0.5rem;
+    overflow-x: auto;
+    border-radius: var(--radius-sm);
+    background: var(--muted);
+    padding: 0.75rem;
+}
+
+.prose-note code {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+}
+
 .prose-note a {
     color: var(--primary);
     text-decoration-line: underline;

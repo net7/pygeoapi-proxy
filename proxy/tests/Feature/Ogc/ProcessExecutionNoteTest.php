@@ -71,6 +71,34 @@ test('admins can update notes for another users job', function () {
         ->and($execution->note_updated_at?->toIso8601String())->toBe('2026-07-01T12:30:00+00:00');
 });
 
+test('notes preserve code blocks', function () {
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create();
+    $note = [
+        'type' => 'doc',
+        'content' => [
+            [
+                'type' => 'paragraph',
+                'content' => [
+                    ['type' => 'text', 'text' => 'Check this payload:'],
+                ],
+            ],
+            [
+                'type' => 'codeBlock',
+                'content' => [
+                    ['type' => 'text', 'text' => '<example>value</example>'],
+                ],
+            ],
+        ],
+    ];
+
+    $this->actingAs($user)
+        ->patch(route('jobs.note.update', $execution), ['note' => $note])
+        ->assertRedirect();
+
+    expect($execution->refresh()->note)->toBe($note);
+});
+
 test('users cannot update another users note', function () {
     $owner = User::factory()->create();
     $otherUser = User::factory()->create();

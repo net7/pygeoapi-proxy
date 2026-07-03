@@ -5,13 +5,7 @@ import type { FormEvent } from 'react';
 
 import { JobNoteEditor } from '@/components/ogc/job-note-editor';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -57,31 +51,21 @@ export function JobNoteCard({
     }
 
     return (
-        <Card className="min-w-0 shadow-sm dark:border-border/70 dark:bg-card/95">
-            <CardHeader>
-                <CardTitle>{t('jobs.note')}</CardTitle>
-                <CardDescription>{t('jobs.noteDescription')}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex min-w-0 flex-col gap-3">
-                <div className="min-h-16 rounded-md border bg-background px-3 py-2 dark:bg-muted/30">
-                    {execution.note ? (
-                        <JobNoteEditor value={execution.note} readOnly />
-                    ) : (
-                        <p className="text-sm text-muted-foreground">
-                            {t('jobs.noNote')}
-                        </p>
-                    )}
-                </div>
-                <Dialog
-                    open={open}
-                    onOpenChange={(nextOpen) => {
-                        setOpen(nextOpen);
+        <Dialog
+            open={open}
+            onOpenChange={(nextOpen) => {
+                setOpen(nextOpen);
 
-                        if (!nextOpen) {
-                            reset();
-                        }
-                    }}
-                >
+                if (!nextOpen) {
+                    reset();
+                }
+            }}
+        >
+            <Card className="min-w-0 shadow-sm dark:border-border/70 dark:bg-card/95">
+                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                        <CardTitle>{t('jobs.note')}</CardTitle>
+                    </div>
                     <DialogTrigger asChild>
                         <Button
                             type="button"
@@ -93,43 +77,53 @@ export function JobNoteCard({
                             {t('jobs.editNote')}
                         </Button>
                     </DialogTrigger>
-                    <DialogContent
-                        className="sm:max-w-2xl"
-                        onOpenAutoFocus={(event) => event.preventDefault()}
-                    >
-                        <form className="flex flex-col gap-4" onSubmit={submit}>
-                            <DialogHeader>
-                                <DialogTitle>{t('jobs.editNote')}</DialogTitle>
-                                <DialogDescription>
-                                    {t('jobs.editNoteDescription')}
-                                </DialogDescription>
-                            </DialogHeader>
+                </CardHeader>
+                <CardContent className="min-w-0">
+                    {execution.note ? (
+                        <JobNoteEditor value={execution.note} readOnly />
+                    ) : (
+                        <p className="text-sm text-muted-foreground">
+                            {t('jobs.noNote')}
+                        </p>
+                    )}
+                </CardContent>
+            </Card>
 
-                            <JobNoteEditor
-                                autoFocus
-                                value={data.note}
-                                onChange={(note) => setData('note', note)}
-                            />
+            <DialogContent
+                className="sm:max-w-2xl"
+                onOpenAutoFocus={(event) => event.preventDefault()}
+            >
+                <form className="flex flex-col gap-4" onSubmit={submit}>
+                    <DialogHeader>
+                        <DialogTitle>{t('jobs.editNote')}</DialogTitle>
+                        <DialogDescription>
+                            {t('jobs.editNoteDescription')}
+                        </DialogDescription>
+                    </DialogHeader>
 
-                            <DialogFooter>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setOpen(false)}
-                                >
-                                    {t('common.cancel')}
-                                </Button>
-                                <Button type="submit" disabled={processing}>
-                                    {processing ? (
-                                        <Spinner data-icon="inline-start" />
-                                    ) : null}
-                                    {t('jobs.saveNote')}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
-            </CardContent>
-        </Card>
+                    <JobNoteEditor
+                        autoFocus
+                        value={data.note}
+                        onChange={(note) => setData('note', note)}
+                    />
+
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setOpen(false)}
+                        >
+                            {t('common.cancel')}
+                        </Button>
+                        <Button type="submit" disabled={processing}>
+                            {processing ? (
+                                <Spinner data-icon="inline-start" />
+                            ) : null}
+                            {t('jobs.saveNote')}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     );
 }

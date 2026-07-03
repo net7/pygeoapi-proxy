@@ -4,6 +4,7 @@ import type { JSONContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import {
     BoldIcon,
+    Code2Icon,
     ItalicIcon,
     LinkIcon,
     ListIcon,
@@ -39,7 +40,6 @@ const emptyDocument: TiptapDocument = {
 const noteExtensions = [
     StarterKit.configure({
         heading: false,
-        codeBlock: false,
         horizontalRule: false,
         link: false,
     }),
@@ -192,6 +192,15 @@ export function JobNoteEditor({
                             }
                         >
                             <QuoteIcon />
+                        </ToolbarToggle>
+                        <ToolbarToggle
+                            label={t('jobs.noteToolbar.codeBlock')}
+                            pressed={editor.isActive('codeBlock')}
+                            onPressedChange={() =>
+                                editor.chain().focus().toggleCodeBlock().run()
+                            }
+                        >
+                            <Code2Icon />
                         </ToolbarToggle>
                         <ToolbarButton
                             label={t('jobs.noteToolbar.link')}
