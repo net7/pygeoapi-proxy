@@ -445,17 +445,19 @@ test('remove and delete buttons use destructive styling', function () {
         ->not->toContain('<Trash2 className=');
 });
 
-test('job detail uses full width input output and note sections in order', function () {
+test('job detail places notes near the title and keeps input output sections in order', function () {
     $source = file_get_contents(getcwd().'/resources/js/pages/process-executions/show.tsx');
+    $summaryPosition = strpos($source, "t('jobs.jobSummary')");
     $inputPosition = strpos($source, "title={t('jobs.inputs')}");
     $outputPosition = strpos($source, "title={t('ogc.outputs')}");
     $notePosition = strpos($source, '<JobNoteCard execution={execution} />');
 
     expect($source)
         ->toContain('@/components/ogc/job-identifiers')
-        ->toContain('@/components/ogc/job-name-card')
+        ->toContain('@/components/ogc/job-name-edit-dialog')
         ->toContain('@/routes/jobs')
         ->toContain('jobStatusStyles')
+        ->toContain('JobNameEditDialog')
         ->toContain('JobIdentifiers')
         ->toContain('remoteJobId')
         ->toContain('remoteJobId={execution.remoteJobId}')
@@ -471,15 +473,20 @@ test('job detail uses full width input output and note sections in order', funct
         ->toContain('className="flex justify-end"')
         ->toContain('DeleteJobButton')
         ->toContain('className="w-full sm:w-auto"')
+        ->toContain('<JobNameEditDialog execution={execution} />')
+        ->toContain('<JobNoteCard execution={execution} />')
+        ->not->toContain('<JobNameCard execution={execution} />')
         ->not->toContain('xl:grid-cols-[minmax(0,1fr)_24rem]')
         ->not->toContain('xl:sticky')
         ->not->toContain('<code className="min-w-0 truncate');
 
-    expect($inputPosition)->not->toBeFalse()
+    expect($summaryPosition)->not->toBeFalse()
+        ->and($inputPosition)->not->toBeFalse()
         ->and($outputPosition)->not->toBeFalse()
         ->and($notePosition)->not->toBeFalse()
+        ->and($notePosition)->toBeLessThan($summaryPosition)
         ->and($inputPosition)->toBeLessThan($outputPosition)
-        ->and($outputPosition)->toBeLessThan($notePosition);
+        ->and($summaryPosition)->toBeLessThan($inputPosition);
 });
 
 test('job editable metadata appears on create and detail screens', function () {
@@ -487,6 +494,7 @@ test('job editable metadata appears on create and detail screens', function () {
     $showSource = file_get_contents(getcwd().'/resources/js/pages/process-executions/show.tsx');
     $editorPath = getcwd().'/resources/js/components/ogc/job-note-editor.tsx';
     $cardPath = getcwd().'/resources/js/components/ogc/job-note-card.tsx';
+    $nameDialogPath = getcwd().'/resources/js/components/ogc/job-name-edit-dialog.tsx';
     $nameCardPath = getcwd().'/resources/js/components/ogc/job-name-card.tsx';
 
     expect($formSource)
@@ -498,17 +506,19 @@ test('job editable metadata appears on create and detail screens', function () {
 
     expect($showSource)
         ->toContain('@/components/ogc/job-note-card')
-        ->toContain('@/components/ogc/job-name-card')
-        ->toContain('<JobNameCard execution={execution} />')
-        ->toContain('<JobNoteCard execution={execution} />');
+        ->toContain('@/components/ogc/job-name-edit-dialog')
+        ->toContain('<JobNameEditDialog execution={execution} />')
+        ->toContain('<JobNoteCard execution={execution} />')
+        ->not->toContain('<JobNameCard execution={execution} />');
 
     expect($editorPath)->toBeFile()
         ->and($cardPath)->toBeFile()
-        ->and($nameCardPath)->toBeFile();
+        ->and($nameDialogPath)->toBeFile()
+        ->and($nameCardPath)->not->toBeFile();
 
     $editorSource = file_get_contents($editorPath);
     $cardSource = file_get_contents($cardPath);
-    $nameCardSource = file_get_contents($nameCardPath);
+    $nameDialogSource = file_get_contents($nameDialogPath);
 
     expect($editorSource)
         ->toContain('@tiptap/react')
@@ -539,11 +549,14 @@ test('job editable metadata appears on create and detail screens', function () {
         ->toContain('requestAnimationFrame')
         ->toContain('cancelAnimationFrame');
 
-    expect($nameCardSource)
+    expect($nameDialogSource)
         ->toContain('@/routes/jobs/name')
         ->toContain("t('jobs.editProcessName')")
         ->toContain("t('jobs.saveProcessName')")
-        ->toContain('PencilIcon');
+        ->toContain('PencilIcon')
+        ->toContain('aria-label={t(\'jobs.editProcessName\')}')
+        ->toContain('title={t(\'jobs.editProcessName\')}')
+        ->toContain('<span className="sr-only">{t(\'jobs.editProcessName\')}</span>');
 });
 
 test('delete job dialog supports compact actions and optional owner context', function () {

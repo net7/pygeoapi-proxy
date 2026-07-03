@@ -15,7 +15,7 @@ import type { ReactNode } from 'react';
 
 import { DeleteJobButton } from '@/components/ogc/delete-job-dialog';
 import JobIdentifiers from '@/components/ogc/job-identifiers';
-import { JobNameCard } from '@/components/ogc/job-name-card';
+import { JobNameEditDialog } from '@/components/ogc/job-name-edit-dialog';
 import { JobNoteCard } from '@/components/ogc/job-note-card';
 import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
 import ResultPreview from '@/components/ogc/result-preview';
@@ -88,6 +88,7 @@ export default function ProcessExecutionShow({
                                 <h1 className="min-w-0 text-2xl font-semibold">
                                     {execution.displayName}
                                 </h1>
+                                <JobNameEditDialog execution={execution} />
                                 <Badge
                                     variant="outline"
                                     className={cn(
@@ -152,7 +153,7 @@ export default function ProcessExecutionShow({
                     </div>
                 </div>
 
-                <JobNameCard execution={execution} />
+                <JobNoteCard execution={execution} />
 
                 <Card
                     className={cn(
@@ -314,8 +315,6 @@ export default function ProcessExecutionShow({
                         />
                     )}
                 </DetailSection>
-
-                <JobNoteCard execution={execution} />
             </div>
         </>
     );
