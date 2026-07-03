@@ -207,6 +207,7 @@ test('jobs index exposes a filterable status table', function () {
     $normalizedSource = preg_replace('/\s+/', '', $source) ?? '';
     $helperSource = file_get_contents(getcwd().'/resources/js/lib/jobs.ts');
     $copyableJobIdSource = file_get_contents(getcwd().'/resources/js/components/ogc/copyable-job-id.tsx');
+    $jobIdentifiersSource = file_get_contents(getcwd().'/resources/js/components/ogc/job-identifiers.tsx');
 
     expect($source)
         ->toContain('jobs.title')
@@ -259,10 +260,10 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('formatJobDate')
         ->toContain('createdAt')
         ->toContain('remoteJobId')
-        ->toContain("remoteJobId: 'whitespace-nowrap'")
-        ->toContain('@/components/ogc/copyable-job-id')
-        ->toContain('CopyableJobId')
-        ->toContain('<CopyableJobId displayJobId={displayJobId} />')
+        ->toContain("jobId: 'whitespace-nowrap'")
+        ->toContain('@/components/ogc/job-identifiers')
+        ->toContain('JobIdentifiers')
+        ->toContain('remoteJobId={execution.remoteJobId}')
         ->toContain('whitespace-nowrap')
         ->toContain('styles.rowClassName')
         ->toContain('@/components/ogc/delete-job-dialog')
@@ -291,6 +292,7 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('showLabel={false}')
         ->not->toContain('max-w-52 truncate')
         ->not->toContain("remoteJobId: 'w-[300px] max-w-[300px]'")
+        ->not->toContain("remoteJobId: 'whitespace-nowrap'")
         ->not->toContain('max-w-[300px]')
         ->not->toContain('border-l-4 align-top')
         ->not->toContain('sticky right-0')
@@ -315,6 +317,14 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('font-mono')
         ->toContain('event.stopPropagation()')
         ->not->toContain('side="top" align="start"');
+
+    expect($jobIdentifiersSource)
+        ->toContain('@/components/ogc/copyable-job-id')
+        ->toContain('CopyableJobId')
+        ->toContain("t('jobs.localJobId')")
+        ->toContain("t('jobs.remoteJobId')")
+        ->toContain('remoteJobId ?')
+        ->toContain('<CopyableJobId displayJobId={value} />');
 
     expect($normalizedSource)
         ->toContain('router.visit(show(row.original.id),)');
@@ -442,13 +452,14 @@ test('job detail uses full width input output and note sections in order', funct
     $notePosition = strpos($source, '<JobNoteCard execution={execution} />');
 
     expect($source)
-        ->toContain('@/components/ogc/copyable-job-id')
+        ->toContain('@/components/ogc/job-identifiers')
         ->toContain('@/components/ogc/job-name-card')
         ->toContain('@/routes/jobs')
         ->toContain('jobStatusStyles')
-        ->toContain('jobs.jobId')
+        ->toContain('JobIdentifiers')
         ->toContain('remoteJobId')
-        ->toContain('<CopyableJobId displayJobId={displayJobId} />')
+        ->toContain('remoteJobId={execution.remoteJobId}')
+        ->toContain('inline')
         ->toContain('common.status')
         ->toContain('jobs.requestedOutputs')
         ->toContain('jobs.results')
@@ -549,7 +560,12 @@ test('delete job dialog supports compact actions and optional owner context', fu
         ->toContain('sm:max-w-xl')
         ->toContain('DeleteJobSummary')
         ->toContain('className="table w-full table-fixed')
-        ->toContain('className="table-row border-b')
+        ->toContain('showRemoteJobId')
+        ->toContain('Boolean(execution.remoteJobId)')
+        ->toContain('showRemoteJobId || owner')
+        ->toContain("{t('jobs.localJobId')}")
+        ->toContain('showRemoteJobId ? (')
+        ->toContain("{t('jobs.remoteJobId')}")
         ->toContain('className="table-cell w-32')
         ->toContain('DeleteJobOwnerIdentity')
         ->toContain('AvatarImage')

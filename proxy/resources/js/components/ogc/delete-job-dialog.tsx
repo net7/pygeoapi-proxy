@@ -88,7 +88,7 @@ export function DeleteJobButton({
                 >
                     <DialogHeader className="px-6 pt-6 pr-12 text-left">
                         <DialogTitle>{t('jobs.deleteTitle')}</DialogTitle>
-                        <DialogDescription className="break-words text-sm">
+                        <DialogDescription className="text-sm break-words">
                             {t('jobs.deleteDescription')}
                         </DialogDescription>
                     </DialogHeader>
@@ -148,11 +148,18 @@ function DeleteJobSummary({
     owner?: DeleteJobOwner;
 }) {
     const { t } = useTranslation();
+    const showRemoteJobId = Boolean(execution.remoteJobId);
 
     return (
         <table className="table w-full table-fixed overflow-hidden rounded-md border border-current/15 bg-white/65 text-sm dark:bg-black/10">
             <tbody>
-                <tr className="table-row border-b border-current/10">
+                <tr
+                    className={cn(
+                        'table-row',
+                        (showRemoteJobId || owner) &&
+                            'border-b border-current/10',
+                    )}
+                >
                     <th
                         scope="row"
                         className="table-cell w-32 px-3 py-2 text-left align-middle text-xs font-medium tracking-wide text-muted-foreground uppercase"
@@ -163,28 +170,24 @@ function DeleteJobSummary({
                         #{execution.id}
                     </td>
                 </tr>
-                <tr
-                    className={cn(
-                        'table-row',
-                        owner && 'border-b border-current/10',
-                    )}
-                >
-                    <th
-                        scope="row"
-                        className="table-cell w-32 px-3 py-2 text-left align-middle text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                    >
-                        {t('jobs.remoteJobId')}
-                    </th>
-                    <td
+                {showRemoteJobId ? (
+                    <tr
                         className={cn(
-                            'table-cell px-3 py-2 align-middle font-mono font-semibold break-all',
-                            !execution.remoteJobId &&
-                                'font-sans text-muted-foreground',
+                            'table-row',
+                            owner && 'border-b border-current/10',
                         )}
                     >
-                        {execution.remoteJobId ?? t('common.notAvailable')}
-                    </td>
-                </tr>
+                        <th
+                            scope="row"
+                            className="table-cell w-32 px-3 py-2 text-left align-middle text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        >
+                            {t('jobs.remoteJobId')}
+                        </th>
+                        <td className="table-cell px-3 py-2 align-middle font-mono font-semibold break-all">
+                            {execution.remoteJobId}
+                        </td>
+                    </tr>
+                ) : null}
                 {owner ? (
                     <tr className="table-row">
                         <th

@@ -1,8 +1,8 @@
 import { useForm } from '@inertiajs/react';
 import { AlertCircleIcon, PlayIcon, WandSparklesIcon } from 'lucide-react';
 
-import { JobNoteEditor } from '@/components/ogc/job-note-editor';
 import InputError from '@/components/input-error';
+import { JobNoteEditor } from '@/components/ogc/job-note-editor';
 import OutputSelector from '@/components/ogc/output-selector';
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';

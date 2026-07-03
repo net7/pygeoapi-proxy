@@ -47,10 +47,8 @@ import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 
-import {
-    DataTableBulkActions,
-    type BulkActionPayload,
-} from '@/components/data-table-bulk-actions';
+import { DataTableBulkActions } from '@/components/data-table-bulk-actions';
+import type { BulkActionPayload } from '@/components/data-table-bulk-actions';
 import { createSelectColumn } from '@/components/data-table-select-column';
 import InputError from '@/components/input-error';
 import {

@@ -32,13 +32,11 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
-import {
-    DataTableBulkActions,
-    type BulkActionPayload,
-} from '@/components/data-table-bulk-actions';
+import { DataTableBulkActions } from '@/components/data-table-bulk-actions';
+import type { BulkActionPayload } from '@/components/data-table-bulk-actions';
 import { createSelectColumn } from '@/components/data-table-select-column';
-import CopyableJobId from '@/components/ogc/copyable-job-id';
 import { DeleteJobButton } from '@/components/ogc/delete-job-dialog';
+import JobIdentifiers from '@/components/ogc/job-identifiers';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -116,7 +114,7 @@ const columnLabelKeys: Record<string, TranslationKey> = {
     user: 'common.user',
     process: 'jobs.process',
     status: 'common.status',
-    remoteJobId: 'jobs.jobId',
+    jobId: 'jobs.jobId',
     message: 'jobs.message',
     submittedAt: 'jobs.submitted',
     finishedAt: 'jobs.finished',
@@ -128,7 +126,7 @@ const columnClassNames: Record<string, string> = {
     user: 'min-w-56 whitespace-normal',
     process: 'min-w-56 whitespace-normal',
     status: 'min-w-32',
-    remoteJobId: 'whitespace-nowrap',
+    jobId: 'min-w-44 whitespace-nowrap',
     message: 'min-w-64 whitespace-normal',
     submittedAt: 'min-w-36',
     finishedAt: 'min-w-40',
@@ -147,6 +145,7 @@ const columns: ColumnDef<AdminJob>[] = [
                 execution.displayName,
                 execution.processTitle,
                 execution.processId,
+                execution.id,
                 execution.remoteJobId,
                 execution.message,
                 execution.status,
@@ -215,7 +214,8 @@ const columns: ColumnDef<AdminJob>[] = [
             jobStatusSortIndex(second.getValue<string>(columnId)),
     },
     {
-        accessorKey: 'remoteJobId',
+        id: 'jobId',
+        accessorFn: (execution) => execution.id,
         header: ({ column }) => (
             <SortableHeader column={column} titleKey="jobs.jobId" />
         ),
@@ -860,14 +860,9 @@ function JobMessage({ message }: { message?: string | null }) {
 }
 
 function JobIdentifier({ execution }: { execution: AdminJob }) {
-    const { t } = useTranslation();
-    const displayJobId =
-        execution.remoteJobId ??
-        t('jobs.localIdentifier', {
-            id: execution.id,
-        });
-
-    return <CopyableJobId displayJobId={displayJobId} />;
+    return (
+        <JobIdentifiers id={execution.id} remoteJobId={execution.remoteJobId} />
+    );
 }
 
 function JobDate({ value }: { value?: string | null }) {

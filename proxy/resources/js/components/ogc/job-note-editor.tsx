@@ -1,5 +1,6 @@
 import Link from '@tiptap/extension-link';
-import { EditorContent, useEditor, type JSONContent } from '@tiptap/react';
+import { EditorContent, useEditor } from '@tiptap/react';
+import type { JSONContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import {
     BoldIcon,
@@ -11,7 +12,8 @@ import {
     Redo2Icon,
     Undo2Icon,
 } from 'lucide-react';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect } from 'react';
+import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
@@ -207,6 +209,7 @@ export function JobNoteEditor({
 
                                 if (href.trim() === '') {
                                     editor.chain().focus().unsetLink().run();
+
                                     return;
                                 }
 

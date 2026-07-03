@@ -27,6 +27,7 @@ class ProcessExecutionController extends Controller
     {
         $user = $request->user();
         assert($user instanceof User);
+        $includeRemoteJobId = $user->isAdmin();
 
         return Inertia::render('process-executions/index', [
             'pollingInterval' => $this->pollingInterval(),
@@ -34,21 +35,7 @@ class ProcessExecutionController extends Controller
                 ->processExecutions()
                 ->latest()
                 ->paginate(15)
-                ->through(fn (ProcessExecution $execution): array => [
-                    'id' => $execution->id,
-                    'name' => $execution->name,
-                    'displayName' => $execution->displayName(),
-                    'remoteJobId' => $execution->remote_job_id,
-                    'processId' => $execution->process_id,
-                    'processTitle' => $execution->process_title,
-                    'status' => $execution->status->value,
-                    'progress' => $execution->progress,
-                    'message' => $execution->message,
-                    'createdAt' => $execution->created_at?->toIso8601String(),
-                    'submittedAt' => $execution->submitted_at?->toIso8601String(),
-                    'completedAt' => $execution->completed_at?->toIso8601String(),
-                    'failedAt' => $execution->failed_at?->toIso8601String(),
-                ]),
+                ->through(fn (ProcessExecution $execution): array => $this->executionListItem($execution, $includeRemoteJobId)),
         ]);
     }
 
@@ -118,24 +105,13 @@ class ProcessExecutionController extends Controller
 
         $processExecution->load('results');
 
+        $includeAdminData = $user->isAdmin();
         $execution = [
-            'id' => $processExecution->id,
-            'name' => $processExecution->name,
-            'displayName' => $processExecution->displayName(),
-            'remoteJobId' => $processExecution->remote_job_id,
-            'processId' => $processExecution->process_id,
-            'processTitle' => $processExecution->process_title,
+            ...$this->executionListItem($processExecution, $includeAdminData),
             'processVersion' => $processExecution->process_version,
-            'status' => $processExecution->status->value,
-            'progress' => $processExecution->progress,
-            'message' => $processExecution->message,
             'note' => $processExecution->note,
             'noteUpdatedAt' => $processExecution->note_updated_at?->toIso8601String(),
             'requestedOutputs' => $processExecution->requested_outputs,
-            'createdAt' => $processExecution->created_at?->toIso8601String(),
-            'submittedAt' => $processExecution->submitted_at?->toIso8601String(),
-            'completedAt' => $processExecution->completed_at?->toIso8601String(),
-            'failedAt' => $processExecution->failed_at?->toIso8601String(),
             'results' => $processExecution->results->map(fn ($result): array => [
                 'id' => $result->id,
                 'outputId' => $result->output_id,
@@ -147,7 +123,7 @@ class ProcessExecutionController extends Controller
             ])->all(),
         ];
 
-        if ($user->isAdmin()) {
+        if ($includeAdminData) {
             $execution['requestPayload'] = $processExecution->request_payload;
         }
 
@@ -301,5 +277,32 @@ class ProcessExecutionController extends Controller
     private function pollingInterval(): int
     {
         return max(1000, (int) config('services.ogc_processes.polling_interval', 5000));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function executionListItem(ProcessExecution $execution, bool $includeRemoteJobId): array
+    {
+        $payload = [
+            'id' => $execution->id,
+            'name' => $execution->name,
+            'displayName' => $execution->displayName(),
+            'processId' => $execution->process_id,
+            'processTitle' => $execution->process_title,
+            'status' => $execution->status->value,
+            'progress' => $execution->progress,
+            'message' => $execution->message,
+            'createdAt' => $execution->created_at?->toIso8601String(),
+            'submittedAt' => $execution->submitted_at?->toIso8601String(),
+            'completedAt' => $execution->completed_at?->toIso8601String(),
+            'failedAt' => $execution->failed_at?->toIso8601String(),
+        ];
+
+        if ($includeRemoteJobId) {
+            $payload['remoteJobId'] = $execution->remote_job_id;
+        }
+
+        return $payload;
     }
 }

@@ -30,7 +30,7 @@ test('users can view their execution detail', function () {
         ->assertInertia(fn ($page) => $page
             ->component('process-executions/show')
             ->where('execution.id', $execution->id)
-            ->where('execution.remoteJobId', '550e8400-e29b-41d4-a716-446655440000')
+            ->missing('execution.remoteJobId')
             ->where('pollingInterval', 2500)
             ->has('execution.results', 1));
 });
@@ -56,9 +56,10 @@ test('non admin users cannot see execution input data', function () {
             ->missing('execution.requestPayload'));
 });
 
-test('admin users can see execution input data', function () {
+test('admin users can see execution input data and remote job id', function () {
     $admin = User::factory()->admin()->create();
     $execution = ProcessExecution::factory()->create([
+        'remote_job_id' => '550e8400-e29b-41d4-a716-446655440000',
         'request_payload' => [
             'inputs' => [
                 'melt_composition' => [
@@ -74,6 +75,7 @@ test('admin users can see execution input data', function () {
         ->assertInertia(fn ($page) => $page
             ->component('process-executions/show')
             ->where('execution.id', $execution->id)
+            ->where('execution.remoteJobId', '550e8400-e29b-41d4-a716-446655440000')
             ->where('execution.requestPayload.inputs.melt_composition.value.sio2', 0.7));
 });
 
@@ -95,11 +97,26 @@ test('users can view their job list with timeline timestamps', function () {
         ->assertInertia(fn ($page) => $page
             ->component('process-executions/index')
             ->where('executions.data.0.id', $execution->id)
-            ->where('executions.data.0.remoteJobId', '550e8400-e29b-41d4-a716-446655440000')
+            ->missing('executions.data.0.remoteJobId')
             ->where('executions.data.0.submittedAt', now()->subMinutes(8)->toIso8601String())
             ->where('executions.data.0.completedAt', now()->subMinute()->toIso8601String())
             ->where('executions.data.0.failedAt', null)
             ->where('pollingInterval', 2500));
+});
+
+test('admin users can view their job list with remote job ids', function () {
+    $admin = User::factory()->admin()->create();
+    $execution = ProcessExecution::factory()->for($admin)->create([
+        'remote_job_id' => '550e8400-e29b-41d4-a716-446655440000',
+    ]);
+
+    $this->actingAs($admin)
+        ->get('/jobs')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('process-executions/index')
+            ->where('executions.data.0.id', $execution->id)
+            ->where('executions.data.0.remoteJobId', '550e8400-e29b-41d4-a716-446655440000'));
 });
 
 test('users cannot view another users execution detail', function () {

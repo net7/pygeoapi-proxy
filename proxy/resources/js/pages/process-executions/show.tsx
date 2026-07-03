@@ -13,8 +13,8 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-import CopyableJobId from '@/components/ogc/copyable-job-id';
 import { DeleteJobButton } from '@/components/ogc/delete-job-dialog';
+import JobIdentifiers from '@/components/ogc/job-identifiers';
 import { JobNameCard } from '@/components/ogc/job-name-card';
 import { JobNoteCard } from '@/components/ogc/job-note-card';
 import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
@@ -52,11 +52,6 @@ export default function ProcessExecutionShow({
     const { locale, t } = useTranslation();
     const styles = jobStatusStyles(execution.status);
     const StatusIcon = styles.icon;
-    const displayJobId =
-        execution.remoteJobId ??
-        t('jobs.localIdentifier', {
-            id: execution.id,
-        });
     const terminalTimestamp = execution.completedAt ?? execution.failedAt;
     const terminalLabel = execution.completedAt
         ? t('jobs.completed')
@@ -121,12 +116,11 @@ export default function ProcessExecutionShow({
                                 interval={pollingInterval}
                                 only={['execution', 'pollingInterval']}
                             />
-                            <div className="flex min-w-0 flex-col gap-1 text-sm sm:flex-row sm:items-center sm:gap-3">
-                                <span className="font-medium text-muted-foreground">
-                                    {t('jobs.jobId')}
-                                </span>
-                                <CopyableJobId displayJobId={displayJobId} />
-                            </div>
+                            <JobIdentifiers
+                                id={execution.id}
+                                remoteJobId={execution.remoteJobId}
+                                inline
+                            />
                         </div>
                     </div>
 

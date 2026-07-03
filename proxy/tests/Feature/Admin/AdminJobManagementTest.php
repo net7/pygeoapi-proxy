@@ -30,6 +30,7 @@ test('admins can see all jobs with owners', function () {
     $execution = ProcessExecution::factory()->for($owner)->create([
         'process_id' => 'conduit',
         'process_title' => 'CONDUIT',
+        'remote_job_id' => '550e8400-e29b-41d4-a716-446655440000',
     ]);
 
     $this->actingAs($admin)
@@ -39,6 +40,7 @@ test('admins can see all jobs with owners', function () {
             ->component('admin/jobs/index')
             ->has('executions.data', 1)
             ->where('executions.data.0.id', $execution->id)
+            ->where('executions.data.0.remoteJobId', '550e8400-e29b-41d4-a716-446655440000')
             ->where('executions.data.0.processId', 'conduit')
             ->where('executions.data.0.owner.name', 'Process Owner')
             ->where('executions.data.0.owner.email', 'owner@example.com')
