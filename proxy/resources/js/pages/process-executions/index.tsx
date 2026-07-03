@@ -251,6 +251,8 @@ export default function ProcessExecutionIndex({
     executions: PaginatedExecutions;
     pollingInterval: number;
 }) {
+    'use no memo';
+
     const { t } = useTranslation();
     const [sorting, setSorting] = useState<SortingState>([
         { id: 'createdAt', desc: true },
@@ -469,26 +471,6 @@ export default function ProcessExecutionIndex({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                        <DataTableBulkActions
-                            selectedCount={selectedExecutions.length}
-                            processing={bulkProcessing}
-                            onClearSelection={() => table.resetRowSelection()}
-                            actions={[
-                                {
-                                    id: 'delete',
-                                    label: t('jobs.bulkDelete'),
-                                    title: t('jobs.bulkDeleteTitle'),
-                                    description: t(
-                                        'jobs.bulkDeleteDescription',
-                                    ),
-                                    confirmLabel: t('jobs.bulkDeleteConfirm'),
-                                    icon: Trash2Icon,
-                                    variant: 'destructive',
-                                    onConfirm: bulkDeleteSelectedJobs,
-                                },
-                            ]}
-                        />
-
                         <Select
                             value={`${table.getState().pagination.pageSize}`}
                             onValueChange={(value) => {
@@ -554,6 +536,27 @@ export default function ProcessExecutionIndex({
                     </div>
                 </div>
 
+                <DataTableBulkActions
+                    selectedCount={selectedExecutions.length}
+                    selectionLabel={t('jobs.selectedJobs', {
+                        count: selectedExecutions.length,
+                    })}
+                    processing={bulkProcessing}
+                    onClearSelection={() => table.resetRowSelection()}
+                    actions={[
+                        {
+                            id: 'delete',
+                            label: t('jobs.bulkDelete'),
+                            title: t('jobs.bulkDeleteTitle'),
+                            description: t('jobs.bulkDeleteDescription'),
+                            confirmLabel: t('jobs.bulkDeleteConfirm'),
+                            icon: Trash2Icon,
+                            variant: 'destructive',
+                            onConfirm: bulkDeleteSelectedJobs,
+                        },
+                    ]}
+                />
+
                 <div className="overflow-hidden rounded-md border bg-card shadow-sm dark:border-border/70 dark:bg-card/95">
                     <Table>
                         <TableHeader>
@@ -591,6 +594,11 @@ export default function ProcessExecutionIndex({
                                     return (
                                         <TableRow
                                             key={row.id}
+                                            data-state={
+                                                row.getIsSelected()
+                                                    ? 'selected'
+                                                    : undefined
+                                            }
                                             onClick={() =>
                                                 router.visit(
                                                     show(row.original.id),

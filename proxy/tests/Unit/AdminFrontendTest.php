@@ -140,18 +140,25 @@ test('admin tables expose bulk actions for jobs and users', function () {
     $users = file_get_contents(dirname(__DIR__, 2).'/resources/js/pages/admin/users/index.tsx');
     $jobs = file_get_contents(dirname(__DIR__, 2).'/resources/js/pages/admin/jobs/index.tsx');
     $messages = file_get_contents(dirname(__DIR__, 2).'/resources/js/lib/i18n/messages.ts');
+    $normalizedUsers = preg_replace('/\s+/', '', $users) ?? '';
+    $normalizedJobs = preg_replace('/\s+/', '', $jobs) ?? '';
 
     expect($jobs)
         ->toContain('RowSelectionState')
         ->toContain('createSelectColumn<AdminJob>()')
         ->toContain('DataTableBulkActions')
+        ->toContain("selectionLabel={t('jobs.selectedJobs'")
         ->toContain('bulkDestroy.url()')
         ->toContain("select: 'w-12'");
+
+    expect($normalizedJobs)
+        ->toContain("data-state={row.getIsSelected()?'selected':undefined}");
 
     expect($users)
         ->toContain('RowSelectionState')
         ->toContain('createSelectColumn<AdminUser>()')
         ->toContain('DataTableBulkActions')
+        ->toContain("selectionLabel={t('admin.selectedUsers'")
         ->toContain('bulkDestroy.url()')
         ->toContain('bulkRestore.url()')
         ->toContain('admin.bulkDeactivate')
@@ -159,9 +166,15 @@ test('admin tables expose bulk actions for jobs and users', function () {
         ->toContain("select: 'w-12'")
         ->not->toContain('forceDestroy.url(), { data: { ids');
 
+    expect($normalizedUsers)
+        ->toContain("data-state={row.getIsSelected()?'selected':undefined}");
+
     expect($messages)
         ->toContain("bulkDeactivate: 'Disattiva selezionati'")
         ->toContain("bulkRestore: 'Ripristina selezionati'")
+        ->toContain("selectedUsers: '{count} utenti selezionati'")
         ->toContain("bulkDeactivate: 'Deactivate selected'")
-        ->toContain("bulkRestore: 'Restore selected'");
+        ->toContain("bulkRestore: 'Restore selected'")
+        ->toContain("selectedUsers: '{count} users selected'")
+        ->not->toContain("bulkActions: 'Azioni bulk'");
 });

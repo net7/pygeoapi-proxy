@@ -190,6 +190,7 @@ test('interactive button and link surfaces use pointer cursors', function () {
 
 test('checkbox checked states render a visible indicator', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ui/checkbox.tsx');
+    $css = file_get_contents(getcwd().'/resources/css/app.css');
 
     expect($source)
         ->toContain('data-[state=checked]:border-primary')
@@ -199,7 +200,9 @@ test('checkbox checked states render a visible indicator', function () {
         ->toContain('data-[state=indeterminate]:bg-primary')
         ->toContain('data-[state=indeterminate]:text-primary-foreground')
         ->toContain('grid place-content-center text-current')
-        ->toContain('<CheckIcon className="size-3.5" />');
+        ->toContain('<CheckIcon className="size-3.5" />')
+        ->and($css)
+        ->toContain("@source '../js';");
 });
 
 test('jobs index exposes a filterable status table', function () {
@@ -348,6 +351,8 @@ test('job tables expose shadcn row selection and bulk delete actions', function 
     $messagesSource = file_get_contents(getcwd().'/resources/js/lib/i18n/messages.ts');
 
     foreach ([$jobsIndexSource, $adminJobsIndexSource] as $source) {
+        $normalizedSource = preg_replace('/\s+/', '', $source) ?? '';
+
         expect($source)
             ->toContain('RowSelectionState')
             ->toContain('rowSelection')
@@ -359,6 +364,14 @@ test('job tables expose shadcn row selection and bulk delete actions', function 
             ->toContain('router.delete<BulkActionPayload>')
             ->toContain('table.resetRowSelection()')
             ->toContain("select: 'w-12'");
+
+        expect($normalizedSource)
+            ->toContain("data-state={row.getIsSelected()?'selected':undefined}");
+    }
+
+    foreach ([$jobsIndexSource, $adminJobsIndexSource] as $source) {
+        expect(strpos($source, '<DataTableBulkActions'))
+            ->toBeLessThan(strpos($source, '<div className="overflow-hidden rounded-md border'));
     }
 
     expect($selectColumnSource)
@@ -368,24 +381,41 @@ test('job tables expose shadcn row selection and bulk delete actions', function 
         ->toContain('table.toggleAllPageRowsSelected(Boolean(value))')
         ->toContain('row.getIsSelected()')
         ->toContain('row.toggleSelected(Boolean(value))')
+        ->toContain("'use no memo';")
         ->toContain('event.stopPropagation()')
         ->toContain('enableSorting: false')
         ->toContain('enableHiding: false');
 
     expect($bulkActionsSource)
+        ->toContain('CheckSquareIcon')
         ->toContain('DropdownMenuGroup')
         ->toContain('DialogTitle')
         ->toContain('DialogDescription')
         ->toContain('Spinner data-icon="inline-start"')
-        ->toContain('common.bulkActions')
-        ->toContain('common.selectedRows')
-        ->toContain('common.clearSelection');
+        ->toContain('common.chooseAction')
+        ->toContain('selectionLabel')
+        ->toContain('common.clearSelection')
+        ->not->toContain('common.bulkActions');
 
     expect($messagesSource)
         ->toContain("bulkDelete: 'Elimina selezionati'")
         ->toContain("bulkDelete: 'Delete selected'")
-        ->toContain("selectedRows: '{count} selezionati'")
-        ->toContain("selectedRows: '{count} selected'");
+        ->toContain("selectedJobs: '{count} processi selezionati'")
+        ->toContain("selectedJobs: '{count} jobs selected'")
+        ->not->toContain("bulkActions: 'Azioni bulk'");
+});
+
+test('tanstack table pages opt out of react compiler memoization', function () {
+    foreach ([
+        'resources/js/pages/process-executions/index.tsx',
+        'resources/js/pages/admin/jobs/index.tsx',
+        'resources/js/pages/admin/users/index.tsx',
+    ] as $relativePath) {
+        $source = file_get_contents(getcwd().'/'.$relativePath);
+
+        expect($source)
+            ->toContain("'use no memo';");
+    }
 });
 
 test('job tables show contextual empty states', function () {

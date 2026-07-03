@@ -1,8 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
-import { ChevronDownIcon, XIcon } from 'lucide-react';
+import { CheckSquareIcon, ChevronDownIcon, XIcon } from 'lucide-react';
 import { useState } from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -43,11 +42,13 @@ export function DataTableBulkActions({
     onClearSelection,
     processing,
     selectedCount,
+    selectionLabel,
 }: {
     actions: DataTableBulkAction[];
     onClearSelection: () => void;
     processing: boolean;
     selectedCount: number;
+    selectionLabel: string;
 }) {
     const { t } = useTranslation();
     const [pendingAction, setPendingAction] =
@@ -63,59 +64,66 @@ export function DataTableBulkActions({
 
     return (
         <>
-            <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 px-2 py-1">
-                <Badge variant="secondary">
-                    {t('common.selectedRows', { count: selectedCount })}
-                </Badge>
+            <div className="flex flex-col gap-3 rounded-md border bg-card px-3 py-3 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                        <CheckSquareIcon className="size-4" aria-hidden />
+                    </span>
+                    <p className="min-w-0 truncate text-sm font-medium">
+                        {selectionLabel}
+                    </p>
+                </div>
 
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={processing}
-                        >
-                            {t('common.bulkActions')}
-                            <ChevronDownIcon data-icon="inline-end" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuGroup>
-                            {actions.map((action) => {
-                                const ActionIcon = action.icon;
+                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={processing}
+                            >
+                                {t('common.chooseAction')}
+                                <ChevronDownIcon data-icon="inline-end" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuGroup>
+                                {actions.map((action) => {
+                                    const ActionIcon = action.icon;
 
-                                return (
-                                    <DropdownMenuItem
-                                        key={action.id}
-                                        variant={
-                                            action.variant === 'destructive'
-                                                ? 'destructive'
-                                                : undefined
-                                        }
-                                        onSelect={() =>
-                                            setPendingAction(action)
-                                        }
-                                    >
-                                        <ActionIcon />
-                                        {action.label}
-                                    </DropdownMenuItem>
-                                );
-                            })}
-                        </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                                    return (
+                                        <DropdownMenuItem
+                                            key={action.id}
+                                            variant={
+                                                action.variant === 'destructive'
+                                                    ? 'destructive'
+                                                    : undefined
+                                            }
+                                            onSelect={() =>
+                                                setPendingAction(action)
+                                            }
+                                        >
+                                            <ActionIcon data-icon="inline-start" />
+                                            {action.label}
+                                        </DropdownMenuItem>
+                                    );
+                                })}
+                            </DropdownMenuGroup>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
 
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={onClearSelection}
-                    disabled={processing}
-                >
-                    <XIcon data-icon="inline-start" />
-                    {t('common.clearSelection')}
-                </Button>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={onClearSelection}
+                        disabled={processing}
+                    >
+                        <XIcon data-icon="inline-start" />
+                        {t('common.clearSelection')}
+                    </Button>
+                </div>
             </div>
 
             <Dialog

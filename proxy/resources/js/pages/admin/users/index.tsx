@@ -213,6 +213,8 @@ export default function AdminUsersIndex({
     roles: RoleOption[];
     filters: { search: string };
 }) {
+    'use no memo';
+
     const { auth } = usePage<PageProps>().props;
     const { locale, t } = useTranslation();
     const [createOpen, setCreateOpen] = useState(false);
@@ -737,39 +739,6 @@ export default function AdminUsersIndex({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                        <DataTableBulkActions
-                            selectedCount={selectedUsers.length}
-                            processing={bulkProcessing}
-                            onClearSelection={() => table.resetRowSelection()}
-                            actions={[
-                                {
-                                    id: 'deactivate',
-                                    label: t('admin.bulkDeactivate'),
-                                    title: t('admin.bulkDeactivateTitle'),
-                                    description: t(
-                                        'admin.bulkDeactivateDescription',
-                                    ),
-                                    confirmLabel: t(
-                                        'admin.bulkDeactivateConfirm',
-                                    ),
-                                    icon: UserXIcon,
-                                    variant: 'destructive',
-                                    onConfirm: bulkDeactivateSelectedUsers,
-                                },
-                                {
-                                    id: 'restore',
-                                    label: t('admin.bulkRestore'),
-                                    title: t('admin.bulkRestoreTitle'),
-                                    description: t(
-                                        'admin.bulkRestoreDescription',
-                                    ),
-                                    confirmLabel: t('admin.bulkRestoreConfirm'),
-                                    icon: UserCheckIcon,
-                                    onConfirm: bulkRestoreSelectedUsers,
-                                },
-                            ]}
-                        />
-
                         <Select
                             value={roleFilter}
                             onValueChange={(value) => {
@@ -870,6 +839,36 @@ export default function AdminUsersIndex({
                     </div>
                 </div>
 
+                <DataTableBulkActions
+                    selectedCount={selectedUsers.length}
+                    selectionLabel={t('admin.selectedUsers', {
+                        count: selectedUsers.length,
+                    })}
+                    processing={bulkProcessing}
+                    onClearSelection={() => table.resetRowSelection()}
+                    actions={[
+                        {
+                            id: 'deactivate',
+                            label: t('admin.bulkDeactivate'),
+                            title: t('admin.bulkDeactivateTitle'),
+                            description: t('admin.bulkDeactivateDescription'),
+                            confirmLabel: t('admin.bulkDeactivateConfirm'),
+                            icon: UserXIcon,
+                            variant: 'destructive',
+                            onConfirm: bulkDeactivateSelectedUsers,
+                        },
+                        {
+                            id: 'restore',
+                            label: t('admin.bulkRestore'),
+                            title: t('admin.bulkRestoreTitle'),
+                            description: t('admin.bulkRestoreDescription'),
+                            confirmLabel: t('admin.bulkRestoreConfirm'),
+                            icon: UserCheckIcon,
+                            onConfirm: bulkRestoreSelectedUsers,
+                        },
+                    ]}
+                />
+
                 <div className="overflow-hidden rounded-md border bg-card shadow-sm dark:border-border/70 dark:bg-card/95">
                     <Table>
                         <TableHeader>
@@ -902,6 +901,11 @@ export default function AdminUsersIndex({
                                 table.getRowModel().rows.map((row) => (
                                     <TableRow
                                         key={row.id}
+                                        data-state={
+                                            row.getIsSelected()
+                                                ? 'selected'
+                                                : undefined
+                                        }
                                         className="align-top"
                                     >
                                         {row.getVisibleCells().map((cell) => (

@@ -22,6 +22,8 @@ function SelectAllRowsCheckbox<TData>({
 }: {
     table: TanStackTable<TData>;
 }) {
+    'use no memo';
+
     const { t } = useTranslation();
 
     return (
@@ -39,6 +41,8 @@ function SelectAllRowsCheckbox<TData>({
 }
 
 function SelectRowCheckbox<TData>({ row }: { row: Row<TData> }) {
+    'use no memo';
+
     const { t } = useTranslation();
 
     return (

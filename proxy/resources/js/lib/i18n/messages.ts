@@ -16,8 +16,8 @@ const it = {
     common: {
         appName: 'INGV Pygeoapi Proxy',
         breadcrumb: 'Percorso di navigazione',
-        bulkActions: 'Azioni bulk',
         cancel: 'Annulla',
+        chooseAction: 'Scegli azione',
         close: 'Chiudi',
         confirm: 'Conferma',
         continue: 'Continua',
@@ -150,6 +150,7 @@ const it = {
         bulkRestoreDescription:
             'Gli utenti selezionati riacquisteranno accesso all’applicazione.',
         bulkRestoreTitle: 'Ripristinare gli utenti selezionati?',
+        selectedUsers: '{count} utenti selezionati',
         deactivate: 'Disattiva',
         deactivateTitle: 'Disattivare questo utente?',
         deactivateUser: 'Disattiva utente',
@@ -229,6 +230,7 @@ const it = {
         bulkDeleteDescription:
             'Questa azione rimuove i processi selezionati dalla piattaforma. L’operazione non può essere annullata.',
         bulkDeleteTitle: 'Eliminare i processi selezionati?',
+        selectedJobs: '{count} processi selezionati',
         completed: 'Completato',
         created: 'Creato',
         currentState: 'Stato attuale e timeline.',
@@ -456,8 +458,8 @@ const en = {
     common: {
         appName: 'INGV Pygeoapi Proxy',
         breadcrumb: 'Breadcrumb',
-        bulkActions: 'Bulk actions',
         cancel: 'Cancel',
+        chooseAction: 'Choose action',
         close: 'Close',
         confirm: 'Confirm',
         continue: 'Continue',
@@ -587,6 +589,7 @@ const en = {
         bulkRestoreDescription:
             'The selected users will regain access to the application.',
         bulkRestoreTitle: 'Restore selected users?',
+        selectedUsers: '{count} users selected',
         deactivate: 'Deactivate',
         deactivateTitle: 'Deactivate this user?',
         deactivateUser: 'Deactivate user',
@@ -664,6 +667,7 @@ const en = {
         bulkDeleteDescription:
             'This action removes the selected jobs from the platform. It cannot be undone.',
         bulkDeleteTitle: 'Delete selected jobs?',
+        selectedJobs: '{count} jobs selected',
         completed: 'Completed',
         created: 'Created',
         currentState: 'Current state and timeline.',
