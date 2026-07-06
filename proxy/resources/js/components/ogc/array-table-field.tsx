@@ -1,7 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react';
 
+import SectionFieldSet from '@/components/ogc/section-field-set';
 import { Button } from '@/components/ui/button';
-import { FieldDescription, FieldLegend, FieldSet } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
     Table,
@@ -49,14 +49,11 @@ export default function ArrayTableField({
     }
 
     return (
-        <FieldSet className="max-w-full min-w-0">
-            <FieldLegend>{fieldDisplayLabel(field)}</FieldLegend>
-            {field.description ? (
-                <FieldDescription className="break-words">
-                    {field.description}
-                </FieldDescription>
-            ) : null}
-            <div className="w-full max-w-full overflow-x-auto rounded-md border">
+        <SectionFieldSet
+            label={fieldDisplayLabel(field)}
+            description={field.description}
+        >
+            <div className="w-full max-w-full overflow-x-auto rounded-md border bg-background dark:bg-background/60">
                 <Table style={{ minWidth: tableMinWidth }}>
                     <TableHeader>
                         <TableRow>
@@ -162,6 +159,6 @@ export default function ArrayTableField({
                 <Plus data-icon="inline-start" />
                 {t('ogc.addRow')}
             </Button>
-        </FieldSet>
+        </SectionFieldSet>
     );
 }

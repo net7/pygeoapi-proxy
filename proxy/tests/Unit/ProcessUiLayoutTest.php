@@ -85,6 +85,29 @@ test('array table fields keep a practical responsive width', function () {
         ->not->toContain('min-w-[960px]');
 });
 
+test('process section fields are visually wrapped', function () {
+    $wrapperSource = file_get_contents(getcwd().'/resources/js/components/ogc/section-field-set.tsx');
+
+    expect($wrapperSource)
+        ->toContain('rounded-md border')
+        ->toContain('bg-muted/30')
+        ->toContain('p-4')
+        ->toContain('FieldLegend')
+        ->toContain('FieldDescription');
+
+    foreach ([
+        'resources/js/components/ogc/schema-field-renderer.tsx',
+        'resources/js/components/ogc/one-of-field.tsx',
+        'resources/js/components/ogc/array-object-field.tsx',
+        'resources/js/components/ogc/array-table-field.tsx',
+        'resources/js/components/ogc/data-input-field.tsx',
+    ] as $path) {
+        expect(file_get_contents(getcwd().'/'.$path))
+            ->toContain('SectionFieldSet')
+            ->not->toContain('<FieldSet className="max-w-full min-w-0"');
+    }
+});
+
 test('text buttons include representative icons', function () {
     $requirements = [
         'resources/js/pages/process-executions/index.tsx' => ['jobs.details' => 'ListChecksIcon'],
@@ -738,7 +761,7 @@ test('expected outputs renders a simple unordered list', function () {
 test('one of descriptions are shown before the selector', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/one-of-field.tsx');
 
-    $fieldDescriptionPosition = strpos($source, 'field.description ? (');
+    $fieldDescriptionPosition = strpos($source, 'description={field.description}');
     $selectedDescriptionPosition = strpos($source, 'selected.description ? (');
     $selectPosition = strpos($source, '<Select');
 

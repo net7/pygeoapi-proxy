@@ -1,13 +1,9 @@
 import { Plus, Trash2 } from 'lucide-react';
 
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
+import SectionFieldSet from '@/components/ogc/section-field-set';
 import { Button } from '@/components/ui/button';
-import {
-    FieldDescription,
-    FieldGroup,
-    FieldLegend,
-    FieldSet,
-} from '@/components/ui/field';
+import { FieldGroup } from '@/components/ui/field';
 import { useTranslation } from '@/hooks/use-translation';
 import { fieldDisplayLabel } from '@/lib/ogc-fields';
 import type { OgcNormalizedField } from '@/types';
@@ -31,13 +27,10 @@ export default function ArrayObjectField({
     }
 
     return (
-        <FieldSet className="max-w-full min-w-0">
-            <FieldLegend>{fieldDisplayLabel(field)}</FieldLegend>
-            {field.description ? (
-                <FieldDescription className="break-words">
-                    {field.description}
-                </FieldDescription>
-            ) : null}
+        <SectionFieldSet
+            label={fieldDisplayLabel(field)}
+            description={field.description}
+        >
             <FieldGroup className="min-w-0">
                 {rows.map((row, index) => {
                     const rowValue = isRecord(row) ? row : {};
@@ -45,7 +38,7 @@ export default function ArrayObjectField({
                     return (
                         <div
                             key={index}
-                            className="flex min-w-0 flex-col gap-3 rounded-md border p-3"
+                            className="flex min-w-0 flex-col gap-3 rounded-md border bg-background p-3 dark:bg-background/60"
                         >
                             <div className="flex justify-end">
                                 <Button
@@ -102,7 +95,7 @@ export default function ArrayObjectField({
                 <Plus data-icon="inline-start" />
                 {t('ogc.addRow')}
             </Button>
-        </FieldSet>
+        </SectionFieldSet>
     );
 }
 

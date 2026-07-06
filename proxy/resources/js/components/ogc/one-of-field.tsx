@@ -1,10 +1,6 @@
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
-import {
-    FieldDescription,
-    FieldGroup,
-    FieldLegend,
-    FieldSet,
-} from '@/components/ui/field';
+import SectionFieldSet from '@/components/ogc/section-field-set';
+import { FieldDescription, FieldGroup } from '@/components/ui/field';
 import {
     Select,
     SelectContent,
@@ -43,13 +39,11 @@ export default function OneOfField({
     }
 
     return (
-        <FieldSet className="max-w-full min-w-0 overflow-hidden">
-            <FieldLegend>{fieldDisplayLabel(field)}</FieldLegend>
-            {field.description ? (
-                <FieldDescription className="break-words">
-                    {field.description}
-                </FieldDescription>
-            ) : null}
+        <SectionFieldSet
+            label={fieldDisplayLabel(field)}
+            description={field.description}
+            className="overflow-hidden"
+        >
             {selected.description ? (
                 <FieldDescription className="break-words">
                     {selected.description}
@@ -99,7 +93,7 @@ export default function OneOfField({
                     />
                 ))}
             </FieldGroup>
-        </FieldSet>
+        </SectionFieldSet>
     );
 }
 

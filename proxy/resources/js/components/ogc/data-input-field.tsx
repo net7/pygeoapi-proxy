@@ -1,13 +1,7 @@
 import { useState } from 'react';
 
-import {
-    Field,
-    FieldDescription,
-    FieldGroup,
-    FieldLabel,
-    FieldLegend,
-    FieldSet,
-} from '@/components/ui/field';
+import SectionFieldSet from '@/components/ogc/section-field-set';
+import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -92,14 +86,10 @@ export default function DataInputField({
     }
 
     return (
-        <FieldSet className="max-w-full min-w-0">
-            <FieldLegend>{fieldDisplayLabel(field)}</FieldLegend>
-            {field.description ? (
-                <FieldDescription className="break-words">
-                    {field.description}
-                </FieldDescription>
-            ) : null}
-
+        <SectionFieldSet
+            label={fieldDisplayLabel(field)}
+            description={field.description}
+        >
             <ToggleGroup
                 type="single"
                 value={mode}
@@ -183,7 +173,7 @@ export default function DataInputField({
                     </Field>
                 ) : null}
             </FieldGroup>
-        </FieldSet>
+        </SectionFieldSet>
     );
 }
 

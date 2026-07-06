@@ -2,13 +2,12 @@ import ArrayObjectField from '@/components/ogc/array-object-field';
 import ArrayTableField from '@/components/ogc/array-table-field';
 import DataInputField from '@/components/ogc/data-input-field';
 import OneOfField from '@/components/ogc/one-of-field';
+import SectionFieldSet from '@/components/ogc/section-field-set';
 import {
     Field,
     FieldDescription,
     FieldGroup,
     FieldLabel,
-    FieldLegend,
-    FieldSet,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
@@ -36,13 +35,10 @@ export default function SchemaFieldRenderer({
         const objectValue = isRecord(value) ? value : {};
 
         return (
-            <FieldSet className="max-w-full min-w-0">
-                <FieldLegend>{fieldDisplayLabel(field)}</FieldLegend>
-                {field.description ? (
-                    <FieldDescription className="break-words">
-                        {field.description}
-                    </FieldDescription>
-                ) : null}
+            <SectionFieldSet
+                label={fieldDisplayLabel(field)}
+                description={field.description}
+            >
                 <FieldGroup className="min-w-0">
                     {Object.entries(field.fields).map(([key, child]) => (
                         <SchemaFieldRenderer
@@ -55,7 +51,7 @@ export default function SchemaFieldRenderer({
                         />
                     ))}
                 </FieldGroup>
-            </FieldSet>
+            </SectionFieldSet>
         );
     }
 
