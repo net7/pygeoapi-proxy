@@ -83,6 +83,21 @@ test('it fetches a remote job and results', function () {
         ->and($client->jobResults('job-123')->json('chartType'))->toBe('line');
 });
 
+test('it downloads absolute result urls from configured result hosts', function () {
+    config(['services.ogc_processes.result_url_hosts' => ['voice_hrefs.pi.ingv.it']]);
+
+    Http::fake([
+        'https://voice_hrefs.pi.ingv.it/results/result.tif' => Http::response('TIFF', 200, [
+            'Content-Type' => 'application/tiff; application=geotiff',
+        ]),
+    ]);
+
+    $response = app(OgcProcessesClient::class)
+        ->downloadResultUrl('https://voice_hrefs.pi.ingv.it/results/result.tif');
+
+    expect($response->body())->toBe('TIFF');
+});
+
 test('it rejects absolute result download urls outside the configured base url', function () {
     Http::fake();
 

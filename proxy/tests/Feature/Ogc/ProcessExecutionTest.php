@@ -252,7 +252,8 @@ test('it stores process output definitions with asynchronous executions', functi
     expect($execution->process_outputs)
         ->toBe($process['outputs'])
         ->and($execution->process_outputs)->toHaveKey('dem')
-        ->and($execution->process_outputs['dem']['schema']['contentMediaType'])->toBe('application/tiff; application=geotiff');
+        ->and($execution->process_outputs['dem']['schema']['type'])->toBe('object')
+        ->and($execution->process_outputs['dem']['schema']['properties'])->toHaveKeys(['geotiff', 'sld']);
 });
 
 test('it stores submission failures on the existing local execution', function () {

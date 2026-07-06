@@ -9,6 +9,7 @@ use App\Notifications\Ogc\ProcessExecutionCompleted;
 use App\Services\Ogc\OgcProcessesClient;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Str;
 
 class PollProcessExecution
 {
@@ -96,9 +97,14 @@ class PollProcessExecution
      */
     private function shouldDeferResultDownload(array $link): bool
     {
-        $mediaType = (string) ($link['type'] ?? '');
+        $mediaType = Str::of((string) ($link['type'] ?? ''))
+            ->before(';')
+            ->trim()
+            ->lower()
+            ->toString();
 
         return filled($mediaType)
+            && ! str_starts_with($mediaType, 'multipart/')
             && ! str_contains($mediaType, 'application/json')
             && ! str_starts_with($mediaType, 'text/');
     }

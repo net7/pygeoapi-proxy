@@ -17,11 +17,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
+import { defaultOutputTransmissionMode } from '@/lib/ogc-outputs';
 import { store } from '@/routes/processes/jobs';
 import type {
     OgcExamplePayload,
     OgcFormSchema,
     OgcNormalizedField,
+    OgcNormalizedOutput,
     TiptapDocument,
 } from '@/types';
 
@@ -42,12 +44,7 @@ export default function DynamicProcessForm({
         useForm<FormData>({
             name: '',
             inputs: initialInputValues(schema.fields),
-            outputs: Object.fromEntries(
-                Object.keys(schema.outputs).map((outputId) => [
-                    outputId,
-                    { transmissionMode: 'value' },
-                ]),
-            ),
+            outputs: initialOutputValues(schema.outputs),
             note: null,
         });
 
@@ -270,7 +267,14 @@ function exampleOutputsToFormValues(
             exampleOutputs
                 .filter((outputId) => typeof outputId === 'string')
                 .filter((outputId) => Boolean(outputs[outputId]))
-                .map((outputId) => [outputId, { transmissionMode: 'value' }]),
+                .map((outputId) => [
+                    outputId,
+                    {
+                        transmissionMode: defaultOutputTransmissionMode(
+                            outputs[outputId],
+                        ),
+                    },
+                ]),
         );
     }
 
@@ -283,12 +287,20 @@ function exampleOutputsToFormValues(
             .filter(([outputId]) => Boolean(outputs[outputId]))
             .map(([outputId, value]) => [
                 outputId,
-                { transmissionMode: exampleTransmissionMode(value) },
+                {
+                    transmissionMode: exampleTransmissionMode(
+                        outputs[outputId],
+                        value,
+                    ),
+                },
             ]),
     );
 }
 
-function exampleTransmissionMode(value: unknown): string {
+function exampleTransmissionMode(
+    output: OgcNormalizedOutput,
+    value: unknown,
+): string {
     if (typeof value === 'string' && value.length > 0) {
         return value;
     }
@@ -297,7 +309,22 @@ function exampleTransmissionMode(value: unknown): string {
         return value.transmissionMode;
     }
 
-    return 'value';
+    return defaultOutputTransmissionMode(output);
+}
+
+function initialOutputValues(
+    outputs: OgcFormSchema['outputs'],
+): FormData['outputs'] {
+    return Object.fromEntries(
+        Object.keys(outputs).map((outputId) => [
+            outputId,
+            {
+                transmissionMode: defaultOutputTransmissionMode(
+                    outputs[outputId],
+                ),
+            },
+        ]),
+    );
 }
 
 function initialInputValues(

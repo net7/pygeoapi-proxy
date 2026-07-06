@@ -719,6 +719,35 @@ test('job pages use readable dark mode status surfaces', function () {
         ->toContain('dark:border-slate-500/60');
 });
 
+test('output selector renders object output components', function () {
+    $source = file_get_contents(getcwd().'/resources/js/components/ogc/output-selector.tsx');
+    $helperSource = file_get_contents(getcwd().'/resources/js/lib/ogc-outputs.ts');
+
+    expect($source)
+        ->toContain('outputComponents(output)')
+        ->toContain('componentId')
+        ->toContain('component.mediaType')
+        ->toContain('component.name')
+        ->toContain('componentId');
+
+    expect($helperSource)->toContain('output.components');
+});
+
+test('process form requests object outputs by reference by default', function () {
+    $source = file_get_contents(getcwd().'/resources/js/components/ogc/dynamic-process-form.tsx');
+    $helperSource = file_get_contents(getcwd().'/resources/js/lib/ogc-outputs.ts');
+
+    expect($source)
+        ->toContain('initialOutputValues(schema.outputs)')
+        ->toContain('defaultOutputTransmissionMode(')
+        ->toContain('exampleTransmissionMode(')
+        ->toContain('outputs[outputId]');
+
+    expect($helperSource)
+        ->toContain("output?.schemaType === 'object'")
+        ->toContain("'reference'");
+});
+
 test('sidebar labels process executions as jobs', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/app-sidebar.tsx');
 

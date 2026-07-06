@@ -30,7 +30,7 @@ class StoreProcessResult
                     'description' => $result['description'],
                     'media_type' => $result['media_type'],
                     'transmission_mode' => $result['transmission_mode'],
-                    'remote_href' => null,
+                    'remote_href' => $result['remote_href'],
                     'storage_path' => $storagePath,
                     'size_bytes' => $result['size_bytes'],
                     'cache_status' => $result['cache_status'],
@@ -46,7 +46,7 @@ class StoreProcessResult
     public function fromLink(ProcessExecution $execution, array $link, ?string $outputId = null): void
     {
         $outputId ??= $this->firstRequestedOutputId($execution);
-        $mediaType = Str::of((string) ($link['type'] ?? 'application/octet-stream'))->before(';')->trim()->toString();
+        $mediaType = Str::of((string) ($link['type'] ?? 'application/octet-stream'))->trim()->lower()->toString();
 
         $execution->results()->updateOrCreate(
             ['output_id' => $outputId],

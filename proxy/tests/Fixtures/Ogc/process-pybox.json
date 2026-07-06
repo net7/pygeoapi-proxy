@@ -296,18 +296,92 @@
             "title": "Primary DEM",
             "description": "The local DSM (GeoTIFF) used for the simulation.",
             "schema": {
-                "type": "string",
-                "contentEncoding": "binary",
-                "contentMediaType": "application/tiff; application=geotiff"
+                "type": "object",
+                "properties": {
+                    "geotiff": {
+                        "description": "Reference to the GeoTIFF.",
+                        "allOf": [
+                            {
+                                "$ref": "link.yaml"
+                            },
+                            {
+                                "type": "object",
+                                "required": ["type"],
+                                "properties": {
+                                    "type": {
+                                        "enum": [
+                                            "image/tiff; application=geotiff",
+                                            "application/tiff; application=geotiff"
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "sld": {
+                        "description": "Reference to the Styled Layer Descriptor (SLD) defining the visualization style for this GeoTIFF.",
+                        "allOf": [
+                            {
+                                "$ref": "link.yaml"
+                            },
+                            {
+                                "type": "object",
+                                "required": ["type"],
+                                "properties": {
+                                    "type": {
+                                        "const": "application/vnd.ogc.sld+xml"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
             }
         },
         "invasion_map": {
             "title": "Invasion Map",
             "description": "2D GeoTIFF showing PDC invaded area, based on the energy conoid method.",
             "schema": {
-                "type": "string",
-                "contentEncoding": "binary",
-                "contentMediaType": "application/tiff; application=geotiff"
+                "type": "object",
+                "properties": {
+                    "geotiff": {
+                        "description": "Reference to the GeoTIFF.",
+                        "allOf": [
+                            {
+                                "$ref": "link.yaml"
+                            },
+                            {
+                                "type": "object",
+                                "required": ["type"],
+                                "properties": {
+                                    "type": {
+                                        "enum": [
+                                            "image/tiff; application=geotiff",
+                                            "application/tiff; application=geotiff"
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "sld": {
+                        "description": "Reference to the Styled Layer Descriptor (SLD) defining the visualization style for this GeoTIFF.",
+                        "allOf": [
+                            {
+                                "$ref": "link.yaml"
+                            },
+                            {
+                                "type": "object",
+                                "required": ["type"],
+                                "properties": {
+                                    "type": {
+                                        "const": "application/vnd.ogc.sld+xml"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
             }
         },
         "spatial_evolution": {

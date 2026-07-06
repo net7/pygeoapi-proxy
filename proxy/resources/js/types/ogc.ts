@@ -57,6 +57,16 @@ export type OgcNormalizedOutput = {
     mediaType?: string | null;
     contentEncoding?: string | null;
     schemaRef?: string | null;
+    schemaType?: string | null;
+    components?: Record<
+        string,
+        {
+            name: string;
+            description?: string | null;
+            mediaType?: string | null;
+            schemaRef?: string | null;
+        }
+    >;
 };
 
 export type OgcExamplePayload = {

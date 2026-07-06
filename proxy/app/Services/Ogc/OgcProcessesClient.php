@@ -77,9 +77,7 @@ class OgcProcessesClient
                 ->throw();
         }
 
-        $baseUrl = $this->baseUrl();
-
-        if (! Str::startsWith($url, $baseUrl.'/')) {
+        if (! $this->isAllowedResultUrl($url)) {
             throw new InvalidArgumentException('Result URL is outside the configured OGC Processes base URL.');
         }
 
@@ -118,5 +116,38 @@ class OgcProcessesClient
     private function baseUrl(): string
     {
         return rtrim((string) config('services.ogc_processes.base_url'), '/');
+    }
+
+    private function isAllowedResultUrl(string $url): bool
+    {
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        $host = parse_url($url, PHP_URL_HOST);
+
+        if (! in_array($scheme, ['http', 'https'], true) || ! is_string($host) || $host === '') {
+            return false;
+        }
+
+        return in_array(strtolower($host), $this->allowedResultHosts(), true);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function allowedResultHosts(): array
+    {
+        $configuredHosts = config('services.ogc_processes.result_url_hosts', []);
+
+        if (is_string($configuredHosts)) {
+            $configuredHosts = explode(',', $configuredHosts);
+        }
+
+        $baseHost = parse_url($this->baseUrl(), PHP_URL_HOST);
+
+        return collect([$baseHost, ...$configuredHosts])
+            ->filter(fn (mixed $host): bool => is_string($host) && trim($host) !== '')
+            ->map(fn (string $host): string => strtolower(trim($host)))
+            ->unique()
+            ->values()
+            ->all();
     }
 }

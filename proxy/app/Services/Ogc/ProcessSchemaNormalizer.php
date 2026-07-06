@@ -263,17 +263,132 @@ class ProcessSchemaNormalizer
 
         foreach ($outputs as $name => $output) {
             $schema = $output['schema'] ?? [];
+            $components = $this->normalizeOutputComponents($schema);
 
             $normalized[$name] = [
                 'name' => $name,
                 'title' => $output['title'] ?? $name,
                 'description' => $output['description'] ?? null,
-                'mediaType' => $schema['contentMediaType'] ?? null,
+                'mediaType' => $schema['contentMediaType'] ?? $this->firstComponentMediaType($components),
                 'contentEncoding' => $schema['contentEncoding'] ?? null,
                 'schemaRef' => $schema['$ref'] ?? null,
+                'schemaType' => $schema['type'] ?? null,
+                'components' => $components,
             ];
         }
 
         return $normalized;
+    }
+
+    /**
+     * @param  array<string, mixed>  $schema
+     * @return array<string, array<string, mixed>>
+     */
+    private function normalizeOutputComponents(array $schema): array
+    {
+        if (($schema['type'] ?? null) !== 'object' || ! isset($schema['properties']) || ! is_array($schema['properties'])) {
+            return [];
+        }
+
+        $components = [];
+
+        foreach ($schema['properties'] as $name => $componentSchema) {
+            if (! is_array($componentSchema)) {
+                continue;
+            }
+
+            $components[$name] = [
+                'name' => (string) $name,
+                'description' => $componentSchema['description'] ?? null,
+                'mediaType' => $this->mediaTypeFromSchema($componentSchema),
+                'schemaRef' => $this->schemaRefFromSchema($componentSchema),
+            ];
+        }
+
+        return $components;
+    }
+
+    /**
+     * @param  array<string, array<string, mixed>>  $components
+     */
+    private function firstComponentMediaType(array $components): ?string
+    {
+        foreach ($components as $component) {
+            $mediaType = $component['mediaType'] ?? null;
+
+            if (is_string($mediaType) && $mediaType !== '') {
+                return $mediaType;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $schema
+     */
+    private function mediaTypeFromSchema(array $schema): ?string
+    {
+        $mediaType = $schema['contentMediaType'] ?? null;
+
+        if (is_string($mediaType) && $mediaType !== '') {
+            return $mediaType;
+        }
+
+        $const = Arr::get($schema, 'properties.type.const');
+
+        if (is_string($const) && $const !== '') {
+            return $const;
+        }
+
+        $enum = Arr::get($schema, 'properties.type.enum');
+
+        if (is_array($enum)) {
+            foreach ($enum as $value) {
+                if (is_string($value) && $value !== '') {
+                    return $value;
+                }
+            }
+        }
+
+        foreach ($schema['allOf'] ?? [] as $subSchema) {
+            if (! is_array($subSchema)) {
+                continue;
+            }
+
+            $mediaType = $this->mediaTypeFromSchema($subSchema);
+
+            if ($mediaType !== null) {
+                return $mediaType;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $schema
+     */
+    private function schemaRefFromSchema(array $schema): ?string
+    {
+        $schemaRef = $schema['$ref'] ?? null;
+
+        if (is_string($schemaRef) && $schemaRef !== '') {
+            return $schemaRef;
+        }
+
+        foreach ($schema['allOf'] ?? [] as $subSchema) {
+            if (! is_array($subSchema)) {
+                continue;
+            }
+
+            $schemaRef = $this->schemaRefFromSchema($subSchema);
+
+            if ($schemaRef !== null) {
+                return $schemaRef;
+            }
+        }
+
+        return null;
     }
 }

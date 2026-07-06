@@ -72,8 +72,12 @@ test('it normalizes live pybox inputs and outputs', function () {
         ->and($normalized['fields']['multiple_values']['minItems'])->toBe(1)
         ->and($normalized['fields']['multiple_values']['maxItems'])->toBe(21)
         ->and($normalized['fields']['multiple_values']['fields'])->toHaveKeys(['eps0', 'rhos', 'ds'])
-        ->and($normalized['outputs']['dem']['contentEncoding'])->toBe('binary')
-        ->and($normalized['outputs']['invasion_map']['mediaType'])->toBe('application/tiff; application=geotiff');
+        ->and($normalized['outputs']['dem']['schemaType'])->toBe('object')
+        ->and($normalized['outputs']['dem']['mediaType'])->toBe('image/tiff; application=geotiff')
+        ->and($normalized['outputs']['dem']['components'])->toHaveKeys(['geotiff', 'sld'])
+        ->and($normalized['outputs']['invasion_map']['schemaType'])->toBe('object')
+        ->and($normalized['outputs']['invasion_map']['mediaType'])->toBe('image/tiff; application=geotiff')
+        ->and($normalized['outputs']['invasion_map']['components']['sld']['mediaType'])->toBe('application/vnd.ogc.sld+xml');
 });
 
 test('it keeps description only one of variant labels compact', function () {

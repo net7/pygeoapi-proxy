@@ -28,8 +28,8 @@ class ProcessExecutionResultController extends Controller
             $body = $remoteResponse->body();
             $path = "ogc-results/{$processExecution->id}/".$this->resultFileName($result);
             $mediaType = Str::of((string) $remoteResponse->header('Content-Type'))
-                ->before(';')
                 ->trim()
+                ->lower()
                 ->toString();
 
             Storage::disk('local')->put($path, $body);

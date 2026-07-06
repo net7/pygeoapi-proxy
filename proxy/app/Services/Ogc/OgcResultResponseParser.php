@@ -9,6 +9,8 @@ use Illuminate\Support\Str;
 
 class OgcResultResponseParser
 {
+    public function __construct(private OgcProcessesClient $client) {}
+
     /**
      * @return array<int, array{
      *     output_id: string,
@@ -16,7 +18,8 @@ class OgcResultResponseParser
      *     description: string|null,
      *     media_type: string,
      *     transmission_mode: string,
-     *     size_bytes: int,
+     *     remote_href: string|null,
+     *     size_bytes: int|null,
      *     cache_status: ResultCacheStatus,
      *     preview: array<string, mixed>,
      *     storage_body: string|null
@@ -28,6 +31,17 @@ class OgcResultResponseParser
         $mediaType = $this->mediaType($contentType);
 
         if (! str_starts_with($mediaType, 'multipart/')) {
+            $jsonResults = $this->resultsFromJsonBody(
+                execution: $execution,
+                body: $response->body(),
+                mediaType: $mediaType ?: 'application/json',
+                outputId: $outputId,
+            );
+
+            if ($jsonResults !== null) {
+                return $jsonResults;
+            }
+
             return [$this->resultFromBody(
                 execution: $execution,
                 outputId: $outputId ?? $this->firstRequestedOutputId($execution),
@@ -52,14 +66,62 @@ class OgcResultResponseParser
         $requestedOutputIds = array_keys($execution->requested_outputs ?? []);
 
         return collect($this->parts($response->body(), $boundary))
-            ->map(fn (array $part, int $index): array => $this->resultFromBody(
+            ->flatMap(fn (array $part, int $index): array => $this->resultsFromPart(
                 execution: $execution,
-                outputId: $this->partOutputId($part['headers'], $requestedOutputIds[$index] ?? 'part-'.($index + 1)),
-                body: $part['body'],
-                mediaType: $this->mediaType($part['headers']['content-type'] ?? ''),
-                forceStorage: true,
+                part: $part,
+                fallbackOutputId: $requestedOutputIds[$index] ?? 'part-'.($index + 1),
             ))
             ->all();
+    }
+
+    /**
+     * @param  array{headers: array<string, string>, body: string}  $part
+     * @return array<int, array{
+     *     output_id: string,
+     *     title: string|null,
+     *     description: string|null,
+     *     media_type: string,
+     *     transmission_mode: string,
+     *     remote_href: string|null,
+     *     size_bytes: int|null,
+     *     cache_status: ResultCacheStatus,
+     *     preview: array<string, mixed>,
+     *     storage_body: string|null
+     * }>
+     */
+    private function resultsFromPart(ProcessExecution $execution, array $part, string $fallbackOutputId): array
+    {
+        $headers = $part['headers'];
+        $outputId = $this->partOutputId($headers, $fallbackOutputId);
+        $mediaType = $this->mediaType($headers['content-type'] ?? '');
+        $body = $part['body'];
+
+        if ($this->isJsonMediaType($mediaType)) {
+            if (trim($body) === '' && isset($headers['content-location'])) {
+                $remoteResponse = $this->client->downloadResultUrl($headers['content-location']);
+                $body = $remoteResponse->body();
+                $mediaType = $this->mediaType((string) $remoteResponse->header('Content-Type')) ?: $mediaType;
+            }
+
+            $jsonResults = $this->resultsFromJsonBody(
+                execution: $execution,
+                body: $body,
+                mediaType: $mediaType ?: 'application/json',
+                outputId: $outputId,
+            );
+
+            if ($jsonResults !== null) {
+                return $jsonResults;
+            }
+        }
+
+        return [$this->resultFromBody(
+            execution: $execution,
+            outputId: $outputId,
+            body: $body,
+            mediaType: $mediaType,
+            forceStorage: true,
+        )];
     }
 
     /**
@@ -154,7 +216,8 @@ class OgcResultResponseParser
      *     description: string|null,
      *     media_type: string,
      *     transmission_mode: string,
-     *     size_bytes: int,
+     *     remote_href: string|null,
+     *     size_bytes: int|null,
      *     cache_status: ResultCacheStatus,
      *     preview: array<string, mixed>,
      *     storage_body: string|null
@@ -180,11 +243,265 @@ class OgcResultResponseParser
             'description' => $outputSpec['description'] ?? null,
             'media_type' => $mediaType,
             'transmission_mode' => data_get($execution->requested_outputs, "{$outputId}.transmissionMode", 'value'),
+            'remote_href' => null,
             'size_bytes' => strlen($body),
             'cache_status' => ResultCacheStatus::Cached,
             'preview' => $preview,
             'storage_body' => $storageBody,
         ];
+    }
+
+    /**
+     * @return array<int, array{
+     *     output_id: string,
+     *     title: string|null,
+     *     description: string|null,
+     *     media_type: string,
+     *     transmission_mode: string,
+     *     remote_href: string|null,
+     *     size_bytes: int|null,
+     *     cache_status: ResultCacheStatus,
+     *     preview: array<string, mixed>,
+     *     storage_body: string|null
+     * }>|null
+     */
+    private function resultsFromJsonBody(
+        ProcessExecution $execution,
+        string $body,
+        string $mediaType,
+        ?string $outputId,
+    ): ?array {
+        $json = $this->json($body);
+
+        if (! is_array($json)) {
+            return null;
+        }
+
+        $requestedOutputIds = $outputId !== null
+            ? [$outputId]
+            : array_keys($execution->requested_outputs ?? []);
+
+        if ($requestedOutputIds === []) {
+            $requestedOutputIds = [$this->firstRequestedOutputId($execution)];
+        }
+
+        $payload = $this->jsonResultsPayload($json);
+        $matchedOutputs = [];
+
+        foreach ($requestedOutputIds as $requestedOutputId) {
+            if (array_key_exists($requestedOutputId, $payload)) {
+                $matchedOutputs[$requestedOutputId] = $payload[$requestedOutputId];
+            }
+        }
+
+        if ($matchedOutputs === [] && count($requestedOutputIds) === 1) {
+            $matchedOutputs[$requestedOutputIds[0]] = $payload;
+        }
+
+        if ($matchedOutputs === []) {
+            return null;
+        }
+
+        $results = [];
+
+        foreach ($matchedOutputs as $matchedOutputId => $value) {
+            array_push(
+                $results,
+                ...$this->resultsFromJsonValue(
+                    execution: $execution,
+                    outputId: (string) $matchedOutputId,
+                    value: $value,
+                    fallbackMediaType: $mediaType,
+                ),
+            );
+        }
+
+        return $results === [] ? null : $results;
+    }
+
+    /**
+     * @param  array<string, mixed>  $json
+     * @return array<string, mixed>
+     */
+    private function jsonResultsPayload(array $json): array
+    {
+        $outputs = $json['outputs'] ?? null;
+
+        return is_array($outputs) ? $outputs : $json;
+    }
+
+    /**
+     * @return array<int, array{
+     *     output_id: string,
+     *     title: string|null,
+     *     description: string|null,
+     *     media_type: string,
+     *     transmission_mode: string,
+     *     remote_href: string|null,
+     *     size_bytes: int|null,
+     *     cache_status: ResultCacheStatus,
+     *     preview: array<string, mixed>,
+     *     storage_body: string|null
+     * }>
+     */
+    private function resultsFromJsonValue(
+        ProcessExecution $execution,
+        string $outputId,
+        mixed $value,
+        string $fallbackMediaType,
+    ): array {
+        if (is_array($value) && $this->isLink($value)) {
+            return [$this->resultFromLinkValue($execution, $outputId, $value)];
+        }
+
+        if (is_array($value)) {
+            $linkResults = $this->nestedLinkResults($execution, $outputId, $value);
+
+            if ($linkResults !== []) {
+                return $linkResults;
+            }
+        }
+
+        $mediaType = $this->outputMediaType($execution, $outputId) ?: $fallbackMediaType ?: 'application/json';
+        $body = $this->bodyFromJsonValue($value, $mediaType);
+
+        return [$this->resultFromBody(
+            execution: $execution,
+            outputId: $outputId,
+            body: $body,
+            mediaType: $mediaType,
+            forceStorage: false,
+        )];
+    }
+
+    /**
+     * @param  array<string, mixed>  $value
+     * @return array<int, array{
+     *     output_id: string,
+     *     title: string|null,
+     *     description: string|null,
+     *     media_type: string,
+     *     transmission_mode: string,
+     *     remote_href: string|null,
+     *     size_bytes: int|null,
+     *     cache_status: ResultCacheStatus,
+     *     preview: array<string, mixed>,
+     *     storage_body: string|null
+     * }>
+     */
+    private function nestedLinkResults(ProcessExecution $execution, string $outputId, array $value): array
+    {
+        $results = [];
+
+        foreach ($value as $componentId => $componentValue) {
+            if (! is_string($componentId) || ! is_array($componentValue) || ! $this->isLink($componentValue)) {
+                continue;
+            }
+
+            $results[] = $this->resultFromLinkValue($execution, $outputId, $componentValue, $componentId);
+        }
+
+        return $results;
+    }
+
+    /**
+     * @param  array<string, mixed>  $link
+     * @return array{
+     *     output_id: string,
+     *     title: string|null,
+     *     description: string|null,
+     *     media_type: string,
+     *     transmission_mode: string,
+     *     remote_href: string|null,
+     *     size_bytes: int|null,
+     *     cache_status: ResultCacheStatus,
+     *     preview: array<string, mixed>,
+     *     storage_body: string|null
+     * }
+     */
+    private function resultFromLinkValue(
+        ProcessExecution $execution,
+        string $outputId,
+        array $link,
+        ?string $componentId = null,
+    ): array {
+        $resultOutputId = $componentId === null ? $outputId : "{$outputId}.{$componentId}";
+        $mediaType = $this->linkMediaType((string) ($link['type'] ?? '')) ?: 'application/octet-stream';
+
+        return [
+            'output_id' => $resultOutputId,
+            'title' => $this->linkTitle($execution, $outputId, $link, $componentId),
+            'description' => $this->linkDescription($execution, $outputId, $link, $componentId),
+            'media_type' => $mediaType,
+            'transmission_mode' => data_get($execution->requested_outputs, "{$outputId}.transmissionMode", 'reference'),
+            'remote_href' => (string) $link['href'],
+            'size_bytes' => null,
+            'cache_status' => ResultCacheStatus::MetadataOnly,
+            'preview' => ['kind' => 'binary', 'data' => ['mediaType' => $mediaType]],
+            'storage_body' => null,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $link
+     */
+    private function linkTitle(ProcessExecution $execution, string $outputId, array $link, ?string $componentId): string
+    {
+        $outputTitle = (string) (data_get($execution->process_outputs, "{$outputId}.title") ?? $outputId);
+
+        if ($componentId === null) {
+            return $outputTitle;
+        }
+
+        $componentTitle = (string) ($link['title']
+            ?? data_get($execution->process_outputs, "{$outputId}.schema.properties.{$componentId}.title")
+            ?? Str::headline($componentId));
+
+        return "{$outputTitle} - {$componentTitle}";
+    }
+
+    /**
+     * @param  array<string, mixed>  $link
+     */
+    private function linkDescription(ProcessExecution $execution, string $outputId, array $link, ?string $componentId): ?string
+    {
+        if (isset($link['title']) && is_string($link['title']) && $link['title'] !== '') {
+            return $link['title'];
+        }
+
+        if ($componentId !== null) {
+            $componentDescription = data_get($execution->process_outputs, "{$outputId}.schema.properties.{$componentId}.description");
+
+            if (is_string($componentDescription) && $componentDescription !== '') {
+                return $componentDescription;
+            }
+        }
+
+        $description = data_get($execution->process_outputs, "{$outputId}.description");
+
+        return is_string($description) && $description !== '' ? $description : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $link
+     */
+    private function isLink(array $link): bool
+    {
+        return isset($link['href']) && is_string($link['href']) && $link['href'] !== '';
+    }
+
+    private function outputMediaType(ProcessExecution $execution, string $outputId): string
+    {
+        return $this->mediaType((string) data_get($execution->process_outputs, "{$outputId}.schema.contentMediaType"));
+    }
+
+    private function bodyFromJsonValue(mixed $value, string $mediaType): string
+    {
+        if (is_string($value) && ! str_contains($mediaType, 'json')) {
+            return $value;
+        }
+
+        return json_encode($value, JSON_THROW_ON_ERROR);
     }
 
     /**
@@ -232,6 +549,16 @@ class OgcResultResponseParser
     private function mediaType(string $contentType): string
     {
         return Str::of($contentType)->before(';')->trim()->lower()->toString();
+    }
+
+    private function linkMediaType(string $contentType): string
+    {
+        return Str::of($contentType)->trim()->lower()->toString();
+    }
+
+    private function isJsonMediaType(string $mediaType): bool
+    {
+        return $mediaType === 'application/json' || str_ends_with($mediaType, '+json');
     }
 
     private function boundary(string $contentType): ?string

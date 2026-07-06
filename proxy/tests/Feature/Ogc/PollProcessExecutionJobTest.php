@@ -2,6 +2,7 @@
 
 use App\Actions\Ogc\PollProcessExecution;
 use App\Enums\Ogc\ExecutionStatus;
+use App\Enums\Ogc\ResultCacheStatus;
 use App\Jobs\Ogc\PollProcessExecutionJob;
 use App\Models\ProcessExecution;
 use App\Notifications\Ogc\ProcessExecutionCompleted;
@@ -151,6 +152,183 @@ test('it caches binary multipart results on local storage', function () {
         ->and($result->storage_path)->not->toBeNull();
 
     Storage::disk('local')->assertExists($result->storage_path);
+});
+
+test('it expands object output links returned in json results', function () {
+    Notification::fake();
+
+    $execution = ProcessExecution::factory()->create([
+        'process_id' => 'pybox',
+        'remote_job_id' => 'job-123',
+        'status' => ExecutionStatus::Running,
+        'requested_outputs' => [
+            'dem' => ['transmissionMode' => 'reference'],
+            'invasion_map' => ['transmissionMode' => 'reference'],
+        ],
+        'process_outputs' => ogcFixture('process-pybox')['outputs'],
+    ]);
+
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123?f=json' => Http::response(ogcFixture('job-successful')),
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results?f=json' => Http::response([
+            'dem' => [
+                'geotiff' => [
+                    'href' => 'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results/dem.tif',
+                    'type' => 'image/tiff; application=geotiff',
+                    'title' => 'GeoTIFF',
+                ],
+                'sld' => [
+                    'href' => 'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results/dem.sld',
+                    'type' => 'application/vnd.ogc.sld+xml',
+                    'title' => 'Styled Layer Descriptor',
+                ],
+            ],
+            'invasion_map' => [
+                'geotiff' => [
+                    'href' => 'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results/invasion_map.tif',
+                    'type' => 'image/tiff; application=geotiff',
+                    'title' => 'GeoTIFF',
+                ],
+                'sld' => [
+                    'href' => 'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results/invasion_map.sld',
+                    'type' => 'application/vnd.ogc.sld+xml',
+                    'title' => 'Styled Layer Descriptor',
+                ],
+            ],
+        ]),
+    ]);
+
+    (new PollProcessExecutionJob($execution->id))->handle(
+        app(PollProcessExecution::class),
+    );
+
+    $results = $execution->refresh()->results()->orderBy('output_id')->get()->keyBy('output_id');
+
+    expect($results)->toHaveCount(4)
+        ->and($results)->toHaveKeys([
+            'dem.geotiff',
+            'dem.sld',
+            'invasion_map.geotiff',
+            'invasion_map.sld',
+        ])
+        ->and($results['dem.geotiff']->remote_href)->toBe('https://voice.pi.ingv.it/geoinquire/jobs/job-123/results/dem.tif')
+        ->and($results['dem.geotiff']->media_type)->toBe('image/tiff; application=geotiff')
+        ->and($results['dem.sld']->remote_href)->toBe('https://voice.pi.ingv.it/geoinquire/jobs/job-123/results/dem.sld')
+        ->and($results['dem.sld']->media_type)->toBe('application/vnd.ogc.sld+xml')
+        ->and($results['invasion_map.geotiff']->remote_href)->toBe('https://voice.pi.ingv.it/geoinquire/jobs/job-123/results/invasion_map.tif')
+        ->and($results['invasion_map.geotiff']->media_type)->toBe('image/tiff; application=geotiff')
+        ->and($results['invasion_map.geotiff']->cache_status)->toBe(ResultCacheStatus::MetadataOnly)
+        ->and($results['invasion_map.sld']->remote_href)->toBe('https://voice.pi.ingv.it/geoinquire/jobs/job-123/results/invasion_map.sld')
+        ->and($results['invasion_map.sld']->media_type)->toBe('application/vnd.ogc.sld+xml')
+        ->and($results['invasion_map.sld']->cache_status)->toBe(ResultCacheStatus::MetadataOnly);
+});
+
+test('it expands an indirect single object output returned by reference', function () {
+    Notification::fake();
+
+    $execution = ProcessExecution::factory()->create([
+        'process_id' => 'pybox',
+        'remote_job_id' => 'job-123',
+        'status' => ExecutionStatus::Running,
+        'requested_outputs' => ['dem' => ['transmissionMode' => 'reference']],
+        'process_outputs' => ogcFixture('process-pybox')['outputs'],
+    ]);
+
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123?f=json' => Http::response(ogcFixture('job-successful')),
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results?f=json' => Http::response([
+            'geotiff' => [
+                'title' => 'Reference to the GeoTIFF.',
+                'type' => 'application/tiff; application=geotiff',
+                'href' => 'https://voice_hrefs.pi.ingv.it/results/job-123_dem.tif',
+            ],
+            'sld' => [
+                'title' => 'Reference to the Styled Layer Descriptor (SLD) defining the visualization style for this GeoTIFF.',
+                'type' => 'application/vnd.ogc.sld+xml',
+                'href' => 'https://voice_hrefs.pi.ingv.it/results/job-123_dem.sld',
+            ],
+        ]),
+    ]);
+
+    (new PollProcessExecutionJob($execution->id))->handle(
+        app(PollProcessExecution::class),
+    );
+
+    $results = $execution->refresh()->results()->orderBy('output_id')->get()->keyBy('output_id');
+
+    expect($results)->toHaveCount(2)
+        ->and($results)->toHaveKeys(['dem.geotiff', 'dem.sld'])
+        ->and($results['dem.geotiff']->remote_href)->toBe('https://voice_hrefs.pi.ingv.it/results/job-123_dem.tif')
+        ->and($results['dem.geotiff']->media_type)->toBe('application/tiff; application=geotiff')
+        ->and($results['dem.geotiff']->transmission_mode)->toBe('reference')
+        ->and($results['dem.sld']->remote_href)->toBe('https://voice_hrefs.pi.ingv.it/results/job-123_dem.sld')
+        ->and($results['dem.sld']->media_type)->toBe('application/vnd.ogc.sld+xml')
+        ->and($results['dem.sld']->transmission_mode)->toBe('reference');
+});
+
+test('it downloads multipart result links and expands indirect object output locations', function () {
+    Notification::fake();
+
+    $boundary = 'indirect-boundary';
+    $body = implode("\r\n", [
+        '--'.$boundary,
+        'Content-Type: application/json',
+        'Content-ID: <dem>',
+        'Content-Location: https://voice_hrefs.pi.ingv.it/results/job-123_dem.json',
+        '',
+        '',
+        '--'.$boundary.'--',
+        '',
+    ]);
+
+    $execution = ProcessExecution::factory()->create([
+        'process_id' => 'pybox',
+        'remote_job_id' => 'job-123',
+        'status' => ExecutionStatus::Running,
+        'requested_outputs' => ['dem' => ['transmissionMode' => 'reference']],
+        'process_outputs' => ogcFixture('process-pybox')['outputs'],
+    ]);
+
+    $job = [
+        ...ogcFixture('job-successful'),
+        'links' => [
+            [
+                'href' => 'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results',
+                'rel' => 'http://www.opengis.net/def/rel/ogc/1.0/results',
+                'type' => 'multipart/related; boundary="'.$boundary.'"',
+            ],
+        ],
+    ];
+
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123?f=json' => Http::response($job),
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results?f=json' => Http::response($body, 200, [
+            'Content-Type' => 'multipart/related; boundary="'.$boundary.'"',
+        ]),
+        'https://voice_hrefs.pi.ingv.it/results/job-123_dem.json' => Http::response([
+            'geotiff' => [
+                'title' => 'Reference to the GeoTIFF.',
+                'type' => 'application/tiff; application=geotiff',
+                'href' => 'https://voice_hrefs.pi.ingv.it/results/job-123_dem.tif',
+            ],
+            'sld' => [
+                'title' => 'Reference to the Styled Layer Descriptor (SLD) defining the visualization style for this GeoTIFF.',
+                'type' => 'application/vnd.ogc.sld+xml',
+                'href' => 'https://voice_hrefs.pi.ingv.it/results/job-123_dem.sld',
+            ],
+        ]),
+    ]);
+
+    (new PollProcessExecutionJob($execution->id))->handle(
+        app(PollProcessExecution::class),
+    );
+
+    $results = $execution->refresh()->results()->orderBy('output_id')->get()->keyBy('output_id');
+
+    expect($results)->toHaveCount(2)
+        ->and($results)->toHaveKeys(['dem.geotiff', 'dem.sld'])
+        ->and($results['dem.geotiff']->remote_href)->toBe('https://voice_hrefs.pi.ingv.it/results/job-123_dem.tif')
+        ->and($results['dem.sld']->remote_href)->toBe('https://voice_hrefs.pi.ingv.it/results/job-123_dem.sld');
 });
 
 test('it marks failed jobs and notifies the user', function () {
