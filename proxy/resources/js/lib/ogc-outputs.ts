@@ -7,7 +7,23 @@ type OgcOutputComponent = NonNullable<
 export function defaultOutputTransmissionMode(
     output?: OgcNormalizedOutput,
 ): string {
-    return output?.schemaType === 'object' ? 'reference' : 'value';
+    return automaticOutputTransmissionMode(output);
+}
+
+export function automaticOutputTransmissionMode(
+    output?: OgcNormalizedOutput,
+): 'value' | 'reference' {
+    const mediaType = baseMediaType(output?.mediaType);
+
+    if (
+        mediaType === 'text/plain' ||
+        mediaType === 'application/json' ||
+        mediaType?.endsWith('+json')
+    ) {
+        return 'value';
+    }
+
+    return 'reference';
 }
 
 export function outputComponents(
@@ -19,4 +35,12 @@ export function outputComponents(
             component,
         }),
     );
+}
+
+function baseMediaType(mediaType?: string | null): string | null {
+    if (!mediaType) {
+        return null;
+    }
+
+    return mediaType.split(';')[0].trim().toLowerCase();
 }

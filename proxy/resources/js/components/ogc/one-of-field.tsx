@@ -13,6 +13,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { fieldDisplayLabel } from '@/lib/ogc-fields';
 import type { OgcNormalizedField } from '@/types';
 
 type OneOfValue = {
@@ -43,7 +44,17 @@ export default function OneOfField({
 
     return (
         <FieldSet className="max-w-full min-w-0 overflow-hidden">
-            <FieldLegend>{field.title}</FieldLegend>
+            <FieldLegend>{fieldDisplayLabel(field)}</FieldLegend>
+            {field.description ? (
+                <FieldDescription className="break-words">
+                    {field.description}
+                </FieldDescription>
+            ) : null}
+            {selected.description ? (
+                <FieldDescription className="break-words">
+                    {selected.description}
+                </FieldDescription>
+            ) : null}
             <Select
                 value={current.variant}
                 onValueChange={(variant) => {
@@ -66,17 +77,12 @@ export default function OneOfField({
                     <SelectGroup>
                         {variants.map((variant) => (
                             <SelectItem key={variant.id} value={variant.id}>
-                                {variant.label}
+                                {variant.id}: {variant.label}
                             </SelectItem>
                         ))}
                     </SelectGroup>
                 </SelectContent>
             </Select>
-            {selected.description ? (
-                <FieldDescription className="break-words">
-                    {selected.description}
-                </FieldDescription>
-            ) : null}
 
             <FieldGroup className="min-w-0">
                 {Object.entries(selected.fields).map(([key, child]) => (

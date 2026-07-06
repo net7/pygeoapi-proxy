@@ -114,6 +114,10 @@ class ProcessSchemaNormalizer
                         'label' => 'Column '.$column,
                         'type' => Arr::get($items, 'items.type', 'string'),
                         'pattern' => Arr::get($items, 'items.pattern'),
+                        'minimum' => Arr::get($items, 'items.minimum'),
+                        'maximum' => Arr::get($items, 'items.maximum'),
+                        'exclusiveMinimum' => Arr::get($items, 'items.exclusiveMinimum'),
+                        'exclusiveMaximum' => Arr::get($items, 'items.exclusiveMaximum'),
                     ])
                     ->all(),
             ];
@@ -269,7 +273,7 @@ class ProcessSchemaNormalizer
                 'name' => $name,
                 'title' => $output['title'] ?? $name,
                 'description' => $output['description'] ?? null,
-                'mediaType' => $schema['contentMediaType'] ?? $this->firstComponentMediaType($components),
+                'mediaType' => $this->mediaTypeFromSchema($schema) ?? $this->firstComponentMediaType($components),
                 'contentEncoding' => $schema['contentEncoding'] ?? null,
                 'schemaRef' => $schema['$ref'] ?? null,
                 'schemaType' => $schema['type'] ?? null,
@@ -360,6 +364,20 @@ class ProcessSchemaNormalizer
 
             if ($mediaType !== null) {
                 return $mediaType;
+            }
+        }
+
+        foreach (['oneOf', 'anyOf'] as $compositionKey) {
+            foreach ($schema[$compositionKey] ?? [] as $subSchema) {
+                if (! is_array($subSchema)) {
+                    continue;
+                }
+
+                $mediaType = $this->mediaTypeFromSchema($subSchema);
+
+                if ($mediaType !== null) {
+                    return $mediaType;
+                }
             }
         }
 

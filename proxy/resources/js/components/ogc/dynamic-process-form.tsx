@@ -2,8 +2,8 @@ import { useForm } from '@inertiajs/react';
 import { AlertCircleIcon, PlayIcon, WandSparklesIcon } from 'lucide-react';
 
 import InputError from '@/components/input-error';
+import ExpectedOutputs from '@/components/ogc/expected-outputs';
 import { JobNoteEditor } from '@/components/ogc/job-note-editor';
-import OutputSelector from '@/components/ogc/output-selector';
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -17,20 +17,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
-import { defaultOutputTransmissionMode } from '@/lib/ogc-outputs';
 import { store } from '@/routes/processes/jobs';
 import type {
-    OgcExamplePayload,
     OgcFormSchema,
     OgcNormalizedField,
-    OgcNormalizedOutput,
     TiptapDocument,
 } from '@/types';
 
 type FormData = {
     name: string;
     inputs: Record<string, any>;
-    outputs: Record<string, { transmissionMode: string }>;
     note: TiptapDocument | null;
 };
 
@@ -44,7 +40,6 @@ export default function DynamicProcessForm({
         useForm<FormData>({
             name: '',
             inputs: initialInputValues(schema.fields),
-            outputs: initialOutputValues(schema.outputs),
             note: null,
         });
 
@@ -71,11 +66,6 @@ export default function DynamicProcessForm({
                     examplePayload.inputs ?? {},
                 ),
             },
-            outputs: exampleOutputsToFormValues(
-                schema.outputs,
-                examplePayload.outputs,
-                currentData.outputs,
-            ),
         }));
     }
 
@@ -152,18 +142,7 @@ export default function DynamicProcessForm({
                 </CardContent>
             </Card>
 
-            <Card className="min-w-0">
-                <CardHeader>
-                    <CardTitle>{t('ogc.outputs')}</CardTitle>
-                </CardHeader>
-                <CardContent className="min-w-0">
-                    <OutputSelector
-                        outputs={schema.outputs}
-                        value={data.outputs}
-                        onChange={(outputs) => setData('outputs', outputs)}
-                    />
-                </CardContent>
-            </Card>
+            <ExpectedOutputs outputs={schema.outputs} />
 
             <Card className="min-w-0">
                 <CardHeader>
@@ -251,80 +230,6 @@ function unwrapExampleValue(value: unknown): unknown {
     }
 
     return value;
-}
-
-function exampleOutputsToFormValues(
-    outputs: OgcFormSchema['outputs'],
-    exampleOutputs: OgcExamplePayload['outputs'],
-    fallback: FormData['outputs'],
-): FormData['outputs'] {
-    if (!exampleOutputs) {
-        return fallback;
-    }
-
-    if (Array.isArray(exampleOutputs)) {
-        return Object.fromEntries(
-            exampleOutputs
-                .filter((outputId) => typeof outputId === 'string')
-                .filter((outputId) => Boolean(outputs[outputId]))
-                .map((outputId) => [
-                    outputId,
-                    {
-                        transmissionMode: defaultOutputTransmissionMode(
-                            outputs[outputId],
-                        ),
-                    },
-                ]),
-        );
-    }
-
-    if (!isRecord(exampleOutputs)) {
-        return fallback;
-    }
-
-    return Object.fromEntries(
-        Object.entries(exampleOutputs)
-            .filter(([outputId]) => Boolean(outputs[outputId]))
-            .map(([outputId, value]) => [
-                outputId,
-                {
-                    transmissionMode: exampleTransmissionMode(
-                        outputs[outputId],
-                        value,
-                    ),
-                },
-            ]),
-    );
-}
-
-function exampleTransmissionMode(
-    output: OgcNormalizedOutput,
-    value: unknown,
-): string {
-    if (typeof value === 'string' && value.length > 0) {
-        return value;
-    }
-
-    if (isRecord(value) && typeof value.transmissionMode === 'string') {
-        return value.transmissionMode;
-    }
-
-    return defaultOutputTransmissionMode(output);
-}
-
-function initialOutputValues(
-    outputs: OgcFormSchema['outputs'],
-): FormData['outputs'] {
-    return Object.fromEntries(
-        Object.keys(outputs).map((outputId) => [
-            outputId,
-            {
-                transmissionMode: defaultOutputTransmissionMode(
-                    outputs[outputId],
-                ),
-            },
-        ]),
-    );
 }
 
 function initialInputValues(

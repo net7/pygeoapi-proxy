@@ -13,11 +13,15 @@ use App\Jobs\Ogc\SubmitProcessExecutionJob;
 use App\Models\ProcessExecution;
 use App\Models\User;
 use App\Services\Ogc\OgcProcessCache;
+use App\Services\Ogc\ProcessInputValidator;
+use App\Services\Ogc\ProcessOutputRequestBuilder;
+use App\Services\Ogc\ProcessSchemaNormalizer;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -43,6 +47,9 @@ class ProcessExecutionController extends Controller
         StoreProcessExecutionRequest $request,
         string $process,
         OgcProcessCache $cache,
+        ProcessSchemaNormalizer $schemaNormalizer,
+        ProcessInputValidator $inputValidator,
+        ProcessOutputRequestBuilder $outputRequestBuilder,
         CreateProcessExecution $createProcessExecution,
     ): RedirectResponse {
         $user = $request->user();
@@ -52,7 +59,19 @@ class ProcessExecutionController extends Controller
 
         abort_if($processDescription === null, 409, 'Process description is still warming up.');
 
-        $payload = $request->executionPayload();
+        $inputErrors = $inputValidator->errors(
+            $schemaNormalizer->normalize($processDescription)['fields'],
+            $request->executionInputs(),
+        );
+
+        if ($inputErrors !== []) {
+            throw ValidationException::withMessages($inputErrors);
+        }
+
+        $payload = [
+            'inputs' => $request->executionInputs(),
+            'outputs' => $outputRequestBuilder->forProcess($processDescription),
+        ];
         $mode = $request->executionMode();
 
         $execution = $createProcessExecution->handle(

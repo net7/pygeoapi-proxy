@@ -43,8 +43,8 @@ test('it normalizes live conduit inputs and outputs', function () {
     ])
         ->and($normalized['outputs'])->toHaveKeys(['gas', 'velocity', 'pressure', 'outfile', 'exit'])
         ->and(array_column($normalized['fields']['searching_mode']['variants'], 'label'))->toBe([
-            'Conduit diameter [m]',
-            'Mass flow rate [kg/s] (-g cylinder) or mass flow rate per unit surface [kg/(s m^2)] (-g fissure)',
+            '[placeholder per titolo 1]',
+            '[placeholder per titolo 2]',
         ]);
 });
 
@@ -107,28 +107,30 @@ test('it keeps description only one of variant labels compact', function () {
         ->and($variant['description'])->toStartWith('Long variant description');
 });
 
-test('it derives compact labels for constant one of variants', function () {
+test('it preserves advertised one of variant titles', function () {
     $field = app(ProcessSchemaNormalizer::class)
         ->normalize(ogcFixture('process-solwcad'))['fields']['swinput.data'];
 
     expect($field['variants'])->toHaveCount(4)
         ->and(array_column($field['variants'], 'label'))->toBe([
-            'kl = 0',
-            'kl = 1',
-            'kl = 2',
-            'kl = -1',
+            '[placeholder per titolo 1]',
+            '[placeholder per titolo 2]',
+            '[placeholder per titolo 3]',
+            '[placeholder per titolo 4]',
         ]);
 });
 
 test('it normalizes array tables', function () {
     $process = ogcFixture('process-solwcad');
+    $normalized = app(ProcessSchemaNormalizer::class)->normalize($process);
 
-    $field = app(ProcessSchemaNormalizer::class)->normalize($process)['fields']['sw.data'];
+    $field = $normalized['fields']['sw.data'];
 
     expect($field['kind'])->toBe('array_table')
         ->and($field['minItems'])->toBe(1)
         ->and($field['columns'])->toHaveCount(14)
-        ->and($field['columns'][0]['pattern'])->toBe('^([+-]?([\d]+\.|[\d]*\.[\d]+))([Dd][+-]?[\d]+)?$');
+        ->and($field['columns'][0]['pattern'])->toBe('^([+-]?([\d]+\.|[\d]*\.[\d]+))([Dd][+-]?[\d]+)?$')
+        ->and($normalized['outputs']['solwcad_out']['mediaType'])->toBe('application/json');
 });
 
 test('it normalizes repeatable object arrays', function () {

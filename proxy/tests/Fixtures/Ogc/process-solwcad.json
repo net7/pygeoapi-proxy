@@ -1,278 +1,351 @@
 {
-    "id": "solwcad",
-    "version": "1.0.0",
-    "jobControlOptions": ["async-execute", "sync-execute"],
-    "outputTransmission": ["value", "reference"],
-    "links": [
-        {
-            "href": "https://civ.pi.ingv.it/project/solwcad/",
-            "rel": "about",
-            "type": "text/html",
-            "hreflang": "en-US",
-            "title": "SOLWCAD | Computational Infrastructure for Volcanology"
-        },
-        {
-            "href": "https://www.pi.ingv.it/progetti/eurovolc/#solwcad",
-            "rel": "alternate",
-            "type": "text/html",
-            "hreflang": "en-US",
-            "title": "EUROVOLC: Volcano Dynamics Computational Centre"
-        },
-        {
-            "href": "https://www.sciencedirect.com/science/article/pii/S0009254106000532?via%3Dihub",
-            "rel": "describedby",
-            "type": "text/html",
-            "hreflang": "en-US",
-            "title": "The compositional dependence of the saturation surface of H2O + CO2 fluids in silicate melts"
-        },
-        {
-            "type": "application/json",
-            "rel": "self",
-            "href": "https://voice.pi.ingv.it/geoinquire/processes/solwcad?f=json",
-            "title": "Process description as JSON",
-            "hreflang": "it-IT"
-        },
-        {
-            "type": "text/html",
-            "rel": "alternate",
-            "href": "https://voice.pi.ingv.it/geoinquire/processes/solwcad?f=html",
-            "title": "Process description as HTML",
-            "hreflang": "it-IT"
-        },
-        {
-            "type": "text/html",
-            "rel": "http://www.opengis.net/def/rel/ogc/1.0/job-list",
-            "href": "https://voice.pi.ingv.it/geoinquire/jobs?f=html",
-            "title": "Jobs list as HTML",
-            "hreflang": "it-IT"
-        },
-        {
-            "type": "application/json",
-            "rel": "http://www.opengis.net/def/rel/ogc/1.0/job-list",
-            "href": "https://voice.pi.ingv.it/geoinquire/jobs?f=json",
-            "title": "Jobs list as JSON",
-            "hreflang": "it-IT"
-        },
-        {
-            "type": "application/json",
-            "rel": "http://www.opengis.net/def/rel/ogc/1.0/execute",
-            "href": "https://voice.pi.ingv.it/geoinquire/processes/solwcad/execution?f=json",
-            "title": "Execution for this process as JSON",
-            "hreflang": "it-IT"
-        }
-    ],
-    "title": "SOLWCAD",
-    "description": "Fortran code to compute the saturation surface of H2O-CO2 fluids in silicate melts of arbitrary composition.",
-    "keywords": ["Fortran code", "saturation surface", "other keywords..."],
-    "inputs": {
-        "swinput.data": {
-            "title": "Desired computation",
-            "description": "Specifics for the desired computation.",
-            "schema": {
-                "title": "Desired computation",
-                "description": "Specifics for the desired computation.",
-                "type": "object",
-                "oneOf": [
-                    {
-                        "description": "The computation is performed at user-defined P-T conditions in sw.data. H2O and CO2 contents in sw.data refer to total amounts in the two-phase magma, or to (mass of volatile component) / (mass of melt + fluid phases). SOLWCAD computes the partitioning of the two volatiles in the fluid and melt phases for user-defined composition. Computations are performed from item ndat1 to item ndat2 (only one computation is performed if ndat1 = ndat2).",
-                        "required": ["ndat1", "ndat2", "kl"],
-                        "additionalProperties": false,
-                        "properties": {
-                            "ndat1": {
-                                "type": "integer",
-                                "description": "Computations are performed from item ndat1 of sw.data"
-                            },
-                            "ndat2": {
-                                "type": "integer",
-                                "description": "Computations are performed up to item ndat2 of sw.data"
-                            },
-                            "kl": {
-                                "type": "integer",
-                                "enum": [0]
-                            }
-                        }
-                    },
-                    {
-                        "description": "The computation is performed with reference to item ndat1 in sw.data, at constant user-defined T and for pressure from user-defined P to atmospheric. At each pressure, a computation similar to the one for kl=0 is performed.",
-                        "required": ["ndat1", "kl", "iopen"],
-                        "properties": {
-                            "ndat1": {
-                                "type": "integer",
-                                "description": "Computations are performed from item ndat1 of sw.data"
-                            },
-                            "kl": {
-                                "type": "integer",
-                                "enum": [1]
-                            },
-                            "iopen": {
-                                "type": "integer",
-                                "enum": [0, 1],
-                                "description": "0 for closed-system calculations, 1 for open system calculations."
-                            },
-                            "fopen": {
-                                "type": "string",
-                                "pattern": "^([+-]?([\\d]+\\.|[\\d]*\\.[\\d]+))([Dd][+-]?[\\d]+)?$",
-                                "description": "Only used with iopen =1. It specifies the weight fraction of fluid phase lost at each subsequent computation step."
-                            }
-                        }
-                    },
-                    {
-                        "description": "Same as for kl=1, but for fixed P (from sw.data) and T from the item ndat1 in sw.data to a user-defined value tlimit, with user-defined T-steps.",
-                        "required": ["ndat1", "kl", "iopen", "dt", "tlimit"],
-                        "properties": {
-                            "ndat1": {
-                                "type": "integer",
-                                "description": "Computations are performed on item ndat1 of sw.data"
-                            },
-                            "kl": {
-                                "type": "integer",
-                                "enum": [2]
-                            },
-                            "iopen": {
-                                "type": "integer",
-                                "enum": [0, 1],
-                                "description": "0 for closed-system calculations, 1 for open system calculations."
-                            },
-                            "fopen": {
-                                "type": "string",
-                                "pattern": "^([+-]?([\\d]+\\.|[\\d]*\\.[\\d]+))([Dd][+-]?[\\d]+)?$",
-                                "description": "Only used with iopen =1. It specifies the weight fraction of fluid phase lost at each subsequent computation step."
-                            },
-                            "dt": {
-                                "type": "string",
-                                "pattern": "^([+-]?([\\d]+\\.|[\\d]*\\.[\\d]+))([Dd][+-]?[\\d]+)?$",
-                                "description": "The length of the T-steps (either positive or negative)."
-                            },
-                            "tlimit": {
-                                "type": "string",
-                                "pattern": "^([+-]?([\\d]+\\.|[\\d]*\\.[\\d]+))([Dd][+-]?[\\d]+)?$",
-                                "description": "The temperature up to which separate computations are performed. It can be either higher (dt&gt;0) or lower (dt&lt;0) than T."
-                            }
-                        }
-                    },
-                    {
-                        "description": "H2O and CO2 in sw.data items represent amounts dissolved in the melt phase. For user-defined melt composition and temperature, SOLWCAD returns the equilibrium pressure and composition of the coexisting fluid phase. Computations are performed from item ndat1 to item ndat2 (only one computation is performed if ndat1=ndat2 ). This kind of computation is commonly used in the analysis of melt inclusion data.",
-                        "required": ["ndat1", "ndat2", "kl"],
-                        "properties": {
-                            "ndat1": {
-                                "type": "integer",
-                                "description": "Computations are performed on item ndat1 of sw.data"
-                            },
-                            "ndat2": {
-                                "type": "integer",
-                                "description": "Computations are performed up to item ndat2 of sw.data"
-                            },
-                            "kl": {
-                                "type": "integer",
-                                "enum": [-1]
-                            }
-                        }
-                    }
+  "id": "solwcad",
+  "version": "1.0.1",
+  "jobControlOptions": [
+    "async-execute",
+    "sync-execute"
+  ],
+  "outputTransmission": [
+    "value",
+    "reference"
+  ],
+  "links": [
+    {
+      "href": "https://civ.pi.ingv.it/project/solwcad/",
+      "rel": "about",
+      "type": "text/html",
+      "hreflang": "en-US",
+      "title": "SOLWCAD | Computational Infrastructure for Volcanology"
+    },
+    {
+      "href": "https://www.pi.ingv.it/progetti/eurovolc/#solwcad",
+      "rel": "alternate",
+      "type": "text/html",
+      "hreflang": "en-US",
+      "title": "EUROVOLC: Volcano Dynamics Computational Centre"
+    },
+    {
+      "href": "https://www.sciencedirect.com/science/article/pii/S0009254106000532?via%3Dihub",
+      "rel": "describedby",
+      "type": "text/html",
+      "hreflang": "en-US",
+      "title": "The compositional dependence of the saturation surface of H2O + CO2 fluids in silicate melts"
+    },
+    {
+      "type": "application/json",
+      "rel": "self",
+      "href": "https://voice.pi.ingv.it/geoinquire/processes/solwcad?f=json",
+      "title": "Process description as JSON",
+      "hreflang": "it-IT"
+    },
+    {
+      "type": "text/html",
+      "rel": "alternate",
+      "href": "https://voice.pi.ingv.it/geoinquire/processes/solwcad?f=html",
+      "title": "Process description as HTML",
+      "hreflang": "it-IT"
+    },
+    {
+      "type": "text/html",
+      "rel": "http://www.opengis.net/def/rel/ogc/1.0/job-list",
+      "href": "https://voice.pi.ingv.it/geoinquire/jobs?f=html",
+      "title": "Jobs list as HTML",
+      "hreflang": "it-IT"
+    },
+    {
+      "type": "application/json",
+      "rel": "http://www.opengis.net/def/rel/ogc/1.0/job-list",
+      "href": "https://voice.pi.ingv.it/geoinquire/jobs?f=json",
+      "title": "Jobs list as JSON",
+      "hreflang": "it-IT"
+    },
+    {
+      "type": "application/json",
+      "rel": "http://www.opengis.net/def/rel/ogc/1.0/execute",
+      "href": "https://voice.pi.ingv.it/geoinquire/processes/solwcad/execution?f=json",
+      "title": "Execution for this process as JSON",
+      "hreflang": "it-IT"
+    }
+  ],
+  "title": "SOLWCAD",
+  "description": "Fortran code to compute the saturation surface of H2O-CO2 fluids in silicate melts of arbitrary composition.",
+  "keywords": [
+    "Fortran code",
+    "saturation surface",
+    "other keywords..."
+  ],
+  "inputs": {
+    "swinput.data": {
+      "title": "Desired computation",
+      "description": "Specifics for the desired computation.",
+      "schema": {
+        "title": "Desired computation",
+        "description": "Specifics for the desired computation.",
+        "type": "object",
+        "oneOf": [
+          {
+            "title": "[placeholder per titolo 1]",
+            "description": "The computation is performed at user-defined P-T conditions in sw.data. H2O and CO2 contents in sw.data refer to total amounts in the two-phase magma, or to (mass of volatile component) / (mass of melt + fluid phases). SOLWCAD computes the partitioning of the two volatiles in the fluid and melt phases for user-defined composition. Computations are performed from item ndat1 to item ndat2 (only one computation is performed if ndat1 = ndat2).",
+            "required": [
+              "ndat1",
+              "ndat2",
+              "kl"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "ndat1": {
+                "type": "integer",
+                "description": "Computations are performed from item ndat1 of sw.data"
+              },
+              "ndat2": {
+                "type": "integer",
+                "description": "Computations are performed up to item ndat2 of sw.data"
+              },
+              "kl": {
+                "type": "integer",
+                "enum": [
+                  0
                 ]
-            },
-            "minOccurs": 1,
-            "maxOccurs": 1
-        },
-        "sw.data": {
-            "title": "User data",
-            "description": "user-defined conditions in terms of pressure, temperature, and composition, each one arranged on a single item. Each item contains the followings: pressure (Pa); temperature (K); H2O content (wt fraction)**; CO2 content (wt fraction)**; the following ten quantities specify the volatile-free melt composition (wt fraction)***, in the following order: SiO2; TiO2; Al2O3; Fe2O3; FeO; MnO; MgO; CaO; Na2O; K2O. **H2O and CO2 contents may refer to i) total amounts in the two-phase magma, equal to (mass of volatile in the fluid + mass of volatile dissolved in the melt) / (mass of the gas phase + mass of the melt phase); or ii) the amounts dissolved in the melt phase, that is, (mass of volatile dissolved in the melt) / (mass of the melt phase). The specific choice is determined by the parameter kl in swinput.data.",
-            "schema": {
-                "title": "User data",
-                "description": "user-defined conditions in terms of pressure, temperature, and composition, each one arranged on a single item. Each item contains the followings: pressure (Pa); temperature (K); H2O content (wt fraction)**; CO2 content (wt fraction)**; the following ten quantities specify the volatile-free melt composition (wt fraction)***, in the following order: SiO2; TiO2; Al2O3; Fe2O3; FeO; MnO; MgO; CaO; Na2O; K2O. **H2O and CO2 contents may refer to i) total amounts in the two-phase magma, equal to (mass of volatile in the fluid + mass of volatile dissolved in the melt) / (mass of the gas phase + mass of the melt phase); or ii) the amounts dissolved in the melt phase, that is, (mass of volatile dissolved in the melt) / (mass of the melt phase). The specific choice is determined by the parameter kl in swinput.data.",
-                "type": "array",
-                "minItems": 1,
-                "items": {
-                    "type": "array",
-                    "minItems": 14,
-                    "maxItems": 14,
-                    "items": {
-                        "type": "string",
-                        "pattern": "^([+-]?([\\d]+\\.|[\\d]*\\.[\\d]+))([Dd][+-]?[\\d]+)?$"
-                    }
-                }
-            },
-            "minOccurs": 1,
-            "maxOccurs": 1
-        }
-    },
-    "outputs": {
-        "solwcad_out": {
-            "title": "Output result",
-            "description": "Each record item contains the following quantities: Pressure (Mpa); Temperature (K); Total ( kl &gt;0) or dissolved ( kl =-1) H2O (wt%); Total ( kl &gt;0) or dissolved ( kl =-1) CO2 (wt%); H2O dissolved in the melt (wt%); CO2 dissolved in the melt (ppm); CO2 in the fluid (wt%); CO2 in the fluid (mol%); Amount of fluid phase in magma (wt%); Amount of fluid phase in magma (vol%); Density of the melt phase (kg/m3 ); Density of the gas phase (kg/m3 ); Density of the two-phase magma (kg/m3 ); Viscosity of the melt phase [log (Pa s)]; Viscosity of the two-phase magma [log (Pa s)].",
-            "minOccurs": 1,
-            "maxOccurs": 1,
-            "schema": {
-                "type": "array",
-                "minItems": 1,
-                "items": {
-                    "type": "array",
-                    "minItems": 15,
-                    "maxItems": 15,
-                    "items": {
-                        "type": "string",
-                        "pattern": "^([+-]?(?:[[:digit:]]+\\.|[[:digit:]]*\\.[[:digit:]]+))(?:[Dd][+-]?[[:digit:]]+)?$"
-                    }
-                },
-                "contentMediaType": "application/json"
+              }
             }
-        }
-    },
-    "examples": [
-        {
-            "payload_example": {
-                "inputs": {
-                    "swinput.data": {
-                        "value": {
-                            "ndat1": 1,
-                            "ndat2": 2,
-                            "kl": 0
-                        }
-                    },
-                    "sw.data": [
-                        [
-                            "1.00d8",
-                            "1273.",
-                            ".0400",
-                            ".0200",
-                            ".7653",
-                            ".0032",
-                            ".1201",
-                            ".0027",
-                            ".0246",
-                            ".0006",
-                            ".0018",
-                            ".0132",
-                            ".0378",
-                            ".0306"
-                        ],
-                        [
-                            "2.00d8",
-                            "1173.",
-                            ".0200",
-                            ".0010",
-                            ".7053",
-                            ".0032",
-                            ".1301",
-                            ".0027",
-                            ".0146",
-                            ".0006",
-                            ".0118",
-                            ".0232",
-                            ".0378",
-                            ".0306"
-                        ]
-                    ]
-                }
+          },
+          {
+            "title": "[placeholder per titolo 2]",
+            "description": "The computation is performed with reference to item ndat1 in sw.data, at constant user-defined T and for pressure from user-defined P to atmospheric. At each pressure, a computation similar to the one for kl=0 is performed.",
+            "required": [
+              "ndat1",
+              "kl",
+              "iopen"
+            ],
+            "properties": {
+              "ndat1": {
+                "type": "integer",
+                "description": "Computations are performed from item ndat1 of sw.data"
+              },
+              "kl": {
+                "type": "integer",
+                "enum": [
+                  1
+                ]
+              },
+              "iopen": {
+                "type": "integer",
+                "enum": [
+                  0,
+                  1
+                ],
+                "description": "0 for closed-system calculations, 1 for open system calculations."
+              },
+              "fopen": {
+                "type": "string",
+                "pattern": "^([+-]?([\\d]+\\.|[\\d]*\\.[\\d]+))([Dd][+-]?[\\d]+)?$",
+                "description": "Only used with iopen =1. It specifies the weight fraction of fluid phase lost at each subsequent computation step."
+              }
             }
-        },
-        {
-            "curl_example": "curl -i -k -L -X POST \"https://voice.pi.ingv.it/geoinquire/processes/solwcad/execution\" -H \"Content-Type: application/json\" -d '{ \"inputs\":{\"swinput.data\":{\"value\":{\"ndat1\":1,\"ndat2\":2,\"kl\":0}},\"sw.data\":[[\"1.00d8\",\"1273.\",\".0400\",\".0200\",\".7653\",\".0032\",\".1201\",\".0027\",\".0246\",\".0006\",\".0018\",\".0132\",\".0378\",\".0306\"],[\"2.00d8\",\"1173.\",\".0200\",\".0010\",\".7053\",\".0032\",\".1301\",\".0027\",\".0146\",\".0006\",\".0118\",\".0232\",\".0378\",\".0306\"]]}}'"
-        },
-        {
-            "curl_jobStatus_request": "curl -k -L \"https://voice.pi.ingv.it/jobs/&lt;jobID&gt;\""
-        },
-        {
-            "curl_jobResults_request": "curl -k -L \"https://voice.pi.ingv.it/jobs/&lt;jobID&gt;/results\"?f=json"
+          },
+          {
+            "title": "[placeholder per titolo 3]",
+            "description": "Same as for kl=1, but for fixed P (from sw.data) and T from the item ndat1 in sw.data to a user-defined value tlimit, with user-defined T-steps.",
+            "required": [
+              "ndat1",
+              "kl",
+              "iopen",
+              "dt",
+              "tlimit"
+            ],
+            "properties": {
+              "ndat1": {
+                "type": "integer",
+                "description": "Computations are performed on item ndat1 of sw.data"
+              },
+              "kl": {
+                "type": "integer",
+                "enum": [
+                  2
+                ]
+              },
+              "iopen": {
+                "type": "integer",
+                "enum": [
+                  0,
+                  1
+                ],
+                "description": "0 for closed-system calculations, 1 for open system calculations."
+              },
+              "fopen": {
+                "type": "string",
+                "pattern": "^([+-]?([\\d]+\\.|[\\d]*\\.[\\d]+))([Dd][+-]?[\\d]+)?$",
+                "description": "Only used with iopen =1. It specifies the weight fraction of fluid phase lost at each subsequent computation step."
+              },
+              "dt": {
+                "type": "string",
+                "pattern": "^([+-]?([\\d]+\\.|[\\d]*\\.[\\d]+))([Dd][+-]?[\\d]+)?$",
+                "description": "The length of the T-steps (either positive or negative)."
+              },
+              "tlimit": {
+                "type": "string",
+                "pattern": "^([+-]?([\\d]+\\.|[\\d]*\\.[\\d]+))([Dd][+-]?[\\d]+)?$",
+                "description": "The temperature up to which separate computations are performed. It can be either higher (dt&gt;0) or lower (dt&lt;0) than T."
+              }
+            }
+          },
+          {
+            "title": "[placeholder per titolo 4]",
+            "description": "H2O and CO2 in sw.data items represent amounts dissolved in the melt phase. For user-defined melt composition and temperature, SOLWCAD returns the equilibrium pressure and composition of the coexisting fluid phase. Computations are performed from item ndat1 to item ndat2 (only one computation is performed if ndat1=ndat2 ). This kind of computation is commonly used in the analysis of melt inclusion data.",
+            "required": [
+              "ndat1",
+              "ndat2",
+              "kl"
+            ],
+            "properties": {
+              "ndat1": {
+                "type": "integer",
+                "description": "Computations are performed on item ndat1 of sw.data"
+              },
+              "ndat2": {
+                "type": "integer",
+                "description": "Computations are performed up to item ndat2 of sw.data"
+              },
+              "kl": {
+                "type": "integer",
+                "enum": [
+                  -1
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "minOccurs": 1,
+      "maxOccurs": 1
+    },
+    "sw.data": {
+      "title": "User data",
+      "description": "user-defined conditions in terms of pressure, temperature, and composition, each one arranged on a single item. Each item contains the followings: pressure (Pa); temperature (K); H2O content (wt fraction)**; CO2 content (wt fraction)**; the following ten quantities specify the volatile-free melt composition (wt fraction)***, in the following order: SiO2; TiO2; Al2O3; Fe2O3; FeO; MnO; MgO; CaO; Na2O; K2O. **H2O and CO2 contents may refer to i) total amounts in the two-phase magma, equal to (mass of volatile in the fluid + mass of volatile dissolved in the melt) / (mass of the gas phase + mass of the melt phase); or ii) the amounts dissolved in the melt phase, that is, (mass of volatile dissolved in the melt) / (mass of the melt phase). The specific choice is determined by the parameter kl in swinput.data.",
+      "schema": {
+        "title": "User data",
+        "description": "user-defined conditions in terms of pressure, temperature, and composition, each one arranged on a single item. Each item contains the followings: pressure (Pa); temperature (K); H2O content (wt fraction)**; CO2 content (wt fraction)**; the following ten quantities specify the volatile-free melt composition (wt fraction)***, in the following order: SiO2; TiO2; Al2O3; Fe2O3; FeO; MnO; MgO; CaO; Na2O; K2O. **H2O and CO2 contents may refer to i) total amounts in the two-phase magma, equal to (mass of volatile in the fluid + mass of volatile dissolved in the melt) / (mass of the gas phase + mass of the melt phase); or ii) the amounts dissolved in the melt phase, that is, (mass of volatile dissolved in the melt) / (mass of the melt phase). The specific choice is determined by the parameter kl in swinput.data.",
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "array",
+          "minItems": 14,
+          "maxItems": 14,
+          "items": {
+            "type": "string",
+            "pattern": "^([+-]?([\\d]+\\.|[\\d]*\\.[\\d]+))([Dd][+-]?[\\d]+)?$"
+          }
         }
-    ]
+      },
+      "minOccurs": 1,
+      "maxOccurs": 1
+    }
+  },
+  "outputs": {
+    "solwcad_out": {
+      "title": "Output result",
+      "description": "Each record item contains the following quantities: Pressure (Mpa); Temperature (K); Total ( kl &gt;0) or dissolved ( kl =-1) H2O (wt%); Total ( kl &gt;0) or dissolved ( kl =-1) CO2 (wt%); H2O dissolved in the melt (wt%); CO2 dissolved in the melt (ppm); CO2 in the fluid (wt%); CO2 in the fluid (mol%); Amount of fluid phase in magma (wt%); Amount of fluid phase in magma (vol%); Density of the melt phase (kg/m3 ); Density of the gas phase (kg/m3 ); Density of the two-phase magma (kg/m3 ); Viscosity of the melt phase [log (Pa s)]; Viscosity of the two-phase magma [log (Pa s)].",
+      "minOccurs": 1,
+      "maxOccurs": 1,
+      "schema": {
+        "oneOf": [
+          {
+            "title": "JSON Array",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "array",
+              "minItems": 15,
+              "maxItems": 15,
+              "items": {
+                "type": "string",
+                "pattern": "^([+-]?(?:[[:digit:]]+\\.|[[:digit:]]*\\.[[:digit:]]+))(?:[Dd][+-]?[[:digit:]]+)?$"
+              }
+            },
+            "contentMediaType": "application/json"
+          },
+          {
+            "title": "Plain text Array",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "array",
+              "minItems": 15,
+              "maxItems": 15,
+              "items": {
+                "type": "string",
+                "pattern": "^([+-]?(?:[[:digit:]]+\\.|[[:digit:]]*\\.[[:digit:]]+))(?:[Dd][+-]?[[:digit:]]+)?$"
+              }
+            },
+            "contentMediaType": "text/plain"
+          }
+        ]
+      }
+    }
+  },
+  "examples": [
+    {
+      "payload_example": {
+        "inputs": {
+          "swinput.data": {
+            "value": {
+              "ndat1": 1,
+              "ndat2": 2,
+              "kl": 0
+            }
+          },
+          "sw.data": [
+            [
+              "1.00d8",
+              "1273.",
+              ".0400",
+              ".0200",
+              ".7653",
+              ".0032",
+              ".1201",
+              ".0027",
+              ".0246",
+              ".0006",
+              ".0018",
+              ".0132",
+              ".0378",
+              ".0306"
+            ],
+            [
+              "2.00d8",
+              "1173.",
+              ".0200",
+              ".0010",
+              ".7053",
+              ".0032",
+              ".1301",
+              ".0027",
+              ".0146",
+              ".0006",
+              ".0118",
+              ".0232",
+              ".0378",
+              ".0306"
+            ]
+          ]
+        },
+        "outputs": {
+          "solwcad_out": {
+            "format": {
+              "mediaType": "text/plain"
+            }
+          }
+        }
+      }
+    },
+    {
+      "curl_example": "curl -i -k -L -X POST \"https://voice.pi.ingv.it/geoinquire/processes/solwcad/execution\" -H \"Content-Type: application/json\" -d '{ \"inputs\":{\"swinput.data\":{\"value\":{\"ndat1\":1,\"ndat2\":2,\"kl\":0}},\"sw.data\":[[\"1.00d8\",\"1273.\",\".0400\",\".0200\",\".7653\",\".0032\",\".1201\",\".0027\",\".0246\",\".0006\",\".0018\",\".0132\",\".0378\",\".0306\"],[\"2.00d8\",\"1173.\",\".0200\",\".0010\",\".7053\",\".0032\",\".1301\",\".0027\",\".0146\",\".0006\",\".0118\",\".0232\",\".0378\",\".0306\"]]}, \"outputs\":{\"solwcad_out\":{\"format\":{\"mediaType\":\"text/plain\"}}}}'"
+    },
+    {
+      "curl_jobStatus_request": "curl -k -L \"https://voice.pi.ingv.it/jobs/&lt;jobID&gt;\""
+    },
+    {
+      "curl_jobResults_request": "curl -k -L \"https://voice.pi.ingv.it/jobs/&lt;jobID&gt;/results?f=json\""
+    }
+  ]
 }

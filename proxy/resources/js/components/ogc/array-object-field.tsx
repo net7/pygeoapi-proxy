@@ -2,8 +2,14 @@ import { Plus, Trash2 } from 'lucide-react';
 
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
 import { Button } from '@/components/ui/button';
-import { FieldGroup, FieldLegend, FieldSet } from '@/components/ui/field';
+import {
+    FieldDescription,
+    FieldGroup,
+    FieldLegend,
+    FieldSet,
+} from '@/components/ui/field';
 import { useTranslation } from '@/hooks/use-translation';
+import { fieldDisplayLabel } from '@/lib/ogc-fields';
 import type { OgcNormalizedField } from '@/types';
 
 export default function ArrayObjectField({
@@ -26,7 +32,12 @@ export default function ArrayObjectField({
 
     return (
         <FieldSet className="max-w-full min-w-0">
-            <FieldLegend>{field.title}</FieldLegend>
+            <FieldLegend>{fieldDisplayLabel(field)}</FieldLegend>
+            {field.description ? (
+                <FieldDescription className="break-words">
+                    {field.description}
+                </FieldDescription>
+            ) : null}
             <FieldGroup className="min-w-0">
                 {rows.map((row, index) => {
                     const rowValue = isRecord(row) ? row : {};
@@ -42,6 +53,11 @@ export default function ArrayObjectField({
                                     variant="destructive"
                                     size="icon"
                                     aria-label={t('ogc.removeRow')}
+                                    disabled={
+                                        field.minItems !== null &&
+                                        field.minItems !== undefined &&
+                                        rows.length <= field.minItems
+                                    }
                                     onClick={() =>
                                         onChange(
                                             rows.filter(
@@ -76,6 +92,11 @@ export default function ArrayObjectField({
             <Button
                 type="button"
                 variant="outline"
+                disabled={
+                    field.maxItems !== null &&
+                    field.maxItems !== undefined &&
+                    rows.length >= field.maxItems
+                }
                 onClick={() => onChange([...rows, {}])}
             >
                 <Plus data-icon="inline-start" />

@@ -39,7 +39,13 @@ export type OgcNormalizedField = {
         label: string;
         type: string;
         pattern?: string | null;
+        minimum?: number | null;
+        maximum?: number | null;
+        exclusiveMinimum?: number | null;
+        exclusiveMaximum?: number | null;
     }[];
+    minOccurs?: number | null;
+    maxOccurs?: number | null;
     minimum?: number | null;
     maximum?: number | null;
     exclusiveMinimum?: number | null;

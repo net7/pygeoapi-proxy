@@ -20,6 +20,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useTranslation } from '@/hooks/use-translation';
+import { fieldDisplayLabel, referenceDisplayLabel } from '@/lib/ogc-fields';
 import type { OgcNormalizedField } from '@/types';
 
 type InputMode = 'inline' | 'reference' | 'upload';
@@ -92,7 +93,7 @@ export default function DataInputField({
 
     return (
         <FieldSet className="max-w-full min-w-0">
-            <FieldLegend>{field.title}</FieldLegend>
+            <FieldLegend>{fieldDisplayLabel(field)}</FieldLegend>
             {field.description ? (
                 <FieldDescription className="break-words">
                     {field.description}
@@ -148,7 +149,9 @@ export default function DataInputField({
                                                 key={reference.href}
                                                 value={reference.href}
                                             >
-                                                {reference.label}
+                                                {referenceDisplayLabel(
+                                                    reference,
+                                                )}
                                             </SelectItem>
                                         ))}
                                     </SelectGroup>

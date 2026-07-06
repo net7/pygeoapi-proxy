@@ -334,6 +334,9 @@ const it = {
         defaultResponse: 'Risposta predefinita',
         execute: 'Esegui',
         execution: 'Esecuzione',
+        expectedOutputs: 'Output previsti',
+        expectedOutputsDescription:
+            'Il processo produrrà automaticamente questi risultati.',
         file: 'File',
         inline: 'Inline',
         inputs: 'Input',
@@ -770,6 +773,9 @@ const en = {
         defaultResponse: 'Default response',
         execute: 'Execute',
         execution: 'Execution',
+        expectedOutputs: 'Expected outputs',
+        expectedOutputsDescription:
+            'The process will automatically produce these results.',
         file: 'File',
         inline: 'Inline',
         inputs: 'Inputs',

@@ -20,6 +20,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { htmlPatternForInput } from '@/lib/html-pattern';
+import { fieldDisplayLabel, optionDisplayLabel } from '@/lib/ogc-fields';
 import type { OgcNormalizedField } from '@/types';
 
 export default function SchemaFieldRenderer({
@@ -36,7 +37,12 @@ export default function SchemaFieldRenderer({
 
         return (
             <FieldSet className="max-w-full min-w-0">
-                <FieldLegend>{field.title}</FieldLegend>
+                <FieldLegend>{fieldDisplayLabel(field)}</FieldLegend>
+                {field.description ? (
+                    <FieldDescription className="break-words">
+                        {field.description}
+                    </FieldDescription>
+                ) : null}
                 <FieldGroup className="min-w-0">
                     {Object.entries(field.fields).map(([key, child]) => (
                         <SchemaFieldRenderer
@@ -78,7 +84,12 @@ export default function SchemaFieldRenderer({
     if (field.kind === 'enum') {
         return (
             <Field className="min-w-0">
-                <FieldLabel>{field.title}</FieldLabel>
+                <FieldLabel>{fieldDisplayLabel(field)}</FieldLabel>
+                {field.description ? (
+                    <FieldDescription className="break-words">
+                        {field.description}
+                    </FieldDescription>
+                ) : null}
                 <Select
                     value={String(value ?? '')}
                     onValueChange={(selected) =>
@@ -95,24 +106,24 @@ export default function SchemaFieldRenderer({
                                     key={String(option)}
                                     value={String(option)}
                                 >
-                                    {String(option)}
+                                    {optionDisplayLabel(option)}
                                 </SelectItem>
                             ))}
                         </SelectGroup>
                     </SelectContent>
                 </Select>
-                {field.description ? (
-                    <FieldDescription className="break-words">
-                        {field.description}
-                    </FieldDescription>
-                ) : null}
             </Field>
         );
     }
 
     return (
         <Field className="min-w-0">
-            <FieldLabel>{field.title}</FieldLabel>
+            <FieldLabel>{fieldDisplayLabel(field)}</FieldLabel>
+            {field.description ? (
+                <FieldDescription className="break-words">
+                    {field.description}
+                </FieldDescription>
+            ) : null}
             <Input
                 className="min-w-0"
                 type={
@@ -121,8 +132,11 @@ export default function SchemaFieldRenderer({
                         : 'text'
                 }
                 value={String(value ?? '')}
-                min={field.minimum ?? field.exclusiveMinimum ?? undefined}
-                max={field.maximum ?? field.exclusiveMaximum ?? undefined}
+                required={field.required === true || Boolean(field.minOccurs)}
+                min={field.minimum ?? undefined}
+                max={field.maximum ?? undefined}
+                data-exclusive-minimum={field.exclusiveMinimum ?? undefined}
+                data-exclusive-maximum={field.exclusiveMaximum ?? undefined}
                 step={field.type === 'number' ? 'any' : undefined}
                 pattern={htmlPatternForInput({
                     type: field.type,
@@ -146,11 +160,6 @@ export default function SchemaFieldRenderer({
                     );
                 }}
             />
-            {field.description ? (
-                <FieldDescription className="break-words">
-                    {field.description}
-                </FieldDescription>
-            ) : null}
         </Field>
     );
 }

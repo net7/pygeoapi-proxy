@@ -156,6 +156,7 @@ test('it caches binary multipart results on local storage', function () {
 
 test('it expands object output links returned in json results', function () {
     Notification::fake();
+    Storage::fake('local');
 
     $execution = ProcessExecution::factory()->create([
         'process_id' => 'pybox',
@@ -196,6 +197,18 @@ test('it expands object output links returned in json results', function () {
                 ],
             ],
         ]),
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results/dem.tif' => Http::response('DEM-TIFF', 200, [
+            'Content-Type' => 'image/tiff; application=geotiff',
+        ]),
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results/dem.sld' => Http::response('<sld>dem</sld>', 200, [
+            'Content-Type' => 'application/vnd.ogc.sld+xml',
+        ]),
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results/invasion_map.tif' => Http::response('INVASION-TIFF', 200, [
+            'Content-Type' => 'image/tiff; application=geotiff',
+        ]),
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results/invasion_map.sld' => Http::response('<sld>invasion</sld>', 200, [
+            'Content-Type' => 'application/vnd.ogc.sld+xml',
+        ]),
     ]);
 
     (new PollProcessExecutionJob($execution->id))->handle(
@@ -213,18 +226,27 @@ test('it expands object output links returned in json results', function () {
         ])
         ->and($results['dem.geotiff']->remote_href)->toBe('https://voice.pi.ingv.it/geoinquire/jobs/job-123/results/dem.tif')
         ->and($results['dem.geotiff']->media_type)->toBe('image/tiff; application=geotiff')
+        ->and($results['dem.geotiff']->cache_status)->toBe(ResultCacheStatus::Cached)
+        ->and($results['dem.geotiff']->size_bytes)->toBe(strlen('DEM-TIFF'))
         ->and($results['dem.sld']->remote_href)->toBe('https://voice.pi.ingv.it/geoinquire/jobs/job-123/results/dem.sld')
         ->and($results['dem.sld']->media_type)->toBe('application/vnd.ogc.sld+xml')
+        ->and($results['dem.sld']->cache_status)->toBe(ResultCacheStatus::Cached)
         ->and($results['invasion_map.geotiff']->remote_href)->toBe('https://voice.pi.ingv.it/geoinquire/jobs/job-123/results/invasion_map.tif')
         ->and($results['invasion_map.geotiff']->media_type)->toBe('image/tiff; application=geotiff')
-        ->and($results['invasion_map.geotiff']->cache_status)->toBe(ResultCacheStatus::MetadataOnly)
+        ->and($results['invasion_map.geotiff']->cache_status)->toBe(ResultCacheStatus::Cached)
         ->and($results['invasion_map.sld']->remote_href)->toBe('https://voice.pi.ingv.it/geoinquire/jobs/job-123/results/invasion_map.sld')
         ->and($results['invasion_map.sld']->media_type)->toBe('application/vnd.ogc.sld+xml')
-        ->and($results['invasion_map.sld']->cache_status)->toBe(ResultCacheStatus::MetadataOnly);
+        ->and($results['invasion_map.sld']->cache_status)->toBe(ResultCacheStatus::Cached);
+
+    foreach ($results as $result) {
+        expect($result->storage_path)->not->toBeNull();
+        Storage::disk('local')->assertExists($result->storage_path);
+    }
 });
 
 test('it expands an indirect single object output returned by reference', function () {
     Notification::fake();
+    Storage::fake('local');
 
     $execution = ProcessExecution::factory()->create([
         'process_id' => 'pybox',
@@ -248,6 +270,12 @@ test('it expands an indirect single object output returned by reference', functi
                 'href' => 'https://voice_hrefs.pi.ingv.it/results/job-123_dem.sld',
             ],
         ]),
+        'https://voice_hrefs.pi.ingv.it/results/job-123_dem.tif' => Http::response('DEM-TIFF', 200, [
+            'Content-Type' => 'application/tiff; application=geotiff',
+        ]),
+        'https://voice_hrefs.pi.ingv.it/results/job-123_dem.sld' => Http::response('<sld>dem</sld>', 200, [
+            'Content-Type' => 'application/vnd.ogc.sld+xml',
+        ]),
     ]);
 
     (new PollProcessExecutionJob($execution->id))->handle(
@@ -261,13 +289,21 @@ test('it expands an indirect single object output returned by reference', functi
         ->and($results['dem.geotiff']->remote_href)->toBe('https://voice_hrefs.pi.ingv.it/results/job-123_dem.tif')
         ->and($results['dem.geotiff']->media_type)->toBe('application/tiff; application=geotiff')
         ->and($results['dem.geotiff']->transmission_mode)->toBe('reference')
+        ->and($results['dem.geotiff']->cache_status)->toBe(ResultCacheStatus::Cached)
         ->and($results['dem.sld']->remote_href)->toBe('https://voice_hrefs.pi.ingv.it/results/job-123_dem.sld')
         ->and($results['dem.sld']->media_type)->toBe('application/vnd.ogc.sld+xml')
-        ->and($results['dem.sld']->transmission_mode)->toBe('reference');
+        ->and($results['dem.sld']->transmission_mode)->toBe('reference')
+        ->and($results['dem.sld']->cache_status)->toBe(ResultCacheStatus::Cached);
+
+    foreach ($results as $result) {
+        expect($result->storage_path)->not->toBeNull();
+        Storage::disk('local')->assertExists($result->storage_path);
+    }
 });
 
 test('it downloads multipart result links and expands indirect object output locations', function () {
     Notification::fake();
+    Storage::fake('local');
 
     $boundary = 'indirect-boundary';
     $body = implode("\r\n", [
@@ -317,6 +353,12 @@ test('it downloads multipart result links and expands indirect object output loc
                 'href' => 'https://voice_hrefs.pi.ingv.it/results/job-123_dem.sld',
             ],
         ]),
+        'https://voice_hrefs.pi.ingv.it/results/job-123_dem.tif' => Http::response('DEM-TIFF', 200, [
+            'Content-Type' => 'application/tiff; application=geotiff',
+        ]),
+        'https://voice_hrefs.pi.ingv.it/results/job-123_dem.sld' => Http::response('<sld>dem</sld>', 200, [
+            'Content-Type' => 'application/vnd.ogc.sld+xml',
+        ]),
     ]);
 
     (new PollProcessExecutionJob($execution->id))->handle(
@@ -328,7 +370,14 @@ test('it downloads multipart result links and expands indirect object output loc
     expect($results)->toHaveCount(2)
         ->and($results)->toHaveKeys(['dem.geotiff', 'dem.sld'])
         ->and($results['dem.geotiff']->remote_href)->toBe('https://voice_hrefs.pi.ingv.it/results/job-123_dem.tif')
-        ->and($results['dem.sld']->remote_href)->toBe('https://voice_hrefs.pi.ingv.it/results/job-123_dem.sld');
+        ->and($results['dem.geotiff']->cache_status)->toBe(ResultCacheStatus::Cached)
+        ->and($results['dem.sld']->remote_href)->toBe('https://voice_hrefs.pi.ingv.it/results/job-123_dem.sld')
+        ->and($results['dem.sld']->cache_status)->toBe(ResultCacheStatus::Cached);
+
+    foreach ($results as $result) {
+        expect($result->storage_path)->not->toBeNull();
+        Storage::disk('local')->assertExists($result->storage_path);
+    }
 });
 
 test('it marks failed jobs and notifies the user', function () {

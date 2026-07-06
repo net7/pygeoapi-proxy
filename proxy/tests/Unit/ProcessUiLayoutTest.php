@@ -1,17 +1,20 @@
 <?php
 
-test('process form stacks name inputs outputs and note as full width sections', function () {
+test('process form stacks name inputs expected outputs and note as full width sections', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/dynamic-process-form.tsx');
 
     expect($source)
         ->toContain("name: ''")
+        ->toContain('ExpectedOutputs')
         ->toContain("t('jobs.processName')")
         ->toContain("t('jobs.processNamePlaceholder')")
         ->toContain("t('jobs.noteDescription')")
         ->toContain('aria-label={t(\'jobs.processName\')}')
         ->toContain('@/routes/processes/jobs')
         ->toContain('ogc.inputs')
-        ->toContain('ogc.outputs')
+        ->not->toContain('OutputSelector')
+        ->not->toContain('outputs: initialOutputValues')
+        ->not->toContain("setData('outputs'")
         ->not->toContain('ogc.execution')
         ->not->toContain('<Label htmlFor="process-name">')
         ->not->toContain('lg:grid-cols-[minmax(0,1fr)_22rem]')
@@ -719,32 +722,47 @@ test('job pages use readable dark mode status surfaces', function () {
         ->toContain('dark:border-slate-500/60');
 });
 
-test('output selector renders object output components', function () {
-    $source = file_get_contents(getcwd().'/resources/js/components/ogc/output-selector.tsx');
-    $helperSource = file_get_contents(getcwd().'/resources/js/lib/ogc-outputs.ts');
+test('expected outputs renders a simple unordered list', function () {
+    $source = file_get_contents(getcwd().'/resources/js/components/ogc/expected-outputs.tsx');
 
     expect($source)
-        ->toContain('outputComponents(output)')
-        ->toContain('componentId')
-        ->toContain('component.mediaType')
-        ->toContain('component.name')
-        ->toContain('componentId');
-
-    expect($helperSource)->toContain('output.components');
+        ->toContain('<ul')
+        ->toContain('list-disc')
+        ->toContain('output.title')
+        ->toContain('output.description')
+        ->not->toContain('output.mediaType')
+        ->not->toContain('automaticOutputTransmissionMode')
+        ->not->toContain('outputComponents');
 });
 
-test('process form requests object outputs by reference by default', function () {
+test('one of descriptions are shown before the selector', function () {
+    $source = file_get_contents(getcwd().'/resources/js/components/ogc/one-of-field.tsx');
+
+    $fieldDescriptionPosition = strpos($source, 'field.description ? (');
+    $selectedDescriptionPosition = strpos($source, 'selected.description ? (');
+    $selectPosition = strpos($source, '<Select');
+
+    expect($fieldDescriptionPosition)->not->toBeFalse()
+        ->and($selectedDescriptionPosition)->not->toBeFalse()
+        ->and($selectPosition)->not->toBeFalse()
+        ->and($fieldDescriptionPosition)->toBeLessThan($selectPosition)
+        ->and($selectedDescriptionPosition)->toBeLessThan($selectPosition);
+});
+
+test('process form does not expose output selection controls', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/dynamic-process-form.tsx');
     $helperSource = file_get_contents(getcwd().'/resources/js/lib/ogc-outputs.ts');
 
     expect($source)
-        ->toContain('initialOutputValues(schema.outputs)')
-        ->toContain('defaultOutputTransmissionMode(')
-        ->toContain('exampleTransmissionMode(')
-        ->toContain('outputs[outputId]');
+        ->toContain('<ExpectedOutputs outputs={schema.outputs} />')
+        ->not->toContain('initialOutputValues(schema.outputs)')
+        ->not->toContain('exampleTransmissionMode(')
+        ->not->toContain("setData('outputs'");
 
     expect($helperSource)
-        ->toContain("output?.schemaType === 'object'")
+        ->toContain('automaticOutputTransmissionMode')
+        ->toContain("'text/plain'")
+        ->toContain("endsWith('+json')")
         ->toContain("'reference'");
 });
 

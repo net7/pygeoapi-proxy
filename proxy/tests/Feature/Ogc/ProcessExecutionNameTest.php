@@ -21,8 +21,7 @@ test('starting a process stores an optional process name and exposes it in job t
 
     $this->actingAs($user)->post(route('processes.jobs.store', 'solwcad'), [
         'name' => 'Scenario crater north',
-        'inputs' => ['melt_composition' => ['value' => ['sio2' => 0.7]]],
-        'outputs' => ['result' => ['transmissionMode' => 'value']],
+        'inputs' => ogcFixture('process-solwcad')['examples'][0]['payload_example']['inputs'],
     ])->assertRedirect();
 
     $execution = ProcessExecution::query()->sole();

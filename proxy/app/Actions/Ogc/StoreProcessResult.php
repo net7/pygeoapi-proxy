@@ -4,6 +4,7 @@ namespace App\Actions\Ogc;
 
 use App\Enums\Ogc\ResultCacheStatus;
 use App\Models\ProcessExecution;
+use App\Services\Ogc\OgcProcessesClient;
 use App\Services\Ogc\OgcResultResponseParser;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Storage;
@@ -11,7 +12,10 @@ use Illuminate\Support\Str;
 
 class StoreProcessResult
 {
-    public function __construct(private OgcResultResponseParser $parser) {}
+    public function __construct(
+        private OgcResultResponseParser $parser,
+        private OgcProcessesClient $client,
+    ) {}
 
     public function fromResponse(ProcessExecution $execution, Response $response, ?string $outputId = null): void
     {
@@ -21,6 +25,19 @@ class StoreProcessResult
             if ($result['storage_body'] !== null) {
                 $storagePath = "ogc-results/{$execution->id}/".$this->resultFileName($result['output_id']);
                 Storage::disk('local')->put($storagePath, $result['storage_body']);
+            } elseif ($result['remote_href'] !== null) {
+                $remoteResponse = $this->client->downloadResultUrl($result['remote_href']);
+                $storagePath = "ogc-results/{$execution->id}/".$this->resultFileName($result['output_id']);
+                $storageBody = $remoteResponse->body();
+
+                Storage::disk('local')->put($storagePath, $storageBody);
+
+                $result['media_type'] = Str::of((string) $remoteResponse->header('Content-Type'))
+                    ->trim()
+                    ->lower()
+                    ->toString() ?: $result['media_type'];
+                $result['size_bytes'] = strlen($storageBody);
+                $result['cache_status'] = ResultCacheStatus::Cached;
             }
 
             $execution->results()->updateOrCreate(
@@ -47,6 +64,24 @@ class StoreProcessResult
     {
         $outputId ??= $this->firstRequestedOutputId($execution);
         $mediaType = Str::of((string) ($link['type'] ?? 'application/octet-stream'))->trim()->lower()->toString();
+        $remoteHref = $link['href'] ?? null;
+        $storagePath = null;
+        $sizeBytes = null;
+        $cacheStatus = ResultCacheStatus::MetadataOnly;
+
+        if (is_string($remoteHref) && $remoteHref !== '') {
+            $remoteResponse = $this->client->downloadResultUrl($remoteHref);
+            $storageBody = $remoteResponse->body();
+            $storagePath = "ogc-results/{$execution->id}/".$this->resultFileName($outputId);
+            $sizeBytes = strlen($storageBody);
+            $cacheStatus = ResultCacheStatus::Cached;
+            $mediaType = Str::of((string) $remoteResponse->header('Content-Type'))
+                ->trim()
+                ->lower()
+                ->toString() ?: $mediaType;
+
+            Storage::disk('local')->put($storagePath, $storageBody);
+        }
 
         $execution->results()->updateOrCreate(
             ['output_id' => $outputId],
@@ -55,10 +90,10 @@ class StoreProcessResult
                 'description' => $link['title'] ?? null,
                 'media_type' => $mediaType,
                 'transmission_mode' => data_get($execution->requested_outputs, "{$outputId}.transmissionMode", 'reference'),
-                'remote_href' => $link['href'] ?? null,
-                'storage_path' => null,
-                'size_bytes' => null,
-                'cache_status' => ResultCacheStatus::MetadataOnly,
+                'remote_href' => $remoteHref,
+                'storage_path' => $storagePath,
+                'size_bytes' => $sizeBytes,
+                'cache_status' => $cacheStatus,
                 'preview' => ['kind' => 'binary', 'data' => ['mediaType' => $mediaType]],
             ],
         );

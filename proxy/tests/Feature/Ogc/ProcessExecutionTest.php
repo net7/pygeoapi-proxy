@@ -28,8 +28,15 @@ test('starting a process creates an async local execution and redirects without 
     app(OgcProcessCache::class)->putProcess('conduit', $process);
 
     $payload = [
-        'inputs' => ['melt_composition' => ['value' => ['sio2' => 0.7, 'tio2' => 0.01]]],
-        'outputs' => ['gas' => ['transmissionMode' => 'value']],
+        'inputs' => conduitExampleInputs(),
+        'outputs' => ['gas' => ['transmissionMode' => 'reference']],
+    ];
+    $expectedOutputs = [
+        'gas' => ['transmissionMode' => 'value'],
+        'velocity' => ['transmissionMode' => 'value'],
+        'pressure' => ['transmissionMode' => 'value'],
+        'outfile' => ['transmissionMode' => 'reference'],
+        'exit' => ['transmissionMode' => 'value'],
     ];
 
     $response = $this->actingAs($user)->post(route('processes.jobs.store', 'conduit'), $payload);
@@ -57,13 +64,13 @@ test('starting a process creates an async local execution and redirects without 
         ->and($execution->execution_mode)->toBe(ExecutionMode::Async)
         ->and($execution->status)->toBe(ExecutionStatus::Submitting)
         ->and($execution->progress)->toBe(0)
-        ->and($execution->request_payload['inputs'])->toBe($payload['inputs'])
-        ->and($execution->requested_outputs)->toBe($payload['outputs'])
+        ->and($execution->request_payload['inputs'])->toEqual($payload['inputs'])
+        ->and($execution->requested_outputs)->toBe($expectedOutputs)
         ->and($execution->process_outputs)->toBe($process['outputs']);
 
     Bus::assertDispatched(SubmitProcessExecutionJob::class, fn (SubmitProcessExecutionJob $job): bool => $job->processExecutionId === $execution->id
         && $job->payload['inputs'] === $payload['inputs']
-        && $job->payload['outputs'] === $payload['outputs']);
+        && $job->payload['outputs'] === $expectedOutputs);
 
     Http::assertNothingSent();
 });
@@ -90,9 +97,15 @@ test('starting a process stores an optional user note without sending it to the 
     ];
 
     $payload = [
-        'inputs' => ['melt_composition' => ['value' => ['sio2' => 0.7, 'tio2' => 0.01]]],
-        'outputs' => ['gas' => ['transmissionMode' => 'value']],
+        'inputs' => conduitExampleInputs(),
         'note' => $note,
+    ];
+    $expectedOutputs = [
+        'gas' => ['transmissionMode' => 'value'],
+        'velocity' => ['transmissionMode' => 'value'],
+        'pressure' => ['transmissionMode' => 'value'],
+        'outfile' => ['transmissionMode' => 'reference'],
+        'exit' => ['transmissionMode' => 'value'],
     ];
 
     $this->actingAs($user)->post(route('processes.jobs.store', 'conduit'), $payload);
@@ -105,7 +118,7 @@ test('starting a process stores an optional user note without sending it to the 
     Bus::assertDispatched(SubmitProcessExecutionJob::class, fn (SubmitProcessExecutionJob $job): bool => $job->processExecutionId === $execution->id
         && ! array_key_exists('note', $job->payload)
         && $job->payload['inputs'] === $payload['inputs']
-        && $job->payload['outputs'] === $payload['outputs']);
+        && $job->payload['outputs'] === $expectedOutputs);
 });
 
 test('starting a process without a note leaves note timestamps empty', function () {
@@ -116,7 +129,7 @@ test('starting a process without a note leaves note timestamps empty', function 
     app(OgcProcessCache::class)->putProcess('conduit', ogcFixture('process-conduit'));
 
     $this->actingAs($user)->post(route('processes.jobs.store', 'conduit'), [
-        'inputs' => ['melt_composition' => ['value' => ['sio2' => 0.7, 'tio2' => 0.01]]],
+        'inputs' => conduitExampleInputs(),
         'outputs' => ['gas' => ['transmissionMode' => 'value']],
     ]);
 
@@ -135,7 +148,7 @@ test('starting a process ignores a client requested synchronous mode', function 
 
     $response = $this->actingAs($user)->post(route('processes.jobs.store', 'conduit'), [
         'mode' => 'sync',
-        'inputs' => ['melt_composition' => ['value' => ['sio2' => 0.7, 'tio2' => 0.01]]],
+        'inputs' => conduitExampleInputs(),
         'outputs' => ['gas' => ['transmissionMode' => 'value']],
     ]);
 
@@ -146,6 +159,25 @@ test('starting a process ignores a client requested synchronous mode', function 
         ->assertInertiaFlash('toast.details.2.value', 'async');
 
     expect($execution->execution_mode)->toBe(ExecutionMode::Async);
+});
+
+test('starting a process validates schema exclusive bounds before queueing', function () {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    app(OgcProcessCache::class)->putProcess('conduit', ogcFixture('process-conduit'));
+
+    $inputs = conduitExampleInputs();
+    $inputs['melt_composition']['value']['sio2'] = 0;
+
+    $this->actingAs($user)
+        ->post(route('processes.jobs.store', 'conduit'), ['inputs' => $inputs])
+        ->assertInvalid(['inputs.melt_composition.sio2']);
+
+    expect(ProcessExecution::query()->count())->toBe(0);
+    Bus::assertNotDispatched(SubmitProcessExecutionJob::class);
+    Http::assertNothingSent();
 });
 
 test('starting a process does not fall back to pygeoapi when process cache is missing', function () {
@@ -296,3 +328,8 @@ test('submission job ignores missing terminal and already submitted executions',
 
     Http::assertNothingSent();
 });
+
+function conduitExampleInputs(): array
+{
+    return ogcFixture('process-conduit')['examples'][0]['payload_example']['inputs'];
+}

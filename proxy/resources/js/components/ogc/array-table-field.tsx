@@ -1,7 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { FieldLegend, FieldSet } from '@/components/ui/field';
+import { FieldDescription, FieldLegend, FieldSet } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
     Table,
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/table';
 import { useTranslation } from '@/hooks/use-translation';
 import { htmlPatternForInput } from '@/lib/html-pattern';
+import { fieldDisplayLabel } from '@/lib/ogc-fields';
 import type { OgcNormalizedField } from '@/types';
 
 export default function ArrayTableField({
@@ -49,7 +50,12 @@ export default function ArrayTableField({
 
     return (
         <FieldSet className="max-w-full min-w-0">
-            <FieldLegend>{field.title}</FieldLegend>
+            <FieldLegend>{fieldDisplayLabel(field)}</FieldLegend>
+            {field.description ? (
+                <FieldDescription className="break-words">
+                    {field.description}
+                </FieldDescription>
+            ) : null}
             <div className="w-full max-w-full overflow-x-auto rounded-md border">
                 <Table style={{ minWidth: tableMinWidth }}>
                     <TableHeader>
@@ -86,6 +92,20 @@ export default function ArrayTableField({
                                                         ? 'any'
                                                         : undefined
                                                 }
+                                                min={
+                                                    column.minimum ?? undefined
+                                                }
+                                                max={
+                                                    column.maximum ?? undefined
+                                                }
+                                                data-exclusive-minimum={
+                                                    column.exclusiveMinimum ??
+                                                    undefined
+                                                }
+                                                data-exclusive-maximum={
+                                                    column.exclusiveMaximum ??
+                                                    undefined
+                                                }
                                                 pattern={htmlPatternForInput({
                                                     type: column.type,
                                                     pattern: column.pattern,
@@ -106,6 +126,11 @@ export default function ArrayTableField({
                                             variant="destructive"
                                             size="icon"
                                             aria-label={t('ogc.removeRow')}
+                                            disabled={
+                                                field.minItems !== null &&
+                                                field.minItems !== undefined &&
+                                                rows.length <= field.minItems
+                                            }
                                             onClick={() =>
                                                 onChange(
                                                     rows.filter(
@@ -127,6 +152,11 @@ export default function ArrayTableField({
             <Button
                 type="button"
                 variant="outline"
+                disabled={
+                    field.maxItems !== null &&
+                    field.maxItems !== undefined &&
+                    rows.length >= field.maxItems
+                }
                 onClick={() => onChange([...rows, columns.map(() => '')])}
             >
                 <Plus data-icon="inline-start" />
