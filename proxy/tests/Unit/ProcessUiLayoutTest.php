@@ -631,19 +631,31 @@ test('job editable metadata appears on create and detail screens', function () {
         ->toContain('<span className="sr-only">{t(\'jobs.editProcessName\')}</span>');
 });
 
-test('job name edits refresh stale job table history', function () {
+test('job metadata changes refresh stale job table history', function () {
     $indexSource = file_get_contents(getcwd().'/resources/js/pages/process-executions/index.tsx');
+    $adminIndexSource = file_get_contents(getcwd().'/resources/js/pages/admin/jobs/index.tsx');
     $nameDialogSource = file_get_contents(getcwd().'/resources/js/components/ogc/job-name-edit-dialog.tsx');
+    $processFormSource = file_get_contents(getcwd().'/resources/js/components/ogc/dynamic-process-form.tsx');
 
     expect($indexSource)
         ->toContain('@/lib/job-list-refresh')
         ->toContain('consumeJobsIndexStale')
         ->toContain("router.reload({ only: ['executions', 'pollingInterval'] })");
 
+    expect($adminIndexSource)
+        ->toContain('@/lib/job-list-refresh')
+        ->toContain('consumeAdminJobsIndexStale')
+        ->toContain("router.reload({ only: ['executions'] })");
+
     expect($nameDialogSource)
         ->toContain('@/lib/job-list-refresh')
         ->toContain('markJobsIndexStale')
         ->toContain('markJobsIndexStale();');
+
+    expect($processFormSource)
+        ->toContain('@/lib/job-list-refresh')
+        ->toContain('markJobsIndexStale')
+        ->toContain('onSuccess: () => markJobsIndexStale()');
 });
 
 test('delete job dialog supports compact actions and optional owner context', function () {

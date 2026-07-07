@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import {
+    consumeAdminJobsIndexStale,
     consumeJobsIndexStale,
     markJobsIndexStale,
 } from '../../resources/js/lib/job-list-refresh';
@@ -31,17 +32,20 @@ function fakeStorage(): Storage {
 }
 
 describe('job list refresh marker', () => {
-    test('marks the jobs index stale and consumes the marker once', () => {
+    test('marks user and admin jobs indexes stale independently', () => {
         const storage = fakeStorage();
 
         markJobsIndexStale(storage);
 
         expect(consumeJobsIndexStale(storage)).toBe(true);
         expect(consumeJobsIndexStale(storage)).toBe(false);
+        expect(consumeAdminJobsIndexStale(storage)).toBe(true);
+        expect(consumeAdminJobsIndexStale(storage)).toBe(false);
     });
 
     test('ignores unavailable storage', () => {
         expect(() => markJobsIndexStale(null)).not.toThrow();
         expect(consumeJobsIndexStale(null)).toBe(false);
+        expect(consumeAdminJobsIndexStale(null)).toBe(false);
     });
 });

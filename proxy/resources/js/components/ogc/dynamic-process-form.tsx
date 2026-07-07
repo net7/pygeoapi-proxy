@@ -17,6 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
+import { markJobsIndexStale } from '@/lib/job-list-refresh';
 import { store } from '@/routes/processes/jobs';
 import type {
     OgcFormSchema,
@@ -78,7 +79,9 @@ export default function DynamicProcessForm({
                     ...formData,
                     inputs: normalizeInputs(schema.fields, formData.inputs),
                 }));
-                submit(store(schema.id));
+                submit(store(schema.id), {
+                    onSuccess: () => markJobsIndexStale(),
+                });
             }}
         >
             {Object.keys(errors).length > 0 ? (

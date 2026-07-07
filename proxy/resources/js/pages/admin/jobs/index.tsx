@@ -30,7 +30,7 @@ import {
     Trash2Icon,
     XIcon,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { DataTableBulkActions } from '@/components/data-table-bulk-actions';
 import type { BulkActionPayload } from '@/components/data-table-bulk-actions';
@@ -69,6 +69,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useInitials } from '@/hooks/use-initials';
 import { useTranslation } from '@/hooks/use-translation';
 import type { TranslationKey } from '@/lib/i18n/translation';
+import { consumeAdminJobsIndexStale } from '@/lib/job-list-refresh';
 import {
     clampProgress,
     formatJobDate,
@@ -404,6 +405,14 @@ export default function AdminJobsIndex({
         statusFilter !== 'all' ||
         searchFilter !== '' ||
         selectedUserId !== 'all';
+
+    useEffect(() => {
+        if (!consumeAdminJobsIndexStale()) {
+            return;
+        }
+
+        router.reload({ only: ['executions'] });
+    }, []);
 
     function bulkDeleteSelectedJobs(): void {
         const ids = selectedExecutions.map((execution) => execution.id);
