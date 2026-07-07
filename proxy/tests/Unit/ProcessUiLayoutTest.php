@@ -631,6 +631,21 @@ test('job editable metadata appears on create and detail screens', function () {
         ->toContain('<span className="sr-only">{t(\'jobs.editProcessName\')}</span>');
 });
 
+test('job name edits refresh stale job table history', function () {
+    $indexSource = file_get_contents(getcwd().'/resources/js/pages/process-executions/index.tsx');
+    $nameDialogSource = file_get_contents(getcwd().'/resources/js/components/ogc/job-name-edit-dialog.tsx');
+
+    expect($indexSource)
+        ->toContain('@/lib/job-list-refresh')
+        ->toContain('consumeJobsIndexStale')
+        ->toContain("router.reload({ only: ['executions', 'pollingInterval'] })");
+
+    expect($nameDialogSource)
+        ->toContain('@/lib/job-list-refresh')
+        ->toContain('markJobsIndexStale')
+        ->toContain('markJobsIndexStale();');
+});
+
 test('delete job dialog supports compact actions and optional owner context', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/delete-job-dialog.tsx');
 

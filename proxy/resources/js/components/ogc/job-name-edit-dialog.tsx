@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
+import { markJobsIndexStale } from '@/lib/job-list-refresh';
 import { update } from '@/routes/jobs/name';
 import type { ProcessExecutionDetail } from '@/types';
 
@@ -48,7 +49,10 @@ export function JobNameEditDialog({
 
         patch(update.url(execution.id), {
             preserveScroll: true,
-            onSuccess: () => setOpen(false),
+            onSuccess: () => {
+                markJobsIndexStale();
+                setOpen(false);
+            },
         });
     }
 
