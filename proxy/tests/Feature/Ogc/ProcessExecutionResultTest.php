@@ -270,6 +270,28 @@ test('users can download cached result files', function () {
         ->assertHeader('content-type', 'text/csv; charset=utf-8');
 });
 
+test('users can download cached json value results without a stored file', function () {
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create();
+    $result = ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'gas',
+        'media_type' => 'application/json',
+        'storage_path' => null,
+        'cache_status' => ResultCacheStatus::Cached,
+        'preview' => [
+            'kind' => 'chart',
+            'data' => ogcFixture('chart-result'),
+        ],
+    ]);
+
+    $this->actingAs($user)
+        ->get("/jobs/{$execution->id}/results/{$result->id}/download")
+        ->assertOk()
+        ->assertHeader('content-type', 'application/json')
+        ->assertHeader('content-disposition', 'attachment; filename="gas.json"')
+        ->assertContent(json_encode(ogcFixture('chart-result'), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+});
+
 test('users can download and cache remote result files on demand', function () {
     Storage::fake('local');
     Http::fake([

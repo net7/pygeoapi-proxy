@@ -9,7 +9,8 @@ import type {
     RasterSourceSpecification,
 } from 'maplibre-gl';
 import { useEffect, useMemo, useRef } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
+import type { Root } from 'react-dom/client';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -80,7 +81,9 @@ export default function GeoTiffMapResultPreview({
                 </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-                {isPublishedWms && canViewMapLayerWarning && mapLayer.warning ? (
+                {isPublishedWms &&
+                canViewMapLayerWarning &&
+                mapLayer.warning ? (
                     <MapLayerWarningAlert warning={mapLayer.warning} />
                 ) : null}
                 {isPublishedWms ? (
@@ -234,7 +237,10 @@ function MapLibreWmsPreview({
         );
 
         if (bounds) {
-            map.addControl(new RecenterBoundsControl(recenterMapLabel, bounds), 'top-left');
+            map.addControl(
+                new RecenterBoundsControl(recenterMapLabel, bounds),
+                'top-left',
+            );
         }
 
         map.on('load', () => {

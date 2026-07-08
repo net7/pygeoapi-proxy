@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 
-import { automaticOutputTransmissionMode } from '../../resources/js/lib/ogc-outputs';
+import {
+    automaticOutputTransmissionMode,
+    downloadLabelForMediaType,
+} from '../../resources/js/lib/ogc-outputs';
 import { groupProcessResults } from '../../resources/js/lib/ogc-result-groups';
 import type { ProcessExecutionResult } from '../../resources/js/types';
 import type { OgcNormalizedOutput } from '../../resources/js/types';
@@ -33,6 +36,23 @@ describe('automaticOutputTransmissionMode', () => {
                 schemaType: 'object',
             } as OgcNormalizedOutput),
         ).toBe('reference');
+    });
+});
+
+describe('downloadLabelForMediaType', () => {
+    test('uses compact file format labels for download buttons', () => {
+        expect(downloadLabelForMediaType('application/json')).toBe('JSON');
+        expect(downloadLabelForMediaType('application/vnd.example+json')).toBe(
+            'JSON',
+        );
+        expect(downloadLabelForMediaType('text/csv')).toBe('CSV');
+        expect(
+            downloadLabelForMediaType('image/tiff; application=geotiff'),
+        ).toBe('GeoTIFF');
+        expect(downloadLabelForMediaType('application/vnd.ogc.sld+xml')).toBe(
+            'SLD',
+        );
+        expect(downloadLabelForMediaType(null)).toBe('File');
     });
 });
 

@@ -330,6 +330,9 @@ const it = {
     ogc: {
         addRow: 'Aggiungi riga',
         async: 'Asincrono',
+        chartHideAll: 'Disattiva tutte',
+        chartShowAll: 'Attiva tutte',
+        chartValueAxis: 'Valore',
         checkInputs: 'Controlla gli input del processo',
         defaultResponse: 'Risposta predefinita',
         execute: 'Esegui',
@@ -358,6 +361,7 @@ const it = {
         previewUnavailable: 'Anteprima non disponibile.',
         previewUnavailableMedia:
             'Anteprima non disponibile per questo tipo di media.',
+        rawJson: 'JSON raw',
         processCountMany: '{count} processi',
         processCountOne: '{count} processo',
         processPreparing: 'Processo in preparazione',
@@ -777,6 +781,9 @@ const en = {
     ogc: {
         addRow: 'Add row',
         async: 'Async',
+        chartHideAll: 'Hide all',
+        chartShowAll: 'Show all',
+        chartValueAxis: 'Value',
         checkInputs: 'Check the process inputs',
         defaultResponse: 'Default response',
         execute: 'Execute',
@@ -804,6 +811,7 @@ const en = {
         prefillTestData: 'PREFILL TEST DATA',
         previewUnavailable: 'Preview unavailable.',
         previewUnavailableMedia: 'Preview unavailable for this media type.',
+        rawJson: 'Raw JSON',
         processCountMany: '{count} processes',
         processCountOne: '{count} process',
         processPreparing: 'Process preparing',

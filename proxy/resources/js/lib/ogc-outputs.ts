@@ -37,6 +37,40 @@ export function outputComponents(
     );
 }
 
+export function downloadLabelForMediaType(mediaType?: string | null): string {
+    const normalizedMediaType = mediaType?.toLowerCase() ?? '';
+    const mediaTypeBase = baseMediaType(mediaType);
+
+    if (!mediaTypeBase) {
+        return 'File';
+    }
+
+    if (normalizedMediaType.includes('geotiff')) {
+        return 'GeoTIFF';
+    }
+
+    if (mediaTypeBase === 'application/vnd.ogc.sld+xml') {
+        return 'SLD';
+    }
+
+    if (
+        mediaTypeBase === 'application/json' ||
+        mediaTypeBase.endsWith('+json')
+    ) {
+        return 'JSON';
+    }
+
+    if (mediaTypeBase === 'text/csv') {
+        return 'CSV';
+    }
+
+    if (mediaTypeBase === 'text/plain') {
+        return 'TXT';
+    }
+
+    return 'File';
+}
+
 function baseMediaType(mediaType?: string | null): string | null {
     if (!mediaType) {
         return null;

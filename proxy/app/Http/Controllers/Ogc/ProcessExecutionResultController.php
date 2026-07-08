@@ -22,7 +22,9 @@ class ProcessExecutionResultController extends Controller
         $this->authorizeResult($processExecution, $result);
         $this->ensureResultFileIsCached($processExecution, $result, $client);
 
-        abort_unless(filled($result->storage_path), 404);
+        if (blank($result->storage_path)) {
+            return $this->previewJsonResponse($result);
+        }
 
         return $this->fileResponse($result, 'attachment');
     }
@@ -69,13 +71,36 @@ class ProcessExecutionResultController extends Controller
         ]);
     }
 
-    private function resultFileName(ProcessExecutionResult $result): string
+    private function previewJsonResponse(ProcessExecutionResult $result): Response
+    {
+        $previewKind = data_get($result->preview, 'kind');
+        $previewData = data_get($result->preview, 'data');
+
+        abort_unless(
+            in_array($previewKind, ['chart', 'json'], true)
+                && ($result->media_type === 'application/json' || str_ends_with((string) $result->media_type, '+json')),
+            404,
+        );
+
+        return response(json_encode($previewData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), 200, [
+            'Content-Type' => $result->media_type ?: 'application/json',
+            'Content-Disposition' => 'attachment; filename="'.$this->resultFileName($result, 'json').'"',
+        ]);
+    }
+
+    private function resultFileName(ProcessExecutionResult $result, ?string $extension = null): string
     {
         $fileName = Str::of($result->output_id)
             ->replaceMatches('/[^A-Za-z0-9._-]+/', '_')
             ->trim('._-')
             ->toString();
 
-        return $fileName !== '' ? $fileName : "result-{$result->id}";
+        $fileName = $fileName !== '' ? $fileName : "result-{$result->id}";
+
+        if ($extension !== null && ! str_ends_with($fileName, ".{$extension}")) {
+            return "{$fileName}.{$extension}";
+        }
+
+        return $fileName;
     }
 }

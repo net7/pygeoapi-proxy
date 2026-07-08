@@ -1,13 +1,8 @@
 import { Download } from 'lucide-react';
 
+import ChartResultPreview from '@/components/ogc/chart-result-preview';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Table,
     TableBody,
@@ -17,6 +12,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useTranslation } from '@/hooks/use-translation';
+import { downloadLabelForMediaType } from '@/lib/ogc-outputs';
 import { download } from '@/routes/jobs/results';
 import type { ProcessExecutionResult } from '@/types';
 
@@ -39,13 +35,12 @@ export default function ResultPreview({
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex flex-col gap-1">
                         <CardTitle>{result.title ?? result.outputId}</CardTitle>
-                        <CardDescription>{result.mediaType}</CardDescription>
                     </div>
                     {canDownload ? (
-                        <Button asChild variant="outline">
+                        <Button asChild variant="outline" size="sm">
                             <a href={download.url([executionId, result.id])}>
                                 <Download data-icon="inline-start" />
-                                {t('common.download')}
+                                {downloadLabelForMediaType(result.mediaType)}
                             </a>
                         </Button>
                     ) : null}
@@ -53,7 +48,7 @@ export default function ResultPreview({
             </CardHeader>
             <CardContent>
                 {preview?.kind === 'chart' ? (
-                    <ChartPreview data={preview.data} />
+                    <ChartResultPreview data={preview.data} />
                 ) : null}
                 {preview?.kind === 'csv' ? (
                     <CsvPreview data={preview.data} />
@@ -76,14 +71,6 @@ export default function ResultPreview({
                 ) : null}
             </CardContent>
         </Card>
-    );
-}
-
-function ChartPreview({ data }: { data: unknown }) {
-    return (
-        <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs ring-1 ring-border/50 dark:bg-muted/50 dark:text-foreground">
-            {JSON.stringify(data, null, 2)}
-        </pre>
     );
 }
 
