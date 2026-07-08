@@ -801,6 +801,15 @@ test('job pages use readable dark mode status surfaces', function () {
         ->toContain('dark:border-slate-500/60');
 });
 
+test('csv result previews use structured normalization instead of comma splitting in the component', function () {
+    $source = file_get_contents(getcwd().'/resources/js/components/ogc/result-preview.tsx');
+
+    expect($source)
+        ->toContain("import { normalizeCsvPreview } from '@/lib/csv-preview'")
+        ->toContain('const csv = normalizeCsvPreview(data)')
+        ->not->toContain("row.split(',')");
+});
+
 test('expected outputs renders a simple unordered list', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/expected-outputs.tsx');
 

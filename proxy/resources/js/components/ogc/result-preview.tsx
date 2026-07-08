@@ -12,6 +12,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useTranslation } from '@/hooks/use-translation';
+import { normalizeCsvPreview } from '@/lib/csv-preview';
 import { downloadLabelForMediaType } from '@/lib/ogc-outputs';
 import { download } from '@/routes/jobs/results';
 import type { ProcessExecutionResult } from '@/types';
@@ -75,31 +76,43 @@ export default function ResultPreview({
 }
 
 function CsvPreview({ data }: { data: unknown }) {
-    const rows = String(data ?? '')
-        .split('\n')
-        .filter(Boolean)
-        .slice(0, 20)
-        .map((row) => row.split(','));
+    const { t } = useTranslation();
+    const csv = normalizeCsvPreview(data);
+
+    if (!csv) {
+        return (
+            <p className="text-sm text-muted-foreground">
+                {t('ogc.previewUnavailable')}
+            </p>
+        );
+    }
 
     return (
-        <Table>
-            <TableHeader>
-                <TableRow>
-                    {rows[0]?.map((cell, index) => (
-                        <TableHead key={index}>{cell}</TableHead>
-                    ))}
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {rows.slice(1).map((row, rowIndex) => (
-                    <TableRow key={rowIndex}>
-                        {row.map((cell, cellIndex) => (
-                            <TableCell key={cellIndex}>{cell}</TableCell>
+        <div className="flex min-w-0 flex-col gap-2">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        {csv.headers.map((cell, index) => (
+                            <TableHead key={index}>{cell}</TableHead>
                         ))}
                     </TableRow>
-                ))}
-            </TableBody>
-        </Table>
+                </TableHeader>
+                <TableBody>
+                    {csv.rows.map((row, rowIndex) => (
+                        <TableRow key={rowIndex}>
+                            {row.map((cell, cellIndex) => (
+                                <TableCell key={cellIndex}>{cell}</TableCell>
+                            ))}
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+            {csv.truncated ? (
+                <p className="text-xs text-muted-foreground">
+                    {t('ogc.csvPreviewTruncated')}
+                </p>
+            ) : null}
+        </div>
     );
 }
 

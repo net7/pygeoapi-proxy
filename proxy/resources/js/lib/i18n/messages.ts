@@ -334,6 +334,8 @@ const it = {
         chartShowAll: 'Mostra tutte le serie',
         chartValueAxis: 'Valore',
         checkInputs: 'Controlla gli input del processo',
+        csvPreviewTruncated:
+            'Anteprima limitata alle prime righe. Scarica il CSV per il file completo.',
         defaultResponse: 'Risposta predefinita',
         execute: 'Esegui',
         execution: 'Esecuzione',
@@ -785,6 +787,8 @@ const en = {
         chartShowAll: 'Show all series',
         chartValueAxis: 'Value',
         checkInputs: 'Check the process inputs',
+        csvPreviewTruncated:
+            'Preview limited to the first rows. Download the CSV for the full file.',
         defaultResponse: 'Default response',
         execute: 'Execute',
         execution: 'Execution',
