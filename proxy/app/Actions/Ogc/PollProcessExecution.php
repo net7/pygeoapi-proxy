@@ -44,20 +44,21 @@ class PollProcessExecution
         $status = $this->statusFromRemote((string) ($job['status'] ?? 'running'));
 
         $execution->update([
-            'status' => $status,
             'progress' => (int) ($job['progress'] ?? $execution->progress),
             'message' => $job['message'] ?? $execution->message,
             'remote_created_at' => $this->parseRemoteDate($job['created'] ?? null),
             'remote_started_at' => $this->parseRemoteDate($job['started'] ?? null),
             'remote_finished_at' => $this->parseRemoteDate($job['finished'] ?? null),
             'last_polled_at' => now(),
-            'completed_at' => $status === ExecutionStatus::Successful ? now() : $execution->completed_at,
-            'failed_at' => $status === ExecutionStatus::Failed ? now() : $execution->failed_at,
+            ...($status === ExecutionStatus::Successful ? [] : [
+                'status' => $status,
+                'failed_at' => $status === ExecutionStatus::Failed ? now() : $execution->failed_at,
+            ]),
         ]);
 
         $execution->refresh();
 
-        if ($execution->status === ExecutionStatus::Successful) {
+        if ($status === ExecutionStatus::Successful) {
             $resultLink = collect($job['links'] ?? [])
                 ->first(fn (array $link): bool => str_contains((string) ($link['rel'] ?? ''), 'results'));
 
@@ -66,6 +67,12 @@ class PollProcessExecution
             } else {
                 $this->storeProcessResult->fromResponse($execution, $this->client->jobResults($execution->remote_job_id));
             }
+
+            $execution->update([
+                'status' => ExecutionStatus::Successful,
+                'completed_at' => now(),
+            ]);
+            $execution->refresh();
 
             $execution->user->notify((new ProcessExecutionCompleted($execution))->afterCommit());
 

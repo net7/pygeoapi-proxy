@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Ogc\PollProcessExecution;
+use App\Actions\Ogc\StoreProcessResult;
 use App\Enums\Ogc\ExecutionStatus;
 use App\Enums\Ogc\MapLayerStatus;
 use App\Enums\Ogc\ResultCacheStatus;
@@ -8,6 +9,8 @@ use App\Jobs\Ogc\PollProcessExecutionJob;
 use App\Jobs\Ogc\PublishGeoTiffMapLayerJob;
 use App\Models\ProcessExecution;
 use App\Notifications\Ogc\ProcessExecutionCompleted;
+use App\Services\Ogc\OgcProcessesClient;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
@@ -54,6 +57,40 @@ test('it marks successful jobs and stores results', function () {
                 && $data['action_url'] === route('jobs.show', $execution);
         },
     );
+});
+
+test('it does not expose successful status before result storage completes', function () {
+    Notification::fake();
+
+    $execution = ProcessExecution::factory()->create([
+        'remote_job_id' => 'job-123',
+        'status' => ExecutionStatus::Running,
+        'requested_outputs' => ['gas' => ['transmissionMode' => 'value']],
+    ]);
+    $storeProcessResult = new class extends StoreProcessResult
+    {
+        public ?ExecutionStatus $statusWhenStoring = null;
+
+        public function __construct() {}
+
+        public function fromResponse(ProcessExecution $execution, Response $response, ?string $outputId = null): void
+        {
+            $this->statusWhenStoring = $execution->refresh()->status;
+        }
+    };
+
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123?f=json' => Http::response(ogcFixture('job-successful')),
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results?f=json' => Http::response(ogcFixture('chart-result')),
+    ]);
+
+    (new PollProcessExecution(
+        app(OgcProcessesClient::class),
+        $storeProcessResult,
+    ))->handle($execution);
+
+    expect($storeProcessResult->statusWhenStoring)->toBe(ExecutionStatus::Running)
+        ->and($execution->refresh()->status)->toBe(ExecutionStatus::Successful);
 });
 
 test('it stores each multipart result using process output definitions', function () {
