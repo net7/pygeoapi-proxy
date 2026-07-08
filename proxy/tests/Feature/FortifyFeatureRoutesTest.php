@@ -6,7 +6,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 test('disabled optional fortify features share null frontend routes', function () {
     config(['fortify.features' => []]);
 
-    $this->get(route('home'))
+    $this->get(route('login'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('auth.canRegister', false)
@@ -24,7 +24,7 @@ test('disabled optional fortify features share null frontend routes', function (
 test('account deletion feature is shared with the frontend', function () {
     config(['fortify.features' => [AuthFeatures::accountDeletion()]]);
 
-    $this->get(route('home'))
+    $this->get(route('login'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('auth.canDeleteAccount', true),

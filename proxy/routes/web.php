@@ -16,8 +16,6 @@ use App\Models\ProcessExecutionResult;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'welcome')->name('home');
-
 Route::middleware('guest')->group(function () {
     Route::get('auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
         ->whereIn('provider', ['google', 'orcid'])
@@ -36,6 +34,8 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware(['auth', EnsureUserIsActive::class, 'verified'])->group(function () {
+    Route::get('/', fn () => to_route('jobs.index'))->name('home');
+
     Route::get('processes', [ProcessController::class, 'index'])->name('processes.index');
     Route::get('processes/{process}', [ProcessController::class, 'show'])->name('processes.show');
     Route::post('processes/{process}/jobs', [ProcessExecutionController::class, 'store'])
