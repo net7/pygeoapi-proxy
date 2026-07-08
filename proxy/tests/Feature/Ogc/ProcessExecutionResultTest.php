@@ -65,12 +65,63 @@ test('users can view map layer metadata on their execution detail', function () 
             ->where('execution.results.0.mapLayer.error', null));
 });
 
-test('users can view a map layer warning when the sld only defines hillshade', function () {
+test('admin users can view a map layer warning when the sld only defines hillshade', function () {
+    Storage::fake('local');
+
+    $admin = User::factory()->admin()->create();
+    $execution = ProcessExecution::factory()->for($admin)->create();
+
+    $geotiff = cachedHillshadeMapPair($execution);
+
+    $response = $this->actingAs($admin)
+        ->get("/jobs/{$execution->id}")
+        ->assertOk();
+
+    $results = collect($response->inertiaProps('execution.results'))->keyBy('id');
+
+    expect(data_get($results->get($geotiff->id), 'mapLayer.warning'))
+        ->toBe('hillshade_without_color_map');
+});
+
+test('non admin users cannot view map layer warnings', function () {
     Storage::fake('local');
 
     $user = User::factory()->create();
     $execution = ProcessExecution::factory()->for($user)->create();
+    $geotiff = cachedHillshadeMapPair($execution);
 
+    $response = $this->actingAs($user)
+        ->get("/jobs/{$execution->id}")
+        ->assertOk();
+
+    $results = collect($response->inertiaProps('execution.results'))->keyBy('id');
+
+    expect(data_get($results->get($geotiff->id), 'mapLayer.warning'))->toBeNull();
+});
+
+test('non admin users cannot see execution input data', function () {
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create([
+        'request_payload' => [
+            'inputs' => [
+                'melt_composition' => [
+                    'value' => ['sio2' => 0.7],
+                ],
+            ],
+        ],
+    ]);
+
+    $this->actingAs($user)
+        ->get("/jobs/{$execution->id}")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('process-executions/show')
+            ->where('execution.id', $execution->id)
+            ->missing('execution.requestPayload'));
+});
+
+function cachedHillshadeMapPair(ProcessExecution $execution): ProcessExecutionResult
+{
     $geotiff = ProcessExecutionResult::factory()->for($execution)->create([
         'output_id' => 'dem.geotiff',
         'media_type' => 'image/tiff; application=geotiff',
@@ -107,36 +158,8 @@ test('users can view a map layer warning when the sld only defines hillshade', f
         </StyledLayerDescriptor>
         XML);
 
-    $response = $this->actingAs($user)
-        ->get("/jobs/{$execution->id}")
-        ->assertOk();
-
-    $results = collect($response->inertiaProps('execution.results'))->keyBy('id');
-
-    expect(data_get($results->get($geotiff->id), 'mapLayer.warning'))
-        ->toBe('hillshade_without_color_map');
-});
-
-test('non admin users cannot see execution input data', function () {
-    $user = User::factory()->create();
-    $execution = ProcessExecution::factory()->for($user)->create([
-        'request_payload' => [
-            'inputs' => [
-                'melt_composition' => [
-                    'value' => ['sio2' => 0.7],
-                ],
-            ],
-        ],
-    ]);
-
-    $this->actingAs($user)
-        ->get("/jobs/{$execution->id}")
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('process-executions/show')
-            ->where('execution.id', $execution->id)
-            ->missing('execution.requestPayload'));
-});
+    return $geotiff;
+}
 
 test('admin users can see execution input data and remote job id', function () {
     $admin = User::factory()->admin()->create();

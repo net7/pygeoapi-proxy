@@ -1,9 +1,15 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-import { AlertTriangleIcon, Download } from 'lucide-react';
+import { usePage } from '@inertiajs/react';
+import { AlertTriangleIcon, Download, LocateFixedIcon } from 'lucide-react';
 import maplibregl from 'maplibre-gl';
-import type { RasterSourceSpecification } from 'maplibre-gl';
+import type {
+    ControlPosition,
+    IControl,
+    RasterSourceSpecification,
+} from 'maplibre-gl';
 import { useEffect, useMemo, useRef } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -41,11 +47,13 @@ export default function GeoTiffMapResultPreview({
     sld: ProcessExecutionResult | null;
 }) {
     const { t } = useTranslation();
+    const { auth } = usePage().props;
     const mapLayer = geotiff.mapLayer;
     const isPublishedWms =
         mapLayer?.type === 'wms' &&
         mapLayer.status === 'published' &&
         mapLayer.name !== null;
+    const canViewMapLayerWarning = auth.user?.is_admin === true;
 
     return (
         <Card className="shadow-sm dark:border-border/70 dark:bg-card/95">
@@ -72,7 +80,7 @@ export default function GeoTiffMapResultPreview({
                 </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-                {isPublishedWms && mapLayer.warning ? (
+                {isPublishedWms && canViewMapLayerWarning && mapLayer.warning ? (
                     <MapLayerWarningAlert warning={mapLayer.warning} />
                 ) : null}
                 {isPublishedWms ? (
@@ -171,7 +179,13 @@ function MapLibreWmsPreview({
     executionId: number;
     geotiff: ProcessExecutionResult;
 }) {
+    const { t } = useTranslation();
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const bounds = useMemo(
+        () => validBounds(geotiff.mapLayer?.bounds),
+        [geotiff.mapLayer?.bounds],
+    );
+    const recenterMapLabel = t('ogc.recenterMap');
     const tileTemplate = useMemo(() => {
         const tileUrl = mapTile.url([executionId, geotiff.id]);
         const separator = tileUrl.includes('?') ? '&' : '?';
@@ -184,7 +198,6 @@ function MapLibreWmsPreview({
             return;
         }
 
-        const bounds = validBounds(geotiff.mapLayer?.bounds);
         const map = new maplibregl.Map({
             container: containerRef.current,
             style: {
@@ -220,6 +233,10 @@ function MapLibreWmsPreview({
             'top-right',
         );
 
+        if (bounds) {
+            map.addControl(new RecenterBoundsControl(recenterMapLabel, bounds), 'top-left');
+        }
+
         map.on('load', () => {
             map.addSource('geotiff-wms', {
                 type: 'raster',
@@ -237,18 +254,14 @@ function MapLibreWmsPreview({
             });
 
             if (bounds) {
-                map.fitBounds(
-                    [
-                        [bounds[0], bounds[1]],
-                        [bounds[2], bounds[3]],
-                    ],
-                    { padding: 24, duration: 0 },
-                );
+                fitMapToBounds(map, bounds, 0);
             }
         });
 
-        return () => map.remove();
-    }, [geotiff.mapLayer?.bounds, tileTemplate]);
+        return () => {
+            map.remove();
+        };
+    }, [bounds, recenterMapLabel, tileTemplate]);
 
     return (
         <div
@@ -259,6 +272,68 @@ function MapLibreWmsPreview({
             )}
         />
     );
+}
+
+class RecenterBoundsControl implements IControl {
+    private container: HTMLDivElement | null = null;
+
+    private button: HTMLButtonElement | null = null;
+
+    private iconRoot: Root | null = null;
+
+    private map: maplibregl.Map | null = null;
+
+    public constructor(
+        private readonly label: string,
+        private readonly bounds: [number, number, number, number],
+    ) {}
+
+    public onAdd(map: maplibregl.Map): HTMLElement {
+        this.map = map;
+        this.container = document.createElement('div');
+        this.container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+
+        this.button = document.createElement('button');
+        this.button.type = 'button';
+        this.button.className = 'maplibregl-ctrl-icon';
+        this.button.title = this.label;
+        this.button.setAttribute('aria-label', this.label);
+        this.button.style.display = 'flex';
+        this.button.style.alignItems = 'center';
+        this.button.style.justifyContent = 'center';
+        this.button.addEventListener('click', this.recenter);
+
+        this.iconRoot = createRoot(this.button);
+        this.iconRoot.render(
+            <LocateFixedIcon aria-hidden="true" size={18} strokeWidth={2.25} />,
+        );
+
+        this.container.appendChild(this.button);
+
+        return this.container;
+    }
+
+    public onRemove(): void {
+        this.button?.removeEventListener('click', this.recenter);
+        this.iconRoot?.unmount();
+        this.container?.remove();
+        this.map = null;
+        this.button = null;
+        this.container = null;
+        this.iconRoot = null;
+    }
+
+    public getDefaultPosition(): ControlPosition {
+        return 'top-left';
+    }
+
+    private recenter = (): void => {
+        if (!this.map) {
+            return;
+        }
+
+        fitMapToBounds(this.map, this.bounds, 350);
+    };
 }
 
 function validBounds(
@@ -285,4 +360,18 @@ function boundsCenter(
     bounds: [number, number, number, number],
 ): [number, number] {
     return [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2];
+}
+
+function fitMapToBounds(
+    map: maplibregl.Map,
+    bounds: [number, number, number, number],
+    duration: number,
+) {
+    map.fitBounds(
+        [
+            [bounds[0], bounds[1]],
+            [bounds[2], bounds[3]],
+        ],
+        { padding: 24, duration },
+    );
 }

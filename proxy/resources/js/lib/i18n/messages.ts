@@ -368,6 +368,7 @@ const it = {
         processesTitle: 'Processi',
         reference: 'Riferimento',
         referenceUrl: 'URL di riferimento',
+        recenterMap: 'Ricentra sulla mappa',
         removeRow: 'Rimuovi riga',
         servicePreparingDescription:
             'La lista processi apparirà al termine del warm-up in background.',
@@ -813,6 +814,7 @@ const en = {
         processesTitle: 'Processes',
         reference: 'Reference',
         referenceUrl: 'Reference URL',
+        recenterMap: 'Recenter map',
         removeRow: 'Remove row',
         servicePreparingDescription:
             'The process list will appear when the background warm-up finishes.',

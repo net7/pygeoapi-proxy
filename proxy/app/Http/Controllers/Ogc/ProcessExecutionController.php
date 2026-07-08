@@ -131,11 +131,13 @@ class ProcessExecutionController extends Controller
         $processExecution->load('results');
 
         $includeAdminData = $user->isAdmin();
-        $mapLayerWarnings = $this->mapLayerWarnings(
-            $processExecution,
-            $findGeoTiffSldResultPairs,
-            $sldVisualizationInspector,
-        );
+        $mapLayerWarnings = $includeAdminData
+            ? $this->mapLayerWarnings(
+                $processExecution,
+                $findGeoTiffSldResultPairs,
+                $sldVisualizationInspector,
+            )
+            : [];
         $execution = [
             ...$this->executionListItem($processExecution, $includeAdminData),
             'processVersion' => $processExecution->process_version,
