@@ -91,7 +91,12 @@ class ProcessExecutionResultController extends Controller
         }
 
         if ($previewKind === 'csv' && $mediaType === 'text/csv') {
-            return $this->previewTextResponse($processExecution, $result, $previewData, 'csv');
+            return $this->previewTextResponse(
+                $processExecution,
+                $result,
+                $this->previewTextData($previewData),
+                'csv',
+            );
         }
 
         if ($previewKind === 'text' && $mediaType === 'text/plain') {
@@ -115,6 +120,15 @@ class ProcessExecutionResultController extends Controller
                 'json',
             ).'"',
         ]);
+    }
+
+    private function previewTextData(mixed $previewData): mixed
+    {
+        if (is_array($previewData) && array_key_exists('source', $previewData)) {
+            return $previewData['source'];
+        }
+
+        return $previewData;
     }
 
     private function previewTextResponse(

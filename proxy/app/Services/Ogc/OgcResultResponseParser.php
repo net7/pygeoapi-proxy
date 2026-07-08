@@ -9,7 +9,10 @@ use Illuminate\Support\Str;
 
 class OgcResultResponseParser
 {
-    public function __construct(private OgcProcessesClient $client) {}
+    public function __construct(
+        private OgcProcessesClient $client,
+        private CsvPreviewBuilder $csvPreviewBuilder,
+    ) {}
 
     /**
      * @return array<int, array{
@@ -520,7 +523,7 @@ class OgcResultResponseParser
         }
 
         if ($mediaType === 'text/csv') {
-            return ['kind' => 'csv', 'data' => str($body)->limit(50000)->toString()];
+            return ['kind' => 'csv', 'data' => $this->csvPreviewBuilder->fromString($body)];
         }
 
         if (str_starts_with($mediaType, 'text/')) {

@@ -324,6 +324,35 @@ test('users can download cached text and csv value results without a stored file
     'csv value' => ['text/csv', 'csv', 'table', '4066039d-793d-11f1-9692-3b828b09e202_table.csv', "a,b\n1,2\n"],
 ]);
 
+test('users can download structured csv value results without a stored file', function () {
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create([
+        'remote_job_id' => '4066039d-793d-11f1-9692-3b828b09e202',
+    ]);
+    $result = ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'table',
+        'media_type' => 'text/csv',
+        'storage_path' => null,
+        'cache_status' => ResultCacheStatus::Cached,
+        'preview' => [
+            'kind' => 'csv',
+            'data' => [
+                'headers' => ['a', 'b'],
+                'rows' => [['1', '2']],
+                'truncated' => false,
+                'source' => "a,b\n1,2\n",
+            ],
+        ],
+    ]);
+
+    $this->actingAs($user)
+        ->get("/jobs/{$execution->id}/results/{$result->id}/download")
+        ->assertOk()
+        ->assertHeader('content-type', 'text/csv; charset=utf-8')
+        ->assertHeader('content-disposition', 'attachment; filename="4066039d-793d-11f1-9692-3b828b09e202_table.csv"')
+        ->assertContent("a,b\n1,2\n");
+});
+
 test('users can download and cache remote result files on demand', function () {
     Storage::fake('local');
     Http::fake([

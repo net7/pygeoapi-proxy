@@ -108,7 +108,12 @@ test('it stores each multipart result using process output definitions', functio
         ->and($results['outfile']->title)->toBe('Table of output variables')
         ->and($results['outfile']->media_type)->toBe('text/csv')
         ->and($results['outfile']->preview['kind'])->toBe('csv')
-        ->and($results['outfile']->preview['data'])->toContain('length,gas');
+        ->and($results['outfile']->preview['data']['headers'])->toBe(['length', 'gas'])
+        ->and($results['outfile']->preview['data']['rows'])->toBe([
+            ['0', '10'],
+            ['1', '20'],
+        ])
+        ->and($results['outfile']->preview['data']['source'])->toContain('length,gas');
 });
 
 test('it caches binary multipart results on local storage', function () {
