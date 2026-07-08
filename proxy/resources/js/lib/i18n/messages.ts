@@ -65,6 +65,12 @@ const it = {
         processes: 'Processi',
         settings: 'Impostazioni',
     },
+    toast: {
+        defaultError: 'La richiesta non è stata completata.',
+        defaultInfo: 'Sono disponibili nuove informazioni.',
+        defaultSuccess: 'La modifica è stata salvata.',
+        defaultWarning: 'Controlla questo elemento prima di continuare.',
+    },
     auth: {
         accountNotice: 'Avviso account',
         alreadyHaveAccount: 'Hai già un account?',
@@ -530,6 +536,12 @@ const en = {
         platform: 'Platform',
         processes: 'Processes',
         settings: 'Settings',
+    },
+    toast: {
+        defaultError: 'The request could not be completed.',
+        defaultInfo: 'New information is available.',
+        defaultSuccess: 'The change has been saved.',
+        defaultWarning: 'Review this before continuing.',
     },
     auth: {
         accountNotice: 'Account notice',

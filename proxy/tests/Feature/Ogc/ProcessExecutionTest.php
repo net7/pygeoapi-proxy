@@ -45,18 +45,15 @@ test('starting a process creates an async local execution and redirects without 
 
     $response
         ->assertRedirect(route('jobs.show', $execution))
-        ->assertInertiaFlash('toast.title', 'Process queued')
+        ->assertInertiaFlash('toast.title', 'Processo avviato')
+        ->assertInertiaFlash('toast.message', 'Il processo è in esecuzione.')
         ->assertInertiaFlash('toast.type', 'success')
-        ->assertInertiaFlash('toast.icon', false)
-        ->assertInertiaFlash('toast.details.0.label', 'Process')
-        ->assertInertiaFlash('toast.details.0.value', $process['title'])
-        ->assertInertiaFlash('toast.details.1.label', 'Local job')
-        ->assertInertiaFlash('toast.details.1.value', "#{$execution->id}")
-        ->assertInertiaFlash('toast.details.2.label', 'Mode')
-        ->assertInertiaFlash('toast.details.2.value', 'async')
-        ->assertInertiaFlash('toast.details.3.label', 'Initial status')
-        ->assertInertiaFlash('toast.details.3.value', 'submitting')
-        ->assertInertiaFlash('toast.note', 'Remote submission is running in the background. This page will update automatically.');
+        ->assertInertiaFlash('toast.icon', false);
+
+    expect(session('toast'))
+        ->not->toHaveKey('details')
+        ->not->toHaveKey('note')
+        ->not->toHaveKey('description');
 
     expect($execution->user->is($user))->toBeTrue()
         ->and($execution->process_id)->toBe('conduit')
@@ -155,8 +152,7 @@ test('starting a process ignores a client requested synchronous mode', function 
     $execution = ProcessExecution::query()->sole();
 
     $response
-        ->assertRedirect(route('jobs.show', $execution))
-        ->assertInertiaFlash('toast.details.2.value', 'async');
+        ->assertRedirect(route('jobs.show', $execution));
 
     expect($execution->execution_mode)->toBe(ExecutionMode::Async);
 });

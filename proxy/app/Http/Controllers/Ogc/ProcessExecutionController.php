@@ -92,29 +92,9 @@ class ProcessExecutionController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'title' => __('Process queued'),
-            'message' => __('The process has been queued.'),
-            'description' => __('A local job was created and the remote submission has started.'),
+            'title' => __('Process started'),
+            'message' => __('The process is running.'),
             'icon' => false,
-            'details' => [
-                [
-                    'label' => __('Process'),
-                    'value' => $execution->process_title ?? $execution->process_id,
-                ],
-                [
-                    'label' => __('Local job'),
-                    'value' => "#{$execution->id}",
-                ],
-                [
-                    'label' => __('Mode'),
-                    'value' => $mode->value,
-                ],
-                [
-                    'label' => __('Initial status'),
-                    'value' => $execution->status->value,
-                ],
-            ],
-            'note' => __('Remote submission is running in the background. This page will update automatically.'),
         ]);
 
         return redirect()->route('jobs.show', $execution);

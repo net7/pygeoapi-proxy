@@ -229,7 +229,7 @@ test('admins can bulk deactivate users and invalidate their sessions', function 
             'ids' => [$firstUser->id, $secondUser->id],
         ])
         ->assertRedirect(route('admin.users.index'))
-        ->assertInertiaFlash('toast.title', 'Users deactivated')
+        ->assertInertiaFlash('toast.title', 'Utenti disattivati')
         ->assertInertiaFlash('toast.details.0.value', '2');
 
     expect($firstUser->fresh()->isDeactivated())->toBeTrue()
@@ -248,7 +248,7 @@ test('admins can bulk restore users', function () {
             'ids' => [$firstUser->id, $secondUser->id],
         ])
         ->assertRedirect(route('admin.users.index'))
-        ->assertInertiaFlash('toast.title', 'Users restored')
+        ->assertInertiaFlash('toast.title', 'Utenti ripristinati')
         ->assertInertiaFlash('toast.details.0.value', '2');
 
     expect($firstUser->fresh()->isActive())->toBeTrue()

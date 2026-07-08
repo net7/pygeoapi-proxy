@@ -62,6 +62,16 @@ describe('raw preview wiring', () => {
         expect(source).toContain('CopyIcon');
     });
 
+    test('renders the copied output name in bold inside the copy notification', () => {
+        const source = readFileSync(
+            'resources/js/components/ogc/raw-payload-block.tsx',
+            'utf8',
+        );
+
+        expect(source).toContain('copyLabel?: string');
+        expect(source).toContain('<strong>{copyLabel}</strong>');
+    });
+
     test('uses the shared raw payload block for output previews and input payloads', () => {
         const resultPreview = readFileSync(
             'resources/js/components/ogc/result-preview.tsx',
@@ -78,6 +88,9 @@ describe('raw preview wiring', () => {
         expect(resultPreview).toContain('kind="csv"');
         expect(resultPreview).toContain('kind="text"');
         expect(resultPreview).toContain('kind="json"');
+        expect(resultPreview).toContain(
+            'copyLabel={result.title ?? result.outputId}',
+        );
         expect(showPage).toContain(
             "import RawPayloadBlock from '@/components/ogc/raw-payload-block'",
         );

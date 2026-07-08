@@ -167,7 +167,7 @@ describe('chart result preview wiring', () => {
         expect(source).toContain(
             "import ChartResultPreview from '@/components/ogc/chart-result-preview'",
         );
-        expect(source).toContain('<ChartResultPreview data={preview.data} />');
+        expect(source).toContain('copyLabel={result.title ?? result.outputId}');
         expect(source).not.toContain('function ChartPreview');
     });
 
@@ -197,7 +197,7 @@ describe('chart result preview wiring', () => {
         expect(source).toContain(
             "import RawPayloadBlock from '@/components/ogc/raw-payload-block'",
         );
-        expect(source).toContain('<RawPayloadBlock data={data} kind="json" />');
+        expect(source).toContain('copyLabel={copyLabel}');
     });
 
     test('moves series descriptions from tooltip into a centered bottom legend', () => {

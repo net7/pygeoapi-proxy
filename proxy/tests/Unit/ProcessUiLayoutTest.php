@@ -510,14 +510,18 @@ test('job tables show contextual empty states', function () {
 });
 
 test('clipboard hook falls back when async clipboard is unavailable', function () {
-    $source = file_get_contents(getcwd().'/resources/js/hooks/use-clipboard.ts');
+    $hookSource = file_get_contents(getcwd().'/resources/js/hooks/use-clipboard.ts');
+    $clipboardSource = file_get_contents(getcwd().'/resources/js/lib/clipboard.ts');
 
-    expect($source)
+    expect($hookSource)
+        ->toContain('copyTextToClipboard');
+
+    expect($clipboardSource)
         ->toContain('writeClipboardFallback')
-        ->toContain("document.execCommand('copy')")
+        ->toContain("clipboardDocument.execCommand('copy')")
         ->toContain('textarea.select()')
-        ->toContain('document.body.appendChild(textarea)')
-        ->toContain('document.body.removeChild(textarea)');
+        ->toContain('clipboardDocument.body.appendChild(textarea)')
+        ->toContain('clipboardDocument.body.removeChild(textarea)');
 });
 
 test('remove and delete buttons use destructive styling', function () {
@@ -637,13 +641,14 @@ test('job detail prioritizes collapsible output panels and header metadata witho
         ->and($notePosition)->not->toBeFalse()
         ->and($titleEditPosition)->toBeLessThan($headerMetaPosition)
         ->and($headerMetaPosition)->toBeLessThan($processTitlePosition)
-        ->and($notePosition)->toBeLessThan($outputPosition)
-        ->and($outputPosition)->toBeLessThan($inputPosition);
+        ->and($notePosition)->toBeLessThan($inputPosition)
+        ->and($inputPosition)->toBeLessThan($outputPosition);
 });
 
 test('job output result cards are collapsible taller sections with title icons', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/result-preview.tsx');
     $mapSource = file_get_contents(getcwd().'/resources/js/components/ogc/geotiff-map-result-preview.tsx');
+    $rawPayloadSource = file_get_contents(getcwd().'/resources/js/components/ogc/raw-payload-block.tsx');
 
     expect($source)
         ->toContain('ChevronDownIcon')
@@ -655,8 +660,11 @@ test('job output result cards are collapsible taller sections with title icons',
         ->toContain('[&[data-state=open]>svg]:rotate-180')
         ->toContain('<FileTextIcon')
         ->toContain('min-h-96')
-        ->toContain('max-h-[32rem]')
         ->toContain('<CardTitle className="flex min-w-0 items-center gap-2">');
+
+    expect($rawPayloadSource)
+        ->toContain('max-h-[32rem]')
+        ->toContain('min-h-80');
 
     expect($mapSource)
         ->toContain('ChevronDownIcon')
@@ -880,6 +888,8 @@ test('job pages use readable dark mode status surfaces', function () {
     $indexSource = file_get_contents(getcwd().'/resources/js/pages/process-executions/index.tsx');
     $showSource = file_get_contents(getcwd().'/resources/js/pages/process-executions/show.tsx');
     $resultPreviewSource = file_get_contents(getcwd().'/resources/js/components/ogc/result-preview.tsx');
+    $rawPayloadSource = file_get_contents(getcwd().'/resources/js/components/ogc/raw-payload-block.tsx');
+    $chartPreviewSource = file_get_contents(getcwd().'/resources/js/components/ogc/chart-result-preview.tsx');
     $indicatorSource = file_get_contents(getcwd().'/resources/js/components/ogc/job-polling-indicator.tsx');
     $helperSource = file_get_contents(getcwd().'/resources/js/lib/jobs.ts');
 
@@ -899,11 +909,17 @@ test('job pages use readable dark mode status surfaces', function () {
     expect($showSource)
         ->toContain('dark:border-border/70 dark:bg-card/95')
         ->toContain('dark:bg-background/30')
-        ->toContain('ring-1 ring-border/50 dark:bg-muted/50');
+        ->toContain('dark:bg-muted/30');
 
     expect($resultPreviewSource)
-        ->toContain('dark:bg-card/95')
+        ->toContain('dark:bg-card/95');
+
+    expect($rawPayloadSource)
+        ->toContain('ring-1 ring-border/50')
         ->toContain('ring-1 ring-border/50 dark:bg-muted/50');
+
+    expect($chartPreviewSource)
+        ->toContain('ring-1 ring-border/50 dark:bg-muted/20');
 
     expect($indicatorSource)
         ->toContain('dark:border-emerald-400/60')
@@ -977,7 +993,7 @@ test('flash toasts support rich descriptions and optional icons', function () {
     $types = file_get_contents(getcwd().'/resources/js/types/ui.ts');
 
     expect($source)
-        ->toContain('renderToastDescription(data)')
+        ->toContain('renderToastDescription(data, t)')
         ->toContain('data.icon === false ? null : getToastIcon(data.type)')
         ->toContain("'strong'")
         ->toContain("'em'");

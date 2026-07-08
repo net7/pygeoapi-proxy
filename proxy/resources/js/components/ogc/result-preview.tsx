@@ -35,6 +35,7 @@ export default function ResultPreview({
     const canDownload =
         result.cacheStatus === 'cached' ||
         result.cacheStatus === 'metadata_only';
+    const copyLabel = result.title ?? result.outputId;
 
     return (
         <Collapsible defaultOpen asChild>
@@ -78,16 +79,28 @@ export default function ResultPreview({
                 <CollapsibleContent>
                     <CardContent className="min-h-96">
                         {preview?.kind === 'chart' ? (
-                            <ChartResultPreview data={preview.data} />
+                            <ChartResultPreview
+                                data={preview.data}
+                                copyLabel={result.title ?? result.outputId}
+                            />
                         ) : null}
                         {preview?.kind === 'csv' ? (
-                            <CsvPreview data={preview.data} />
+                            <CsvPreview
+                                data={preview.data}
+                                copyLabel={copyLabel}
+                            />
                         ) : null}
                         {preview?.kind === 'text' ? (
-                            <TextPreview data={preview.data} />
+                            <TextPreview
+                                data={preview.data}
+                                copyLabel={copyLabel}
+                            />
                         ) : null}
                         {preview?.kind === 'json' ? (
-                            <JsonPreview data={preview.data} />
+                            <JsonPreview
+                                data={preview.data}
+                                copyLabel={copyLabel}
+                            />
                         ) : null}
                         {preview?.kind === 'binary' ? (
                             <p className="text-sm text-muted-foreground">
@@ -106,7 +119,7 @@ export default function ResultPreview({
     );
 }
 
-function CsvPreview({ data }: { data: unknown }) {
+function CsvPreview({ data, copyLabel }: { data: unknown; copyLabel: string }) {
     const { t } = useTranslation();
     const csv = normalizeCsvPreview(data);
 
@@ -119,7 +132,7 @@ function CsvPreview({ data }: { data: unknown }) {
     }
 
     return (
-        <RawPayloadBlock data={data} kind="csv">
+        <RawPayloadBlock data={data} kind="csv" copyLabel={copyLabel}>
             <div className="flex min-h-96 min-w-0 flex-col gap-2 overflow-auto">
                 <Table>
                     <TableHeader>
@@ -151,10 +164,22 @@ function CsvPreview({ data }: { data: unknown }) {
     );
 }
 
-function TextPreview({ data }: { data: unknown }) {
-    return <RawPayloadBlock data={data} kind="text" />;
+function TextPreview({
+    data,
+    copyLabel,
+}: {
+    data: unknown;
+    copyLabel: string;
+}) {
+    return <RawPayloadBlock data={data} kind="text" copyLabel={copyLabel} />;
 }
 
-function JsonPreview({ data }: { data: unknown }) {
-    return <RawPayloadBlock data={data} kind="json" />;
+function JsonPreview({
+    data,
+    copyLabel,
+}: {
+    data: unknown;
+    copyLabel: string;
+}) {
+    return <RawPayloadBlock data={data} kind="json" copyLabel={copyLabel} />;
 }

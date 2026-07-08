@@ -60,7 +60,13 @@ const fallbackColors = [
     '#475569',
 ];
 
-export default function ChartResultPreview({ data }: { data: unknown }) {
+export default function ChartResultPreview({
+    data,
+    copyLabel,
+}: {
+    data: unknown;
+    copyLabel?: string;
+}) {
     const { t } = useTranslation();
     const { auth } = usePage().props;
     const chart = useMemo(() => normalizeChartPayload(data), [data]);
@@ -106,7 +112,9 @@ export default function ChartResultPreview({ data }: { data: unknown }) {
     }, [chart, t]);
 
     if (!chart) {
-        return <RawPayloadBlock data={data} kind="json" />;
+        return (
+            <RawPayloadBlock data={data} kind="json" copyLabel={copyLabel} />
+        );
     }
 
     const lineChart = chart;
@@ -163,7 +171,9 @@ export default function ChartResultPreview({ data }: { data: unknown }) {
                     aria-label={chart.domain.description ?? chart.domain.label}
                 />
             </div>
-            {canViewRawJson ? <RawJsonCollapsible data={data} /> : null}
+            {canViewRawJson ? (
+                <RawJsonCollapsible data={data} copyLabel={copyLabel} />
+            ) : null}
         </div>
     );
 }
@@ -464,7 +474,13 @@ function chartCanvasColors(): {
     };
 }
 
-function RawJsonCollapsible({ data }: { data: unknown }) {
+function RawJsonCollapsible({
+    data,
+    copyLabel,
+}: {
+    data: unknown;
+    copyLabel?: string;
+}) {
     const { t } = useTranslation();
 
     return (
@@ -491,7 +507,11 @@ function RawJsonCollapsible({ data }: { data: unknown }) {
             </div>
             <CollapsibleContent>
                 <div className="border-t p-3">
-                    <RawPayloadBlock data={data} kind="json" />
+                    <RawPayloadBlock
+                        data={data}
+                        kind="json"
+                        copyLabel={copyLabel}
+                    />
                 </div>
             </CollapsibleContent>
         </Collapsible>

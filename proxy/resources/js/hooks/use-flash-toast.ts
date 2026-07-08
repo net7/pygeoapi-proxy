@@ -8,9 +8,12 @@ import {
 import { createElement, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from '@/hooks/use-translation';
 import type { FlashToast } from '@/types/ui';
 
 export function useFlashToast(): void {
+    const { t } = useTranslation();
+
     useEffect(() => {
         return router.on('flash', (event) => {
             const flash = (event as CustomEvent).detail?.flash;
@@ -21,17 +24,20 @@ export function useFlashToast(): void {
             }
 
             toast[data.type](data.title ?? data.message, {
-                description: renderToastDescription(data),
+                description: renderToastDescription(data, t),
                 icon: data.icon === false ? null : getToastIcon(data.type),
             });
         });
-    }, []);
+    }, [t]);
 }
 
-function renderToastDescription(data: FlashToast): ReactNode {
+function renderToastDescription(
+    data: FlashToast,
+    t: ReturnType<typeof useTranslation>['t'],
+): ReactNode {
     const description =
         data.description ??
-        (data.title ? data.message : getToastDescription(data.type));
+        (data.title ? data.message : getToastDescription(data.type, t));
 
     if (!data.details?.length && !data.note) {
         return description;
@@ -91,12 +97,15 @@ function renderToastDescription(data: FlashToast): ReactNode {
     );
 }
 
-function getToastDescription(type: FlashToast['type']): string {
+function getToastDescription(
+    type: FlashToast['type'],
+    t: ReturnType<typeof useTranslation>['t'],
+): string {
     return {
-        success: 'The change has been saved.',
-        info: 'New information is available.',
-        warning: 'Review this before continuing.',
-        error: 'The request could not be completed.',
+        success: t('toast.defaultSuccess'),
+        info: t('toast.defaultInfo'),
+        warning: t('toast.defaultWarning'),
+        error: t('toast.defaultError'),
     }[type];
 }
 

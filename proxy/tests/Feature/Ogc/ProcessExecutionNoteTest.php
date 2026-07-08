@@ -41,7 +41,7 @@ test('job owners can update notes while a job is still running', function () {
         ->from(route('jobs.show', $execution))
         ->patch(route('jobs.note.update', $execution), ['note' => $note])
         ->assertRedirect(route('jobs.show', $execution))
-        ->assertInertiaFlash('toast.title', 'Note saved');
+        ->assertInertiaFlash('toast.title', 'Nota salvata');
 
     $execution->refresh();
 

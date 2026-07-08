@@ -15,12 +15,14 @@ export default function RawPayloadBlock({
     data,
     kind,
     title,
+    copyLabel,
     children,
     className,
 }: {
     data: unknown;
     kind: RawPreviewKind;
     title?: string;
+    copyLabel?: string;
     children?: ReactNode;
     className?: string;
 }) {
@@ -30,7 +32,15 @@ export default function RawPayloadBlock({
 
     async function copyRawPayload(): Promise<void> {
         if (await copy(copyText)) {
-            toast.success(t('ogc.rawCopied'));
+            toast.success(
+                copyLabel ? (
+                    <>
+                        {t('ogc.rawCopied')} <strong>{copyLabel}</strong>
+                    </>
+                ) : (
+                    t('ogc.rawCopied')
+                ),
+            );
 
             return;
         }
