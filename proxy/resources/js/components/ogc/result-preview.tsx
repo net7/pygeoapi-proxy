@@ -1,6 +1,7 @@
 import { ChevronDownIcon, Download, FileTextIcon } from 'lucide-react';
 
 import ChartResultPreview from '@/components/ogc/chart-result-preview';
+import RawPayloadBlock from '@/components/ogc/raw-payload-block';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -118,46 +119,42 @@ function CsvPreview({ data }: { data: unknown }) {
     }
 
     return (
-        <div className="flex min-h-96 min-w-0 flex-col gap-2 overflow-auto">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        {csv.headers.map((cell, index) => (
-                            <TableHead key={index}>{cell}</TableHead>
-                        ))}
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {csv.rows.map((row, rowIndex) => (
-                        <TableRow key={rowIndex}>
-                            {row.map((cell, cellIndex) => (
-                                <TableCell key={cellIndex}>{cell}</TableCell>
+        <RawPayloadBlock data={data} kind="csv">
+            <div className="flex min-h-96 min-w-0 flex-col gap-2 overflow-auto">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            {csv.headers.map((cell, index) => (
+                                <TableHead key={index}>{cell}</TableHead>
                             ))}
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-            {csv.truncated ? (
-                <p className="text-xs text-muted-foreground">
-                    {t('ogc.csvPreviewTruncated')}
-                </p>
-            ) : null}
-        </div>
+                    </TableHeader>
+                    <TableBody>
+                        {csv.rows.map((row, rowIndex) => (
+                            <TableRow key={rowIndex}>
+                                {row.map((cell, cellIndex) => (
+                                    <TableCell key={cellIndex}>
+                                        {cell}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+                {csv.truncated ? (
+                    <p className="text-xs text-muted-foreground">
+                        {t('ogc.csvPreviewTruncated')}
+                    </p>
+                ) : null}
+            </div>
+        </RawPayloadBlock>
     );
 }
 
 function TextPreview({ data }: { data: unknown }) {
-    return (
-        <pre className="max-h-[32rem] min-h-80 overflow-auto rounded-md bg-muted p-3 text-xs ring-1 ring-border/50 dark:bg-muted/50 dark:text-foreground">
-            {String(data ?? '')}
-        </pre>
-    );
+    return <RawPayloadBlock data={data} kind="text" />;
 }
 
 function JsonPreview({ data }: { data: unknown }) {
-    return (
-        <pre className="max-h-[32rem] min-h-80 overflow-auto rounded-md bg-muted p-3 text-xs ring-1 ring-border/50 dark:bg-muted/50 dark:text-foreground">
-            {JSON.stringify(data, null, 2)}
-        </pre>
-    );
+    return <RawPayloadBlock data={data} kind="json" />;
 }

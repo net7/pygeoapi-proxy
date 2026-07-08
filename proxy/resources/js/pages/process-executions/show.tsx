@@ -2,6 +2,7 @@ import { Head, Link, usePoll } from '@inertiajs/react';
 import {
     ArrowLeftIcon,
     CalendarClockIcon,
+    ChevronDownIcon,
     Clock3Icon,
     FileInputIcon,
     ListChecksIcon,
@@ -18,6 +19,7 @@ import JobIdentifiers from '@/components/ogc/job-identifiers';
 import { JobNameEditDialog } from '@/components/ogc/job-name-edit-dialog';
 import { JobNoteCard } from '@/components/ogc/job-note-card';
 import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
+import RawPayloadBlock from '@/components/ogc/raw-payload-block';
 import ResultPreview from '@/components/ogc/result-preview';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +31,11 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
 import type { TranslationKey } from '@/lib/i18n/translation';
@@ -155,6 +162,30 @@ export default function ProcessExecutionShow({
 
                 <JobNoteCard execution={execution} />
 
+                {execution.requestPayload !== undefined ? (
+                    <DetailSection
+                        icon={FileInputIcon}
+                        title={t('jobs.inputs')}
+                        description={t('jobs.inputsDescription')}
+                        defaultOpen={false}
+                        badge={
+                            <Badge
+                                variant="destructive"
+                                className="h-5 shrink-0 px-1.5 text-[10px] uppercase"
+                            >
+                                <ShieldCheckIcon data-icon="inline-start" />
+                                {t('jobs.adminOnlySection')}
+                            </Badge>
+                        }
+                    >
+                        <RawPayloadBlock
+                            title={t('jobs.inputs')}
+                            data={execution.requestPayload}
+                            kind="json"
+                        />
+                    </DetailSection>
+                ) : null}
+
                 <DetailSection
                     icon={PackageCheckIcon}
                     title={t('ogc.outputs')}
@@ -204,28 +235,6 @@ export default function ProcessExecutionShow({
                         />
                     )}
                 </DetailSection>
-
-                {execution.requestPayload !== undefined ? (
-                    <DetailSection
-                        icon={FileInputIcon}
-                        title={t('jobs.inputs')}
-                        description={t('jobs.inputsDescription')}
-                        badge={
-                            <Badge
-                                variant="destructive"
-                                className="h-5 shrink-0 px-1.5 text-[10px] uppercase"
-                            >
-                                <ShieldCheckIcon data-icon="inline-start" />
-                                {t('jobs.adminOnlySection')}
-                            </Badge>
-                        }
-                    >
-                        <JsonBlock
-                            title={t('jobs.inputs')}
-                            value={execution.requestPayload}
-                        />
-                    </DetailSection>
-                ) : null}
             </div>
         </>
     );
@@ -288,25 +297,49 @@ function DetailSection({
     title,
     description,
     badge,
+    defaultOpen,
     children,
 }: {
     icon: LucideIcon;
     title: string;
     description: string;
     badge?: ReactNode;
+    defaultOpen?: boolean;
     children: ReactNode;
 }) {
+    const header = (
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+                <CardTitleWithIcon
+                    titleIcon={Icon}
+                    collapsible={defaultOpen !== undefined}
+                >
+                    {title}
+                </CardTitleWithIcon>
+                <CardDescription>{description}</CardDescription>
+            </div>
+            {badge}
+        </CardHeader>
+    );
+
+    if (defaultOpen !== undefined) {
+        return (
+            <Collapsible defaultOpen={defaultOpen} asChild>
+                <Card className="min-w-0 shadow-sm dark:border-border/70 dark:bg-card/95">
+                    {header}
+                    <CollapsibleContent>
+                        <CardContent className="flex min-w-0 flex-col gap-4">
+                            {children}
+                        </CardContent>
+                    </CollapsibleContent>
+                </Card>
+            </Collapsible>
+        );
+    }
+
     return (
         <Card className="min-w-0 shadow-sm dark:border-border/70 dark:bg-card/95">
-            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                    <CardTitleWithIcon titleIcon={Icon}>
-                        {title}
-                    </CardTitleWithIcon>
-                    <CardDescription>{description}</CardDescription>
-                </div>
-                {badge}
-            </CardHeader>
+            {header}
             <CardContent className="flex min-w-0 flex-col gap-4">
                 {children}
             </CardContent>
@@ -316,18 +349,38 @@ function DetailSection({
 
 function CardTitleWithIcon({
     titleIcon: Icon,
+    collapsible = false,
     children,
 }: {
     titleIcon: LucideIcon;
+    collapsible?: boolean;
     children: ReactNode;
 }) {
+    const title = (
+        <>
+            <span className="min-w-0 truncate">{children}</span>
+            {collapsible ? (
+                <ChevronDownIcon
+                    aria-hidden="true"
+                    className="size-4 shrink-0 text-muted-foreground transition-transform"
+                />
+            ) : null}
+        </>
+    );
+
     return (
         <CardTitle className="flex min-w-0 items-center gap-2">
             <Icon
                 aria-hidden="true"
                 className="size-4 shrink-0 text-muted-foreground"
             />
-            <span className="min-w-0 truncate">{children}</span>
+            {collapsible ? (
+                <CollapsibleTrigger className="flex min-w-0 items-center gap-1 rounded-sm text-left ring-offset-background outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&[data-state=open]>svg]:rotate-180">
+                    {title}
+                </CollapsibleTrigger>
+            ) : (
+                title
+            )}
         </CardTitle>
     );
 }
@@ -505,19 +558,6 @@ function HeaderMetadataProgress({
                 )}
                 style={{ width: `${value}%` }}
             />
-        </div>
-    );
-}
-
-function JsonBlock({ title, value }: { title: string; value: unknown }) {
-    return (
-        <div className="flex min-w-0 flex-col gap-2">
-            <h3 className="text-xs font-semibold tracking-wide text-muted-foreground">
-                {title}
-            </h3>
-            <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs ring-1 ring-border/50 dark:bg-muted/50 dark:text-foreground">
-                {JSON.stringify(value, null, 2)}
-            </pre>
         </div>
     );
 }

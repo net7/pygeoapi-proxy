@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 
+import { hasPendingMapLayers } from '../../resources/js/lib/ogc-map-layers';
 import {
     automaticOutputTransmissionMode,
     downloadLabelForMediaType,
 } from '../../resources/js/lib/ogc-outputs';
-import { hasPendingMapLayers } from '../../resources/js/lib/ogc-map-layers';
 import { groupProcessResults } from '../../resources/js/lib/ogc-result-groups';
 import type { ProcessExecutionResult } from '../../resources/js/types';
 import type { OgcNormalizedOutput } from '../../resources/js/types';

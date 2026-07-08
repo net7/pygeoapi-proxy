@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import RawPayloadBlock from '@/components/ogc/raw-payload-block';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -105,7 +106,7 @@ export default function ChartResultPreview({ data }: { data: unknown }) {
     }, [chart, t]);
 
     if (!chart) {
-        return <JsonFallback data={data} />;
+        return <RawPayloadBlock data={data} kind="json" />;
     }
 
     const lineChart = chart;
@@ -490,17 +491,9 @@ function RawJsonCollapsible({ data }: { data: unknown }) {
             </div>
             <CollapsibleContent>
                 <div className="border-t p-3">
-                    <JsonFallback data={data} />
+                    <RawPayloadBlock data={data} kind="json" />
                 </div>
             </CollapsibleContent>
         </Collapsible>
-    );
-}
-
-function JsonFallback({ data }: { data: unknown }) {
-    return (
-        <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs ring-1 ring-border/50 dark:bg-muted/50 dark:text-foreground">
-            {JSON.stringify(data, null, 2)}
-        </pre>
     );
 }
