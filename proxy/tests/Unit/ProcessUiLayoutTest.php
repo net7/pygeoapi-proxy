@@ -898,3 +898,13 @@ test('process pages show service configuration update dates', function () {
         ->toContain('Ultimo aggiornamento servizi')
         ->toContain('Services last updated');
 });
+
+test('job detail groups geotiff and sld results for map previews', function () {
+    $showSource = file_get_contents(getcwd().'/resources/js/pages/process-executions/show.tsx');
+
+    expect($showSource)
+        ->toContain('groupProcessResults(execution.results)')
+        ->toContain('<GeoTiffMapResultPreview')
+        ->toContain('visualResults.length')
+        ->toContain("item.kind === 'geotiff-map'");
+});

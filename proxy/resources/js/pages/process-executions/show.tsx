@@ -14,6 +14,7 @@ import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { DeleteJobButton } from '@/components/ogc/delete-job-dialog';
+import GeoTiffMapResultPreview from '@/components/ogc/geotiff-map-result-preview';
 import JobIdentifiers from '@/components/ogc/job-identifiers';
 import { JobNameEditDialog } from '@/components/ogc/job-name-edit-dialog';
 import { JobNoteCard } from '@/components/ogc/job-note-card';
@@ -36,6 +37,7 @@ import {
     isJobTerminal,
     jobStatusStyles,
 } from '@/lib/jobs';
+import { groupProcessResults } from '@/lib/ogc-result-groups';
 import { cn } from '@/lib/utils';
 import { index } from '@/routes/jobs';
 import type { ProcessExecutionDetail } from '@/types';
@@ -59,6 +61,7 @@ export default function ProcessExecutionShow({
           ? t('jobs.failed')
           : t('jobs.finished');
     const isPolling = !isJobTerminal(execution.status);
+    const visualResults = groupProcessResults(execution.results);
 
     return (
         <>
@@ -281,15 +284,15 @@ export default function ProcessExecutionShow({
                 <DetailSection
                     title={t('ogc.outputs')}
                     description={t(
-                        execution.results.length === 1
+                        visualResults.length === 1
                             ? 'ogc.outputCountOne'
                             : 'ogc.outputCountMany',
-                        { count: execution.results.length },
+                        { count: visualResults.length },
                     )}
                     badge={
                         <Badge variant="secondary" className="shrink-0">
                             <PackageCheckIcon data-icon="inline-start" />
-                            {execution.results.length}
+                            {visualResults.length}
                         </Badge>
                     }
                 >
@@ -300,13 +303,24 @@ export default function ProcessExecutionShow({
 
                     {execution.results.length > 0 ? (
                         <div className="flex min-w-0 flex-col gap-3">
-                            {execution.results.map((result) => (
-                                <ResultPreview
-                                    key={result.id}
-                                    executionId={execution.id}
-                                    result={result}
-                                />
-                            ))}
+                            {visualResults.map((item) =>
+                                item.kind === 'geotiff-map' ? (
+                                    <GeoTiffMapResultPreview
+                                        key={`map-${item.outputId}`}
+                                        executionId={execution.id}
+                                        title={item.title}
+                                        description={item.description}
+                                        geotiff={item.geotiff}
+                                        sld={item.sld}
+                                    />
+                                ) : (
+                                    <ResultPreview
+                                        key={item.result.id}
+                                        executionId={execution.id}
+                                        result={item.result}
+                                    />
+                                ),
+                            )}
                         </div>
                     ) : (
                         <AlertResultsEmpty
