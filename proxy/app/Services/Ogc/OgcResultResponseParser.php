@@ -118,6 +118,15 @@ class OgcResultResponseParser
             }
         }
 
+        $contentLocation = $headers['content-location'] ?? null;
+
+        if (trim($body) === '' && is_string($contentLocation) && $contentLocation !== '') {
+            return [$this->resultFromLinkValue($execution, $outputId, [
+                'href' => $contentLocation,
+                'type' => $mediaType ?: $this->outputMediaType($execution, $outputId),
+            ])];
+        }
+
         return [$this->resultFromBody(
             execution: $execution,
             outputId: $outputId,

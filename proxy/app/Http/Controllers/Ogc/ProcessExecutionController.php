@@ -186,7 +186,7 @@ class ProcessExecutionController extends Controller
     {
         $preview = $result->preview;
 
-        if ($this->baseMediaType($result->media_type) !== 'text/csv') {
+        if (! $this->isCsvResult($result)) {
             return $preview;
         }
 
@@ -226,6 +226,24 @@ class ProcessExecutionController extends Controller
             ->trim()
             ->lower()
             ->toString();
+    }
+
+    private function isCsvResult(ProcessExecutionResult $result): bool
+    {
+        $mediaType = $this->baseMediaType($result->media_type);
+
+        return $mediaType === 'text/csv'
+            || str($mediaType)->contains('csv')
+            || $this->looksLikeCsvPath($result->storage_path)
+            || $this->looksLikeCsvPath($result->remote_href);
+    }
+
+    private function looksLikeCsvPath(?string $path): bool
+    {
+        return str((string) $path)
+            ->before('?')
+            ->lower()
+            ->endsWith('.csv');
     }
 
     /**

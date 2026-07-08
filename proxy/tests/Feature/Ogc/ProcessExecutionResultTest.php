@@ -72,6 +72,42 @@ test('users can view table previews for existing cached csv results', function (
     ]);
 });
 
+test('users can view table previews for cached csv files with generic media types', function () {
+    Storage::fake('local');
+
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create();
+    $path = "ogc-results/{$execution->id}/table.csv";
+
+    ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'table',
+        'title' => 'Table output',
+        'media_type' => 'application/octet-stream',
+        'storage_path' => $path,
+        'cache_status' => ResultCacheStatus::Cached,
+        'preview' => [
+            'kind' => 'binary',
+            'data' => ['mediaType' => 'application/octet-stream'],
+        ],
+    ]);
+
+    Storage::disk('local')->put($path, "name,value\nEtna,42\n");
+
+    $response = $this->actingAs($user)
+        ->get("/jobs/{$execution->id}")
+        ->assertOk();
+
+    expect($response->inertiaProps('execution.results.0.preview'))->toMatchArray([
+        'kind' => 'csv',
+        'data' => [
+            'headers' => ['name', 'value'],
+            'rows' => [['Etna', '42']],
+            'truncated' => false,
+            'source' => "name,value\nEtna,42\n",
+        ],
+    ]);
+});
+
 test('users can view map layer metadata on their execution detail', function () {
     $user = User::factory()->create();
     $execution = ProcessExecution::factory()->for($user)->create();

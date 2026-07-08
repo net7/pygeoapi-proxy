@@ -116,6 +116,62 @@ test('it stores each multipart result using process output definitions', functio
         ->and($results['outfile']->preview['data']['source'])->toContain('length,gas');
 });
 
+test('it caches csv multipart result links sent as empty content location parts', function () {
+    Notification::fake();
+    Storage::fake('local');
+
+    $remoteJobId = 'job-456';
+    $boundary = 'result-boundary';
+    $csvUrl = "https://voice.pi.ingv.it/geoinquire/jobs/{$remoteJobId}/results/outfile";
+    $csvBody = "length,gas\n0,10\n1,20\n";
+    $body = implode("\r\n", [
+        '--'.$boundary,
+        'Content-Disposition: form-data; name="outfile"; filename="outfile.csv"',
+        'Content-Type: text/csv',
+        'Content-Location: '.$csvUrl,
+        '',
+        '',
+        '--'.$boundary.'--',
+        '',
+    ]);
+
+    $execution = ProcessExecution::factory()->create([
+        'process_id' => 'conduit',
+        'remote_job_id' => $remoteJobId,
+        'status' => ExecutionStatus::Running,
+        'requested_outputs' => [
+            'outfile' => ['transmissionMode' => 'reference'],
+        ],
+        'process_outputs' => ogcFixture('process-conduit')['outputs'],
+    ]);
+
+    Http::fake([
+        "https://voice.pi.ingv.it/geoinquire/jobs/{$remoteJobId}?f=json" => Http::response(ogcFixture('job-successful')),
+        "https://voice.pi.ingv.it/geoinquire/jobs/{$remoteJobId}/results?f=json" => Http::response($body, 200, [
+            'Content-Type' => 'multipart/mixed; boundary="'.$boundary.'"',
+        ]),
+        $csvUrl => Http::response($csvBody, 200, [
+            'Content-Type' => 'text/csv',
+        ]),
+    ]);
+
+    (new PollProcessExecutionJob($execution->id))->handle(
+        app(PollProcessExecution::class),
+    );
+
+    $result = $execution->refresh()->results()->sole();
+
+    expect($result->output_id)->toBe('outfile')
+        ->and($result->media_type)->toBe('text/csv')
+        ->and($result->remote_href)->toBe($csvUrl)
+        ->and($result->cache_status)->toBe(ResultCacheStatus::Cached)
+        ->and($result->storage_path)->not->toBeNull()
+        ->and($result->size_bytes)->toBe(strlen($csvBody));
+
+    Storage::disk('local')->assertExists($result->storage_path);
+    expect(Storage::disk('local')->get($result->storage_path))->toBe($csvBody);
+});
+
 test('it caches binary multipart results on local storage', function () {
     Notification::fake();
     Storage::fake('local');
