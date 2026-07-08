@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import {
     flexRender,
     getCoreRowModel,
@@ -24,7 +24,6 @@ import {
     ChevronsLeftIcon,
     ChevronsRightIcon,
     Columns3Icon,
-    ListChecksIcon,
     ListFilterIcon,
     SearchIcon,
     Trash2Icon,
@@ -132,7 +131,7 @@ const columnClassNames: Record<string, string> = {
     submittedAt: 'min-w-36',
     finishedAt: 'min-w-40',
     progress: 'min-w-32',
-    actions: 'w-24 text-right',
+    actions: 'w-14 text-right',
 };
 
 const columns: ColumnDef<AdminJob>[] = [
@@ -966,26 +965,8 @@ function JobProgress({ execution }: { execution: AdminJob }) {
 }
 
 function JobRowActions({ execution }: { execution: AdminJob }) {
-    const { t } = useTranslation();
-
     return (
-        <div className="flex justify-end gap-2">
-            <Button
-                asChild
-                variant="default"
-                size="icon"
-                aria-label={t('jobs.details')}
-                title={t('jobs.details')}
-            >
-                <Link
-                    href={show(execution.id)}
-                    onClick={(event) => event.stopPropagation()}
-                >
-                    <ListChecksIcon data-icon="icon" />
-                    <span className="sr-only">{t('jobs.details')}</span>
-                </Link>
-            </Button>
-
+        <div className="flex justify-end">
             <DeleteJobButton
                 execution={execution}
                 owner={execution.owner}

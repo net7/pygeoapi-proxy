@@ -140,7 +140,7 @@ test('process section fields are visually wrapped', function () {
 
 test('text buttons include representative icons', function () {
     $requirements = [
-        'resources/js/pages/process-executions/index.tsx' => ['jobs.details' => 'ListChecksIcon'],
+        'resources/js/pages/process-executions/index.tsx' => ['jobs.startProcess' => 'PlayIcon'],
         'resources/js/pages/auth/login.tsx' => ['auth.login.submit' => 'LogInIcon'],
         'resources/js/pages/auth/register.tsx' => ['auth.createAccount' => 'UserPlusIcon'],
         'resources/js/pages/auth/forgot-password.tsx' => ['auth.forgotPassword.submit' => 'MailIcon'],
@@ -327,7 +327,7 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('styles.rowClassName')
         ->toContain('@/components/ogc/delete-job-dialog')
         ->toContain('DeleteJobButton')
-        ->toContain("actions: 'w-24 text-right'")
+        ->toContain("actions: 'w-14 text-right'")
         ->toContain("select: 'w-12'")
         ->toContain('RowSelectionState')
         ->toContain('rowSelection')
@@ -341,14 +341,13 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('completedAt')
         ->toContain('failedAt')
         ->toContain('Badge')
-        ->toContain('asChild')
-        ->toContain('variant="default"')
-        ->toContain('size="icon"')
-        ->toContain('aria-label={t(\'jobs.details\')}')
-        ->toContain('title={t(\'jobs.details\')}')
-        ->toContain('<span className="sr-only">{t(\'jobs.details\')}</span>')
         ->toContain('redirectBack')
         ->toContain('showLabel={false}')
+        ->not->toContain('href={show(execution.id)}')
+        ->not->toContain('aria-label={t(\'jobs.details\')}')
+        ->not->toContain('title={t(\'jobs.details\')}')
+        ->not->toContain('<span className="sr-only">{t(\'jobs.details\')}</span>')
+        ->not->toContain('ListChecksIcon')
         ->not->toContain('max-w-52 truncate')
         ->not->toContain("remoteJobId: 'w-[300px] max-w-[300px]'")
         ->not->toContain("remoteJobId: 'whitespace-nowrap'")
@@ -419,10 +418,17 @@ test('job tables expose shadcn row selection and bulk delete actions', function 
             ->toContain('bulkDestroy.url()')
             ->toContain('router.delete<BulkActionPayload>')
             ->toContain('table.resetRowSelection()')
-            ->toContain("select: 'w-12'");
+            ->toContain("select: 'w-12'")
+            ->toContain('DeleteJobButton')
+            ->not->toContain('href={show(execution.id)}')
+            ->not->toContain('aria-label={t(\'jobs.details\')}')
+            ->not->toContain('title={t(\'jobs.details\')}')
+            ->not->toContain('<span className="sr-only">{t(\'jobs.details\')}</span>')
+            ->not->toContain('ListChecksIcon');
 
         expect($normalizedSource)
-            ->toContain("data-state={row.getIsSelected()?'selected':undefined}");
+            ->toContain("data-state={row.getIsSelected()?'selected':undefined}")
+            ->toContain('router.visit(show(row.original.id),)');
     }
 
     foreach ([$jobsIndexSource, $adminJobsIndexSource] as $source) {
