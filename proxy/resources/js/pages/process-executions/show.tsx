@@ -1,11 +1,9 @@
 import { Head, Link } from '@inertiajs/react';
 import {
-    ActivityIcon,
     ArrowLeftIcon,
     CalendarClockIcon,
     Clock3Icon,
     FileInputIcon,
-    HashIcon,
     ListChecksIcon,
     PackageCheckIcon,
     ShieldCheckIcon,
@@ -74,7 +72,7 @@ export default function ProcessExecutionShow({
 
             <div className="flex min-w-0 flex-col gap-5 p-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="flex min-w-0 flex-col gap-3">
+                    <div className="flex min-w-0 flex-1 flex-col gap-3">
                         <Button
                             asChild
                             variant="ghost"
@@ -95,6 +93,7 @@ export default function ProcessExecutionShow({
                                 <JobNameEditDialog execution={execution} />
                                 <Badge
                                     variant="outline"
+                                    aria-label={t('common.status')}
                                     className={cn(
                                         'shrink-0 tracking-wide',
                                         styles.badgeClassName,
@@ -104,6 +103,14 @@ export default function ProcessExecutionShow({
                                     {jobStatusLabel(execution.status, t)}
                                 </Badge>
                             </div>
+                            <HeaderMetadata
+                                execution={execution}
+                                locale={locale}
+                                progressClassName={styles.progressClassName}
+                                t={t}
+                                terminalLabel={terminalLabel}
+                                terminalTimestamp={terminalTimestamp}
+                            />
                             <p className="text-sm text-muted-foreground">
                                 {execution.processTitle ?? execution.processId}{' '}
                                 <span className="text-muted-foreground/70">
@@ -129,99 +136,13 @@ export default function ProcessExecutionShow({
                         </div>
                     </div>
 
-                    <div className="flex flex-col gap-3 lg:w-[32rem]">
-                        <div className="flex justify-end">
-                            <DeleteJobButton
-                                execution={execution}
-                                className="w-full sm:w-auto"
-                            />
-                        </div>
-
-                        <div className="grid gap-3 sm:grid-cols-3">
-                            <JobMetric
-                                icon={HashIcon}
-                                label={t('jobs.local')}
-                                value={`#${execution.id}`}
-                            />
-                            <JobMetric
-                                icon={ListChecksIcon}
-                                label={t('jobs.results')}
-                                value={String(execution.results.length)}
-                            />
-                            <JobMetric
-                                icon={TimerIcon}
-                                label={t('jobs.progress')}
-                                value={`${execution.progress}%`}
-                            />
-                        </div>
+                    <div className="flex justify-end lg:pt-9">
+                        <DeleteJobButton
+                            execution={execution}
+                            className="w-full sm:w-auto"
+                        />
                     </div>
                 </div>
-
-                <Card
-                    className={cn(
-                        'w-full min-w-0 border-l-4 py-3 shadow-sm',
-                        styles.cardClassName,
-                    )}
-                >
-                    <CardContent className="flex min-w-0 flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="min-w-0">
-                            <CardTitleWithIcon titleIcon={ActivityIcon}>
-                                {t('jobs.jobSummary')}
-                            </CardTitleWithIcon>
-                        </div>
-
-                        <div className="flex min-w-0 flex-wrap items-center gap-2">
-                            <Badge
-                                variant="outline"
-                                aria-label={t('common.status')}
-                                className={cn(
-                                    'h-8 shrink-0 tracking-wide',
-                                    styles.badgeClassName,
-                                )}
-                            >
-                                <StatusIcon data-icon="inline-start" />
-                                {jobStatusLabel(execution.status, t)}
-                            </Badge>
-                            <SummaryProgress
-                                label={t('jobs.progress')}
-                                progress={execution.progress}
-                                progressClassName={styles.progressClassName}
-                            />
-                            <SummaryMetric
-                                icon={ListChecksIcon}
-                                label={t('jobs.results')}
-                                value={String(execution.results.length)}
-                            />
-                            <SummaryDate
-                                icon={CalendarClockIcon}
-                                label={t('jobs.created')}
-                                value={formatJobDate(
-                                    execution.createdAt,
-                                    locale,
-                                    t('common.notAvailable'),
-                                )}
-                            />
-                            <SummaryDate
-                                icon={Clock3Icon}
-                                label={t('jobs.submitted')}
-                                value={formatJobDate(
-                                    execution.submittedAt,
-                                    locale,
-                                    t('common.notAvailable'),
-                                )}
-                            />
-                            <SummaryDate
-                                icon={TimerIcon}
-                                label={terminalLabel}
-                                value={formatJobDate(
-                                    terminalTimestamp,
-                                    locale,
-                                    t('common.notAvailable'),
-                                )}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
 
                 <JobNoteCard execution={execution} />
 
@@ -384,34 +305,67 @@ function AlertResultsEmpty({
     );
 }
 
-function JobMetric({
-    icon: Icon,
-    label,
-    value,
+function HeaderMetadata({
+    execution,
+    locale,
+    progressClassName,
+    t,
+    terminalLabel,
+    terminalTimestamp,
 }: {
-    icon: LucideIcon;
-    label: string;
-    value: string;
+    execution: ProcessExecutionDetail;
+    locale: string;
+    progressClassName: string;
+    t: Translate;
+    terminalLabel: string;
+    terminalTimestamp: string | null | undefined;
 }) {
     return (
-        <div className="flex min-w-0 items-center gap-3 rounded-md border bg-card p-3 shadow-sm dark:border-border/70 dark:bg-card/95">
-            <Icon
-                aria-hidden="true"
-                className="size-4 shrink-0 text-muted-foreground"
-            />
-            <div className="min-w-0">
-                <p className="text-xs font-medium text-muted-foreground">
-                    {label}
-                </p>
-                <p className="truncate text-sm font-semibold" title={value}>
-                    {value}
-                </p>
+        <div className="max-w-full overflow-x-auto">
+            <div className="flex w-max flex-nowrap items-center gap-x-4 border-y border-border/60 py-2">
+                <HeaderProgressItem
+                    label={t('jobs.progress')}
+                    progress={execution.progress}
+                    progressClassName={progressClassName}
+                />
+                <HeaderMetadataItem
+                    icon={ListChecksIcon}
+                    label={t('jobs.results')}
+                    value={String(execution.results.length)}
+                />
+                <HeaderMetadataItem
+                    icon={CalendarClockIcon}
+                    label={t('jobs.created')}
+                    value={formatJobDate(
+                        execution.createdAt,
+                        locale,
+                        t('common.notAvailable'),
+                    )}
+                />
+                <HeaderMetadataItem
+                    icon={Clock3Icon}
+                    label={t('jobs.submitted')}
+                    value={formatJobDate(
+                        execution.submittedAt,
+                        locale,
+                        t('common.notAvailable'),
+                    )}
+                />
+                <HeaderMetadataItem
+                    icon={TimerIcon}
+                    label={terminalLabel}
+                    value={formatJobDate(
+                        terminalTimestamp,
+                        locale,
+                        t('common.notAvailable'),
+                    )}
+                />
             </div>
         </div>
     );
 }
 
-function SummaryMetric({
+function HeaderMetadataItem({
     icon: Icon,
     label,
     value,
@@ -421,18 +375,20 @@ function SummaryMetric({
     value: string;
 }) {
     return (
-        <div className="flex h-8 min-w-0 items-center gap-1.5 rounded-md border bg-background/60 px-2.5 text-xs dark:border-border/70 dark:bg-background/20">
+        <span className="inline-flex shrink-0 items-center gap-2 border-l border-border/60 pl-4 text-xs whitespace-nowrap first:border-l-0 first:pl-0">
             <Icon
                 aria-hidden="true"
-                className="size-3.5 shrink-0 text-muted-foreground"
+                className="size-3.5 shrink-0 text-muted-foreground/80"
             />
-            <span className="text-muted-foreground">{label}</span>
-            <span className="font-semibold tabular-nums">{value}</span>
-        </div>
+            <span className="shrink-0 font-medium text-muted-foreground">
+                {label}
+            </span>
+            <HeaderMetadataValue value={value} />
+        </span>
     );
 }
 
-function SummaryProgress({
+function HeaderProgressItem({
     label,
     progress,
     progressClassName,
@@ -444,51 +400,53 @@ function SummaryProgress({
     const value = clampProgress(progress);
 
     return (
-        <div className="flex h-8 min-w-40 items-center gap-2 rounded-md border bg-background/60 px-2.5 text-xs dark:border-border/70 dark:bg-background/20">
+        <span className="inline-flex shrink-0 items-center gap-2 border-l border-border/60 pl-4 text-xs whitespace-nowrap first:border-l-0 first:pl-0">
             <TimerIcon
                 aria-hidden="true"
-                className="size-3.5 shrink-0 text-muted-foreground"
+                className="size-3.5 shrink-0 text-muted-foreground/80"
             />
-            <span className="text-muted-foreground">{label}</span>
-            <div
-                className="h-1.5 w-16 overflow-hidden rounded-full bg-muted"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={value}
-            >
-                <div
-                    className={cn(
-                        'h-full rounded-full transition-[width]',
-                        progressClassName,
-                    )}
-                    style={{ width: `${value}%` }}
-                />
-            </div>
-            <span className="font-semibold tabular-nums">{progress}%</span>
-        </div>
+            <span className="shrink-0 font-medium text-muted-foreground">
+                {label}
+            </span>
+            <HeaderMetadataProgress
+                value={value}
+                progressClassName={progressClassName}
+            />
+            <HeaderMetadataValue value={`${value}%`} />
+        </span>
     );
 }
 
-function SummaryDate({
-    icon: Icon,
-    label,
+function HeaderMetadataValue({ value }: { value: string }) {
+    return (
+        <span className="font-semibold whitespace-nowrap text-foreground tabular-nums">
+            {value}
+        </span>
+    );
+}
+
+function HeaderMetadataProgress({
     value,
+    progressClassName,
 }: {
-    icon: LucideIcon;
-    label: string;
-    value: string;
+    value: number;
+    progressClassName: string;
 }) {
     return (
-        <div className="flex h-8 min-w-0 items-center gap-1.5 rounded-md border bg-background/60 px-2.5 text-xs dark:border-border/70 dark:bg-background/20">
-            <Icon
-                aria-hidden="true"
-                className="size-3.5 shrink-0 text-muted-foreground"
+        <div
+            className="h-1.5 w-16 overflow-hidden rounded-full bg-muted dark:bg-background/30"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={value}
+        >
+            <div
+                className={cn(
+                    'h-full rounded-full transition-[width]',
+                    progressClassName,
+                )}
+                style={{ width: `${value}%` }}
             />
-            <span className="text-muted-foreground">{label}</span>
-            <span className="max-w-32 truncate font-medium tabular-nums sm:max-w-40">
-                {value}
-            </span>
         </div>
     );
 }

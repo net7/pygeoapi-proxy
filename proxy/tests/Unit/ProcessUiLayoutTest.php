@@ -531,12 +531,14 @@ test('remove and delete buttons use destructive styling', function () {
         ->not->toContain('<Trash2 className=');
 });
 
-test('job detail prioritizes collapsible output panels and a low full width summary above notes', function () {
+test('job detail prioritizes collapsible output panels and header metadata without summary section', function () {
     $source = file_get_contents(getcwd().'/resources/js/pages/process-executions/show.tsx');
-    $summaryPosition = strpos($source, "t('jobs.jobSummary')");
     $inputPosition = strpos($source, "title={t('jobs.inputs')}");
     $outputPosition = strpos($source, "title={t('ogc.outputs')}");
     $notePosition = strpos($source, '<JobNoteCard execution={execution} />');
+    $headerMetaPosition = strpos($source, 'HeaderMetadata');
+    $titleEditPosition = strpos($source, '<JobNameEditDialog execution={execution} />');
+    $processTitlePosition = strpos($source, '<p className="text-sm text-muted-foreground">');
 
     expect($source)
         ->toContain('@/components/ogc/job-identifiers')
@@ -550,37 +552,51 @@ test('job detail prioritizes collapsible output panels and a low full width summ
         ->toContain('inline')
         ->toContain('common.status')
         ->toContain('jobs.results')
+        ->toContain('jobs.progress')
         ->toContain("t('jobs.adminOnlySection')")
         ->toContain('ShieldCheckIcon')
         ->toContain('<ShieldCheckIcon data-icon="inline-start" />')
-        ->toContain('ActivityIcon')
         ->toContain('CalendarClockIcon')
         ->toContain('Clock3Icon')
         ->toContain('FileInputIcon')
         ->toContain('PackageCheckIcon')
-        ->toContain('titleIcon={ActivityIcon}')
         ->toContain('icon={FileInputIcon}')
         ->toContain('icon={PackageCheckIcon}')
-        ->toContain('w-full min-w-0 border-l-4 py-3')
-        ->toContain('<SummaryMetric')
-        ->toContain('<SummaryProgress')
-        ->toContain('<SummaryDate')
+        ->toContain('<HeaderMetadata')
+        ->toContain('<HeaderMetadataItem')
+        ->toContain('<HeaderProgressItem')
         ->toContain("label={t('jobs.created')}")
         ->toContain("label={t('jobs.submitted')}")
         ->toContain('label={terminalLabel}')
         ->toContain('formatJobDate')
+        ->toContain('max-w-full overflow-x-auto')
+        ->toContain('flex w-max flex-nowrap items-center gap-x-4 border-y border-border/60 py-2')
+        ->toContain('border-l border-border/60 pl-4 text-xs whitespace-nowrap first:border-l-0 first:pl-0')
+        ->toContain('HeaderMetadataValue')
+        ->toContain('HeaderMetadataProgress')
         ->toContain('variant="destructive"')
         ->toContain('className="h-5 shrink-0 px-1.5 text-[10px] uppercase"')
-        ->toContain('className="flex justify-end"')
+        ->toContain('className="flex justify-end lg:pt-9"')
         ->toContain('DeleteJobButton')
         ->toContain('className="w-full sm:w-auto"')
         ->toContain('<JobNameEditDialog execution={execution} />')
         ->toContain('<JobNoteCard execution={execution} />')
+        ->not->toContain('ActivityIcon')
+        ->not->toContain('HashIcon')
+        ->not->toContain('jobs.jobSummary')
         ->not->toContain('jobs.requestedOutputs')
         ->not->toContain('value={execution.requestedOutputs ?? {}}')
         ->not->toContain('jobs.currentState')
         ->not->toContain('execution.message')
-        ->not->toContain('JobTimelineItem')
+        ->not->toContain('HeaderMetric')
+        ->not->toContain('HeaderDate')
+        ->not->toContain('flex flex-wrap items-center justify-end')
+        ->not->toContain('lg:w-[40rem]')
+        ->not->toContain('SummaryMetric')
+        ->not->toContain('SummaryProgress')
+        ->not->toContain('SummaryDate')
+        ->not->toContain('label={t(\'jobs.local\')}')
+        ->not->toContain('value={`#${execution.id}`}')
         ->not->toContain('lg:max-w-3xl')
         ->not->toContain('lg:grid-cols-[minmax(0,1fr)_minmax(14rem,18rem)]')
         ->not->toContain('<JobNameCard execution={execution} />')
@@ -588,11 +604,14 @@ test('job detail prioritizes collapsible output panels and a low full width summ
         ->not->toContain('xl:sticky')
         ->not->toContain('<code className="min-w-0 truncate');
 
-    expect($summaryPosition)->not->toBeFalse()
+    expect($headerMetaPosition)->not->toBeFalse()
+        ->and($titleEditPosition)->not->toBeFalse()
+        ->and($processTitlePosition)->not->toBeFalse()
         ->and($inputPosition)->not->toBeFalse()
         ->and($outputPosition)->not->toBeFalse()
         ->and($notePosition)->not->toBeFalse()
-        ->and($summaryPosition)->toBeLessThan($notePosition)
+        ->and($titleEditPosition)->toBeLessThan($headerMetaPosition)
+        ->and($headerMetaPosition)->toBeLessThan($processTitlePosition)
         ->and($notePosition)->toBeLessThan($outputPosition)
         ->and($outputPosition)->toBeLessThan($inputPosition);
 });
@@ -842,7 +861,7 @@ test('job pages use readable dark mode status surfaces', function () {
 
     expect($showSource)
         ->toContain('dark:border-border/70 dark:bg-card/95')
-        ->toContain('dark:bg-background/20')
+        ->toContain('dark:bg-background/30')
         ->toContain('ring-1 ring-border/50 dark:bg-muted/50');
 
     expect($resultPreviewSource)
