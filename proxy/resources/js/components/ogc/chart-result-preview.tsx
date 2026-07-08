@@ -1,7 +1,12 @@
 import { usePage } from '@inertiajs/react';
 import { Chart as ChartJS, registerables } from 'chart.js';
 import type { ChartConfiguration, ChartDataset, TooltipItem } from 'chart.js';
-import { ChevronDownIcon, ShieldCheckIcon } from 'lucide-react';
+import {
+    ChevronDownIcon,
+    EyeIcon,
+    EyeOffIcon,
+    ShieldCheckIcon,
+} from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +19,7 @@ import {
 import { useTranslation } from '@/hooks/use-translation';
 import {
     defaultVisibleChartSeriesKeys,
+    hasMultipleChartSeries,
     normalizeChartPayload,
 } from '@/lib/ogc-chart';
 import type {
@@ -86,6 +92,7 @@ export default function ChartResultPreview({ data }: { data: unknown }) {
     }
 
     const lineChart = chart;
+    const canToggleAllSeries = hasMultipleChartSeries(lineChart);
 
     function setAllSeriesVisibility(visible: boolean): void {
         const instance = chartRef.current;
@@ -102,24 +109,28 @@ export default function ChartResultPreview({ data }: { data: unknown }) {
 
     return (
         <div className="flex min-w-0 flex-col gap-3">
-            <div className="flex flex-wrap items-center justify-end gap-2">
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setAllSeriesVisibility(true)}
-                >
-                    {t('ogc.chartShowAll')}
-                </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setAllSeriesVisibility(false)}
-                >
-                    {t('ogc.chartHideAll')}
-                </Button>
-            </div>
+            {canToggleAllSeries ? (
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setAllSeriesVisibility(true)}
+                    >
+                        <EyeIcon data-icon="inline-start" />
+                        {t('ogc.chartShowAll')}
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setAllSeriesVisibility(false)}
+                    >
+                        <EyeOffIcon data-icon="inline-start" />
+                        {t('ogc.chartHideAll')}
+                    </Button>
+                </div>
+            ) : null}
             <div className="h-[28rem] min-w-0 rounded-md bg-background p-3 ring-1 ring-border/50 dark:bg-muted/20">
                 <canvas
                     ref={canvasRef}

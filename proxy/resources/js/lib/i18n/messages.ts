@@ -330,8 +330,8 @@ const it = {
     ogc: {
         addRow: 'Aggiungi riga',
         async: 'Asincrono',
-        chartHideAll: 'Disattiva tutte',
-        chartShowAll: 'Attiva tutte',
+        chartHideAll: 'Nascondi tutte le serie',
+        chartShowAll: 'Mostra tutte le serie',
         chartValueAxis: 'Valore',
         checkInputs: 'Controlla gli input del processo',
         defaultResponse: 'Risposta predefinita',
@@ -781,8 +781,8 @@ const en = {
     ogc: {
         addRow: 'Add row',
         async: 'Async',
-        chartHideAll: 'Hide all',
-        chartShowAll: 'Show all',
+        chartHideAll: 'Hide all series',
+        chartShowAll: 'Show all series',
         chartValueAxis: 'Value',
         checkInputs: 'Check the process inputs',
         defaultResponse: 'Default response',

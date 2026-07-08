@@ -68,6 +68,10 @@ export function allChartSeriesKeys(chart: OgcLineChart | null): string[] {
     return chart?.series.map((series) => series.key) ?? [];
 }
 
+export function hasMultipleChartSeries(chart: OgcLineChart | null): boolean {
+    return (chart?.series.length ?? 0) > 1;
+}
+
 function normalizeDomain(value: unknown): OgcChartDomain | null {
     if (!isRecord(value) || !Array.isArray(value.values)) {
         return null;

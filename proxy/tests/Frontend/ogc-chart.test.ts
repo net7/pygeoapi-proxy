@@ -2,9 +2,11 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, test } from 'bun:test';
 
+import { translate } from '../../resources/js/lib/i18n/translation';
 import {
     allChartSeriesKeys,
     defaultVisibleChartSeriesKeys,
+    hasMultipleChartSeries,
     normalizeChartPayload,
 } from '../../resources/js/lib/ogc-chart';
 
@@ -87,6 +89,18 @@ describe('normalizeChartPayload', () => {
         ]);
     });
 
+    test('allows bulk visibility controls only when multiple series are available', () => {
+        const chart = normalizeChartPayload(chartPayload);
+        const singleSeriesChart = normalizeChartPayload({
+            ...chartPayload,
+            series: chartPayload.series.slice(0, 1),
+        });
+
+        expect(hasMultipleChartSeries(chart)).toBe(true);
+        expect(hasMultipleChartSeries(singleSeriesChart)).toBe(false);
+        expect(hasMultipleChartSeries(null)).toBe(false);
+    });
+
     test('drops series that do not align with the domain length', () => {
         const chart = normalizeChartPayload({
             ...chartPayload,
@@ -167,5 +181,24 @@ describe('chart result preview wiring', () => {
         expect(source).toContain('usePointStyle: true');
         expect(source).toContain('borderCapStyle:');
         expect(source).toContain('hoverBorderWidth:');
+    });
+
+    test('labels series visibility controls explicitly with semantic icons and variants', () => {
+        const source = readFileSync(
+            'resources/js/components/ogc/chart-result-preview.tsx',
+            'utf8',
+        );
+
+        expect(translate('it', 'ogc.chartShowAll')).toBe(
+            'Mostra tutte le serie',
+        );
+        expect(translate('it', 'ogc.chartHideAll')).toBe(
+            'Nascondi tutte le serie',
+        );
+        expect(source).toContain('EyeIcon');
+        expect(source).toContain('EyeOffIcon');
+        expect(source).toContain('hasMultipleChartSeries(lineChart)');
+        expect(source).toContain('variant="secondary"');
+        expect(source).toContain('variant="outline"');
     });
 });
