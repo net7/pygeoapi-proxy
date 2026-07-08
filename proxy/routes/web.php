@@ -56,6 +56,8 @@ Route::middleware(['auth', EnsureUserIsActive::class, 'verified'])->group(functi
         ->name('jobs.destroy');
     Route::get('jobs/{processExecution}/results/{result}/download', [ProcessExecutionResultController::class, 'download'])
         ->name('jobs.results.download');
+    Route::get('jobs/{processExecution}/results/{result}/preview-file', [ProcessExecutionResultController::class, 'previewFile'])
+        ->name('jobs.results.preview-file');
 
     Route::get('process-executions', fn () => to_route('jobs.index'))
         ->name('process-executions.index');
