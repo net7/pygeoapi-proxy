@@ -292,6 +292,31 @@ test('users can download cached json value results without a stored file', funct
         ->assertContent(json_encode(ogcFixture('chart-result'), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 });
 
+test('users can download cached text and csv value results without a stored file', function (string $mediaType, string $previewKind, string $outputId, string $expectedFileName, string $content) {
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create();
+    $result = ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => $outputId,
+        'media_type' => $mediaType,
+        'storage_path' => null,
+        'cache_status' => ResultCacheStatus::Cached,
+        'preview' => [
+            'kind' => $previewKind,
+            'data' => $content,
+        ],
+    ]);
+
+    $this->actingAs($user)
+        ->get("/jobs/{$execution->id}/results/{$result->id}/download")
+        ->assertOk()
+        ->assertHeader('content-type', "{$mediaType}; charset=utf-8")
+        ->assertHeader('content-disposition', "attachment; filename=\"{$expectedFileName}\"")
+        ->assertContent($content);
+})->with([
+    'text value' => ['text/plain', 'text', 'stdout', 'stdout.txt', "line 1\nline 2\n"],
+    'csv value' => ['text/csv', 'csv', 'table', 'table.csv', "a,b\n1,2\n"],
+]);
+
 test('users can download and cache remote result files on demand', function () {
     Storage::fake('local');
     Http::fake([

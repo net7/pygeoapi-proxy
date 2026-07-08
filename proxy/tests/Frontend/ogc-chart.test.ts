@@ -5,6 +5,7 @@ import { describe, expect, test } from 'bun:test';
 import { translate } from '../../resources/js/lib/i18n/translation';
 import {
     allChartSeriesKeys,
+    chartSeriesVisibilityControls,
     defaultVisibleChartSeriesKeys,
     hasMultipleChartSeries,
     normalizeChartPayload,
@@ -99,6 +100,31 @@ describe('normalizeChartPayload', () => {
         expect(hasMultipleChartSeries(chart)).toBe(true);
         expect(hasMultipleChartSeries(singleSeriesChart)).toBe(false);
         expect(hasMultipleChartSeries(null)).toBe(false);
+    });
+
+    test('derives bulk visibility controls from visible series state', () => {
+        const chart = normalizeChartPayload(chartPayload);
+        const singleSeriesChart = normalizeChartPayload({
+            ...chartPayload,
+            series: chartPayload.series.slice(0, 1),
+        });
+
+        expect(chartSeriesVisibilityControls(singleSeriesChart, 1)).toEqual({
+            hideAll: false,
+            showAll: false,
+        });
+        expect(chartSeriesVisibilityControls(chart, 4)).toEqual({
+            hideAll: true,
+            showAll: false,
+        });
+        expect(chartSeriesVisibilityControls(chart, 0)).toEqual({
+            hideAll: false,
+            showAll: true,
+        });
+        expect(chartSeriesVisibilityControls(chart, 2)).toEqual({
+            hideAll: true,
+            showAll: true,
+        });
     });
 
     test('drops series that do not align with the domain length', () => {
@@ -197,7 +223,8 @@ describe('chart result preview wiring', () => {
         );
         expect(source).toContain('EyeIcon');
         expect(source).toContain('EyeOffIcon');
-        expect(source).toContain('hasMultipleChartSeries(lineChart)');
+        expect(source).toContain('chartSeriesVisibilityControls(');
+        expect(source).toContain('visibleSeriesCount');
         expect(source).toContain('variant="default"');
         expect(source).toContain('variant="destructive"');
     });

@@ -23,7 +23,7 @@ class ProcessExecutionResultController extends Controller
         $this->ensureResultFileIsCached($processExecution, $result, $client);
 
         if (blank($result->storage_path)) {
-            return $this->previewJsonResponse($result);
+            return $this->previewResponse($result);
         }
 
         return $this->fileResponse($result, 'attachment');
@@ -71,21 +71,57 @@ class ProcessExecutionResultController extends Controller
         ]);
     }
 
-    private function previewJsonResponse(ProcessExecutionResult $result): Response
+    private function previewResponse(ProcessExecutionResult $result): Response
     {
         $previewKind = data_get($result->preview, 'kind');
         $previewData = data_get($result->preview, 'data');
+        $mediaType = $this->baseMediaType($result->media_type);
 
-        abort_unless(
-            in_array($previewKind, ['chart', 'json'], true)
-                && ($result->media_type === 'application/json' || str_ends_with((string) $result->media_type, '+json')),
-            404,
-        );
+        if (in_array($previewKind, ['chart', 'json'], true) && $this->isJsonMediaType($mediaType)) {
+            return $this->previewJsonResponse($result, $previewData);
+        }
 
+        if ($previewKind === 'csv' && $mediaType === 'text/csv') {
+            return $this->previewTextResponse($result, $previewData, 'csv');
+        }
+
+        if ($previewKind === 'text' && $mediaType === 'text/plain') {
+            return $this->previewTextResponse($result, $previewData, 'txt');
+        }
+
+        abort(404);
+    }
+
+    private function previewJsonResponse(ProcessExecutionResult $result, mixed $previewData): Response
+    {
         return response(json_encode($previewData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), 200, [
             'Content-Type' => $result->media_type ?: 'application/json',
             'Content-Disposition' => 'attachment; filename="'.$this->resultFileName($result, 'json').'"',
         ]);
+    }
+
+    private function previewTextResponse(ProcessExecutionResult $result, mixed $previewData, string $extension): Response
+    {
+        abort_unless(is_scalar($previewData) || $previewData === null, 404);
+
+        return response((string) $previewData, 200, [
+            'Content-Type' => $result->media_type ?: 'text/plain',
+            'Content-Disposition' => 'attachment; filename="'.$this->resultFileName($result, $extension).'"',
+        ]);
+    }
+
+    private function baseMediaType(?string $mediaType): string
+    {
+        return Str::of((string) $mediaType)
+            ->before(';')
+            ->trim()
+            ->lower()
+            ->toString();
+    }
+
+    private function isJsonMediaType(string $mediaType): bool
+    {
+        return $mediaType === 'application/json' || str_ends_with($mediaType, '+json');
     }
 
     private function resultFileName(ProcessExecutionResult $result, ?string $extension = null): string

@@ -20,6 +20,11 @@ export type OgcLineChart = {
     series: OgcChartSeries[];
 };
 
+export type OgcChartSeriesVisibilityControls = {
+    hideAll: boolean;
+    showAll: boolean;
+};
+
 const defaultVisibleSeriesCount = 3;
 
 export function normalizeChartPayload(payload: unknown): OgcLineChart | null {
@@ -70,6 +75,27 @@ export function allChartSeriesKeys(chart: OgcLineChart | null): string[] {
 
 export function hasMultipleChartSeries(chart: OgcLineChart | null): boolean {
     return (chart?.series.length ?? 0) > 1;
+}
+
+export function chartSeriesVisibilityControls(
+    chart: OgcLineChart | null,
+    visibleSeriesCount: number,
+): OgcChartSeriesVisibilityControls {
+    const totalSeries = chart?.series.length ?? 0;
+
+    if (totalSeries <= 1) {
+        return {
+            hideAll: false,
+            showAll: false,
+        };
+    }
+
+    const visibleCount = Math.max(0, Math.min(visibleSeriesCount, totalSeries));
+
+    return {
+        hideAll: visibleCount > 0,
+        showAll: visibleCount < totalSeries,
+    };
 }
 
 function normalizeDomain(value: unknown): OgcChartDomain | null {

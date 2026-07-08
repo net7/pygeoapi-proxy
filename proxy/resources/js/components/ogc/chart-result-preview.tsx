@@ -1,13 +1,19 @@
 import { usePage } from '@inertiajs/react';
 import { Chart as ChartJS, registerables } from 'chart.js';
-import type { ChartConfiguration, ChartDataset, TooltipItem } from 'chart.js';
+import type {
+    ChartConfiguration,
+    ChartDataset,
+    LegendElement,
+    LegendItem,
+    TooltipItem,
+} from 'chart.js';
 import {
     ChevronDownIcon,
     EyeIcon,
     EyeOffIcon,
     ShieldCheckIcon,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,8 +24,8 @@ import {
 } from '@/components/ui/collapsible';
 import { useTranslation } from '@/hooks/use-translation';
 import {
+    chartSeriesVisibilityControls,
     defaultVisibleChartSeriesKeys,
-    hasMultipleChartSeries,
     normalizeChartPayload,
 } from '@/lib/ogc-chart';
 import type {
@@ -33,6 +39,13 @@ ChartJS.register(...registerables);
 type ChartPoint = {
     x: number;
     y: number;
+};
+
+type VisibleSeriesChart = {
+    data: {
+        datasets: unknown[];
+    };
+    isDatasetVisible(index: number): boolean;
 };
 
 const fallbackColors = [
@@ -52,6 +65,7 @@ export default function ChartResultPreview({ data }: { data: unknown }) {
     const chart = useMemo(() => normalizeChartPayload(data), [data]);
     const chartRef = useRef<ChartJS<'line', ChartPoint[]> | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const [visibleSeriesCount, setVisibleSeriesCount] = useState(0);
     const canViewRawJson = auth.user?.is_admin === true;
 
     useEffect(() => {
@@ -76,14 +90,17 @@ export default function ChartResultPreview({ data }: { data: unknown }) {
                 palette,
                 initialVisibleKeys,
                 t('ogc.chartValueAxis'),
+                setVisibleSeriesCount,
             ),
         );
 
         chartRef.current = instance;
+        setVisibleSeriesCount(countVisibleSeries(instance));
 
         return () => {
             chartRef.current = null;
             instance.destroy();
+            setVisibleSeriesCount(0);
         };
     }, [chart, t]);
 
@@ -92,7 +109,10 @@ export default function ChartResultPreview({ data }: { data: unknown }) {
     }
 
     const lineChart = chart;
-    const canToggleAllSeries = hasMultipleChartSeries(lineChart);
+    const visibilityControls = chartSeriesVisibilityControls(
+        lineChart,
+        visibleSeriesCount,
+    );
 
     function setAllSeriesVisibility(visible: boolean): void {
         const instance = chartRef.current;
@@ -105,30 +125,35 @@ export default function ChartResultPreview({ data }: { data: unknown }) {
             instance.setDatasetVisibility(index, visible);
         });
         instance.update();
+        setVisibleSeriesCount(visible ? lineChart.series.length : 0);
     }
 
     return (
         <div className="flex min-w-0 flex-col gap-3">
-            {canToggleAllSeries ? (
+            {visibilityControls.showAll || visibilityControls.hideAll ? (
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                    <Button
-                        type="button"
-                        variant="default"
-                        size="sm"
-                        onClick={() => setAllSeriesVisibility(true)}
-                    >
-                        <EyeIcon data-icon="inline-start" />
-                        {t('ogc.chartShowAll')}
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => setAllSeriesVisibility(false)}
-                    >
-                        <EyeOffIcon data-icon="inline-start" />
-                        {t('ogc.chartHideAll')}
-                    </Button>
+                    {visibilityControls.showAll ? (
+                        <Button
+                            type="button"
+                            variant="default"
+                            size="sm"
+                            onClick={() => setAllSeriesVisibility(true)}
+                        >
+                            <EyeIcon data-icon="inline-start" />
+                            {t('ogc.chartShowAll')}
+                        </Button>
+                    ) : null}
+                    {visibilityControls.hideAll ? (
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setAllSeriesVisibility(false)}
+                        >
+                            <EyeOffIcon data-icon="inline-start" />
+                            {t('ogc.chartHideAll')}
+                        </Button>
+                    ) : null}
                 </div>
             ) : null}
             <div className="h-[28rem] min-w-0 rounded-md bg-background p-3 ring-1 ring-border/50 dark:bg-muted/20">
@@ -147,6 +172,7 @@ function chartConfiguration(
     palette: string[],
     initialVisibleKeys: Set<string>,
     valueAxisLabel: string,
+    onVisibilityChange: (visibleSeriesCount: number) => void,
 ): ChartConfiguration<'line', ChartPoint[]> {
     const colors = chartCanvasColors();
 
@@ -192,6 +218,10 @@ function chartConfiguration(
                     display: true,
                     align: 'start',
                     position: 'bottom',
+                    onClick(_event, legendItem, legend): void {
+                        toggleDatasetVisibility(legend, legendItem);
+                        onVisibilityChange(countVisibleSeries(legend.chart));
+                    },
                     labels: {
                         boxHeight: 7,
                         boxWidth: 7,
@@ -262,6 +292,31 @@ function chartConfiguration(
             },
         },
     };
+}
+
+function toggleDatasetVisibility(
+    legend: LegendElement<'line'>,
+    legendItem: LegendItem,
+): void {
+    const datasetIndex = legendItem.datasetIndex;
+
+    if (typeof datasetIndex !== 'number') {
+        return;
+    }
+
+    const chart = legend.chart;
+
+    chart.setDatasetVisibility(
+        datasetIndex,
+        !chart.isDatasetVisible(datasetIndex),
+    );
+    chart.update();
+}
+
+function countVisibleSeries(chart: VisibleSeriesChart): number {
+    return chart.data.datasets.filter((_, index) =>
+        chart.isDatasetVisible(index),
+    ).length;
 }
 
 function chartDataset(
