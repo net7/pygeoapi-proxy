@@ -338,9 +338,16 @@ const it = {
         expectedOutputsDescription:
             'Il processo produrrà automaticamente questi risultati.',
         file: 'File',
+        geotiffDownload: 'GeoTIFF',
         inline: 'Inline',
         inputs: 'Input',
         jobControls: 'Controlli processo',
+        mapPreviewLoading: 'Caricamento mappa',
+        mapPreviewUnavailable: 'Preview mappa non disponibile.',
+        mapPreviewUnsupportedBounds:
+            'Il GeoTIFF non contiene coordinate geografiche visualizzabili.',
+        mapStyleFallback:
+            'Lo stile SLD non è stato applicato completamente. La mappa usa uno stile fallback.',
         noDescription: 'Nessuna descrizione disponibile.',
         notAdvertised: 'Non pubblicizzato',
         openProcess: 'Apri processo',
@@ -367,6 +374,7 @@ const it = {
             'La lista processi apparirà al termine del warm-up in background.',
         servicePreparingTitle: 'Catalogo servizi in preparazione',
         servicesLastUpdatedAt: 'Ultimo aggiornamento servizi: {date}',
+        sldDownload: 'SLD',
         someValuesNeedAttention:
             'Alcuni valori richiedono attenzione prima di eseguire il processo.',
         sync: 'Sincrono',
@@ -777,9 +785,16 @@ const en = {
         expectedOutputsDescription:
             'The process will automatically produce these results.',
         file: 'File',
+        geotiffDownload: 'GeoTIFF',
         inline: 'Inline',
         inputs: 'Inputs',
         jobControls: 'Job controls',
+        mapPreviewLoading: 'Loading map',
+        mapPreviewUnavailable: 'Map preview unavailable.',
+        mapPreviewUnsupportedBounds:
+            'The GeoTIFF does not contain displayable geographic coordinates.',
+        mapStyleFallback:
+            'The SLD style was not fully applied. The map is using a fallback style.',
         noDescription: 'No description provided.',
         notAdvertised: 'Not advertised',
         openProcess: 'Open process',
@@ -805,6 +820,7 @@ const en = {
             'The process list will appear when the background warm-up finishes.',
         servicePreparingTitle: 'Service catalog is being prepared',
         servicesLastUpdatedAt: 'Services last updated: {date}',
+        sldDownload: 'SLD',
         someValuesNeedAttention:
             'Some values need attention before the process can run.',
         sync: 'Sync',
