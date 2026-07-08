@@ -34,7 +34,7 @@ class ProcessExecutionResultController extends Controller
     ): Response {
         $this->authorizeResult($processExecution, $result);
 
-        abort_unless($this->isMapPreviewMediaType($result->media_type), 404);
+        abort_unless($this->isMapPreviewResult($result), 404);
 
         $this->ensureResultFileIsCached($processExecution, $result, $client);
 
@@ -85,13 +85,13 @@ class ProcessExecutionResultController extends Controller
         ]);
     }
 
-    private function isMapPreviewMediaType(?string $mediaType): bool
+    private function isMapPreviewResult(ProcessExecutionResult $result): bool
     {
-        $normalized = Str::of((string) $mediaType)->trim()->lower()->toString();
+        $normalized = Str::of((string) $result->media_type)->trim()->lower()->toString();
         $baseMediaType = Str::of($normalized)->before(';')->trim()->toString();
 
         $isGeoTiff = in_array($baseMediaType, ['image/tiff', 'application/tiff'], true)
-            && str_contains($normalized, 'geotiff');
+            && Str::of($result->output_id)->lower()->endsWith('.geotiff');
 
         return $isGeoTiff || $baseMediaType === 'application/vnd.ogc.sld+xml';
     }

@@ -202,7 +202,7 @@ test('users can preview cached geotiff and sld files inline', function () {
 
     $geotiff = ProcessExecutionResult::factory()->for($execution)->create([
         'output_id' => 'dem.geotiff',
-        'media_type' => 'image/tiff; application=geotiff',
+        'media_type' => 'image/tiff',
         'storage_path' => 'ogc-results/dem.geotiff',
         'cache_status' => ResultCacheStatus::Cached,
     ]);
@@ -283,6 +283,26 @@ test('preview file endpoint rejects non map preview media types', function () {
     ]);
 
     Storage::disk('local')->put('ogc-results/outfile.csv', "a,b\n1,2\n");
+
+    $this->actingAs($user)
+        ->get("/jobs/{$execution->id}/results/{$result->id}/preview-file")
+        ->assertNotFound();
+});
+
+test('preview file endpoint rejects plain tiff files that are not geotiff outputs', function () {
+    Storage::fake('local');
+
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create();
+
+    $result = ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'outfile',
+        'media_type' => 'image/tiff',
+        'storage_path' => 'ogc-results/outfile.tif',
+        'cache_status' => ResultCacheStatus::Cached,
+    ]);
+
+    Storage::disk('local')->put('ogc-results/outfile.tif', 'TIFF');
 
     $this->actingAs($user)
         ->get("/jobs/{$execution->id}/results/{$result->id}/preview-file")

@@ -129,11 +129,12 @@ function humanizeOutputId(outputId: string): string {
 
 function isGeoTiffResult(result: ProcessExecutionResult): boolean {
     const mediaType = normalizedMediaType(result.mediaType);
+    const isTiff =
+        mediaType.startsWith('image/tiff') ||
+        mediaType.startsWith('application/tiff');
 
     return (
-        (mediaType.startsWith('image/tiff') ||
-            mediaType.startsWith('application/tiff')) &&
-        mediaType.includes('geotiff')
+        outputComponentMatch(result.outputId)?.component === 'geotiff' && isTiff
     );
 }
 

@@ -73,6 +73,30 @@ describe('groupProcessResults', () => {
         });
     });
 
+    test('groups plain image tiff geotiff components by output id', () => {
+        const groups = groupProcessResults([
+            result({
+                id: 10,
+                outputId: 'dem.geotiff',
+                title: 'Primary DEM - Reference to the GeoTIFF.',
+                mediaType: 'image/tiff',
+            }),
+            result({
+                id: 11,
+                outputId: 'dem.sld',
+                title: 'Primary DEM - Reference to the Styled Layer Descriptor.',
+                mediaType: 'application/vnd.ogc.sld+xml',
+            }),
+        ]);
+
+        expect(groups).toHaveLength(1);
+        expect(groups[0]).toMatchObject({
+            kind: 'geotiff-map',
+            outputId: 'dem',
+            title: 'Primary DEM',
+        });
+    });
+
     test('keeps unpaired map components as single results', () => {
         const groups = groupProcessResults([
             result({
