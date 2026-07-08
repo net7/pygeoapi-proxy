@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Ogc\MapLayerStatus;
 use App\Enums\Ogc\ResultCacheStatus;
 use Database\Factories\ProcessExecutionResultFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -21,6 +22,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'size_bytes',
     'cache_status',
     'preview',
+    'map_layer_status',
+    'map_layer_type',
+    'map_layer_name',
+    'map_style_name',
+    'map_layer_bounds',
+    'map_layer_error',
+    'map_layer_published_at',
 ])]
 class ProcessExecutionResult extends Model
 {
@@ -43,6 +51,9 @@ class ProcessExecutionResult extends Model
         return [
             'cache_status' => ResultCacheStatus::class,
             'preview' => 'array',
+            'map_layer_status' => MapLayerStatus::class,
+            'map_layer_bounds' => 'array',
+            'map_layer_published_at' => 'datetime',
         ];
     }
 }

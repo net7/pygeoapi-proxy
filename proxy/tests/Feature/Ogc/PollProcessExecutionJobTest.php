@@ -2,13 +2,20 @@
 
 use App\Actions\Ogc\PollProcessExecution;
 use App\Enums\Ogc\ExecutionStatus;
+use App\Enums\Ogc\MapLayerStatus;
 use App\Enums\Ogc\ResultCacheStatus;
 use App\Jobs\Ogc\PollProcessExecutionJob;
+use App\Jobs\Ogc\PublishGeoTiffMapLayerJob;
 use App\Models\ProcessExecution;
 use App\Notifications\Ogc\ProcessExecutionCompleted;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+
+beforeEach(function () {
+    Bus::fake([PublishGeoTiffMapLayerJob::class]);
+});
 
 test('it marks successful jobs and stores results', function () {
     Notification::fake();
@@ -242,6 +249,54 @@ test('it expands object output links returned in json results', function () {
         expect($result->storage_path)->not->toBeNull();
         Storage::disk('local')->assertExists($result->storage_path);
     }
+});
+
+test('it queues map layer publication when cached geotiff and sld outputs are stored', function () {
+    Notification::fake();
+    Storage::fake('local');
+
+    $execution = ProcessExecution::factory()->create([
+        'process_id' => 'pybox',
+        'remote_job_id' => 'job-123',
+        'status' => ExecutionStatus::Running,
+        'requested_outputs' => ['dem' => ['transmissionMode' => 'reference']],
+        'process_outputs' => ogcFixture('process-pybox')['outputs'],
+    ]);
+
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123?f=json' => Http::response(ogcFixture('job-successful')),
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results?f=json' => Http::response([
+            'geotiff' => [
+                'title' => 'Reference to the GeoTIFF.',
+                'type' => 'application/tiff; application=geotiff',
+                'href' => 'https://voice_hrefs.pi.ingv.it/results/job-123_dem.tif',
+            ],
+            'sld' => [
+                'title' => 'Reference to the Styled Layer Descriptor (SLD) defining the visualization style for this GeoTIFF.',
+                'type' => 'application/vnd.ogc.sld+xml',
+                'href' => 'https://voice_hrefs.pi.ingv.it/results/job-123_dem.sld',
+            ],
+        ]),
+        'https://voice_hrefs.pi.ingv.it/results/job-123_dem.tif' => Http::response('DEM-TIFF', 200, [
+            'Content-Type' => 'application/tiff; application=geotiff',
+        ]),
+        'https://voice_hrefs.pi.ingv.it/results/job-123_dem.sld' => Http::response('<sld>dem</sld>', 200, [
+            'Content-Type' => 'application/vnd.ogc.sld+xml',
+        ]),
+    ]);
+
+    (new PollProcessExecutionJob($execution->id))->handle(
+        app(PollProcessExecution::class),
+    );
+
+    $results = $execution->refresh()->results()->orderBy('output_id')->get()->keyBy('output_id');
+
+    expect($results['dem.geotiff']->map_layer_status)->toBe(MapLayerStatus::Pending)
+        ->and($results['dem.geotiff']->map_layer_type)->toBe('wms');
+
+    Bus::assertDispatched(PublishGeoTiffMapLayerJob::class, fn (PublishGeoTiffMapLayerJob $job): bool => $job->processExecutionId === $execution->id
+        && $job->geoTiffResultId === $results['dem.geotiff']->id
+        && $job->sldResultId === $results['dem.sld']->id);
 });
 
 test('it expands an indirect single object output returned by reference', function () {

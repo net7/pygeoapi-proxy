@@ -62,8 +62,6 @@
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "concurrently": "^9.2.3",
-        "geostyler-sld-parser": "^9.0.2",
-        "geotiff": "^3.0.5",
         "globals": "^15.15.0",
         "laravel-precognition-react": "^2.0.0",
         "laravel-vite-plugin": "^3.1.0",

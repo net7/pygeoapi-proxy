@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\SocialEmailController;
 use App\Http\Controllers\Ogc\ProcessController;
 use App\Http\Controllers\Ogc\ProcessExecutionController;
 use App\Http\Controllers\Ogc\ProcessExecutionResultController;
+use App\Http\Controllers\Ogc\ProcessExecutionResultMapTileController;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Models\ProcessExecution;
@@ -56,8 +57,8 @@ Route::middleware(['auth', EnsureUserIsActive::class, 'verified'])->group(functi
         ->name('jobs.destroy');
     Route::get('jobs/{processExecution}/results/{result}/download', [ProcessExecutionResultController::class, 'download'])
         ->name('jobs.results.download');
-    Route::get('jobs/{processExecution}/results/{result}/preview-file', [ProcessExecutionResultController::class, 'previewFile'])
-        ->name('jobs.results.preview-file');
+    Route::get('jobs/{processExecution}/results/{result}/map-tile', ProcessExecutionResultMapTileController::class)
+        ->name('jobs.results.map-tile');
 
     Route::get('process-executions', fn () => to_route('jobs.index'))
         ->name('process-executions.index');

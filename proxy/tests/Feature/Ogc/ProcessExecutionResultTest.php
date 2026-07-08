@@ -4,6 +4,7 @@ use App\Enums\Ogc\ResultCacheStatus;
 use App\Models\ProcessExecution;
 use App\Models\ProcessExecutionResult;
 use App\Models\User;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -33,6 +34,35 @@ test('users can view their execution detail', function () {
             ->missing('execution.remoteJobId')
             ->where('pollingInterval', 2500)
             ->has('execution.results', 1));
+});
+
+test('users can view map layer metadata on their execution detail', function () {
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create();
+
+    ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'dem.geotiff',
+        'media_type' => 'image/tiff; application=geotiff',
+        'map_layer_status' => 'published',
+        'map_layer_type' => 'wms',
+        'map_layer_name' => 'pe_1_result_1_dem',
+        'map_style_name' => 'pe_1_result_1_dem_style',
+        'map_layer_bounds' => [14.1, 40.6, 14.7, 41.1],
+        'map_layer_published_at' => Carbon::parse('2026-07-08 10:00:00'),
+        'map_layer_error' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->get("/jobs/{$execution->id}")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('execution.results.0.mapLayer.status', 'published')
+            ->where('execution.results.0.mapLayer.type', 'wms')
+            ->where('execution.results.0.mapLayer.name', 'pe_1_result_1_dem')
+            ->where('execution.results.0.mapLayer.styleName', 'pe_1_result_1_dem_style')
+            ->where('execution.results.0.mapLayer.bounds', [14.1, 40.6, 14.7, 41.1])
+            ->where('execution.results.0.mapLayer.publishedAt', '2026-07-08T10:00:00+00:00')
+            ->where('execution.results.0.mapLayer.error', null));
 });
 
 test('non admin users cannot see execution input data', function () {
@@ -194,63 +224,66 @@ test('users can download and cache remote result files on demand', function () {
     expect($result->refresh()->cache_status)->toBe(ResultCacheStatus::Cached);
 });
 
-test('users can preview cached geotiff and sld files inline', function () {
-    Storage::fake('local');
+test('users can proxy published map tiles for geotiff results', function () {
+    config([
+        'geoserver.internal_url' => 'https://geoserver.test/geoserver',
+        'geoserver.username' => 'admin',
+        'geoserver.password' => 'secret',
+        'geoserver.workspace' => 'pygeoapi_proxy',
+    ]);
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://geoserver.test/geoserver/wms*' => Http::response('PNG-TILE', 200, [
+            'Content-Type' => 'image/png',
+        ]),
+    ]);
 
     $user = User::factory()->create();
     $execution = ProcessExecution::factory()->for($user)->create();
 
-    $geotiff = ProcessExecutionResult::factory()->for($execution)->create([
+    $result = ProcessExecutionResult::factory()->for($execution)->create([
         'output_id' => 'dem.geotiff',
         'media_type' => 'image/tiff',
         'storage_path' => 'ogc-results/dem.geotiff',
         'cache_status' => ResultCacheStatus::Cached,
+        'map_layer_status' => 'published',
+        'map_layer_type' => 'wms',
+        'map_layer_name' => 'pe_1_result_1_dem',
+        'map_style_name' => 'pe_1_result_1_dem_style',
     ]);
 
-    $sld = ProcessExecutionResult::factory()->for($execution)->create([
-        'output_id' => 'dem.sld',
-        'media_type' => 'application/vnd.ogc.sld+xml',
-        'storage_path' => 'ogc-results/dem.sld',
-        'cache_status' => ResultCacheStatus::Cached,
-    ]);
-
-    Storage::disk('local')->put('ogc-results/dem.geotiff', 'GEOTIFF');
-    Storage::disk('local')->put('ogc-results/dem.sld', '<StyledLayerDescriptor />');
-
     $this->actingAs($user)
-        ->get("/jobs/{$execution->id}/results/{$geotiff->id}/preview-file")
+        ->get("/jobs/{$execution->id}/results/{$result->id}/map-tile?bbox=1569600,4953500,1570600,4954500&width=256&height=256")
         ->assertOk()
-        ->assertHeader('content-disposition', 'inline; filename="dem.geotiff"')
-        ->assertSee('GEOTIFF', false);
+        ->assertHeader('content-type', 'image/png')
+        ->assertSee('PNG-TILE', false);
 
-    $this->actingAs($user)
-        ->get("/jobs/{$execution->id}/results/{$sld->id}/preview-file")
-        ->assertOk()
-        ->assertHeader('content-disposition', 'inline; filename="dem.sld"')
-        ->assertSee('<StyledLayerDescriptor />', false);
+    Http::assertSent(fn (Request $request): bool => str_starts_with($request->url(), 'https://geoserver.test/geoserver/wms')
+        && $request['service'] === 'WMS'
+        && $request['request'] === 'GetMap'
+        && $request['srs'] === 'EPSG:3857'
+        && $request['layers'] === 'pygeoapi_proxy:pe_1_result_1_dem'
+        && $request['bbox'] === '1569600,4953500,1570600,4954500'
+        && (int) $request['width'] === 256
+        && (int) $request['height'] === 256);
 });
 
-test('preview file endpoint rejects users who cannot view the job', function () {
-    Storage::fake('local');
-
+test('map tile endpoint rejects users who cannot view the job', function () {
     $execution = ProcessExecution::factory()->create();
     $result = ProcessExecutionResult::factory()->for($execution)->create([
         'output_id' => 'dem.geotiff',
         'media_type' => 'image/tiff; application=geotiff',
-        'storage_path' => 'ogc-results/dem.geotiff',
-        'cache_status' => ResultCacheStatus::Cached,
+        'map_layer_status' => 'published',
+        'map_layer_type' => 'wms',
+        'map_layer_name' => 'pe_1_result_1_dem',
     ]);
 
-    Storage::disk('local')->put('ogc-results/dem.geotiff', 'GEOTIFF');
-
     $this->actingAs(User::factory()->create())
-        ->get("/jobs/{$execution->id}/results/{$result->id}/preview-file")
+        ->get("/jobs/{$execution->id}/results/{$result->id}/map-tile?bbox=0,0,1,1")
         ->assertForbidden();
 });
 
-test('preview file endpoint rejects results from a different job', function () {
-    Storage::fake('local');
-
+test('map tile endpoint rejects results from a different job', function () {
     $user = User::factory()->create();
     $execution = ProcessExecution::factory()->for($user)->create();
     $otherExecution = ProcessExecution::factory()->for($user)->create();
@@ -258,101 +291,54 @@ test('preview file endpoint rejects results from a different job', function () {
     $result = ProcessExecutionResult::factory()->for($otherExecution)->create([
         'output_id' => 'dem.geotiff',
         'media_type' => 'image/tiff; application=geotiff',
-        'storage_path' => 'ogc-results/dem.geotiff',
-        'cache_status' => ResultCacheStatus::Cached,
+        'map_layer_status' => 'published',
+        'map_layer_type' => 'wms',
+        'map_layer_name' => 'pe_1_result_1_dem',
     ]);
 
-    Storage::disk('local')->put('ogc-results/dem.geotiff', 'GEOTIFF');
-
     $this->actingAs($user)
-        ->get("/jobs/{$execution->id}/results/{$result->id}/preview-file")
+        ->get("/jobs/{$execution->id}/results/{$result->id}/map-tile?bbox=0,0,1,1")
         ->assertNotFound();
 });
 
-test('preview file endpoint rejects non map preview media types', function () {
-    Storage::fake('local');
-
-    $user = User::factory()->create();
-    $execution = ProcessExecution::factory()->for($user)->create();
-
-    $result = ProcessExecutionResult::factory()->for($execution)->create([
-        'output_id' => 'outfile',
-        'media_type' => 'text/csv',
-        'storage_path' => 'ogc-results/outfile.csv',
-        'cache_status' => ResultCacheStatus::Cached,
-    ]);
-
-    Storage::disk('local')->put('ogc-results/outfile.csv', "a,b\n1,2\n");
-
-    $this->actingAs($user)
-        ->get("/jobs/{$execution->id}/results/{$result->id}/preview-file")
-        ->assertNotFound();
-});
-
-test('preview file endpoint rejects plain tiff files that are not geotiff outputs', function () {
-    Storage::fake('local');
-
-    $user = User::factory()->create();
-    $execution = ProcessExecution::factory()->for($user)->create();
-
-    $result = ProcessExecutionResult::factory()->for($execution)->create([
-        'output_id' => 'outfile',
-        'media_type' => 'image/tiff',
-        'storage_path' => 'ogc-results/outfile.tif',
-        'cache_status' => ResultCacheStatus::Cached,
-    ]);
-
-    Storage::disk('local')->put('ogc-results/outfile.tif', 'TIFF');
-
-    $this->actingAs($user)
-        ->get("/jobs/{$execution->id}/results/{$result->id}/preview-file")
-        ->assertNotFound();
-});
-
-test('preview file endpoint caches remote map files on demand', function () {
-    Storage::fake('local');
-    Http::fake([
-        'https://voice.pi.ingv.it/geoinquire/jobs/job-1/results/dem.tif' => Http::response('GEOTIFF', 200, [
-            'Content-Type' => 'image/tiff; application=geotiff',
-        ]),
-    ]);
-
-    $user = User::factory()->create();
-    $execution = ProcessExecution::factory()->for($user)->create([
-        'remote_job_id' => 'job-1',
-    ]);
-
-    $result = ProcessExecutionResult::factory()->for($execution)->create([
-        'output_id' => 'dem.geotiff',
-        'media_type' => 'image/tiff; application=geotiff',
-        'remote_href' => 'https://voice.pi.ingv.it/geoinquire/jobs/job-1/results/dem.tif',
-        'storage_path' => null,
-        'cache_status' => ResultCacheStatus::MetadataOnly,
-    ]);
-
-    $this->actingAs($user)
-        ->get("/jobs/{$execution->id}/results/{$result->id}/preview-file")
-        ->assertOk()
-        ->assertHeader('content-disposition', 'inline; filename="dem.geotiff"')
-        ->assertSee('GEOTIFF', false);
-
-    Storage::disk('local')->assertExists("ogc-results/{$execution->id}/dem.geotiff");
-    expect($result->refresh()->cache_status)->toBe(ResultCacheStatus::Cached);
-});
-
-test('preview file endpoint returns not found when no file can be resolved', function () {
-    Storage::fake('local');
-
+test('map tile endpoint rejects unpublished layers', function () {
     $user = User::factory()->create();
     $execution = ProcessExecution::factory()->for($user)->create();
 
     $result = ProcessExecutionResult::factory()->for($execution)->create([
         'output_id' => 'dem.geotiff',
         'media_type' => 'image/tiff; application=geotiff',
-        'remote_href' => null,
-        'storage_path' => null,
-        'cache_status' => ResultCacheStatus::MetadataOnly,
+        'map_layer_status' => 'pending',
+        'map_layer_type' => 'wms',
+        'map_layer_name' => 'pe_1_result_1_dem',
     ]);
+
+    $this->actingAs($user)
+        ->get("/jobs/{$execution->id}/results/{$result->id}/map-tile?bbox=0,0,1,1")
+        ->assertNotFound();
+});
+
+test('map tile endpoint validates bbox and dimensions', function () {
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create();
+
+    $result = ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'dem.geotiff',
+        'media_type' => 'image/tiff; application=geotiff',
+        'map_layer_status' => 'published',
+        'map_layer_type' => 'wms',
+        'map_layer_name' => 'pe_1_result_1_dem',
+    ]);
+
+    $this->actingAs($user)
+        ->get("/jobs/{$execution->id}/results/{$result->id}/map-tile?bbox=0,1,2&width=0&height=2048")
+        ->assertSessionHasErrors(['bbox', 'width', 'height']);
+});
+
+test('old preview file endpoint is not exposed', function () {
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create();
+    $result = ProcessExecutionResult::factory()->for($execution)->create();
 
     $this->actingAs($user)
         ->get("/jobs/{$execution->id}/results/{$result->id}/preview-file")

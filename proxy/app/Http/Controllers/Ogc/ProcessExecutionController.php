@@ -139,6 +139,15 @@ class ProcessExecutionController extends Controller
                 'mediaType' => $result->media_type,
                 'cacheStatus' => $result->cache_status->value,
                 'preview' => $result->preview,
+                'mapLayer' => [
+                    'type' => $result->map_layer_type,
+                    'status' => $result->map_layer_status?->value,
+                    'name' => $result->map_layer_name,
+                    'styleName' => $result->map_style_name,
+                    'bounds' => $result->map_layer_bounds,
+                    'publishedAt' => $result->map_layer_published_at?->toIso8601String(),
+                    'error' => $result->map_layer_error,
+                ],
             ])->all(),
         ];
 

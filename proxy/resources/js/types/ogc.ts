@@ -123,6 +123,17 @@ export type ProcessExecutionResult = {
     mediaType?: string | null;
     cacheStatus: string;
     preview?: { kind: string; data: unknown } | null;
+    mapLayer: ProcessExecutionResultMapLayer;
+};
+
+export type ProcessExecutionResultMapLayer = {
+    type: 'wms' | null;
+    status: 'pending' | 'publishing' | 'published' | 'failed' | null;
+    name: string | null;
+    styleName: string | null;
+    bounds: [number, number, number, number] | null;
+    publishedAt: string | null;
+    error: string | null;
 };
 
 export type ProcessExecutionDetail = ProcessExecutionListItem & {

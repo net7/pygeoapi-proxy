@@ -3,7 +3,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { AlertTriangleIcon, Download } from 'lucide-react';
 import maplibregl from 'maplibre-gl';
 import type { RasterSourceSpecification } from 'maplibre-gl';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -14,14 +14,9 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
-import {
-    buildGeoTiffMapPreview,
-    type GeoTiffMapPreview,
-} from '@/lib/geotiff-map-preview';
 import { cn } from '@/lib/utils';
-import { download, previewFile } from '@/routes/jobs/results';
+import { download, mapTile } from '@/routes/jobs/results';
 import type { ProcessExecutionResult } from '@/types';
 
 const worldBasemapSource: RasterSourceSpecification = {
@@ -31,11 +26,6 @@ const worldBasemapSource: RasterSourceSpecification = {
     maxzoom: 19,
     attribution: '&copy; OpenStreetMap contributors',
 };
-
-type PreviewState =
-    | { status: 'loading' }
-    | { status: 'ready'; preview: GeoTiffMapPreview }
-    | { status: 'error'; reason: 'unsupported-bounds' | 'unavailable' };
 
 export default function GeoTiffMapResultPreview({
     executionId,
@@ -48,59 +38,14 @@ export default function GeoTiffMapResultPreview({
     title: string;
     description?: string | null;
     geotiff: ProcessExecutionResult;
-    sld: ProcessExecutionResult;
+    sld: ProcessExecutionResult | null;
 }) {
     const { t } = useTranslation();
-    const [state, setState] = useState<PreviewState>({ status: 'loading' });
-
-    useEffect(() => {
-        const abortController = new AbortController();
-
-        async function loadPreview() {
-            try {
-                const [geotiffResponse, sldResponse] = await Promise.all([
-                    fetch(previewFile.url([executionId, geotiff.id]), {
-                        credentials: 'same-origin',
-                        signal: abortController.signal,
-                    }),
-                    fetch(previewFile.url([executionId, sld.id]), {
-                        credentials: 'same-origin',
-                        signal: abortController.signal,
-                    }),
-                ]);
-
-                if (!geotiffResponse.ok || !sldResponse.ok) {
-                    setState({ status: 'error', reason: 'unavailable' });
-                    return;
-                }
-
-                const preview = await buildGeoTiffMapPreview({
-                    geotiffBuffer: await geotiffResponse.arrayBuffer(),
-                    sldText: await sldResponse.text(),
-                    signal: abortController.signal,
-                });
-
-                setState({ status: 'ready', preview });
-            } catch (error) {
-                if (abortController.signal.aborted) {
-                    return;
-                }
-
-                setState({
-                    status: 'error',
-                    reason:
-                        error instanceof Error &&
-                        error.message === 'unsupported-bounds'
-                            ? 'unsupported-bounds'
-                            : 'unavailable',
-                });
-            }
-        }
-
-        loadPreview();
-
-        return () => abortController.abort();
-    }, [executionId, geotiff.id, sld.id]);
+    const mapLayer = geotiff.mapLayer;
+    const isPublishedWms =
+        mapLayer?.type === 'wms' &&
+        mapLayer.status === 'published' &&
+        mapLayer.name !== null;
 
     return (
         <Card className="shadow-sm dark:border-border/70 dark:bg-card/95">
@@ -127,39 +72,14 @@ export default function GeoTiffMapResultPreview({
                 </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-                {state.status === 'loading' ? (
-                    <div className="flex h-80 items-center justify-center rounded-md bg-muted/70 text-sm text-muted-foreground ring-1 ring-border/50 dark:bg-muted/40">
-                        <Spinner className="mr-2" />
-                        {t('ogc.mapPreviewLoading')}
-                    </div>
-                ) : null}
-
-                {state.status === 'ready' ? (
-                    <>
-                        <MapLibreCanvasPreview preview={state.preview} />
-                        {state.preview.styleWarning ? (
-                            <Alert className="dark:border-border/70">
-                                <AlertTriangleIcon />
-                                <AlertDescription>
-                                    {t('ogc.mapStyleFallback')}
-                                </AlertDescription>
-                            </Alert>
-                        ) : null}
-                    </>
-                ) : null}
-
-                {state.status === 'error' ? (
-                    <Alert className="dark:border-border/70">
-                        <AlertTriangleIcon />
-                        <AlertDescription>
-                            {t(
-                                state.reason === 'unsupported-bounds'
-                                    ? 'ogc.mapPreviewUnsupportedBounds'
-                                    : 'ogc.mapPreviewUnavailable',
-                            )}
-                        </AlertDescription>
-                    </Alert>
-                ) : null}
+                {isPublishedWms ? (
+                    <MapLibreWmsPreview
+                        executionId={executionId}
+                        geotiff={geotiff}
+                    />
+                ) : (
+                    <MapLayerStatusAlert result={geotiff} />
+                )}
             </CardContent>
         </Card>
     );
@@ -171,12 +91,13 @@ function DownloadButton({
     label,
 }: {
     executionId: number;
-    result: ProcessExecutionResult;
+    result: ProcessExecutionResult | null;
     label: string;
 }) {
     const canDownload =
-        result.cacheStatus === 'cached' ||
-        result.cacheStatus === 'metadata_only';
+        result !== null &&
+        (result.cacheStatus === 'cached' ||
+            result.cacheStatus === 'metadata_only');
 
     if (!canDownload) {
         return null;
@@ -192,15 +113,52 @@ function DownloadButton({
     );
 }
 
-function MapLibreCanvasPreview({ preview }: { preview: GeoTiffMapPreview }) {
+function MapLayerStatusAlert({ result }: { result: ProcessExecutionResult }) {
+    const { t } = useTranslation();
+    const status = result.mapLayer?.status;
+    const message =
+        status === 'pending' || status === 'publishing'
+            ? t('ogc.mapLayerPreparing')
+            : status === 'failed'
+              ? t('ogc.mapLayerUnavailable')
+              : t('ogc.mapLayerUnpublished');
+
+    return (
+        <Alert className="dark:border-border/70">
+            <AlertTriangleIcon />
+            <AlertDescription>
+                <span>{message}</span>
+                {status === 'failed' && result.mapLayer?.error ? (
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                        {result.mapLayer.error}
+                    </span>
+                ) : null}
+            </AlertDescription>
+        </Alert>
+    );
+}
+
+function MapLibreWmsPreview({
+    executionId,
+    geotiff,
+}: {
+    executionId: number;
+    geotiff: ProcessExecutionResult;
+}) {
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const tileTemplate = useMemo(() => {
+        const tileUrl = mapTile.url([executionId, geotiff.id]);
+        const separator = tileUrl.includes('?') ? '&' : '?';
+
+        return `${tileUrl}${separator}bbox={bbox-epsg-3857}&width=256&height=256`;
+    }, [executionId, geotiff.id]);
 
     useEffect(() => {
         if (!containerRef.current) {
             return;
         }
 
-        const [west, south, east, north] = preview.bounds;
+        const bounds = validBounds(geotiff.mapLayer?.bounds);
         const map = new maplibregl.Map({
             container: containerRef.current,
             style: {
@@ -226,8 +184,8 @@ function MapLibreCanvasPreview({ preview }: { preview: GeoTiffMapPreview }) {
                     },
                 ],
             },
-            center: [(west + east) / 2, (south + north) / 2],
-            zoom: 10,
+            center: bounds ? boundsCenter(bounds) : [0, 20],
+            zoom: bounds ? 8 : 1.5,
             attributionControl: { compact: true },
         });
 
@@ -237,28 +195,34 @@ function MapLibreCanvasPreview({ preview }: { preview: GeoTiffMapPreview }) {
         );
 
         map.on('load', () => {
-            map.addSource('geotiff-canvas', {
-                type: 'canvas',
-                canvas: preview.canvas,
-                coordinates: preview.coordinates,
-                animate: false,
+            map.addSource('geotiff-wms', {
+                type: 'raster',
+                tiles: [tileTemplate],
+                tileSize: 256,
             });
             map.addLayer({
-                id: 'geotiff-canvas',
+                id: 'geotiff-wms-layer',
                 type: 'raster',
-                source: 'geotiff-canvas',
+                source: 'geotiff-wms',
+                paint: {
+                    'raster-opacity': 0.82,
+                    'raster-resampling': 'linear',
+                },
             });
-            map.fitBounds(
-                [
-                    [west, south],
-                    [east, north],
-                ],
-                { padding: 24, duration: 0 },
-            );
+
+            if (bounds) {
+                map.fitBounds(
+                    [
+                        [bounds[0], bounds[1]],
+                        [bounds[2], bounds[3]],
+                    ],
+                    { padding: 24, duration: 0 },
+                );
+            }
         });
 
         return () => map.remove();
-    }, [preview]);
+    }, [geotiff.mapLayer?.bounds, tileTemplate]);
 
     return (
         <div
@@ -269,4 +233,30 @@ function MapLibreCanvasPreview({ preview }: { preview: GeoTiffMapPreview }) {
             )}
         />
     );
+}
+
+function validBounds(
+    bounds: ProcessExecutionResult['mapLayer']['bounds'] | undefined,
+): [number, number, number, number] | null {
+    if (!Array.isArray(bounds) || bounds.length !== 4) {
+        return null;
+    }
+
+    if (!bounds.every((value) => Number.isFinite(value))) {
+        return null;
+    }
+
+    const [west, south, east, north] = bounds;
+
+    if (west >= east || south >= north) {
+        return null;
+    }
+
+    return [west, south, east, north];
+}
+
+function boundsCenter(
+    bounds: [number, number, number, number],
+): [number, number] {
+    return [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2];
 }

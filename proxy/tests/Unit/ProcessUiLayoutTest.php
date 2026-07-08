@@ -59,16 +59,20 @@ test('process form exposes a local development prefill action', function () {
         ->toContain('data-icon="inline-start"');
 });
 
-test('geotiff previews render over a world basemap', function () {
+test('geotiff previews render through the protected map tile route', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/geotiff-map-result-preview.tsx');
 
     expect($source)
         ->toContain('openstreetmap')
         ->toContain('tile.openstreetmap.org')
         ->toContain('world-basemap')
-        ->toContain('geotiff-canvas')
+        ->toContain('mapTile')
+        ->toContain('geotiff-wms')
         ->toContain('attributionControl')
-        ->toContain('fitBounds');
+        ->toContain('fitBounds')
+        ->not->toContain('previewFile')
+        ->not->toContain('buildGeoTiffMapPreview')
+        ->not->toContain('geotiff-canvas');
 });
 
 test('decimal process number inputs are valid after prefill', function () {

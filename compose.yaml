@@ -60,6 +60,14 @@ x-laravel-environment: &laravel-environment
   MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-hello@example.com}
   MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Pygeoapi Proxy}
   PYGEOAPI_BASE_URL: ${PYGEOAPI_BASE_URL:-http://pygeoapi}
+  GEOSERVER_ENABLED: ${GEOSERVER_ENABLED:-true}
+  GEOSERVER_INTERNAL_URL: ${GEOSERVER_INTERNAL_URL:-http://geoserver:8080/geoserver}
+  GEOSERVER_PUBLIC_URL: ${GEOSERVER_PUBLIC_URL:-http://localhost:8091/geoserver}
+  GEOSERVER_USERNAME: ${GEOSERVER_USERNAME:-admin}
+  GEOSERVER_PASSWORD: ${GEOSERVER_PASSWORD:-geoserver}
+  GEOSERVER_WORKSPACE: ${GEOSERVER_WORKSPACE:-pygeoapi_proxy}
+  GEOSERVER_TILE_TIMEOUT: ${GEOSERVER_TILE_TIMEOUT:-30}
+  GEOSERVER_REST_TIMEOUT: ${GEOSERVER_REST_TIMEOUT:-30}
   HEALTHCHECK_PATH: /up
   SSL_MODE: ${SSL_MODE:-off}
   PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-2G}
@@ -87,6 +95,8 @@ x-laravel-service: &laravel-service
       condition: service_healthy
     pygeoapi:
       condition: service_healthy
+    geoserver:
+      condition: service_started
   networks:
     - pygeoapi-proxy
   restart: unless-stopped
@@ -192,6 +202,19 @@ services:
       - pygeoapi-proxy
     restart: unless-stopped
 
+  geoserver:
+    image: docker.osgeo.org/geoserver:2.27.1
+    platform: ${GEOSERVER_PLATFORM:-linux/amd64}
+    pull_policy: always
+    environment:
+      GEOSERVER_ADMIN_USER: ${GEOSERVER_USERNAME:-admin}
+      GEOSERVER_ADMIN_PASSWORD: ${GEOSERVER_PASSWORD:-geoserver}
+    volumes:
+      - geoserver-data:/opt/geoserver_data
+    networks:
+      - pygeoapi-proxy
+    restart: unless-stopped
+
 networks:
   pygeoapi-proxy:
     driver: bridge
@@ -200,3 +223,4 @@ volumes:
   mariadb-data:
   redis-data:
   laravel-storage:
+  geoserver-data:

@@ -46,6 +46,15 @@ const result = (
     mediaType: overrides.mediaType ?? 'application/json',
     cacheStatus: overrides.cacheStatus ?? 'cached',
     preview: overrides.preview ?? null,
+    mapLayer: overrides.mapLayer ?? {
+        type: null,
+        status: null,
+        name: null,
+        styleName: null,
+        bounds: null,
+        publishedAt: null,
+        error: null,
+    },
 });
 
 describe('groupProcessResults', () => {
@@ -70,6 +79,8 @@ describe('groupProcessResults', () => {
             kind: 'geotiff-map',
             outputId: 'dem',
             title: 'Primary DEM',
+            geotiff: { id: 10 },
+            sld: { id: 11 },
         });
     });
 

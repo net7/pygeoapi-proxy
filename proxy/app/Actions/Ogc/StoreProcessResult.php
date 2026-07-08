@@ -2,7 +2,9 @@
 
 namespace App\Actions\Ogc;
 
+use App\Enums\Ogc\MapLayerStatus;
 use App\Enums\Ogc\ResultCacheStatus;
+use App\Jobs\Ogc\PublishGeoTiffMapLayerJob;
 use App\Models\ProcessExecution;
 use App\Services\Ogc\OgcProcessesClient;
 use App\Services\Ogc\OgcResultResponseParser;
@@ -15,6 +17,7 @@ class StoreProcessResult
     public function __construct(
         private OgcResultResponseParser $parser,
         private OgcProcessesClient $client,
+        private FindGeoTiffSldResultPairs $findGeoTiffSldResultPairs,
     ) {}
 
     public function fromResponse(ProcessExecution $execution, Response $response, ?string $outputId = null): void
@@ -55,6 +58,8 @@ class StoreProcessResult
                 ],
             );
         }
+
+        $this->dispatchMapLayerPublication($execution);
     }
 
     /**
@@ -97,6 +102,8 @@ class StoreProcessResult
                 'preview' => ['kind' => 'binary', 'data' => ['mediaType' => $mediaType]],
             ],
         );
+
+        $this->dispatchMapLayerPublication($execution);
     }
 
     private function firstRequestedOutputId(ProcessExecution $execution): string
@@ -112,5 +119,30 @@ class StoreProcessResult
             ->toString();
 
         return $fileName !== '' ? $fileName : 'result';
+    }
+
+    private function dispatchMapLayerPublication(ProcessExecution $execution): void
+    {
+        $execution->load('results');
+
+        foreach ($this->findGeoTiffSldResultPairs->handle($execution) as $pair) {
+            $geotiff = $pair['geotiff'];
+
+            if (in_array($geotiff->map_layer_status, [
+                MapLayerStatus::Pending,
+                MapLayerStatus::Publishing,
+                MapLayerStatus::Published,
+            ], true)) {
+                continue;
+            }
+
+            $geotiff->update([
+                'map_layer_status' => MapLayerStatus::Pending,
+                'map_layer_type' => 'wms',
+                'map_layer_error' => null,
+            ]);
+
+            PublishGeoTiffMapLayerJob::dispatch($execution->id, $geotiff->id, $pair['sld']->id);
+        }
     }
 }

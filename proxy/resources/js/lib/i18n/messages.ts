@@ -342,12 +342,9 @@ const it = {
         inline: 'Inline',
         inputs: 'Input',
         jobControls: 'Controlli processo',
-        mapPreviewLoading: 'Caricamento mappa',
-        mapPreviewUnavailable: 'Preview mappa non disponibile.',
-        mapPreviewUnsupportedBounds:
-            'Il GeoTIFF non contiene coordinate geografiche visualizzabili.',
-        mapStyleFallback:
-            'Lo stile SLD non è stato applicato completamente. La mappa usa uno stile fallback.',
+        mapLayerPreparing: 'Mappa in preparazione.',
+        mapLayerUnavailable: 'Mappa non disponibile.',
+        mapLayerUnpublished: 'Mappa non ancora pubblicata.',
         noDescription: 'Nessuna descrizione disponibile.',
         notAdvertised: 'Non pubblicizzato',
         openProcess: 'Apri processo',
@@ -789,12 +786,9 @@ const en = {
         inline: 'Inline',
         inputs: 'Inputs',
         jobControls: 'Job controls',
-        mapPreviewLoading: 'Loading map',
-        mapPreviewUnavailable: 'Map preview unavailable.',
-        mapPreviewUnsupportedBounds:
-            'The GeoTIFF does not contain displayable geographic coordinates.',
-        mapStyleFallback:
-            'The SLD style was not fully applied. The map is using a fallback style.',
+        mapLayerPreparing: 'Map preparing.',
+        mapLayerUnavailable: 'Map unavailable.',
+        mapLayerUnpublished: 'Map not published yet.',
         noDescription: 'No description provided.',
         notAdvertised: 'Not advertised',
         openProcess: 'Open process',

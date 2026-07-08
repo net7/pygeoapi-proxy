@@ -27,22 +27,6 @@ class ProcessExecutionResultController extends Controller
         return $this->fileResponse($result, 'attachment');
     }
 
-    public function previewFile(
-        ProcessExecution $processExecution,
-        ProcessExecutionResult $result,
-        OgcProcessesClient $client,
-    ): Response {
-        $this->authorizeResult($processExecution, $result);
-
-        abort_unless($this->isMapPreviewResult($result), 404);
-
-        $this->ensureResultFileIsCached($processExecution, $result, $client);
-
-        abort_unless(filled($result->storage_path), 404);
-
-        return $this->fileResponse($result, 'inline');
-    }
-
     private function authorizeResult(ProcessExecution $processExecution, ProcessExecutionResult $result): void
     {
         Gate::authorize('view', $processExecution);
@@ -83,17 +67,6 @@ class ProcessExecutionResultController extends Controller
             'Content-Type' => $result->media_type ?: 'application/octet-stream',
             'Content-Disposition' => "{$disposition}; filename=\"".$this->resultFileName($result).'"',
         ]);
-    }
-
-    private function isMapPreviewResult(ProcessExecutionResult $result): bool
-    {
-        $normalized = Str::of((string) $result->media_type)->trim()->lower()->toString();
-        $baseMediaType = Str::of($normalized)->before(';')->trim()->toString();
-
-        $isGeoTiff = in_array($baseMediaType, ['image/tiff', 'application/tiff'], true)
-            && Str::of($result->output_id)->lower()->endsWith('.geotiff');
-
-        return $isGeoTiff || $baseMediaType === 'application/vnd.ogc.sld+xml';
     }
 
     private function resultFileName(ProcessExecutionResult $result): string
