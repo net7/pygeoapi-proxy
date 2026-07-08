@@ -193,3 +193,148 @@ test('users can download and cache remote result files on demand', function () {
     Storage::disk('local')->assertExists("ogc-results/{$execution->id}/outfile");
     expect($result->refresh()->cache_status)->toBe(ResultCacheStatus::Cached);
 });
+
+test('users can preview cached geotiff and sld files inline', function () {
+    Storage::fake('local');
+
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create();
+
+    $geotiff = ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'dem.geotiff',
+        'media_type' => 'image/tiff; application=geotiff',
+        'storage_path' => 'ogc-results/dem.geotiff',
+        'cache_status' => ResultCacheStatus::Cached,
+    ]);
+
+    $sld = ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'dem.sld',
+        'media_type' => 'application/vnd.ogc.sld+xml',
+        'storage_path' => 'ogc-results/dem.sld',
+        'cache_status' => ResultCacheStatus::Cached,
+    ]);
+
+    Storage::disk('local')->put('ogc-results/dem.geotiff', 'GEOTIFF');
+    Storage::disk('local')->put('ogc-results/dem.sld', '<StyledLayerDescriptor />');
+
+    $this->actingAs($user)
+        ->get("/jobs/{$execution->id}/results/{$geotiff->id}/preview-file")
+        ->assertOk()
+        ->assertHeader('content-disposition', 'inline; filename="dem.geotiff"')
+        ->assertSee('GEOTIFF', false);
+
+    $this->actingAs($user)
+        ->get("/jobs/{$execution->id}/results/{$sld->id}/preview-file")
+        ->assertOk()
+        ->assertHeader('content-disposition', 'inline; filename="dem.sld"')
+        ->assertSee('<StyledLayerDescriptor />', false);
+});
+
+test('preview file endpoint rejects users who cannot view the job', function () {
+    Storage::fake('local');
+
+    $execution = ProcessExecution::factory()->create();
+    $result = ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'dem.geotiff',
+        'media_type' => 'image/tiff; application=geotiff',
+        'storage_path' => 'ogc-results/dem.geotiff',
+        'cache_status' => ResultCacheStatus::Cached,
+    ]);
+
+    Storage::disk('local')->put('ogc-results/dem.geotiff', 'GEOTIFF');
+
+    $this->actingAs(User::factory()->create())
+        ->get("/jobs/{$execution->id}/results/{$result->id}/preview-file")
+        ->assertForbidden();
+});
+
+test('preview file endpoint rejects results from a different job', function () {
+    Storage::fake('local');
+
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create();
+    $otherExecution = ProcessExecution::factory()->for($user)->create();
+
+    $result = ProcessExecutionResult::factory()->for($otherExecution)->create([
+        'output_id' => 'dem.geotiff',
+        'media_type' => 'image/tiff; application=geotiff',
+        'storage_path' => 'ogc-results/dem.geotiff',
+        'cache_status' => ResultCacheStatus::Cached,
+    ]);
+
+    Storage::disk('local')->put('ogc-results/dem.geotiff', 'GEOTIFF');
+
+    $this->actingAs($user)
+        ->get("/jobs/{$execution->id}/results/{$result->id}/preview-file")
+        ->assertNotFound();
+});
+
+test('preview file endpoint rejects non map preview media types', function () {
+    Storage::fake('local');
+
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create();
+
+    $result = ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'outfile',
+        'media_type' => 'text/csv',
+        'storage_path' => 'ogc-results/outfile.csv',
+        'cache_status' => ResultCacheStatus::Cached,
+    ]);
+
+    Storage::disk('local')->put('ogc-results/outfile.csv', "a,b\n1,2\n");
+
+    $this->actingAs($user)
+        ->get("/jobs/{$execution->id}/results/{$result->id}/preview-file")
+        ->assertNotFound();
+});
+
+test('preview file endpoint caches remote map files on demand', function () {
+    Storage::fake('local');
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-1/results/dem.tif' => Http::response('GEOTIFF', 200, [
+            'Content-Type' => 'image/tiff; application=geotiff',
+        ]),
+    ]);
+
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create([
+        'remote_job_id' => 'job-1',
+    ]);
+
+    $result = ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'dem.geotiff',
+        'media_type' => 'image/tiff; application=geotiff',
+        'remote_href' => 'https://voice.pi.ingv.it/geoinquire/jobs/job-1/results/dem.tif',
+        'storage_path' => null,
+        'cache_status' => ResultCacheStatus::MetadataOnly,
+    ]);
+
+    $this->actingAs($user)
+        ->get("/jobs/{$execution->id}/results/{$result->id}/preview-file")
+        ->assertOk()
+        ->assertHeader('content-disposition', 'inline; filename="dem.geotiff"')
+        ->assertSee('GEOTIFF', false);
+
+    Storage::disk('local')->assertExists("ogc-results/{$execution->id}/dem.geotiff");
+    expect($result->refresh()->cache_status)->toBe(ResultCacheStatus::Cached);
+});
+
+test('preview file endpoint returns not found when no file can be resolved', function () {
+    Storage::fake('local');
+
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create();
+
+    $result = ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'dem.geotiff',
+        'media_type' => 'image/tiff; application=geotiff',
+        'remote_href' => null,
+        'storage_path' => null,
+        'cache_status' => ResultCacheStatus::MetadataOnly,
+    ]);
+
+    $this->actingAs($user)
+        ->get("/jobs/{$execution->id}/results/{$result->id}/preview-file")
+        ->assertNotFound();
+});
