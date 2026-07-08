@@ -198,7 +198,7 @@ describe('chart result preview wiring', () => {
         expect(source).toContain('EyeIcon');
         expect(source).toContain('EyeOffIcon');
         expect(source).toContain('hasMultipleChartSeries(lineChart)');
-        expect(source).toContain('variant="secondary"');
-        expect(source).toContain('variant="outline"');
+        expect(source).toContain('variant="default"');
+        expect(source).toContain('variant="destructive"');
     });
 });

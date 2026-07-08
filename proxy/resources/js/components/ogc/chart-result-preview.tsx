@@ -113,7 +113,7 @@ export default function ChartResultPreview({ data }: { data: unknown }) {
                 <div className="flex flex-wrap items-center justify-end gap-2">
                     <Button
                         type="button"
-                        variant="secondary"
+                        variant="default"
                         size="sm"
                         onClick={() => setAllSeriesVisibility(true)}
                     >
@@ -122,7 +122,7 @@ export default function ChartResultPreview({ data }: { data: unknown }) {
                     </Button>
                     <Button
                         type="button"
-                        variant="outline"
+                        variant="destructive"
                         size="sm"
                         onClick={() => setAllSeriesVisibility(false)}
                     >
