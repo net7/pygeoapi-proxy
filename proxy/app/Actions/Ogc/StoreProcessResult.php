@@ -8,6 +8,7 @@ use App\Jobs\Ogc\PublishGeoTiffMapLayerJob;
 use App\Models\ProcessExecution;
 use App\Services\Ogc\OgcProcessesClient;
 use App\Services\Ogc\OgcResultResponseParser;
+use App\Support\Ogc\ResultFileName;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -26,19 +27,21 @@ class StoreProcessResult
             $storagePath = null;
 
             if ($result['storage_body'] !== null) {
-                $storagePath = "ogc-results/{$execution->id}/".$this->resultFileName($result['output_id']);
+                $storagePath = $this->storagePath($execution, $result['output_id'], $result['media_type']);
                 Storage::disk('local')->put($storagePath, $result['storage_body']);
             } elseif ($result['remote_href'] !== null) {
                 $remoteResponse = $this->client->downloadResultUrl($result['remote_href']);
-                $storagePath = "ogc-results/{$execution->id}/".$this->resultFileName($result['output_id']);
                 $storageBody = $remoteResponse->body();
+                $remoteMediaType = Str::of((string) $remoteResponse->header('Content-Type'))
+                    ->trim()
+                    ->lower()
+                    ->toString();
+
+                $result['media_type'] = $remoteMediaType ?: $result['media_type'];
+                $storagePath = $this->storagePath($execution, $result['output_id'], $result['media_type']);
 
                 Storage::disk('local')->put($storagePath, $storageBody);
 
-                $result['media_type'] = Str::of((string) $remoteResponse->header('Content-Type'))
-                    ->trim()
-                    ->lower()
-                    ->toString() ?: $result['media_type'];
                 $result['size_bytes'] = strlen($storageBody);
                 $result['cache_status'] = ResultCacheStatus::Cached;
             }
@@ -77,13 +80,14 @@ class StoreProcessResult
         if (is_string($remoteHref) && $remoteHref !== '') {
             $remoteResponse = $this->client->downloadResultUrl($remoteHref);
             $storageBody = $remoteResponse->body();
-            $storagePath = "ogc-results/{$execution->id}/".$this->resultFileName($outputId);
-            $sizeBytes = strlen($storageBody);
-            $cacheStatus = ResultCacheStatus::Cached;
-            $mediaType = Str::of((string) $remoteResponse->header('Content-Type'))
+            $remoteMediaType = Str::of((string) $remoteResponse->header('Content-Type'))
                 ->trim()
                 ->lower()
-                ->toString() ?: $mediaType;
+                ->toString();
+            $mediaType = $remoteMediaType ?: $mediaType;
+            $storagePath = $this->storagePath($execution, $outputId, $mediaType);
+            $sizeBytes = strlen($storageBody);
+            $cacheStatus = ResultCacheStatus::Cached;
 
             Storage::disk('local')->put($storagePath, $storageBody);
         }
@@ -111,14 +115,9 @@ class StoreProcessResult
         return (string) (array_key_first($execution->requested_outputs ?? []) ?? 'result');
     }
 
-    private function resultFileName(string $outputId): string
+    private function storagePath(ProcessExecution $execution, string $outputId, ?string $mediaType): string
     {
-        $fileName = Str::of($outputId)
-            ->replaceMatches('/[^A-Za-z0-9._-]+/', '_')
-            ->trim('._-')
-            ->toString();
-
-        return $fileName !== '' ? $fileName : 'result';
+        return "ogc-results/{$execution->id}/".ResultFileName::forOutput($execution, $outputId, $mediaType);
     }
 
     private function dispatchMapLayerPublication(ProcessExecution $execution): void

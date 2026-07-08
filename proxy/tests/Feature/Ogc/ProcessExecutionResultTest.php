@@ -254,9 +254,11 @@ test('users can download cached result files', function () {
     Storage::fake('local');
 
     $user = User::factory()->create();
-    $execution = ProcessExecution::factory()->for($user)->create();
+    $execution = ProcessExecution::factory()->for($user)->create([
+        'remote_job_id' => '4066039d-793d-11f1-9692-3b828b09e202',
+    ]);
     $result = ProcessExecutionResult::factory()->for($execution)->create([
-        'output_id' => 'outfile',
+        'output_id' => 'invasion_map',
         'media_type' => 'text/csv',
         'storage_path' => 'ogc-results/outfile.csv',
         'cache_status' => ResultCacheStatus::Cached,
@@ -267,14 +269,17 @@ test('users can download cached result files', function () {
     $this->actingAs($user)
         ->get("/jobs/{$execution->id}/results/{$result->id}/download")
         ->assertOk()
-        ->assertHeader('content-type', 'text/csv; charset=utf-8');
+        ->assertHeader('content-type', 'text/csv; charset=utf-8')
+        ->assertHeader('content-disposition', 'attachment; filename="4066039d-793d-11f1-9692-3b828b09e202_invasion_map.csv"');
 });
 
 test('users can download cached json value results without a stored file', function () {
     $user = User::factory()->create();
-    $execution = ProcessExecution::factory()->for($user)->create();
+    $execution = ProcessExecution::factory()->for($user)->create([
+        'remote_job_id' => '4066039d-793d-11f1-9692-3b828b09e202',
+    ]);
     $result = ProcessExecutionResult::factory()->for($execution)->create([
-        'output_id' => 'gas',
+        'output_id' => 'invasion_map',
         'media_type' => 'application/json',
         'storage_path' => null,
         'cache_status' => ResultCacheStatus::Cached,
@@ -288,13 +293,15 @@ test('users can download cached json value results without a stored file', funct
         ->get("/jobs/{$execution->id}/results/{$result->id}/download")
         ->assertOk()
         ->assertHeader('content-type', 'application/json')
-        ->assertHeader('content-disposition', 'attachment; filename="gas.json"')
+        ->assertHeader('content-disposition', 'attachment; filename="4066039d-793d-11f1-9692-3b828b09e202_invasion_map.json"')
         ->assertContent(json_encode(ogcFixture('chart-result'), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 });
 
 test('users can download cached text and csv value results without a stored file', function (string $mediaType, string $previewKind, string $outputId, string $expectedFileName, string $content) {
     $user = User::factory()->create();
-    $execution = ProcessExecution::factory()->for($user)->create();
+    $execution = ProcessExecution::factory()->for($user)->create([
+        'remote_job_id' => '4066039d-793d-11f1-9692-3b828b09e202',
+    ]);
     $result = ProcessExecutionResult::factory()->for($execution)->create([
         'output_id' => $outputId,
         'media_type' => $mediaType,
@@ -313,8 +320,8 @@ test('users can download cached text and csv value results without a stored file
         ->assertHeader('content-disposition', "attachment; filename=\"{$expectedFileName}\"")
         ->assertContent($content);
 })->with([
-    'text value' => ['text/plain', 'text', 'stdout', 'stdout.txt', "line 1\nline 2\n"],
-    'csv value' => ['text/csv', 'csv', 'table', 'table.csv', "a,b\n1,2\n"],
+    'text value' => ['text/plain', 'text', 'stdout', '4066039d-793d-11f1-9692-3b828b09e202_stdout.txt', "line 1\nline 2\n"],
+    'csv value' => ['text/csv', 'csv', 'table', '4066039d-793d-11f1-9692-3b828b09e202_table.csv', "a,b\n1,2\n"],
 ]);
 
 test('users can download and cache remote result files on demand', function () {
@@ -340,9 +347,10 @@ test('users can download and cache remote result files on demand', function () {
     $this->actingAs($user)
         ->get("/jobs/{$execution->id}/results/{$result->id}/download")
         ->assertOk()
-        ->assertHeader('content-type', 'text/csv; charset=utf-8');
+        ->assertHeader('content-type', 'text/csv; charset=utf-8')
+        ->assertHeader('content-disposition', 'attachment; filename="job-1_outfile.csv"');
 
-    Storage::disk('local')->assertExists("ogc-results/{$execution->id}/outfile");
+    Storage::disk('local')->assertExists("ogc-results/{$execution->id}/job-1_outfile.csv");
     expect($result->refresh()->cache_status)->toBe(ResultCacheStatus::Cached);
 });
 

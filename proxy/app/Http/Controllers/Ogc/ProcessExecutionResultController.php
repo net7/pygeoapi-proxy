@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ProcessExecution;
 use App\Models\ProcessExecutionResult;
 use App\Services\Ogc\OgcProcessesClient;
+use App\Support\Ogc\ResultFileName;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -23,10 +24,10 @@ class ProcessExecutionResultController extends Controller
         $this->ensureResultFileIsCached($processExecution, $result, $client);
 
         if (blank($result->storage_path)) {
-            return $this->previewResponse($result);
+            return $this->previewResponse($processExecution, $result);
         }
 
-        return $this->fileResponse($result, 'attachment');
+        return $this->fileResponse($processExecution, $result, 'attachment');
     }
 
     private function authorizeResult(ProcessExecution $processExecution, ProcessExecutionResult $result): void
@@ -47,11 +48,15 @@ class ProcessExecutionResultController extends Controller
 
         $remoteResponse = $client->downloadResultUrl($result->remote_href);
         $body = $remoteResponse->body();
-        $path = "ogc-results/{$processExecution->id}/".$this->resultFileName($result);
         $mediaType = Str::of((string) $remoteResponse->header('Content-Type'))
             ->trim()
             ->lower()
             ->toString();
+        $path = "ogc-results/{$processExecution->id}/".ResultFileName::forOutput(
+            $processExecution,
+            $result->output_id,
+            $mediaType ?: $result->media_type,
+        );
 
         Storage::disk('local')->put($path, $body);
 
@@ -63,50 +68,71 @@ class ProcessExecutionResultController extends Controller
         ]);
     }
 
-    private function fileResponse(ProcessExecutionResult $result, string $disposition): Response
+    private function fileResponse(ProcessExecution $processExecution, ProcessExecutionResult $result, string $disposition): Response
     {
         return response(Storage::disk('local')->get($result->storage_path), 200, [
             'Content-Type' => $result->media_type ?: 'application/octet-stream',
-            'Content-Disposition' => "{$disposition}; filename=\"".$this->resultFileName($result).'"',
+            'Content-Disposition' => "{$disposition}; filename=\"".ResultFileName::forOutput(
+                $processExecution,
+                $result->output_id,
+                $result->media_type,
+            ).'"',
         ]);
     }
 
-    private function previewResponse(ProcessExecutionResult $result): Response
+    private function previewResponse(ProcessExecution $processExecution, ProcessExecutionResult $result): Response
     {
         $previewKind = data_get($result->preview, 'kind');
         $previewData = data_get($result->preview, 'data');
         $mediaType = $this->baseMediaType($result->media_type);
 
         if (in_array($previewKind, ['chart', 'json'], true) && $this->isJsonMediaType($mediaType)) {
-            return $this->previewJsonResponse($result, $previewData);
+            return $this->previewJsonResponse($processExecution, $result, $previewData);
         }
 
         if ($previewKind === 'csv' && $mediaType === 'text/csv') {
-            return $this->previewTextResponse($result, $previewData, 'csv');
+            return $this->previewTextResponse($processExecution, $result, $previewData, 'csv');
         }
 
         if ($previewKind === 'text' && $mediaType === 'text/plain') {
-            return $this->previewTextResponse($result, $previewData, 'txt');
+            return $this->previewTextResponse($processExecution, $result, $previewData, 'txt');
         }
 
         abort(404);
     }
 
-    private function previewJsonResponse(ProcessExecutionResult $result, mixed $previewData): Response
-    {
+    private function previewJsonResponse(
+        ProcessExecution $processExecution,
+        ProcessExecutionResult $result,
+        mixed $previewData,
+    ): Response {
         return response(json_encode($previewData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), 200, [
             'Content-Type' => $result->media_type ?: 'application/json',
-            'Content-Disposition' => 'attachment; filename="'.$this->resultFileName($result, 'json').'"',
+            'Content-Disposition' => 'attachment; filename="'.ResultFileName::forOutput(
+                $processExecution,
+                $result->output_id,
+                $result->media_type,
+                'json',
+            ).'"',
         ]);
     }
 
-    private function previewTextResponse(ProcessExecutionResult $result, mixed $previewData, string $extension): Response
-    {
+    private function previewTextResponse(
+        ProcessExecution $processExecution,
+        ProcessExecutionResult $result,
+        mixed $previewData,
+        string $extension,
+    ): Response {
         abort_unless(is_scalar($previewData) || $previewData === null, 404);
 
         return response((string) $previewData, 200, [
             'Content-Type' => $result->media_type ?: 'text/plain',
-            'Content-Disposition' => 'attachment; filename="'.$this->resultFileName($result, $extension).'"',
+            'Content-Disposition' => 'attachment; filename="'.ResultFileName::forOutput(
+                $processExecution,
+                $result->output_id,
+                $result->media_type,
+                $extension,
+            ).'"',
         ]);
     }
 
@@ -122,21 +148,5 @@ class ProcessExecutionResultController extends Controller
     private function isJsonMediaType(string $mediaType): bool
     {
         return $mediaType === 'application/json' || str_ends_with($mediaType, '+json');
-    }
-
-    private function resultFileName(ProcessExecutionResult $result, ?string $extension = null): string
-    {
-        $fileName = Str::of($result->output_id)
-            ->replaceMatches('/[^A-Za-z0-9._-]+/', '_')
-            ->trim('._-')
-            ->toString();
-
-        $fileName = $fileName !== '' ? $fileName : "result-{$result->id}";
-
-        if ($extension !== null && ! str_ends_with($fileName, ".{$extension}")) {
-            return "{$fileName}.{$extension}";
-        }
-
-        return $fileName;
     }
 }

@@ -128,15 +128,15 @@ test('it caches binary multipart results on local storage', function () {
 
     $execution = ProcessExecution::factory()->create([
         'process_id' => 'pybox',
-        'remote_job_id' => 'job-123',
+        'remote_job_id' => '4066039d-793d-11f1-9692-3b828b09e202',
         'status' => ExecutionStatus::Running,
         'requested_outputs' => ['invasion_map' => ['transmissionMode' => 'value']],
         'process_outputs' => ogcFixture('process-pybox')['outputs'],
     ]);
 
     Http::fake([
-        'https://voice.pi.ingv.it/geoinquire/jobs/job-123?f=json' => Http::response(ogcFixture('job-successful')),
-        'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results?f=json' => Http::response($body, 200, [
+        'https://voice.pi.ingv.it/geoinquire/jobs/4066039d-793d-11f1-9692-3b828b09e202?f=json' => Http::response(ogcFixture('job-successful')),
+        'https://voice.pi.ingv.it/geoinquire/jobs/4066039d-793d-11f1-9692-3b828b09e202/results?f=json' => Http::response($body, 200, [
             'Content-Type' => 'multipart/mixed; boundary="'.$boundary.'"',
         ]),
     ]);
@@ -158,7 +158,52 @@ test('it caches binary multipart results on local storage', function () {
         ])
         ->and($result->storage_path)->not->toBeNull();
 
-    Storage::disk('local')->assertExists($result->storage_path);
+    expect($result->storage_path)->toBe("ogc-results/{$execution->id}/4066039d-793d-11f1-9692-3b828b09e202_invasion_map.geotiff");
+    Storage::disk('local')->assertExists("ogc-results/{$execution->id}/4066039d-793d-11f1-9692-3b828b09e202_invasion_map.geotiff");
+});
+
+test('it caches deferred result links using remote job prefixed file names', function () {
+    Notification::fake();
+    Storage::fake('local');
+
+    $remoteJobId = '4066039d-793d-11f1-9692-3b828b09e202';
+
+    $execution = ProcessExecution::factory()->create([
+        'process_id' => 'pybox',
+        'remote_job_id' => $remoteJobId,
+        'status' => ExecutionStatus::Running,
+        'requested_outputs' => ['invasion_map' => ['transmissionMode' => 'reference']],
+        'process_outputs' => ogcFixture('process-pybox')['outputs'],
+    ]);
+
+    $job = [
+        ...ogcFixture('job-successful'),
+        'links' => [
+            [
+                'href' => "https://voice.pi.ingv.it/geoinquire/jobs/{$remoteJobId}/results/invasion_map.tif",
+                'rel' => 'http://www.opengis.net/def/rel/ogc/1.0/results',
+                'type' => 'application/tiff; application=geotiff',
+            ],
+        ],
+    ];
+
+    Http::fake([
+        "https://voice.pi.ingv.it/geoinquire/jobs/{$remoteJobId}?f=json" => Http::response($job),
+        "https://voice.pi.ingv.it/geoinquire/jobs/{$remoteJobId}/results/invasion_map.tif" => Http::response('TIFF-BINARY-CONTENT', 200, [
+            'Content-Type' => 'application/tiff; application=geotiff',
+        ]),
+    ]);
+
+    (new PollProcessExecutionJob($execution->id))->handle(
+        app(PollProcessExecution::class),
+    );
+
+    $result = $execution->refresh()->results()->sole();
+
+    expect($result->output_id)->toBe('invasion_map')
+        ->and($result->storage_path)->toBe("ogc-results/{$execution->id}/{$remoteJobId}_invasion_map.geotiff");
+
+    Storage::disk('local')->assertExists("ogc-results/{$execution->id}/{$remoteJobId}_invasion_map.geotiff");
 });
 
 test('it expands object output links returned in json results', function () {
