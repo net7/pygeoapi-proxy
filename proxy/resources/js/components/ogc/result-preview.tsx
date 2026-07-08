@@ -1,8 +1,13 @@
-import { Download } from 'lucide-react';
+import { ChevronDownIcon, Download, FileTextIcon } from 'lucide-react';
 
 import ChartResultPreview from '@/components/ogc/chart-result-preview';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
     Table,
     TableBody,
@@ -31,47 +36,72 @@ export default function ResultPreview({
         result.cacheStatus === 'metadata_only';
 
     return (
-        <Card className="shadow-sm dark:border-border/70 dark:bg-card/95">
-            <CardHeader>
-                <div className="flex items-center justify-between gap-3">
-                    <div className="flex flex-col gap-1">
-                        <CardTitle>{result.title ?? result.outputId}</CardTitle>
+        <Collapsible defaultOpen asChild>
+            <Card className="shadow-sm dark:border-border/70 dark:bg-card/95">
+                <CardHeader>
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                            <CardTitle className="flex min-w-0 items-center gap-2">
+                                <FileTextIcon
+                                    aria-hidden="true"
+                                    className="size-4 shrink-0 text-muted-foreground"
+                                />
+                                <CollapsibleTrigger className="flex min-w-0 items-center gap-1 rounded-sm text-left ring-offset-background outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&[data-state=open]>svg]:rotate-180">
+                                    <span className="min-w-0 truncate">
+                                        {result.title ?? result.outputId}
+                                    </span>
+                                    <ChevronDownIcon
+                                        aria-hidden="true"
+                                        className="size-4 shrink-0 text-muted-foreground transition-transform"
+                                    />
+                                </CollapsibleTrigger>
+                            </CardTitle>
+                        </div>
+                        {canDownload ? (
+                            <Button asChild variant="outline" size="sm">
+                                <a
+                                    href={download.url([
+                                        executionId,
+                                        result.id,
+                                    ])}
+                                >
+                                    <Download data-icon="inline-start" />
+                                    {downloadLabelForMediaType(
+                                        result.mediaType,
+                                    )}
+                                </a>
+                            </Button>
+                        ) : null}
                     </div>
-                    {canDownload ? (
-                        <Button asChild variant="outline" size="sm">
-                            <a href={download.url([executionId, result.id])}>
-                                <Download data-icon="inline-start" />
-                                {downloadLabelForMediaType(result.mediaType)}
-                            </a>
-                        </Button>
-                    ) : null}
-                </div>
-            </CardHeader>
-            <CardContent>
-                {preview?.kind === 'chart' ? (
-                    <ChartResultPreview data={preview.data} />
-                ) : null}
-                {preview?.kind === 'csv' ? (
-                    <CsvPreview data={preview.data} />
-                ) : null}
-                {preview?.kind === 'text' ? (
-                    <TextPreview data={preview.data} />
-                ) : null}
-                {preview?.kind === 'json' ? (
-                    <JsonPreview data={preview.data} />
-                ) : null}
-                {preview?.kind === 'binary' ? (
-                    <p className="text-sm text-muted-foreground">
-                        {t('ogc.previewUnavailableMedia')}
-                    </p>
-                ) : null}
-                {!preview ? (
-                    <p className="text-sm text-muted-foreground">
-                        {t('ogc.previewUnavailable')}
-                    </p>
-                ) : null}
-            </CardContent>
-        </Card>
+                </CardHeader>
+                <CollapsibleContent>
+                    <CardContent className="min-h-96">
+                        {preview?.kind === 'chart' ? (
+                            <ChartResultPreview data={preview.data} />
+                        ) : null}
+                        {preview?.kind === 'csv' ? (
+                            <CsvPreview data={preview.data} />
+                        ) : null}
+                        {preview?.kind === 'text' ? (
+                            <TextPreview data={preview.data} />
+                        ) : null}
+                        {preview?.kind === 'json' ? (
+                            <JsonPreview data={preview.data} />
+                        ) : null}
+                        {preview?.kind === 'binary' ? (
+                            <p className="text-sm text-muted-foreground">
+                                {t('ogc.previewUnavailableMedia')}
+                            </p>
+                        ) : null}
+                        {!preview ? (
+                            <p className="text-sm text-muted-foreground">
+                                {t('ogc.previewUnavailable')}
+                            </p>
+                        ) : null}
+                    </CardContent>
+                </CollapsibleContent>
+            </Card>
+        </Collapsible>
     );
 }
 
@@ -88,7 +118,7 @@ function CsvPreview({ data }: { data: unknown }) {
     }
 
     return (
-        <div className="flex min-w-0 flex-col gap-2">
+        <div className="flex min-h-96 min-w-0 flex-col gap-2 overflow-auto">
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -118,7 +148,7 @@ function CsvPreview({ data }: { data: unknown }) {
 
 function TextPreview({ data }: { data: unknown }) {
     return (
-        <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs ring-1 ring-border/50 dark:bg-muted/50 dark:text-foreground">
+        <pre className="max-h-[32rem] min-h-80 overflow-auto rounded-md bg-muted p-3 text-xs ring-1 ring-border/50 dark:bg-muted/50 dark:text-foreground">
             {String(data ?? '')}
         </pre>
     );
@@ -126,7 +156,7 @@ function TextPreview({ data }: { data: unknown }) {
 
 function JsonPreview({ data }: { data: unknown }) {
     return (
-        <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs ring-1 ring-border/50 dark:bg-muted/50 dark:text-foreground">
+        <pre className="max-h-[32rem] min-h-80 overflow-auto rounded-md bg-muted p-3 text-xs ring-1 ring-border/50 dark:bg-muted/50 dark:text-foreground">
             {JSON.stringify(data, null, 2)}
         </pre>
     );

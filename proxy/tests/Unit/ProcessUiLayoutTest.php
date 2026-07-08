@@ -531,7 +531,7 @@ test('remove and delete buttons use destructive styling', function () {
         ->not->toContain('<Trash2 className=');
 });
 
-test('job detail places notes near the title and keeps input output sections in order', function () {
+test('job detail prioritizes collapsible output panels and a low full width summary above notes', function () {
     $source = file_get_contents(getcwd().'/resources/js/pages/process-executions/show.tsx');
     $summaryPosition = strpos($source, "t('jobs.jobSummary')");
     $inputPosition = strpos($source, "title={t('jobs.inputs')}");
@@ -549,11 +549,26 @@ test('job detail places notes near the title and keeps input output sections in 
         ->toContain('remoteJobId={execution.remoteJobId}')
         ->toContain('inline')
         ->toContain('common.status')
-        ->toContain('jobs.requestedOutputs')
         ->toContain('jobs.results')
         ->toContain("t('jobs.adminOnlySection')")
         ->toContain('ShieldCheckIcon')
         ->toContain('<ShieldCheckIcon data-icon="inline-start" />')
+        ->toContain('ActivityIcon')
+        ->toContain('CalendarClockIcon')
+        ->toContain('Clock3Icon')
+        ->toContain('FileInputIcon')
+        ->toContain('PackageCheckIcon')
+        ->toContain('titleIcon={ActivityIcon}')
+        ->toContain('icon={FileInputIcon}')
+        ->toContain('icon={PackageCheckIcon}')
+        ->toContain('w-full min-w-0 border-l-4 py-3')
+        ->toContain('<SummaryMetric')
+        ->toContain('<SummaryProgress')
+        ->toContain('<SummaryDate')
+        ->toContain("label={t('jobs.created')}")
+        ->toContain("label={t('jobs.submitted')}")
+        ->toContain('label={terminalLabel}')
+        ->toContain('formatJobDate')
         ->toContain('variant="destructive"')
         ->toContain('className="h-5 shrink-0 px-1.5 text-[10px] uppercase"')
         ->toContain('className="flex justify-end"')
@@ -561,6 +576,13 @@ test('job detail places notes near the title and keeps input output sections in 
         ->toContain('className="w-full sm:w-auto"')
         ->toContain('<JobNameEditDialog execution={execution} />')
         ->toContain('<JobNoteCard execution={execution} />')
+        ->not->toContain('jobs.requestedOutputs')
+        ->not->toContain('value={execution.requestedOutputs ?? {}}')
+        ->not->toContain('jobs.currentState')
+        ->not->toContain('execution.message')
+        ->not->toContain('JobTimelineItem')
+        ->not->toContain('lg:max-w-3xl')
+        ->not->toContain('lg:grid-cols-[minmax(0,1fr)_minmax(14rem,18rem)]')
         ->not->toContain('<JobNameCard execution={execution} />')
         ->not->toContain('xl:grid-cols-[minmax(0,1fr)_24rem]')
         ->not->toContain('xl:sticky')
@@ -570,9 +592,39 @@ test('job detail places notes near the title and keeps input output sections in 
         ->and($inputPosition)->not->toBeFalse()
         ->and($outputPosition)->not->toBeFalse()
         ->and($notePosition)->not->toBeFalse()
-        ->and($notePosition)->toBeLessThan($summaryPosition)
-        ->and($inputPosition)->toBeLessThan($outputPosition)
-        ->and($summaryPosition)->toBeLessThan($inputPosition);
+        ->and($summaryPosition)->toBeLessThan($notePosition)
+        ->and($notePosition)->toBeLessThan($outputPosition)
+        ->and($outputPosition)->toBeLessThan($inputPosition);
+});
+
+test('job output result cards are collapsible taller sections with title icons', function () {
+    $source = file_get_contents(getcwd().'/resources/js/components/ogc/result-preview.tsx');
+    $mapSource = file_get_contents(getcwd().'/resources/js/components/ogc/geotiff-map-result-preview.tsx');
+
+    expect($source)
+        ->toContain('ChevronDownIcon')
+        ->toContain('FileTextIcon')
+        ->toContain('Collapsible')
+        ->toContain('CollapsibleContent')
+        ->toContain('CollapsibleTrigger')
+        ->toContain('<Collapsible defaultOpen asChild>')
+        ->toContain('[&[data-state=open]>svg]:rotate-180')
+        ->toContain('<FileTextIcon')
+        ->toContain('min-h-96')
+        ->toContain('max-h-[32rem]')
+        ->toContain('<CardTitle className="flex min-w-0 items-center gap-2">');
+
+    expect($mapSource)
+        ->toContain('ChevronDownIcon')
+        ->toContain('MapIcon')
+        ->toContain('Collapsible')
+        ->toContain('CollapsibleContent')
+        ->toContain('CollapsibleTrigger')
+        ->toContain('<Collapsible defaultOpen asChild>')
+        ->toContain('[&[data-state=open]>svg]:rotate-180')
+        ->toContain('<MapIcon')
+        ->toContain('h-[28rem] min-h-[28rem]')
+        ->toContain('<CardTitle className="flex min-w-0 items-center gap-2">');
 });
 
 test('job editable metadata appears on create and detail screens', function () {
@@ -790,7 +842,7 @@ test('job pages use readable dark mode status surfaces', function () {
 
     expect($showSource)
         ->toContain('dark:border-border/70 dark:bg-card/95')
-        ->toContain('dark:bg-muted/60')
+        ->toContain('dark:bg-background/20')
         ->toContain('ring-1 ring-border/50 dark:bg-muted/50');
 
     expect($resultPreviewSource)

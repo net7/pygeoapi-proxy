@@ -177,7 +177,8 @@ describe('chart result preview wiring', () => {
             'utf8',
         );
 
-        expect(source).toContain('downloadLabelForMediaType(result.mediaType)');
+        expect(source).toContain('downloadLabelForMediaType');
+        expect(source).toContain('result.mediaType');
         expect(source).not.toContain(
             '<CardDescription>{result.mediaType}</CardDescription>',
         );

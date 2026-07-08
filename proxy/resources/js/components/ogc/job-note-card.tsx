@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { PencilIcon } from 'lucide-react';
+import { MessageSquareTextIcon, PencilIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 
@@ -64,7 +64,15 @@ export function JobNoteCard({
             <Card className="min-w-0 shadow-sm dark:border-border/70 dark:bg-card/95">
                 <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
-                        <CardTitle>{t('jobs.note')}</CardTitle>
+                        <CardTitle className="flex min-w-0 items-center gap-2">
+                            <MessageSquareTextIcon
+                                aria-hidden="true"
+                                className="size-4 shrink-0 text-muted-foreground"
+                            />
+                            <span className="min-w-0 truncate">
+                                {t('jobs.note')}
+                            </span>
+                        </CardTitle>
                     </div>
                     <DialogTrigger asChild>
                         <Button

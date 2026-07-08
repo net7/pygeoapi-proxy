@@ -1,10 +1,11 @@
 import { Head, Link } from '@inertiajs/react';
 import {
+    ActivityIcon,
     ArrowLeftIcon,
     CalendarClockIcon,
     Clock3Icon,
+    FileInputIcon,
     HashIcon,
-    InfoIcon,
     ListChecksIcon,
     PackageCheckIcon,
     ShieldCheckIcon,
@@ -156,80 +157,42 @@ export default function ProcessExecutionShow({
                     </div>
                 </div>
 
-                <JobNoteCard execution={execution} />
-
                 <Card
                     className={cn(
-                        'min-w-0 border-l-4 shadow-sm',
+                        'w-full min-w-0 border-l-4 py-3 shadow-sm',
                         styles.cardClassName,
                     )}
                 >
-                    <CardHeader>
-                        <CardTitle>{t('jobs.jobSummary')}</CardTitle>
-                        <CardDescription>
-                            {t('jobs.currentState')}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
-                        <div className="flex min-w-0 flex-col gap-4">
-                            <div className="flex items-center justify-between gap-3">
-                                <span className="text-xs font-semibold tracking-wide text-muted-foreground">
-                                    {t('common.status').toUpperCase()}
-                                </span>
-                                <Badge
-                                    variant="outline"
-                                    className={cn(
-                                        'tracking-wide',
-                                        styles.badgeClassName,
-                                    )}
-                                >
-                                    <StatusIcon data-icon="inline-start" />
-                                    {jobStatusLabel(execution.status, t)}
-                                </Badge>
-                            </div>
-
-                            <div className="flex flex-col gap-2">
-                                <div className="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
-                                    <span>{t('jobs.progress')}</span>
-                                    <span className="tabular-nums">
-                                        {execution.progress}%
-                                    </span>
-                                </div>
-                                <div
-                                    className="h-2 overflow-hidden rounded-full bg-muted"
-                                    role="progressbar"
-                                    aria-valuemin={0}
-                                    aria-valuemax={100}
-                                    aria-valuenow={clampProgress(
-                                        execution.progress,
-                                    )}
-                                >
-                                    <div
-                                        className={cn(
-                                            'h-full rounded-full transition-[width]',
-                                            styles.progressClassName,
-                                        )}
-                                        style={{
-                                            width: `${clampProgress(execution.progress)}%`,
-                                        }}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-2 rounded-md bg-muted p-3 text-sm text-muted-foreground dark:bg-muted/60">
-                                <InfoIcon
-                                    aria-hidden="true"
-                                    className="mt-0.5 size-4 shrink-0"
-                                />
-                                <p className="min-w-0">
-                                    {execution.message ??
-                                        t('jobs.noJobMessage')}
-                                </p>
-                            </div>
+                    <CardContent className="flex min-w-0 flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                            <CardTitleWithIcon titleIcon={ActivityIcon}>
+                                {t('jobs.jobSummary')}
+                            </CardTitleWithIcon>
                         </div>
 
-                        <div className="grid gap-3">
-                            <JobTimelineItem
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            <Badge
+                                variant="outline"
+                                aria-label={t('common.status')}
+                                className={cn(
+                                    'h-8 shrink-0 tracking-wide',
+                                    styles.badgeClassName,
+                                )}
+                            >
+                                <StatusIcon data-icon="inline-start" />
+                                {jobStatusLabel(execution.status, t)}
+                            </Badge>
+                            <SummaryProgress
+                                label={t('jobs.progress')}
+                                progress={execution.progress}
+                                progressClassName={styles.progressClassName}
+                            />
+                            <SummaryMetric
+                                icon={ListChecksIcon}
+                                label={t('jobs.results')}
+                                value={String(execution.results.length)}
+                            />
+                            <SummaryDate
                                 icon={CalendarClockIcon}
                                 label={t('jobs.created')}
                                 value={formatJobDate(
@@ -238,7 +201,7 @@ export default function ProcessExecutionShow({
                                     t('common.notAvailable'),
                                 )}
                             />
-                            <JobTimelineItem
+                            <SummaryDate
                                 icon={Clock3Icon}
                                 label={t('jobs.submitted')}
                                 value={formatJobDate(
@@ -247,7 +210,7 @@ export default function ProcessExecutionShow({
                                     t('common.notAvailable'),
                                 )}
                             />
-                            <JobTimelineItem
+                            <SummaryDate
                                 icon={TimerIcon}
                                 label={terminalLabel}
                                 value={formatJobDate(
@@ -260,28 +223,10 @@ export default function ProcessExecutionShow({
                     </CardContent>
                 </Card>
 
-                {execution.requestPayload !== undefined ? (
-                    <DetailSection
-                        title={t('jobs.inputs')}
-                        description={t('jobs.inputsDescription')}
-                        badge={
-                            <Badge
-                                variant="destructive"
-                                className="h-5 shrink-0 px-1.5 text-[10px] uppercase"
-                            >
-                                <ShieldCheckIcon data-icon="inline-start" />
-                                {t('jobs.adminOnlySection')}
-                            </Badge>
-                        }
-                    >
-                        <JsonBlock
-                            title={t('jobs.inputs')}
-                            value={execution.requestPayload}
-                        />
-                    </DetailSection>
-                ) : null}
+                <JobNoteCard execution={execution} />
 
                 <DetailSection
+                    icon={PackageCheckIcon}
                     title={t('ogc.outputs')}
                     description={t(
                         visualResults.length === 1
@@ -296,11 +241,6 @@ export default function ProcessExecutionShow({
                         </Badge>
                     }
                 >
-                    <JsonBlock
-                        title={t('jobs.requestedOutputs')}
-                        value={execution.requestedOutputs ?? {}}
-                    />
-
                     {execution.results.length > 0 ? (
                         <div className="flex min-w-0 flex-col gap-3">
                             {visualResults.map((item) =>
@@ -329,6 +269,28 @@ export default function ProcessExecutionShow({
                         />
                     )}
                 </DetailSection>
+
+                {execution.requestPayload !== undefined ? (
+                    <DetailSection
+                        icon={FileInputIcon}
+                        title={t('jobs.inputs')}
+                        description={t('jobs.inputsDescription')}
+                        badge={
+                            <Badge
+                                variant="destructive"
+                                className="h-5 shrink-0 px-1.5 text-[10px] uppercase"
+                            >
+                                <ShieldCheckIcon data-icon="inline-start" />
+                                {t('jobs.adminOnlySection')}
+                            </Badge>
+                        }
+                    >
+                        <JsonBlock
+                            title={t('jobs.inputs')}
+                            value={execution.requestPayload}
+                        />
+                    </DetailSection>
+                ) : null}
             </div>
         </>
     );
@@ -359,11 +321,13 @@ function jobStatusLabel(status: string, t: Translate): string {
 }
 
 function DetailSection({
+    icon: Icon,
     title,
     description,
     badge,
     children,
 }: {
+    icon: LucideIcon;
     title: string;
     description: string;
     badge?: ReactNode;
@@ -373,7 +337,9 @@ function DetailSection({
         <Card className="min-w-0 shadow-sm dark:border-border/70 dark:bg-card/95">
             <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                    <CardTitle>{title}</CardTitle>
+                    <CardTitleWithIcon titleIcon={Icon}>
+                        {title}
+                    </CardTitleWithIcon>
                     <CardDescription>{description}</CardDescription>
                 </div>
                 {badge}
@@ -382,6 +348,24 @@ function DetailSection({
                 {children}
             </CardContent>
         </Card>
+    );
+}
+
+function CardTitleWithIcon({
+    titleIcon: Icon,
+    children,
+}: {
+    titleIcon: LucideIcon;
+    children: ReactNode;
+}) {
+    return (
+        <CardTitle className="flex min-w-0 items-center gap-2">
+            <Icon
+                aria-hidden="true"
+                className="size-4 shrink-0 text-muted-foreground"
+            />
+            <span className="min-w-0 truncate">{children}</span>
+        </CardTitle>
     );
 }
 
@@ -427,7 +411,7 @@ function JobMetric({
     );
 }
 
-function JobTimelineItem({
+function SummaryMetric({
     icon: Icon,
     label,
     value,
@@ -437,19 +421,74 @@ function JobTimelineItem({
     value: string;
 }) {
     return (
-        <div className="flex min-w-0 items-start gap-3">
+        <div className="flex h-8 min-w-0 items-center gap-1.5 rounded-md border bg-background/60 px-2.5 text-xs dark:border-border/70 dark:bg-background/20">
             <Icon
                 aria-hidden="true"
-                className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                className="size-3.5 shrink-0 text-muted-foreground"
             />
-            <div className="min-w-0">
-                <p className="text-xs font-medium text-muted-foreground">
-                    {label}
-                </p>
-                <p className="truncate text-sm font-medium" title={value}>
-                    {value}
-                </p>
+            <span className="text-muted-foreground">{label}</span>
+            <span className="font-semibold tabular-nums">{value}</span>
+        </div>
+    );
+}
+
+function SummaryProgress({
+    label,
+    progress,
+    progressClassName,
+}: {
+    label: string;
+    progress: number;
+    progressClassName: string;
+}) {
+    const value = clampProgress(progress);
+
+    return (
+        <div className="flex h-8 min-w-40 items-center gap-2 rounded-md border bg-background/60 px-2.5 text-xs dark:border-border/70 dark:bg-background/20">
+            <TimerIcon
+                aria-hidden="true"
+                className="size-3.5 shrink-0 text-muted-foreground"
+            />
+            <span className="text-muted-foreground">{label}</span>
+            <div
+                className="h-1.5 w-16 overflow-hidden rounded-full bg-muted"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={value}
+            >
+                <div
+                    className={cn(
+                        'h-full rounded-full transition-[width]',
+                        progressClassName,
+                    )}
+                    style={{ width: `${value}%` }}
+                />
             </div>
+            <span className="font-semibold tabular-nums">{progress}%</span>
+        </div>
+    );
+}
+
+function SummaryDate({
+    icon: Icon,
+    label,
+    value,
+}: {
+    icon: LucideIcon;
+    label: string;
+    value: string;
+}) {
+    return (
+        <div className="flex h-8 min-w-0 items-center gap-1.5 rounded-md border bg-background/60 px-2.5 text-xs dark:border-border/70 dark:bg-background/20">
+            <Icon
+                aria-hidden="true"
+                className="size-3.5 shrink-0 text-muted-foreground"
+            />
+            <span className="text-muted-foreground">{label}</span>
+            <span className="max-w-32 truncate font-medium tabular-nums sm:max-w-40">
+                {value}
+            </span>
         </div>
     );
 }

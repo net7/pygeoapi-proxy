@@ -1,7 +1,13 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { usePage } from '@inertiajs/react';
-import { AlertTriangleIcon, Download, LocateFixedIcon } from 'lucide-react';
+import {
+    AlertTriangleIcon,
+    ChevronDownIcon,
+    Download,
+    LocateFixedIcon,
+    MapIcon,
+} from 'lucide-react';
 import maplibregl from 'maplibre-gl';
 import type {
     ControlPosition,
@@ -21,6 +27,11 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import { download, mapTile } from '@/routes/jobs/results';
@@ -57,45 +68,63 @@ export default function GeoTiffMapResultPreview({
     const canViewMapLayerWarning = auth.user?.is_admin === true;
 
     return (
-        <Card className="shadow-sm dark:border-border/70 dark:bg-card/95">
-            <CardHeader>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="flex min-w-0 flex-col gap-1">
-                        <CardTitle>{title}</CardTitle>
-                        {description ? (
-                            <CardDescription>{description}</CardDescription>
+        <Collapsible defaultOpen asChild>
+            <Card className="shadow-sm dark:border-border/70 dark:bg-card/95">
+                <CardHeader>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex min-w-0 flex-col gap-1">
+                            <CardTitle className="flex min-w-0 items-center gap-2">
+                                <MapIcon
+                                    aria-hidden="true"
+                                    className="size-4 shrink-0 text-muted-foreground"
+                                />
+                                <CollapsibleTrigger className="flex min-w-0 items-center gap-1 rounded-sm text-left ring-offset-background outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&[data-state=open]>svg]:rotate-180">
+                                    <span className="min-w-0 truncate">
+                                        {title}
+                                    </span>
+                                    <ChevronDownIcon
+                                        aria-hidden="true"
+                                        className="size-4 shrink-0 text-muted-foreground transition-transform"
+                                    />
+                                </CollapsibleTrigger>
+                            </CardTitle>
+                            {description ? (
+                                <CardDescription>{description}</CardDescription>
+                            ) : null}
+                        </div>
+                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                            <DownloadButton
+                                executionId={executionId}
+                                result={geotiff}
+                                label={t('ogc.geotiffDownload')}
+                            />
+                            <DownloadButton
+                                executionId={executionId}
+                                result={sld}
+                                label={t('ogc.sldDownload')}
+                            />
+                        </div>
+                    </div>
+                </CardHeader>
+                <CollapsibleContent>
+                    <CardContent className="flex min-h-[30rem] flex-col gap-3">
+                        {isPublishedWms &&
+                        canViewMapLayerWarning &&
+                        mapLayer.warning ? (
+                            <MapLayerWarningAlert warning={mapLayer.warning} />
                         ) : null}
-                    </div>
-                    <div className="flex shrink-0 flex-wrap items-center gap-2">
-                        <DownloadButton
-                            executionId={executionId}
-                            result={geotiff}
-                            label={t('ogc.geotiffDownload')}
-                        />
-                        <DownloadButton
-                            executionId={executionId}
-                            result={sld}
-                            label={t('ogc.sldDownload')}
-                        />
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-                {isPublishedWms &&
-                canViewMapLayerWarning &&
-                mapLayer.warning ? (
-                    <MapLayerWarningAlert warning={mapLayer.warning} />
-                ) : null}
-                {isPublishedWms ? (
-                    <MapLibreWmsPreview
-                        executionId={executionId}
-                        geotiff={geotiff}
-                    />
-                ) : (
-                    <MapLayerStatusAlert result={geotiff} />
-                )}
-            </CardContent>
-        </Card>
+                        {isPublishedWms ? (
+                            <MapLibreWmsPreview
+                                executionId={executionId}
+                                geotiff={geotiff}
+                            />
+                        ) : (
+                            <MapLayerStatusAlert result={geotiff} />
+                        )}
+                    </CardContent>
+                </CollapsibleContent>
+            </Card>
+        </Collapsible>
     );
 }
 
@@ -273,7 +302,7 @@ function MapLibreWmsPreview({
         <div
             ref={containerRef}
             className={cn(
-                'h-80 min-h-80 overflow-hidden rounded-md bg-muted ring-1 ring-border/50',
+                'h-[28rem] min-h-[28rem] overflow-hidden rounded-md bg-muted ring-1 ring-border/50',
                 'dark:bg-muted/40',
             )}
         />
