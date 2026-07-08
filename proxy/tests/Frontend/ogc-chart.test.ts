@@ -196,14 +196,19 @@ describe('chart result preview wiring', () => {
         expect(source).toContain('JSON.stringify(data, null, 2)');
     });
 
-    test('renders series descriptions in the chart tooltip and improves chart styling', () => {
+    test('moves series descriptions from tooltip into a centered bottom legend', () => {
         const source = readFileSync(
             'resources/js/components/ogc/chart-result-preview.tsx',
             'utf8',
         );
 
         expect(source).toContain('tooltipLabel(');
-        expect(source).toContain('series.description');
+        expect(source).toContain('chartLegendLabelText(');
+        expect(source).toContain("align: 'center'");
+        expect(source).toContain('font: {');
+        expect(source).toContain('generateLabels(chartInstance)');
+        expect(source).toContain('legendItem.text = chartLegendLabelText(');
+        expect(source).not.toContain('splitTooltipDescription');
         expect(source).toContain('usePointStyle: true');
         expect(source).toContain('borderCapStyle:');
         expect(source).toContain('hoverBorderWidth:');

@@ -216,19 +216,42 @@ function chartConfiguration(
             plugins: {
                 legend: {
                     display: true,
-                    align: 'start',
+                    align: 'center',
                     position: 'bottom',
                     onClick(_event, legendItem, legend): void {
                         toggleDatasetVisibility(legend, legendItem);
                         onVisibilityChange(countVisibleSeries(legend.chart));
                     },
                     labels: {
-                        boxHeight: 7,
-                        boxWidth: 7,
+                        boxHeight: 9,
+                        boxWidth: 9,
                         color: colors.text,
-                        padding: 16,
+                        font: {
+                            size: 13,
+                        },
+                        generateLabels(chartInstance): LegendItem[] {
+                            const generateLabels =
+                                ChartJS.defaults.plugins.legend.labels
+                                    .generateLabels;
+                            const legendItems = generateLabels(chartInstance);
+
+                            legendItems.forEach((legendItem) => {
+                                const series =
+                                    typeof legendItem.datasetIndex === 'number'
+                                        ? chart.series[legendItem.datasetIndex]
+                                        : undefined;
+
+                                legendItem.text = chartLegendLabelText(
+                                    series,
+                                    legendItem.text,
+                                );
+                            });
+
+                            return legendItems;
+                        },
+                        padding: 18,
                         pointStyle: 'circle',
-                        pointStyleWidth: 9,
+                        pointStyleWidth: 11,
                         usePointStyle: true,
                     },
                 },
@@ -248,7 +271,7 @@ function chartConfiguration(
                         title(items): string {
                             return tooltipTitle(chart.domain, items[0]);
                         },
-                        label(item): string[] {
+                        label(item): string {
                             return tooltipLabel(
                                 chart.series[item.datasetIndex],
                                 item,
@@ -358,42 +381,25 @@ function tooltipTitle(
 function tooltipLabel(
     series: OgcChartSeries | undefined,
     item: TooltipItem<'line'>,
-): string[] {
+): string {
     const label = series?.label ?? item.dataset.label ?? '';
     const unit = unitSuffix(label, series?.unit, ' ');
-    const lines = [`${label}: ${formatNumber(item.parsed.y)}${unit}`];
 
-    if (series?.description) {
-        lines.push(...splitTooltipDescription(series.description));
-    }
-
-    return lines;
+    return `${label}: ${formatNumber(item.parsed.y)}${unit}`;
 }
 
-function splitTooltipDescription(description: string): string[] {
-    const maxLineLength = 64;
-    const words = description.split(/\s+/).filter(Boolean);
-    const lines: string[] = [];
-    let currentLine = '';
+function chartLegendLabelText(
+    series: OgcChartSeries | undefined,
+    fallbackLabel: string,
+): string {
+    const label = series?.label ?? fallbackLabel;
+    const description = series?.description;
 
-    words.forEach((word) => {
-        const nextLine = currentLine ? `${currentLine} ${word}` : word;
-
-        if (nextLine.length > maxLineLength && currentLine) {
-            lines.push(currentLine);
-            currentLine = word;
-
-            return;
-        }
-
-        currentLine = nextLine;
-    });
-
-    if (currentLine) {
-        lines.push(currentLine);
+    if (!description || description === label) {
+        return label;
     }
 
-    return lines;
+    return `${label}: ${description}`;
 }
 
 function unitSuffix(
