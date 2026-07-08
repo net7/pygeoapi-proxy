@@ -2,6 +2,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { AlertTriangleIcon, Download } from 'lucide-react';
 import maplibregl from 'maplibre-gl';
+import type { RasterSourceSpecification } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -22,6 +23,14 @@ import {
 import { cn } from '@/lib/utils';
 import { download, previewFile } from '@/routes/jobs/results';
 import type { ProcessExecutionResult } from '@/types';
+
+const worldBasemapSource: RasterSourceSpecification = {
+    type: 'raster',
+    tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+    tileSize: 256,
+    maxzoom: 19,
+    attribution: '&copy; OpenStreetMap contributors',
+};
 
 type PreviewState =
     | { status: 'loading' }
@@ -196,7 +205,9 @@ function MapLibreCanvasPreview({ preview }: { preview: GeoTiffMapPreview }) {
             container: containerRef.current,
             style: {
                 version: 8,
-                sources: {},
+                sources: {
+                    openstreetmap: worldBasemapSource,
+                },
                 layers: [
                     {
                         id: 'background',
@@ -205,11 +216,19 @@ function MapLibreCanvasPreview({ preview }: { preview: GeoTiffMapPreview }) {
                             'background-color': '#f8fafc',
                         },
                     },
+                    {
+                        id: 'world-basemap',
+                        type: 'raster',
+                        source: 'openstreetmap',
+                        paint: {
+                            'raster-opacity': 0.9,
+                        },
+                    },
                 ],
             },
             center: [(west + east) / 2, (south + north) / 2],
             zoom: 10,
-            attributionControl: false,
+            attributionControl: { compact: true },
         });
 
         map.addControl(

@@ -59,6 +59,18 @@ test('process form exposes a local development prefill action', function () {
         ->toContain('data-icon="inline-start"');
 });
 
+test('geotiff previews render over a world basemap', function () {
+    $source = file_get_contents(getcwd().'/resources/js/components/ogc/geotiff-map-result-preview.tsx');
+
+    expect($source)
+        ->toContain('openstreetmap')
+        ->toContain('tile.openstreetmap.org')
+        ->toContain('world-basemap')
+        ->toContain('geotiff-canvas')
+        ->toContain('attributionControl')
+        ->toContain('fitBounds');
+});
+
 test('decimal process number inputs are valid after prefill', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/schema-field-renderer.tsx');
     $tableSource = file_get_contents(getcwd().'/resources/js/components/ogc/array-table-field.tsx');
