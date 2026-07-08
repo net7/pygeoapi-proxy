@@ -12,7 +12,9 @@ use App\Http\Requests\Ogc\UpdateProcessExecutionNameRequest;
 use App\Http\Requests\Ogc\UpdateProcessExecutionNoteRequest;
 use App\Jobs\Ogc\SubmitProcessExecutionJob;
 use App\Models\ProcessExecution;
+use App\Models\ProcessExecutionResult;
 use App\Models\User;
+use App\Services\Ogc\CsvPreviewBuilder;
 use App\Services\Ogc\OgcProcessCache;
 use App\Services\Ogc\ProcessInputValidator;
 use App\Services\Ogc\ProcessOutputRequestBuilder;
@@ -23,6 +25,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -122,6 +125,7 @@ class ProcessExecutionController extends Controller
         ProcessExecution $processExecution,
         FindGeoTiffSldResultPairs $findGeoTiffSldResultPairs,
         SldVisualizationInspector $sldVisualizationInspector,
+        CsvPreviewBuilder $csvPreviewBuilder,
     ): Response {
         Gate::authorize('view', $processExecution);
 
@@ -144,14 +148,14 @@ class ProcessExecutionController extends Controller
             'note' => $processExecution->note,
             'noteUpdatedAt' => $processExecution->note_updated_at?->toIso8601String(),
             'requestedOutputs' => $processExecution->requested_outputs,
-            'results' => $processExecution->results->map(fn ($result): array => [
+            'results' => $processExecution->results->map(fn (ProcessExecutionResult $result): array => [
                 'id' => $result->id,
                 'outputId' => $result->output_id,
                 'title' => $result->title,
                 'description' => $result->description,
                 'mediaType' => $result->media_type,
                 'cacheStatus' => $result->cache_status->value,
-                'preview' => $result->preview,
+                'preview' => $this->previewForResult($result, $csvPreviewBuilder),
                 'mapLayer' => [
                     'type' => $result->map_layer_type,
                     'status' => $result->map_layer_status?->value,
@@ -173,6 +177,55 @@ class ProcessExecutionController extends Controller
             'pollingInterval' => $this->pollingInterval(),
             'execution' => $execution,
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function previewForResult(ProcessExecutionResult $result, CsvPreviewBuilder $csvPreviewBuilder): ?array
+    {
+        $preview = $result->preview;
+
+        if ($this->baseMediaType($result->media_type) !== 'text/csv') {
+            return $preview;
+        }
+
+        if ($this->hasStructuredCsvPreview($preview)) {
+            return $preview;
+        }
+
+        if (blank($result->storage_path) || ! Storage::disk('local')->exists((string) $result->storage_path)) {
+            return $preview;
+        }
+
+        return [
+            'kind' => 'csv',
+            'data' => $csvPreviewBuilder->fromString(
+                Storage::disk('local')->get((string) $result->storage_path),
+            ),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $preview
+     */
+    private function hasStructuredCsvPreview(?array $preview): bool
+    {
+        $data = data_get($preview, 'data');
+
+        return data_get($preview, 'kind') === 'csv'
+            && is_array($data)
+            && is_array($data['headers'] ?? null)
+            && is_array($data['rows'] ?? null);
+    }
+
+    private function baseMediaType(?string $mediaType): string
+    {
+        return str((string) $mediaType)
+            ->before(';')
+            ->trim()
+            ->lower()
+            ->toString();
     }
 
     /**

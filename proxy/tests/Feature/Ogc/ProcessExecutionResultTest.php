@@ -36,6 +36,42 @@ test('users can view their execution detail', function () {
             ->has('execution.results', 1));
 });
 
+test('users can view table previews for existing cached csv results', function () {
+    Storage::fake('local');
+
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create();
+    $path = "ogc-results/{$execution->id}/table.csv";
+
+    ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'table',
+        'title' => 'Table output',
+        'media_type' => 'text/csv',
+        'storage_path' => $path,
+        'cache_status' => ResultCacheStatus::Cached,
+        'preview' => [
+            'kind' => 'binary',
+            'data' => ['mediaType' => 'text/csv'],
+        ],
+    ]);
+
+    Storage::disk('local')->put($path, "name,description\nEtna,\"gas, ash\"\n");
+
+    $response = $this->actingAs($user)
+        ->get("/jobs/{$execution->id}")
+        ->assertOk();
+
+    expect($response->inertiaProps('execution.results.0.preview'))->toMatchArray([
+        'kind' => 'csv',
+        'data' => [
+            'headers' => ['name', 'description'],
+            'rows' => [['Etna', 'gas, ash']],
+            'truncated' => false,
+            'source' => "name,description\nEtna,\"gas, ash\"\n",
+        ],
+    ]);
+});
+
 test('users can view map layer metadata on their execution detail', function () {
     $user = User::factory()->create();
     $execution = ProcessExecution::factory()->for($user)->create();
