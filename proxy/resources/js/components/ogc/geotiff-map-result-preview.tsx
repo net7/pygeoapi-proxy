@@ -72,6 +72,9 @@ export default function GeoTiffMapResultPreview({
                 </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
+                {isPublishedWms && mapLayer.warning ? (
+                    <MapLayerWarningAlert warning={mapLayer.warning} />
+                ) : null}
                 {isPublishedWms ? (
                     <MapLibreWmsPreview
                         executionId={executionId}
@@ -82,6 +85,29 @@ export default function GeoTiffMapResultPreview({
                 )}
             </CardContent>
         </Card>
+    );
+}
+
+function MapLayerWarningAlert({
+    warning,
+}: {
+    warning: NonNullable<ProcessExecutionResult['mapLayer']['warning']>;
+}) {
+    const { t } = useTranslation();
+    const message =
+        warning === 'hillshade_without_color_map'
+            ? t('ogc.mapLayerHillshadeWarning')
+            : null;
+
+    if (!message) {
+        return null;
+    }
+
+    return (
+        <Alert className="border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/35 dark:text-amber-100 [&>svg]:text-amber-600 dark:[&>svg]:text-amber-300">
+            <AlertTriangleIcon />
+            <AlertDescription>{message}</AlertDescription>
+        </Alert>
     );
 }
 

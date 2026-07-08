@@ -92,6 +92,40 @@ class GeoServerClient
     }
 
     /**
+     * @return array{0: float, 1: float, 2: float, 3: float}|null
+     */
+    public function coverageLatLonBounds(string $storeName, string $coverageName): ?array
+    {
+        $response = $this->restRequest()
+            ->get("/rest/workspaces/{$this->workspace()}/coveragestores/".rawurlencode($storeName).'/coverages/'.rawurlencode($coverageName).'.json');
+
+        $this->ensureSuccessful($response, 'GeoServer coverage bounds lookup failed.');
+
+        $bounds = data_get($response->json(), 'coverage.latLonBoundingBox');
+
+        if (! is_array($bounds)) {
+            return null;
+        }
+
+        foreach (['minx', 'miny', 'maxx', 'maxy'] as $key) {
+            if (! isset($bounds[$key]) || ! is_numeric($bounds[$key])) {
+                return null;
+            }
+        }
+
+        $west = (float) $bounds['minx'];
+        $south = (float) $bounds['miny'];
+        $east = (float) $bounds['maxx'];
+        $north = (float) $bounds['maxy'];
+
+        if ($west >= $east || $south >= $north) {
+            return null;
+        }
+
+        return [$west, $south, $east, $north];
+    }
+
+    /**
      * @param  array{bbox: string, width: int, height: int}  $tile
      */
     public function getPngTile(string $layerName, array $tile): Response

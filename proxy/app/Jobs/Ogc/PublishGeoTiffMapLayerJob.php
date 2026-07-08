@@ -67,12 +67,14 @@ class PublishGeoTiffMapLayerJob implements ShouldQueue
             $geoServer->publishGeoTiff($layerName, $layerName, $geoTiffPath);
             $geoServer->uploadStyle($styleName, $sldPath);
             $geoServer->assignDefaultStyle($layerName, $styleName);
+            $bounds = $geoServer->coverageLatLonBounds($layerName, $layerName);
 
             $geotiff->update([
                 'map_layer_status' => MapLayerStatus::Published,
                 'map_layer_type' => 'wms',
                 'map_layer_name' => $layerName,
                 'map_style_name' => $styleName,
+                'map_layer_bounds' => $bounds,
                 'map_layer_published_at' => now(),
                 'map_layer_error' => null,
             ]);

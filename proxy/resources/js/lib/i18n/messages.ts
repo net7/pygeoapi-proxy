@@ -342,6 +342,8 @@ const it = {
         inline: 'Inline',
         inputs: 'Input',
         jobControls: 'Controlli processo',
+        mapLayerHillshadeWarning:
+            'Lo stile SLD applicato usa solo una hillshade: il DEM può apparire come un raster scuro o rettangolare. La resa dipende dallo SLD fornito, non dalla mappa.',
         mapLayerPreparing: 'Mappa in preparazione.',
         mapLayerUnavailable: 'Mappa non disponibile.',
         mapLayerUnpublished: 'Mappa non ancora pubblicata.',
@@ -786,6 +788,8 @@ const en = {
         inline: 'Inline',
         inputs: 'Inputs',
         jobControls: 'Job controls',
+        mapLayerHillshadeWarning:
+            'The applied SLD style only defines hillshade: the DEM may appear as a dark or rectangular raster. The rendering depends on the supplied SLD, not the map.',
         mapLayerPreparing: 'Map preparing.',
         mapLayerUnavailable: 'Map unavailable.',
         mapLayerUnpublished: 'Map not published yet.',

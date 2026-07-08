@@ -26,6 +26,17 @@ test('it publishes cached geotiff and sld outputs to geoserver', function () {
     Http::fake([
         'https://geoserver.test/geoserver/rest/workspaces/pygeoapi_proxy.json' => Http::response('', 404),
         'https://geoserver.test/geoserver/rest/workspaces' => Http::response('', 201),
+        'https://geoserver.test/geoserver/rest/workspaces/pygeoapi_proxy/coveragestores/*/coverages/*.json' => Http::response([
+            'coverage' => [
+                'latLonBoundingBox' => [
+                    'minx' => 14.368888888889,
+                    'miny' => 40.775555555556,
+                    'maxx' => 14.488055555556,
+                    'maxy' => 40.865833333333,
+                    'crs' => 'EPSG:4326',
+                ],
+            ],
+        ], 200),
         'https://geoserver.test/geoserver/rest/workspaces/pygeoapi_proxy/coveragestores/*' => Http::response('', 201),
         'https://geoserver.test/geoserver/rest/workspaces/pygeoapi_proxy/styles/*.json' => Http::response('', 404),
         'https://geoserver.test/geoserver/rest/workspaces/pygeoapi_proxy/styles' => Http::response('', 201),
@@ -44,6 +55,7 @@ test('it publishes cached geotiff and sld outputs to geoserver', function () {
         ->and($geotiff->map_layer_type)->toBe('wms')
         ->and($geotiff->map_layer_name)->toStartWith("pe_{$execution->id}_result_{$geotiff->id}")
         ->and($geotiff->map_style_name)->toEndWith('_style')
+        ->and($geotiff->map_layer_bounds)->toBe([14.368888888889, 40.775555555556, 14.488055555556, 40.865833333333])
         ->and($geotiff->map_layer_error)->toBeNull()
         ->and($geotiff->map_layer_published_at)->not->toBeNull();
 

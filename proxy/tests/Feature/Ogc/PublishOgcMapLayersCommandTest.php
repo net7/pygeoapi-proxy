@@ -56,6 +56,26 @@ test('it can requeue failed publications when requested', function () {
         && $job->sldResultId === $sld->id);
 });
 
+test('it requeues published map layers without stored bounds', function () {
+    Bus::fake([PublishGeoTiffMapLayerJob::class]);
+    $execution = ProcessExecution::factory()->create();
+    [$geotiff, $sld] = cachedMapPair($execution, [
+        'map_layer_status' => MapLayerStatus::Published,
+        'map_layer_type' => 'wms',
+        'map_layer_bounds' => null,
+    ]);
+
+    $this->artisan("ogc:publish-map-layers {$execution->id}")
+        ->expectsOutput('Dispatched 1 map layer publication job.')
+        ->assertSuccessful();
+
+    expect($geotiff->refresh()->map_layer_status)->toBe(MapLayerStatus::Pending)
+        ->and($geotiff->map_layer_type)->toBe('wms');
+
+    Bus::assertDispatched(PublishGeoTiffMapLayerJob::class, fn (PublishGeoTiffMapLayerJob $job): bool => $job->geoTiffResultId === $geotiff->id
+        && $job->sldResultId === $sld->id);
+});
+
 /**
  * @param  array<string, mixed>  $geotiffOverrides
  * @return array{0: ProcessExecutionResult, 1: ProcessExecutionResult}

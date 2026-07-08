@@ -65,6 +65,58 @@ test('users can view map layer metadata on their execution detail', function () 
             ->where('execution.results.0.mapLayer.error', null));
 });
 
+test('users can view a map layer warning when the sld only defines hillshade', function () {
+    Storage::fake('local');
+
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create();
+
+    $geotiff = ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'dem.geotiff',
+        'media_type' => 'image/tiff; application=geotiff',
+        'storage_path' => "ogc-results/{$execution->id}/dem.geotiff",
+        'cache_status' => ResultCacheStatus::Cached,
+        'map_layer_status' => 'published',
+        'map_layer_type' => 'wms',
+        'map_layer_name' => 'pe_1_result_1_dem',
+        'map_style_name' => 'pe_1_result_1_dem_style',
+    ]);
+
+    ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'dem.sld',
+        'media_type' => 'application/vnd.ogc.sld+xml',
+        'storage_path' => "ogc-results/{$execution->id}/dem.sld",
+        'cache_status' => ResultCacheStatus::Cached,
+    ]);
+
+    Storage::disk('local')->put($geotiff->storage_path, 'DEM-TIFF');
+    Storage::disk('local')->put("ogc-results/{$execution->id}/dem.sld", <<<'XML'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <StyledLayerDescriptor version="1.0.0" xmlns="http://www.opengis.net/sld">
+            <NamedLayer>
+                <UserStyle>
+                    <FeatureTypeStyle>
+                        <Rule>
+                            <RasterSymbolizer>
+                                <ShadedRelief />
+                            </RasterSymbolizer>
+                        </Rule>
+                    </FeatureTypeStyle>
+                </UserStyle>
+            </NamedLayer>
+        </StyledLayerDescriptor>
+        XML);
+
+    $response = $this->actingAs($user)
+        ->get("/jobs/{$execution->id}")
+        ->assertOk();
+
+    $results = collect($response->inertiaProps('execution.results'))->keyBy('id');
+
+    expect(data_get($results->get($geotiff->id), 'mapLayer.warning'))
+        ->toBe('hillshade_without_color_map');
+});
+
 test('non admin users cannot see execution input data', function () {
     $user = User::factory()->create();
     $execution = ProcessExecution::factory()->for($user)->create([

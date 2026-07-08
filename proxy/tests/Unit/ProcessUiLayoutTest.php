@@ -70,6 +70,8 @@ test('geotiff previews render through the protected map tile route', function ()
         ->toContain('geotiff-wms')
         ->toContain('attributionControl')
         ->toContain('fitBounds')
+        ->toContain('MapLayerWarningAlert')
+        ->toContain('ogc.mapLayerHillshadeWarning')
         ->not->toContain('previewFile')
         ->not->toContain('buildGeoTiffMapPreview')
         ->not->toContain('geotiff-canvas');

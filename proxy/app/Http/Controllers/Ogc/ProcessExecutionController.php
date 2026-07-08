@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Ogc;
 
 use App\Actions\Ogc\CreateProcessExecution;
 use App\Actions\Ogc\DeleteProcessExecution;
+use App\Actions\Ogc\FindGeoTiffSldResultPairs;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Ogc\BulkDestroyProcessExecutionRequest;
 use App\Http\Requests\Ogc\StoreProcessExecutionRequest;
@@ -16,6 +17,7 @@ use App\Services\Ogc\OgcProcessCache;
 use App\Services\Ogc\ProcessInputValidator;
 use App\Services\Ogc\ProcessOutputRequestBuilder;
 use App\Services\Ogc\ProcessSchemaNormalizer;
+use App\Support\Ogc\SldVisualizationInspector;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
@@ -115,8 +117,12 @@ class ProcessExecutionController extends Controller
         return redirect()->route('jobs.show', $execution);
     }
 
-    public function show(Request $request, ProcessExecution $processExecution): Response
-    {
+    public function show(
+        Request $request,
+        ProcessExecution $processExecution,
+        FindGeoTiffSldResultPairs $findGeoTiffSldResultPairs,
+        SldVisualizationInspector $sldVisualizationInspector,
+    ): Response {
         Gate::authorize('view', $processExecution);
 
         $user = $request->user();
@@ -125,6 +131,11 @@ class ProcessExecutionController extends Controller
         $processExecution->load('results');
 
         $includeAdminData = $user->isAdmin();
+        $mapLayerWarnings = $this->mapLayerWarnings(
+            $processExecution,
+            $findGeoTiffSldResultPairs,
+            $sldVisualizationInspector,
+        );
         $execution = [
             ...$this->executionListItem($processExecution, $includeAdminData),
             'processVersion' => $processExecution->process_version,
@@ -147,6 +158,7 @@ class ProcessExecutionController extends Controller
                     'bounds' => $result->map_layer_bounds,
                     'publishedAt' => $result->map_layer_published_at?->toIso8601String(),
                     'error' => $result->map_layer_error,
+                    'warning' => $mapLayerWarnings[$result->id] ?? null,
                 ],
             ])->all(),
         ];
@@ -159,6 +171,22 @@ class ProcessExecutionController extends Controller
             'pollingInterval' => $this->pollingInterval(),
             'execution' => $execution,
         ]);
+    }
+
+    /**
+     * @return array<int, string|null>
+     */
+    private function mapLayerWarnings(
+        ProcessExecution $processExecution,
+        FindGeoTiffSldResultPairs $findGeoTiffSldResultPairs,
+        SldVisualizationInspector $sldVisualizationInspector,
+    ): array {
+        return $findGeoTiffSldResultPairs
+            ->handle($processExecution)
+            ->mapWithKeys(fn (array $pair): array => [
+                $pair['geotiff']->id => $sldVisualizationInspector->warningForResult($pair['sld']),
+            ])
+            ->all();
     }
 
     public function updateName(UpdateProcessExecutionNameRequest $request, ProcessExecution $processExecution): RedirectResponse

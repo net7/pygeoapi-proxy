@@ -134,6 +134,7 @@ export type ProcessExecutionResultMapLayer = {
     bounds: [number, number, number, number] | null;
     publishedAt: string | null;
     error: string | null;
+    warning: 'hillshade_without_color_map' | null;
 };
 
 export type ProcessExecutionDetail = ProcessExecutionListItem & {

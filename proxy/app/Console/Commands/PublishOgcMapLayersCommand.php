@@ -68,9 +68,12 @@ class PublishOgcMapLayersCommand extends Command
         if (in_array($geotiff->map_layer_status, [
             MapLayerStatus::Pending,
             MapLayerStatus::Publishing,
-            MapLayerStatus::Published,
         ], true)) {
             return false;
+        }
+
+        if ($geotiff->map_layer_status === MapLayerStatus::Published) {
+            return blank($geotiff->map_layer_bounds);
         }
 
         if ($geotiff->map_layer_status === MapLayerStatus::Failed) {
