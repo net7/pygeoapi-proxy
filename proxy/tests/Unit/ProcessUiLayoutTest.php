@@ -819,6 +819,7 @@ test('job pages poll while executions are active', function () {
     $showSource = file_get_contents(getcwd().'/resources/js/pages/process-executions/show.tsx');
     $indicatorSource = file_get_contents(getcwd().'/resources/js/components/ogc/job-polling-indicator.tsx');
     $helperSource = file_get_contents(getcwd().'/resources/js/lib/jobs.ts');
+    $mapLayerSource = file_get_contents(getcwd().'/resources/js/lib/ogc-map-layers.ts');
 
     expect($indexSource)
         ->toContain('pollingInterval')
@@ -831,7 +832,14 @@ test('job pages poll while executions are active', function () {
     expect($showSource)
         ->toContain('pollingInterval')
         ->toContain('isJobTerminal(execution.status)')
+        ->toContain('hasPendingMapLayers')
+        ->toContain('const shouldRefreshMapLayers =')
+        ->toContain('!isPolling && hasPendingMapLayers(execution.results);')
         ->toContain('<JobPollingIndicator')
+        ->toContain('<MapLayerRefreshPoller')
+        ->toContain('active={shouldRefreshMapLayers}')
+        ->toContain("only: ['execution', 'pollingInterval']")
+        ->toContain("mode: 'rest'")
         ->toContain('jobs.pollingShowActive')
         ->toContain('jobs.pollingShowInactive');
 
@@ -856,6 +864,10 @@ test('job pages poll while executions are active', function () {
     expect($helperSource)
         ->toContain('terminalStatuses')
         ->toContain('export function isJobTerminal');
+
+    expect($mapLayerSource)
+        ->toContain('export function hasPendingMapLayers')
+        ->toContain("status === 'pending' || status === 'publishing'");
 });
 
 test('job pages use readable dark mode status surfaces', function () {

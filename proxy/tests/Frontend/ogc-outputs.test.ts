@@ -4,6 +4,7 @@ import {
     automaticOutputTransmissionMode,
     downloadLabelForMediaType,
 } from '../../resources/js/lib/ogc-outputs';
+import { hasPendingMapLayers } from '../../resources/js/lib/ogc-map-layers';
 import { groupProcessResults } from '../../resources/js/lib/ogc-result-groups';
 import type { ProcessExecutionResult } from '../../resources/js/types';
 import type { OgcNormalizedOutput } from '../../resources/js/types';
@@ -53,6 +54,75 @@ describe('downloadLabelForMediaType', () => {
             'SLD',
         );
         expect(downloadLabelForMediaType(null)).toBe('File');
+    });
+});
+
+describe('hasPendingMapLayers', () => {
+    test('detects map layers that still need page refreshes', () => {
+        expect(
+            hasPendingMapLayers([
+                result({
+                    mapLayer: {
+                        type: 'wms',
+                        status: 'pending',
+                        name: null,
+                        styleName: null,
+                        bounds: null,
+                        publishedAt: null,
+                        error: null,
+                        warning: null,
+                    },
+                }),
+            ]),
+        ).toBe(true);
+
+        expect(
+            hasPendingMapLayers([
+                result({
+                    mapLayer: {
+                        type: 'wms',
+                        status: 'publishing',
+                        name: 'layer',
+                        styleName: 'style',
+                        bounds: null,
+                        publishedAt: null,
+                        error: null,
+                        warning: null,
+                    },
+                }),
+            ]),
+        ).toBe(true);
+    });
+
+    test('stops refreshing after map layers reach a final state', () => {
+        expect(
+            hasPendingMapLayers([
+                result({
+                    mapLayer: {
+                        type: 'wms',
+                        status: 'published',
+                        name: 'layer',
+                        styleName: 'style',
+                        bounds: [14.1, 40.6, 14.7, 41.1],
+                        publishedAt: '2026-07-08T10:00:00+00:00',
+                        error: null,
+                        warning: null,
+                    },
+                }),
+                result({
+                    mapLayer: {
+                        type: 'wms',
+                        status: 'failed',
+                        name: 'layer',
+                        styleName: 'style',
+                        bounds: null,
+                        publishedAt: null,
+                        error: 'Publication failed.',
+                        warning: null,
+                    },
+                }),
+            ]),
+        ).toBe(false);
     });
 });
 

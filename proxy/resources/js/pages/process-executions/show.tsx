@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePoll } from '@inertiajs/react';
 import {
     ArrowLeftIcon,
     CalendarClockIcon,
@@ -38,6 +38,7 @@ import {
     isJobTerminal,
     jobStatusStyles,
 } from '@/lib/jobs';
+import { hasPendingMapLayers } from '@/lib/ogc-map-layers';
 import { groupProcessResults } from '@/lib/ogc-result-groups';
 import { cn } from '@/lib/utils';
 import { index } from '@/routes/jobs';
@@ -62,6 +63,8 @@ export default function ProcessExecutionShow({
           ? t('jobs.failed')
           : t('jobs.finished');
     const isPolling = !isJobTerminal(execution.status);
+    const shouldRefreshMapLayers =
+        !isPolling && hasPendingMapLayers(execution.results);
     const visualResults = groupProcessResults(execution.results);
 
     return (
@@ -70,6 +73,10 @@ export default function ProcessExecutionShow({
                 title={t('jobs.documentTitle', {
                     jobId: execution.displayName,
                 })}
+            />
+            <MapLayerRefreshPoller
+                active={shouldRefreshMapLayers}
+                interval={pollingInterval}
             />
 
             <div className="flex min-w-0 flex-col gap-5 p-4">
@@ -222,6 +229,34 @@ export default function ProcessExecutionShow({
             </div>
         </>
     );
+}
+
+function MapLayerRefreshPoller({
+    active,
+    interval,
+}: {
+    active: boolean;
+    interval: number;
+}) {
+    if (!active) {
+        return null;
+    }
+
+    return <ActiveMapLayerRefreshPoller interval={interval} />;
+}
+
+function ActiveMapLayerRefreshPoller({ interval }: { interval: number }) {
+    usePoll(
+        interval,
+        {
+            only: ['execution', 'pollingInterval'],
+        },
+        {
+            mode: 'rest',
+        },
+    );
+
+    return null;
 }
 
 ProcessExecutionShow.layout = {
