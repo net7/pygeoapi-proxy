@@ -19,6 +19,7 @@ import { JobNameEditDialog } from '@/components/ogc/job-name-edit-dialog';
 import { JobNoteCard } from '@/components/ogc/job-note-card';
 import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
 import ResultPreview from '@/components/ogc/result-preview';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,6 +29,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
 import type { TranslationKey } from '@/lib/i18n/translation';
 import {
@@ -162,7 +164,12 @@ export default function ProcessExecutionShow({
                         </Badge>
                     }
                 >
-                    {execution.results.length > 0 ? (
+                    {isPolling ? (
+                        <OutputPendingNotice
+                            title={t('jobs.outputPendingTitle')}
+                            description={t('jobs.outputPendingDescription')}
+                        />
+                    ) : execution.results.length > 0 ? (
                         <div className="flex min-w-0 flex-col gap-3">
                             {visualResults.map((item) =>
                                 item.kind === 'geotiff-map' ? (
@@ -302,6 +309,22 @@ function AlertResultsEmpty({
             <h3 className="text-sm font-semibold">{title}</h3>
             <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         </div>
+    );
+}
+
+function OutputPendingNotice({
+    title,
+    description,
+}: {
+    title: string;
+    description: string;
+}) {
+    return (
+        <Alert className="min-h-28 content-center">
+            <Spinner />
+            <AlertTitle>{title}</AlertTitle>
+            <AlertDescription>{description}</AlertDescription>
+        </Alert>
     );
 }
 

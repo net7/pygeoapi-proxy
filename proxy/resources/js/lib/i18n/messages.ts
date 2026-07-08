@@ -273,6 +273,9 @@ const it = {
         noResultsDescription: 'Il processo non ha prodotto output salvati.',
         noResultsTitle: 'Nessun risultato disponibile',
         note: 'Nota',
+        outputPendingDescription:
+            'Gli output saranno disponibili al completamento con esito positivo.',
+        outputPendingTitle: 'Processo in corso',
         noteDescription: 'Nota utente opzionale per questo processo.',
         noteLinkPrompt: 'URL del link',
         noteSaved: 'Nota salvata',
@@ -727,6 +730,9 @@ const en = {
         noResultsDescription: 'The job has not produced stored outputs.',
         noResultsTitle: 'No results yet',
         note: 'Note',
+        outputPendingDescription:
+            'Outputs will be available when the job completes successfully.',
+        outputPendingTitle: 'Job in progress',
         noteDescription: 'Optional user note for this job.',
         noteLinkPrompt: 'Link URL',
         noteSaved: 'Note saved',

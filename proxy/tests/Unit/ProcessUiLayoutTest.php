@@ -533,6 +533,7 @@ test('remove and delete buttons use destructive styling', function () {
 
 test('job detail prioritizes collapsible output panels and header metadata without summary section', function () {
     $source = file_get_contents(getcwd().'/resources/js/pages/process-executions/show.tsx');
+    $messagesSource = file_get_contents(getcwd().'/resources/js/lib/i18n/messages.ts');
     $inputPosition = strpos($source, "title={t('jobs.inputs')}");
     $outputPosition = strpos($source, "title={t('ogc.outputs')}");
     $notePosition = strpos($source, '<JobNoteCard execution={execution} />');
@@ -553,6 +554,14 @@ test('job detail prioritizes collapsible output panels and header metadata witho
         ->toContain('common.status')
         ->toContain('jobs.results')
         ->toContain('jobs.progress')
+        ->toContain("import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';")
+        ->toContain("import { Spinner } from '@/components/ui/spinner';")
+        ->toContain('OutputPendingNotice')
+        ->toContain('<Alert')
+        ->toContain('<Spinner />')
+        ->toContain("t('jobs.outputPendingTitle')")
+        ->toContain("t('jobs.outputPendingDescription')")
+        ->toContain('isPolling ? (')
         ->toContain("t('jobs.adminOnlySection')")
         ->toContain('ShieldCheckIcon')
         ->toContain('<ShieldCheckIcon data-icon="inline-start" />')
@@ -603,6 +612,16 @@ test('job detail prioritizes collapsible output panels and header metadata witho
         ->not->toContain('xl:grid-cols-[minmax(0,1fr)_24rem]')
         ->not->toContain('xl:sticky')
         ->not->toContain('<code className="min-w-0 truncate');
+
+    expect(strpos($source, 'isPolling ? ('))
+        ->toBeLessThan(strpos($source, 'execution.results.length > 0 ? ('));
+
+    expect($messagesSource)
+        ->toContain("outputPendingTitle: 'Processo in corso'")
+        ->toContain('outputPendingDescription')
+        ->toContain('Gli output saranno disponibili al completamento con esito positivo.')
+        ->toContain("outputPendingTitle: 'Job in progress'")
+        ->toContain('Outputs will be available when the job completes successfully.');
 
     expect($headerMetaPosition)->not->toBeFalse()
         ->and($titleEditPosition)->not->toBeFalse()
