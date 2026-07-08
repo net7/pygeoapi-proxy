@@ -6,6 +6,7 @@ import {
     isLngLatBoundingBox,
     lngLatBoundsFromGeoTiffMetadata,
     scaledRasterSize,
+    shadedReliefOverlayAlpha,
     sldHasShadedRelief,
 } from '../../resources/js/lib/geotiff-map-preview';
 
@@ -129,5 +130,9 @@ describe('GeoTIFF map preview helpers', () => {
                 </RasterSymbolizer>
             `),
         ).toBe(false);
+    });
+
+    test('renders shaded relief as a translucent overlay', () => {
+        expect(shadedReliefOverlayAlpha()).toBe(153);
     });
 });

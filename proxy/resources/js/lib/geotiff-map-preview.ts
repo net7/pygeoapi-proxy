@@ -265,6 +265,10 @@ export function sldHasShadedRelief(sldText: string): boolean {
     return /<(?:[A-Za-z_][\w.-]*:)?ShadedRelief(?:\s|>|\/)/i.test(sldText);
 }
 
+export function shadedReliefOverlayAlpha(): number {
+    return 153;
+}
+
 async function readSldRasterStyle(sldText: string): Promise<SldRasterStyle> {
     const hasShadedRelief = sldHasShadedRelief(sldText);
 
@@ -467,7 +471,7 @@ function paintShadedRelief(
         data[offset] = shade;
         data[offset + 1] = shade;
         data[offset + 2] = shade;
-        data[offset + 3] = 255;
+        data[offset + 3] = shadedReliefOverlayAlpha();
     }
 }
 
