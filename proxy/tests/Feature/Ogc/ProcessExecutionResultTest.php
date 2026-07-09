@@ -46,7 +46,7 @@ test('users can view table previews for existing cached csv results', function (
     ProcessExecutionResult::factory()->for($execution)->create([
         'output_id' => 'table',
         'title' => 'Table output',
-        'media_type' => 'text/csv',
+        'media_type' => 'text/csv; header=present',
         'storage_path' => $path,
         'cache_status' => ResultCacheStatus::Cached,
         'preview' => [
@@ -55,7 +55,7 @@ test('users can view table previews for existing cached csv results', function (
         ],
     ]);
 
-    Storage::disk('local')->put($path, "name,description\nEtna,\"gas, ash\"\n");
+    Storage::disk('local')->put($path, "length,gas\n0,1.23E-04\n");
 
     $response = $this->actingAs($user)
         ->get("/jobs/{$execution->id}")
@@ -64,10 +64,10 @@ test('users can view table previews for existing cached csv results', function (
     expect($response->inertiaProps('execution.results.0.preview'))->toMatchArray([
         'kind' => 'csv',
         'data' => [
-            'headers' => ['name', 'description'],
-            'rows' => [['Etna', 'gas, ash']],
+            'headers' => ['length', 'gas'],
+            'rows' => [['0', '1.23E-04']],
             'truncated' => false,
-            'source' => "name,description\nEtna,\"gas, ash\"\n",
+            'source' => "length,gas\n0,1.23E-04\n",
         ],
     ]);
 });
@@ -428,8 +428,8 @@ test('users can download structured csv value results without a stored file', fu
 test('users can download and cache remote result files on demand', function () {
     Storage::fake('local');
     Http::fake([
-        'https://voice.pi.ingv.it/geoinquire/jobs/job-1/results/outfile' => Http::response("a,b\n1,2\n", 200, [
-            'Content-Type' => 'text/csv',
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-1/results/outfile' => Http::response("length,gas\n0,1.23E-04\n", 200, [
+            'Content-Type' => 'text/csv; header=present',
         ]),
     ]);
 
@@ -448,11 +448,12 @@ test('users can download and cache remote result files on demand', function () {
     $this->actingAs($user)
         ->get("/jobs/{$execution->id}/results/{$result->id}/download")
         ->assertOk()
-        ->assertHeader('content-type', 'text/csv; charset=utf-8')
+        ->assertHeader('content-type', 'text/csv; header=present; charset=utf-8')
         ->assertHeader('content-disposition', 'attachment; filename="job-1_outfile.csv"');
 
     Storage::disk('local')->assertExists("ogc-results/{$execution->id}/job-1_outfile.csv");
-    expect($result->refresh()->cache_status)->toBe(ResultCacheStatus::Cached);
+    expect($result->refresh()->cache_status)->toBe(ResultCacheStatus::Cached)
+        ->and($result->media_type)->toBe('text/csv; header=present');
 });
 
 test('users can proxy published map tiles for geotiff results', function () {
