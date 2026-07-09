@@ -106,9 +106,9 @@ test('it stores each multipart result using process output definitions', functio
         json_encode(ogcFixture('chart-result'), JSON_THROW_ON_ERROR),
         '--'.$boundary,
         'Content-Disposition: form-data; name="outfile"; filename="outfile.csv"',
-        'Content-Type: text/csv',
+        'Content-Type: text/csv; header=present',
         '',
-        "length,gas\r\n0,10\r\n1,20\r\n",
+        "length,gas\r\n0,1.23E-04\r\n1,2.50E+01\r\n",
         '--'.$boundary.'--',
         '',
     ]);
@@ -143,14 +143,15 @@ test('it stores each multipart result using process output definitions', functio
         ->and($results['gas']->media_type)->toBe('application/json')
         ->and($results['gas']->preview['kind'])->toBe('chart')
         ->and($results['outfile']->title)->toBe('Table of output variables')
-        ->and($results['outfile']->media_type)->toBe('text/csv')
+        ->and($results['outfile']->media_type)->toBe('text/csv; header=present')
         ->and($results['outfile']->preview['kind'])->toBe('csv')
         ->and($results['outfile']->preview['data']['headers'])->toBe(['length', 'gas'])
         ->and($results['outfile']->preview['data']['rows'])->toBe([
-            ['0', '10'],
-            ['1', '20'],
+            ['0', '1.23E-04'],
+            ['1', '2.50E+01'],
         ])
-        ->and($results['outfile']->preview['data']['source'])->toContain('length,gas');
+        ->and($results['outfile']->preview['data']['source'])->toContain('length,gas')
+        ->and($results['outfile']->preview['data']['source'])->toContain('1.23E-04');
 });
 
 test('it caches csv multipart result links sent as empty content location parts', function () {

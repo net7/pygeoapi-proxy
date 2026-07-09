@@ -32,6 +32,7 @@ class OgcResultResponseParser
     {
         $contentType = (string) $response->header('Content-Type');
         $mediaType = $this->mediaType($contentType);
+        $resultMediaType = $this->resultMediaType($contentType);
 
         if (! str_starts_with($mediaType, 'multipart/')) {
             $jsonResults = $this->resultsFromJsonBody(
@@ -49,7 +50,7 @@ class OgcResultResponseParser
                 execution: $execution,
                 outputId: $outputId ?? $this->firstRequestedOutputId($execution),
                 body: $response->body(),
-                mediaType: $mediaType ?: 'application/json',
+                mediaType: $resultMediaType ?: 'application/json',
                 forceStorage: false,
             )];
         }
@@ -96,7 +97,9 @@ class OgcResultResponseParser
     {
         $headers = $part['headers'];
         $outputId = $this->partOutputId($headers, $fallbackOutputId);
-        $mediaType = $this->mediaType($headers['content-type'] ?? '');
+        $contentType = $headers['content-type'] ?? '';
+        $mediaType = $this->mediaType($contentType);
+        $resultMediaType = $this->resultMediaType($contentType);
         $body = $part['body'];
 
         if ($this->isJsonMediaType($mediaType)) {
@@ -123,7 +126,7 @@ class OgcResultResponseParser
         if (trim($body) === '' && is_string($contentLocation) && $contentLocation !== '') {
             return [$this->resultFromLinkValue($execution, $outputId, [
                 'href' => $contentLocation,
-                'type' => $mediaType ?: $this->outputMediaType($execution, $outputId),
+                'type' => $resultMediaType ?: $this->outputMediaType($execution, $outputId),
             ])];
         }
 
@@ -131,7 +134,7 @@ class OgcResultResponseParser
             execution: $execution,
             outputId: $outputId,
             body: $body,
-            mediaType: $mediaType,
+            mediaType: $resultMediaType,
             forceStorage: true,
         )];
     }
@@ -244,7 +247,7 @@ class OgcResultResponseParser
     ): array {
         $processOutputs = $execution->process_outputs ?? [];
         $outputSpec = $processOutputs[$outputId] ?? [];
-        $mediaType = $mediaType ?: $this->mediaType((string) data_get($outputSpec, 'schema.contentMediaType'));
+        $mediaType = $mediaType ?: $this->outputMediaType($execution, $outputId);
         $mediaType = $mediaType ?: 'application/octet-stream';
         $preview = $this->preview($mediaType, $body);
         $storageBody = $forceStorage && $preview['kind'] === 'binary' ? $body : null;
@@ -531,18 +534,20 @@ class OgcResultResponseParser
             return ['kind' => 'json', 'data' => $json];
         }
 
-        if ($mediaType === 'text/csv') {
+        $baseMediaType = $this->mediaType($mediaType);
+
+        if ($baseMediaType === 'text/csv') {
             return ['kind' => 'csv', 'data' => $this->csvPreviewBuilder->fromString($body)];
         }
 
-        if (str_starts_with($mediaType, 'text/')) {
+        if (str_starts_with($baseMediaType, 'text/')) {
             return ['kind' => 'text', 'data' => str($body)->limit(50000)->toString()];
         }
 
         return [
             'kind' => 'binary',
             'data' => [
-                'mediaType' => $mediaType,
+                'mediaType' => $baseMediaType ?: $mediaType,
                 'sizeBytes' => strlen($body),
             ],
         ];
@@ -561,6 +566,17 @@ class OgcResultResponseParser
     private function mediaType(string $contentType): string
     {
         return Str::of($contentType)->before(';')->trim()->lower()->toString();
+    }
+
+    private function resultMediaType(string $contentType): string
+    {
+        $baseMediaType = $this->mediaType($contentType);
+
+        if ($baseMediaType === 'text/csv') {
+            return Str::of($contentType)->trim()->lower()->toString();
+        }
+
+        return $baseMediaType;
     }
 
     private function linkMediaType(string $contentType): string
