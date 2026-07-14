@@ -50,12 +50,13 @@ make up ENV=production
 ## Servizi
 
 - `laravel`: applicazione Laravel pubblica sulla porta host `${APP_PORT:-8088}`
-  in `develop` e `${APP_PORT:-8080}` negli altri ambienti.
+  in `develop`, su `127.0.0.1:7070` in `staging` e su `${APP_PORT:-8080}` in
+  `production`.
 - `horizon`: worker code Laravel Horizon.
 - `scheduler`: `php artisan schedule:work`.
 - `reverb`: WebSocket server Laravel Reverb, pubblicato su
-  `${REVERB_HOST_PORT:-8089}` in `develop` e `${REVERB_HOST_PORT:-8081}`
-  negli altri ambienti.
+  `${REVERB_HOST_PORT:-8089}` in `develop`, su `127.0.0.1:7071` in `staging`
+  e su `${REVERB_HOST_PORT:-8081}` in `production`.
 - `mariadb`: database interno al network Compose.
 - `redis`: cache, sessioni e code Laravel.
 - `pygeoapi`: servizio pygeoapi interno al network Compose.
@@ -156,6 +157,10 @@ Prima di usare `staging` o `production`, modifica almeno:
 - `REVERB_APP_SECRET`
 - `REVERB_HOST`
 - `REVERB_SCHEME`
+
+Il template `staging` preconfigura inoltre `HOST_BIND_ADDRESS=127.0.0.1`,
+`APP_PORT=7070`, `REVERB_HOST_PORT=7071` e `REVERB_PORT=443` per l'Nginx host.
+Questi valori non sono i default di `develop` o `production`.
 
 ## Comandi rapidi
 
@@ -325,8 +330,11 @@ Con i valori di default in `develop`:
 - phpMyAdmin: `http://localhost:8090`
 - Mailpit: `http://localhost:8026`
 
-In `staging` e `production`, Laravel e Reverb restano esposti sulle porte
-configurate, mentre pygeoapi resta solo interno al network Docker.
+In `staging`, Laravel e Reverb sono raggiungibili soltanto dall'host su
+`127.0.0.1:7070` e `127.0.0.1:7071`; l'Nginx host pubblica applicazione e
+WebSocket sul dominio `proxygeoapi.netseven.work`. In `production` le porte
+restano configurabili normalmente. Pygeoapi resta interno al network Docker.
+La procedura staging completa è in `deploy/nginx/README.md`.
 
 ## File principali
 
@@ -339,6 +347,8 @@ configurate, mentre pygeoapi resta solo interno al network Docker.
 - `Dockerfile`: immagine pygeoapi.
 - `Makefile`: comandi rapidi.
 - `.env.*.example`: template env per ambiente.
+- `deploy/nginx/proxygeoapi.netseven.work.conf`: vhost HTTP iniziale staging.
+- `deploy/nginx/README.md`: installazione Nginx e bootstrap Certbot.
 
 ## Note operative
 
