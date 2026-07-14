@@ -105,7 +105,7 @@ services:
   laravel:
     <<: *laravel-service
     ports:
-      - "${APP_PORT:-8080}:8080"
+      - "${HOST_BIND_ADDRESS:-0.0.0.0}:${APP_PORT:-8080}:8080"
 
   horizon:
     <<: *laravel-service
@@ -134,7 +134,7 @@ services:
     command: ["php", "/var/www/html/artisan", "reverb:start", "--host=0.0.0.0", "--port=8000"]
     stop_signal: SIGTERM
     ports:
-      - "${REVERB_HOST_PORT:-8081}:8000"
+      - "${HOST_BIND_ADDRESS:-0.0.0.0}:${REVERB_HOST_PORT:-8081}:8000"
     healthcheck:
       test: ["CMD", "healthcheck-reverb"]
       start_period: 10s
