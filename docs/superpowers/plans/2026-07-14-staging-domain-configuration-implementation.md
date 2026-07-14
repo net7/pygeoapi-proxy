@@ -209,7 +209,7 @@ events {
 
 http {
     access_log off;
-    include deploy/nginx/proxygeoapi.netseven.work.conf;
+    include ../proxygeoapi.netseven.work.conf;
 }
 ```
 
