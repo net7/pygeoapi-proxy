@@ -71,3 +71,16 @@ test('notification contains temporary signed url', function () {
 
     expect(URL::hasValidSignature(request()->create($signedUrl)))->toBeTrue();
 });
+
+test('notification mail is informative', function () {
+    $challenge = EmailOtpChallenge::factory()->create();
+    $mail = (new EmailOtpNotification($challenge, '123456', 'https://example.test/verify'))
+        ->toMail((object) []);
+
+    expect($mail->subject)->toBe('Confirm your email sign-in')
+        ->and($mail->greeting)->toBe('Verification required')
+        ->and($mail->introLines)->toContain('Use this one-time code to continue: 123456')
+        ->and($mail->introLines)->toContain('The code expires in 10 minutes and can only be used once.')
+        ->and($mail->actionText)->toBe('Open verification page')
+        ->and($mail->outroLines)->toContain('If you did not request this code, you can safely ignore this email.');
+});

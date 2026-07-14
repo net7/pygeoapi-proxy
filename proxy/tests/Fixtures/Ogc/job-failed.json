@@ -1,0 +1,13 @@
+{
+  "type": "process",
+  "processID": "solwcad",
+  "jobID": "job-456",
+  "status": "failed",
+  "message": "InvalidParameterValue: Error executing process",
+  "progress": 5,
+  "parameters": null,
+  "created": "2026-06-05T15:15:44.269914",
+  "started": "2026-06-05T15:15:44.278904",
+  "finished": "2026-06-05T15:15:52.506850",
+  "updated": "2026-06-05T15:15:52.506889"
+}

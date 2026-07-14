@@ -1,4 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
+import { ShieldCheckIcon } from 'lucide-react';
 import { useRef } from 'react';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import Heading from '@/components/heading';
@@ -6,32 +7,41 @@ import InputError from '@/components/input-error';
 import type { Props as ManagePasskeysProps } from '@/components/manage-passkeys';
 import ManagePasskeys from '@/components/manage-passkeys';
 import PasswordInput from '@/components/password-input';
+import StatusNotice from '@/components/status-notice';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/hooks/use-translation';
 import { edit } from '@/routes/security';
 
 type Props = {
     canUpdatePassword: boolean;
     passwordRules: string;
     sensitiveConfirmationUrl: string | null;
+    status?: string;
 } & ManagePasskeysProps;
 
 export default function Security(props: Props) {
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);
+    const { t } = useTranslation();
 
     return (
         <>
-            <Head title="Security settings" />
+            <Head title={t('settings.security.title')} />
 
-            <h1 className="sr-only">Security settings</h1>
+            <h1 className="sr-only">{t('settings.security.title')}</h1>
+
+            <StatusNotice
+                message={props.status}
+                title={t('settings.security.codeSent')}
+            />
 
             {props.canUpdatePassword && (
                 <div className="space-y-6">
                     <Heading
                         variant="small"
-                        title="Update password"
-                        description="Ensure your account is using a long, random password to stay secure"
+                        title={t('settings.security.updatePassword')}
+                        description={t('settings.security.description')}
                     />
 
                     <Form
@@ -60,7 +70,7 @@ export default function Security(props: Props) {
                             <>
                                 <div className="grid gap-2">
                                     <Label htmlFor="current_password">
-                                        Current password
+                                        {t('settings.security.currentPassword')}
                                     </Label>
 
                                     <PasswordInput
@@ -69,7 +79,9 @@ export default function Security(props: Props) {
                                         name="current_password"
                                         className="mt-1 block w-full"
                                         autoComplete="current-password"
-                                        placeholder="Current password"
+                                        placeholder={t(
+                                            'settings.security.currentPassword',
+                                        )}
                                     />
 
                                     <InputError
@@ -79,7 +91,7 @@ export default function Security(props: Props) {
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="password">
-                                        New password
+                                        {t('settings.security.newPassword')}
                                     </Label>
 
                                     <PasswordInput
@@ -88,7 +100,9 @@ export default function Security(props: Props) {
                                         name="password"
                                         className="mt-1 block w-full"
                                         autoComplete="new-password"
-                                        placeholder="New password"
+                                        placeholder={t(
+                                            'settings.security.newPassword',
+                                        )}
                                         passwordrules={props.passwordRules}
                                     />
 
@@ -97,7 +111,7 @@ export default function Security(props: Props) {
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="password_confirmation">
-                                        Confirm password
+                                        {t('settings.security.confirmPassword')}
                                     </Label>
 
                                     <PasswordInput
@@ -105,7 +119,9 @@ export default function Security(props: Props) {
                                         name="password_confirmation"
                                         className="mt-1 block w-full"
                                         autoComplete="new-password"
-                                        placeholder="Confirm password"
+                                        placeholder={t(
+                                            'settings.security.confirmPassword',
+                                        )}
                                         passwordrules={props.passwordRules}
                                     />
 
@@ -119,7 +135,8 @@ export default function Security(props: Props) {
                                         disabled={processing}
                                         data-test="update-password-button"
                                     >
-                                        Save
+                                        <ShieldCheckIcon data-icon="inline-start" />
+                                        {t('common.save')}
                                     </Button>
                                 </div>
                             </>
@@ -141,6 +158,7 @@ Security.layout = {
     breadcrumbs: [
         {
             title: 'Security settings',
+            titleKey: 'settings.security.breadcrumb',
             href: edit(),
         },
     ],

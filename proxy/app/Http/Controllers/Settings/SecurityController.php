@@ -44,6 +44,7 @@ class SecurityController extends Controller
                     ->all()
                 : [],
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
+            'status' => $request->session()->get('status'),
         ];
 
         return Inertia::render('settings/security', $props);
@@ -70,7 +71,12 @@ class SecurityController extends Controller
             'password' => $request->password,
         ]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Password updated.')]);
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'title' => __('Password updated'),
+            'message' => __('Password updated.'),
+            'description' => __('Use the new password the next time you sign in.'),
+        ]);
 
         return back();
     }

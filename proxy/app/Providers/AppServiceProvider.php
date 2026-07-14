@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\Ogc\OgcProcessCacheWarmupDispatcher;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -21,9 +22,10 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
+    public function boot(OgcProcessCacheWarmupDispatcher $warmupDispatcher): void
     {
         $this->configureDefaults();
+        $warmupDispatcher->dispatchIfAppropriate();
     }
 
     /**

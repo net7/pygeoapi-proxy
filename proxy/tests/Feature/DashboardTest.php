@@ -1,16 +1,11 @@
 <?php
 
-use App\Models\User;
+use Illuminate\Support\Facades\Route;
 
-test('guests are redirected to the login page', function () {
-    $response = $this->get(route('dashboard'));
-    $response->assertRedirect(route('login'));
+test('dashboard route is not registered', function () {
+    $this->get('/dashboard')->assertNotFound();
 });
 
-test('authenticated users can visit the dashboard', function () {
-    $user = User::factory()->create();
-    $this->actingAs($user);
-
-    $response = $this->get(route('dashboard'));
-    $response->assertOk();
+test('dashboard named route is not available', function () {
+    expect(Route::has('dashboard'))->toBeFalse();
 });

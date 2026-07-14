@@ -1,0 +1,86 @@
+{
+  "links": [
+    {
+      "rel": "about",
+      "type": "text/html",
+      "title": "Geo-INQUIRE Saas WP5 (based on pygeoapi)",
+      "href": "https://github.com/geopython/pygeoapi"
+    },
+    {
+      "rel": "self",
+      "type": "application/json",
+      "title": "This document as JSON",
+      "href": "https://voice.pi.ingv.it/geoinquire?f=json"
+    },
+    {
+      "rel": "alternate",
+      "type": "application/ld+json",
+      "title": "This document as RDF (JSON-LD)",
+      "href": "https://voice.pi.ingv.it/geoinquire?f=jsonld"
+    },
+    {
+      "rel": "alternate",
+      "type": "text/html",
+      "title": "This document as HTML",
+      "href": "https://voice.pi.ingv.it/geoinquire?f=html",
+      "hreflang": "it-IT"
+    },
+    {
+      "rel": "service-desc",
+      "type": "application/vnd.oai.openapi+json;version=3.0",
+      "title": "The OpenAPI definition as JSON",
+      "href": "https://voice.pi.ingv.it/geoinquire/openapi"
+    },
+    {
+      "rel": "service-doc",
+      "type": "text/html",
+      "title": "The OpenAPI definition as HTML",
+      "href": "https://voice.pi.ingv.it/geoinquire/openapi?f=html",
+      "hreflang": "it-IT"
+    },
+    {
+      "rel": "conformance",
+      "type": "application/json",
+      "title": "Conformance",
+      "href": "https://voice.pi.ingv.it/geoinquire/conformance"
+    },
+    {
+      "rel": "data",
+      "type": "application/json",
+      "title": "Collections",
+      "href": "https://voice.pi.ingv.it/geoinquire/collections"
+    },
+    {
+      "rel": "http://www.opengis.net/def/rel/ogc/1.0/processes",
+      "type": "application/json",
+      "title": "Processes",
+      "href": "https://voice.pi.ingv.it/geoinquire/processes"
+    },
+    {
+      "rel": "http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes",
+      "type": "application/json",
+      "title": "The list of supported tiling schemes as JSON",
+      "href": "https://voice.pi.ingv.it/geoinquire/TileMatrixSets?f=json"
+    },
+    {
+      "rel": "http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes",
+      "type": "text/html",
+      "title": "The list of supported tiling schemes as HTML",
+      "href": "https://voice.pi.ingv.it/geoinquire/TileMatrixSets?f=html"
+    },
+    {
+      "rel": "http://www.opengis.net/def/rel/ogc/1.0/job-list",
+      "type": "application/json",
+      "title": "Jobs",
+      "href": "https://voice.pi.ingv.it/geoinquire/jobs"
+    },
+    {
+      "rel": "http://www.opengis.net/def/rel/ogc/1.0/job-list",
+      "type": "text/html",
+      "title": "Jobs",
+      "href": "https://voice.pi.ingv.it/geoinquire/jobs?f=html"
+    }
+  ],
+  "title": "Geo-INQUIRE Saas WP5 (based on pygeoapi)",
+  "description": "pygeoapi fornisce API a dati geospaziali - In Geo-INQUIRE sono implementati servizi di processing"
+}

@@ -1,11 +1,20 @@
 <?php
 
+use App\Http\Controllers\Admin\JobController as AdminJobController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\EmailOtpChallengeController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\Auth\SocialEmailController;
+use App\Http\Controllers\Ogc\ProcessController;
+use App\Http\Controllers\Ogc\ProcessExecutionController;
+use App\Http\Controllers\Ogc\ProcessExecutionResultController;
+use App\Http\Controllers\Ogc\ProcessExecutionResultMapTileController;
+use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Models\ProcessExecution;
+use App\Models\ProcessExecutionResult;
+use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
-
-Route::inertia('/', 'welcome')->name('home');
 
 Route::middleware('guest')->group(function () {
     Route::get('auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
@@ -24,9 +33,71 @@ Route::middleware('guest')->group(function () {
         ->name('auth.social.email.store');
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+Route::middleware(['auth', EnsureUserIsActive::class, 'verified'])->group(function () {
+    Route::get('/', fn () => to_route('jobs.index'))->name('home');
+
+    Route::get('processes', [ProcessController::class, 'index'])->name('processes.index');
+    Route::get('processes/{process}', [ProcessController::class, 'show'])->name('processes.show');
+    Route::post('processes/{process}/jobs', [ProcessExecutionController::class, 'store'])
+        ->name('processes.jobs.store');
+    Route::post('processes/{process}/executions', [ProcessExecutionController::class, 'store'])
+        ->name('processes.executions.store');
+
+    Route::get('jobs', [ProcessExecutionController::class, 'index'])
+        ->name('jobs.index');
+    Route::delete('jobs', [ProcessExecutionController::class, 'bulkDestroy'])
+        ->name('jobs.bulk-destroy');
+    Route::get('jobs/{processExecution}', [ProcessExecutionController::class, 'show'])
+        ->name('jobs.show');
+    Route::patch('jobs/{processExecution}/name', [ProcessExecutionController::class, 'updateName'])
+        ->name('jobs.name.update');
+    Route::patch('jobs/{processExecution}/note', [ProcessExecutionController::class, 'updateNote'])
+        ->name('jobs.note.update');
+    Route::delete('jobs/{processExecution}', [ProcessExecutionController::class, 'destroy'])
+        ->name('jobs.destroy');
+    Route::get('jobs/{processExecution}/results/{result}/download', [ProcessExecutionResultController::class, 'download'])
+        ->name('jobs.results.download');
+    Route::get('jobs/{processExecution}/results/{result}/map-tile', ProcessExecutionResultMapTileController::class)
+        ->name('jobs.results.map-tile');
+
+    Route::get('process-executions', fn () => to_route('jobs.index'))
+        ->name('process-executions.index');
+    Route::get('process-executions/{processExecution}', fn (ProcessExecution $processExecution) => to_route('jobs.show', $processExecution))
+        ->name('process-executions.show');
+    Route::get(
+        'process-executions/{processExecution}/results/{result}/download',
+        fn (ProcessExecution $processExecution, ProcessExecutionResult $result) => to_route('jobs.results.download', [$processExecution, $result])
+    )
+        ->name('process-executions.results.download');
 });
+
+Route::middleware(['auth', EnsureUserIsActive::class, 'verified', EnsureUserIsAdmin::class])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('jobs', [AdminJobController::class, 'index'])
+            ->name('jobs.index');
+        Route::get('users', [AdminUserController::class, 'index'])
+            ->name('users.index');
+        Route::post('users', [AdminUserController::class, 'store'])
+            ->middleware(HandlePrecognitiveRequests::class)
+            ->name('users.store');
+        Route::delete('users', [AdminUserController::class, 'bulkDestroy'])
+            ->name('users.bulk-destroy');
+        Route::patch('users/restore', [AdminUserController::class, 'bulkRestore'])
+            ->name('users.bulk-restore');
+        Route::get('users/{user}/edit', [AdminUserController::class, 'edit'])
+            ->name('users.edit');
+        Route::patch('users/{user}', [AdminUserController::class, 'update'])
+            ->middleware(HandlePrecognitiveRequests::class)
+            ->name('users.update');
+        Route::delete('users/{user}/force', [AdminUserController::class, 'forceDestroy'])
+            ->name('users.force-destroy');
+        Route::delete('users/{user}', [AdminUserController::class, 'destroy'])
+            ->name('users.destroy');
+        Route::patch('users/{user}/restore', [AdminUserController::class, 'restore'])
+            ->name('users.restore');
+    });
 
 Route::get('verify/{challenge}', [EmailOtpChallengeController::class, 'show'])
     ->middleware('signed')

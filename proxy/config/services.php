@@ -42,6 +42,23 @@ return [
         'scope' => env('ORCID_SCOPE', 'openid'),
     ],
 
+    'ogc_processes' => [
+        'base_url' => env('OGC_PROCESSES_BASE_URL', 'https://voice.pi.ingv.it/geoinquire/'),
+        'timeout' => (int) env('OGC_PROCESSES_TIMEOUT', 30),
+        'connect_timeout' => (int) env('OGC_PROCESSES_CONNECT_TIMEOUT', 5),
+        'cache_ttl' => (int) env('OGC_PROCESSES_CACHE_TTL', 300),
+        'binary_cache_ttl_days' => (int) env('OGC_PROCESSES_BINARY_CACHE_TTL_DAYS', 30),
+        'polling_interval' => (int) env('OGC_PROCESSES_POLLING_INTERVAL', 5000),
+        'result_url_hosts' => array_values(array_filter(array_map('trim', explode(',', env('OGC_PROCESSES_RESULT_URL_HOSTS', 'voice_hrefs.pi.ingv.it'))))),
+        'input_references' => [
+            // 'process_id' => [
+            //     'input_id' => [
+            //         ['label' => 'Dataset name', 'href' => 'https://example.test/input.csv', 'mediaType' => 'text/csv'],
+            //     ],
+            // ],
+        ],
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

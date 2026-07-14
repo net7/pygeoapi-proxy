@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 
 test('social only user can request sensitive confirmation otp', function () {
-    config(['fortify.features' => [AuthFeatures::emailOtp()]]);
+    config(['fortify.features' => [AuthFeatures::emailOtp(), AuthFeatures::accountDeletion()]]);
     Notification::fake();
 
     $user = User::factory()->socialOnly()->create(['email' => 'social@example.org']);
@@ -23,7 +23,20 @@ test('social only user can request sensitive confirmation otp', function () {
     ]);
 });
 
+test('social only user cannot request sensitive confirmation otp when account deletion is disabled', function () {
+    config(['fortify.features' => [AuthFeatures::emailOtp()]]);
+    Notification::fake();
+
+    $user = User::factory()->socialOnly()->create(['email' => 'social@example.org']);
+
+    $this->actingAs($user)
+        ->post(route('settings.sensitive-confirmation.send'))
+        ->assertNotFound();
+});
+
 test('social only user cannot delete account without otp confirmation', function () {
+    config(['fortify.features' => [AuthFeatures::accountDeletion()]]);
+
     $user = User::factory()->socialOnly()->create();
 
     $this->actingAs($user)
@@ -36,6 +49,8 @@ test('social only user cannot delete account without otp confirmation', function
 });
 
 test('social only user can delete account after otp confirmation', function () {
+    config(['fortify.features' => [AuthFeatures::emailOtp(), AuthFeatures::accountDeletion()]]);
+
     $user = User::factory()->socialOnly()->create(['email' => 'social@example.org']);
     $challenge = EmailOtpChallenge::factory()->create([
         'email' => 'social@example.org',
@@ -54,6 +69,8 @@ test('social only user can delete account after otp confirmation', function () {
 });
 
 test('password user still needs password to delete account', function () {
+    config(['fortify.features' => [AuthFeatures::accountDeletion()]]);
+
     $user = User::factory()->create();
 
     $this->actingAs($user)

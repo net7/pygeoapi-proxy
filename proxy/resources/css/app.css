@@ -4,6 +4,7 @@
 @import 'tw-animate-css';
 
 @source '../views';
+@source '../js';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
 @custom-variant dark (&:is(.dark *));
@@ -143,4 +144,54 @@
     body {
         @apply bg-background font-sans text-foreground;
     }
+}
+
+.prose-note p {
+    margin-block: 0.5rem;
+}
+
+.prose-note p:first-child {
+    margin-block-start: 0;
+}
+
+.prose-note p:last-child {
+    margin-block-end: 0;
+}
+
+.prose-note ul {
+    margin-block: 0.5rem;
+    list-style: disc;
+    padding-inline-start: 1.25rem;
+}
+
+.prose-note ol {
+    margin-block: 0.5rem;
+    list-style: decimal;
+    padding-inline-start: 1.25rem;
+}
+
+.prose-note blockquote {
+    margin-block: 0.5rem;
+    border-inline-start: 2px solid var(--border);
+    padding-inline-start: 0.75rem;
+    color: var(--muted-foreground);
+}
+
+.prose-note pre {
+    margin-block: 0.5rem;
+    overflow-x: auto;
+    border-radius: var(--radius-sm);
+    background: var(--muted);
+    padding: 0.75rem;
+}
+
+.prose-note code {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+}
+
+.prose-note a {
+    color: var(--primary);
+    text-decoration-line: underline;
+    text-underline-offset: 3px;
 }

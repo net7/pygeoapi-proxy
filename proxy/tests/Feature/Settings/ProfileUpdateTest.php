@@ -2,6 +2,7 @@
 
 use App\Models\SocialAccount;
 use App\Models\User;
+use App\Support\AuthFeatures;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -105,6 +106,28 @@ test('profile avatar can be served over http', function () {
         ->assertOk();
 });
 
+test('admins can view another users local profile avatar', function () {
+    Storage::fake('public');
+    Storage::disk('public')->put('avatars/local-avatar.jpg', 'avatar');
+
+    $admin = User::factory()->admin()->create();
+    $owner = User::factory()->create([
+        'avatar_path' => 'avatars/local-avatar.jpg',
+    ]);
+    $user = User::factory()->create();
+    $avatarUrl = $owner->avatar();
+
+    $this
+        ->actingAs($admin)
+        ->get($avatarUrl)
+        ->assertOk();
+
+    $this
+        ->actingAs($user)
+        ->get($avatarUrl)
+        ->assertNotFound();
+});
+
 test('profile avatar can be removed to reveal provider avatar', function () {
     Storage::fake('public');
     Storage::disk('public')->put('avatars/local-avatar.jpg', 'avatar');
@@ -131,6 +154,7 @@ test('profile avatar can be removed to reveal provider avatar', function () {
 });
 
 test('user can delete their account', function () {
+    config(['fortify.features' => [AuthFeatures::accountDeletion()]]);
     Storage::fake('public');
     Storage::disk('public')->put('avatars/local-avatar.jpg', 'avatar');
 
@@ -153,7 +177,37 @@ test('user can delete their account', function () {
     Storage::disk('public')->assertMissing('avatars/local-avatar.jpg');
 });
 
+test('user cannot delete their account when account deletion is disabled', function () {
+    config(['fortify.features' => []]);
+
+    $user = User::factory()->create();
+
+    $this
+        ->actingAs($user)
+        ->delete(route('profile.destroy'), [
+            'password' => 'password',
+        ])
+        ->assertNotFound();
+
+    expect($user->fresh())->not->toBeNull();
+});
+
+test('social only user cannot delete their account when account deletion is disabled', function () {
+    config(['fortify.features' => []]);
+
+    $user = User::factory()->socialOnly()->create();
+
+    $this
+        ->actingAs($user)
+        ->delete(route('profile.destroy'))
+        ->assertNotFound();
+
+    expect($user->fresh())->not->toBeNull();
+});
+
 test('correct password must be provided to delete account', function () {
+    config(['fortify.features' => [AuthFeatures::accountDeletion()]]);
+
     $user = User::factory()->create();
 
     $response = $this

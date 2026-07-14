@@ -74,7 +74,7 @@ return [
     |
     */
 
-    'home' => '/dashboard',
+    'home' => '/jobs',
 
     /*
     |--------------------------------------------------------------------------
@@ -168,6 +168,7 @@ return [
         // Features::passkeys([
         //     'confirmPassword' => true,
         // ]),
+        // AuthFeatures::accountDeletion(),
 
         AuthFeatures::google(),
         AuthFeatures::orcid(),

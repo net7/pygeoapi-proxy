@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Settings;
 
 use App\Concerns\PasswordValidationRules;
+use App\Support\AuthFeatures;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
@@ -18,6 +19,10 @@ class ProfileDeleteRequest extends FormRequest
      */
     public function rules(): array
     {
+        if (! AuthFeatures::enabled(AuthFeatures::accountDeletion())) {
+            return [];
+        }
+
         if (! $this->user()->hasLocalPassword()) {
             return [];
         }
@@ -32,6 +37,10 @@ class ProfileDeleteRequest extends FormRequest
      */
     public function after(): array
     {
+        if (! AuthFeatures::enabled(AuthFeatures::accountDeletion())) {
+            return [];
+        }
+
         return [
             function (Validator $validator): void {
                 if ($this->user()->hasLocalPassword()) {

@@ -16,6 +16,9 @@ use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
+use Laravel\Passkeys\Contracts\PasskeyUser;
+use Laravel\Passkeys\Passkey;
+use Laravel\Passkeys\Passkeys;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -45,6 +48,8 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
 
+        Passkeys::authorizeLoginUsing(fn (Request $request, PasskeyUser $user, Passkey $passkey): bool => $user instanceof User && $user->isActive());
+
         Fortify::authenticateUsing(function (Request $request): ?User {
             if (! AuthFeatures::enabled(AuthFeatures::passwordLogin())) {
                 return null;
@@ -55,6 +60,7 @@ class FortifyServiceProvider extends ServiceProvider
                 ->first();
 
             if ($user !== null
+                && $user->isActive()
                 && $user->password !== null
                 && Hash::check((string) $request->input('password'), $user->password)) {
                 return $user;

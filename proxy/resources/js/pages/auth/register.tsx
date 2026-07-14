@@ -1,4 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
+import { UserPlusIcon } from 'lucide-react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -6,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/hooks/use-translation';
 import { login } from '@/routes';
 
 type Props = {
@@ -14,9 +16,11 @@ type Props = {
 };
 
 export default function Register({ registerAction, passwordRules }: Props) {
+    const { t } = useTranslation();
+
     return (
         <>
-            <Head title="Register" />
+            <Head title={t('auth.register.title')} />
             <Form
                 action={registerAction}
                 method="post"
@@ -28,7 +32,7 @@ export default function Register({ registerAction, passwordRules }: Props) {
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Name</Label>
+                                <Label htmlFor="name">{t('common.name')}</Label>
                                 <Input
                                     id="name"
                                     type="text"
@@ -37,7 +41,7 @@ export default function Register({ registerAction, passwordRules }: Props) {
                                     tabIndex={1}
                                     autoComplete="name"
                                     name="name"
-                                    placeholder="Full name"
+                                    placeholder={t('auth.fullName')}
                                 />
                                 <InputError
                                     message={errors.name}
@@ -46,7 +50,9 @@ export default function Register({ registerAction, passwordRules }: Props) {
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                <Label htmlFor="email">
+                                    {t('auth.emailAddress')}
+                                </Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -60,14 +66,16 @@ export default function Register({ registerAction, passwordRules }: Props) {
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="password">Password</Label>
+                                <Label htmlFor="password">
+                                    {t('auth.password')}
+                                </Label>
                                 <PasswordInput
                                     id="password"
                                     required
                                     tabIndex={3}
                                     autoComplete="new-password"
                                     name="password"
-                                    placeholder="Password"
+                                    placeholder={t('auth.password')}
                                     passwordrules={passwordRules}
                                 />
                                 <InputError message={errors.password} />
@@ -75,7 +83,7 @@ export default function Register({ registerAction, passwordRules }: Props) {
 
                             <div className="grid gap-2">
                                 <Label htmlFor="password_confirmation">
-                                    Confirm password
+                                    {t('auth.confirmPassword.title')}
                                 </Label>
                                 <PasswordInput
                                     id="password_confirmation"
@@ -83,7 +91,9 @@ export default function Register({ registerAction, passwordRules }: Props) {
                                     tabIndex={4}
                                     autoComplete="new-password"
                                     name="password_confirmation"
-                                    placeholder="Confirm password"
+                                    placeholder={t(
+                                        'auth.confirmPassword.title',
+                                    )}
                                     passwordrules={passwordRules}
                                 />
                                 <InputError
@@ -97,15 +107,19 @@ export default function Register({ registerAction, passwordRules }: Props) {
                                 tabIndex={5}
                                 data-test="register-user-button"
                             >
-                                {processing && <Spinner />}
-                                Create account
+                                {processing ? (
+                                    <Spinner data-icon="inline-start" />
+                                ) : (
+                                    <UserPlusIcon data-icon="inline-start" />
+                                )}
+                                {t('auth.createAccount')}
                             </Button>
                         </div>
 
                         <div className="text-center text-sm text-muted-foreground">
-                            Already have an account?{' '}
+                            {t('auth.alreadyHaveAccount')}{' '}
                             <TextLink href={login()} tabIndex={6}>
-                                Log in
+                                {t('auth.login.submit')}
                             </TextLink>
                         </div>
                     </>
@@ -117,5 +131,7 @@ export default function Register({ registerAction, passwordRules }: Props) {
 
 Register.layout = {
     title: 'Create an account',
+    titleKey: 'auth.register.title',
     description: 'Enter your details below to create your account',
+    descriptionKey: 'auth.register.description',
 };

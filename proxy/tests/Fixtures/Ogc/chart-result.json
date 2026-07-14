@@ -1,0 +1,17 @@
+{
+  "chartType": "line",
+  "domain": {
+    "key": "Conduit length",
+    "label": "Conduit length",
+    "unit": "m",
+    "values": [0, 1, 2]
+  },
+  "series": [
+    {
+      "key": "gas",
+      "label": "Gas",
+      "unit": "%",
+      "values": [10, 20, 30]
+    }
+  ]
+}

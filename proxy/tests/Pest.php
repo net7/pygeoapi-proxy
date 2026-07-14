@@ -16,6 +16,9 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    ->beforeEach(function () {
+        $this->withoutVite();
+    })
     ->in('Feature');
 
 /*
@@ -44,7 +47,11 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function ogcFixture(string $name): array
 {
-    // ..
+    return json_decode(
+        file_get_contents(base_path("tests/Fixtures/Ogc/{$name}.json")),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
 }

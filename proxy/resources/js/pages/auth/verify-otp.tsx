@@ -1,10 +1,12 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { RefreshCwIcon, ShieldCheckIcon } from 'lucide-react';
 import InputError from '@/components/input-error';
+import StatusNotice from '@/components/status-notice';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -20,9 +22,11 @@ export default function VerifyOtp({
     verifyUrl,
     resendUrl,
 }: Props) {
+    const { t } = useTranslation();
+
     return (
         <>
-            <Head title="Verify code" />
+            <Head title={t('auth.verifyCode.submit')} />
 
             <Form
                 action={verifyUrl}
@@ -34,7 +38,9 @@ export default function VerifyOtp({
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="code">Verification code</Label>
+                                <Label htmlFor="code">
+                                    {t('auth.verifyCode.codeLabel')}
+                                </Label>
                                 <Input
                                     id="code"
                                     type="text"
@@ -51,8 +57,12 @@ export default function VerifyOtp({
                             </div>
 
                             <Button type="submit" className="w-full">
-                                {processing ? <Spinner /> : <ShieldCheckIcon />}
-                                Verify code
+                                {processing ? (
+                                    <Spinner data-icon="inline-start" />
+                                ) : (
+                                    <ShieldCheckIcon data-icon="inline-start" />
+                                )}
+                                {t('auth.verifyCode.submit')}
                             </Button>
                         </div>
 
@@ -65,18 +75,16 @@ export default function VerifyOtp({
                                 'w-full',
                             )}
                         >
-                            <RefreshCwIcon />
-                            Send new code
+                            <RefreshCwIcon data-icon="inline-start" />
+                            {t('auth.sendNewCode')}
                         </Link>
                     </>
                 )}
             </Form>
 
-            <div className="space-y-2 text-center text-sm text-muted-foreground">
+            <div className="flex flex-col gap-2 text-center text-sm text-muted-foreground">
                 <p>{email}</p>
-                {status && (
-                    <p className="font-medium text-green-600">{status}</p>
-                )}
+                <StatusNotice message={status} title={t('auth.codeSent')} />
             </div>
         </>
     );
@@ -84,5 +92,7 @@ export default function VerifyOtp({
 
 VerifyOtp.layout = {
     title: 'Check your email',
+    titleKey: 'auth.verifyCode.title',
     description: 'Enter the code from the verification message',
+    descriptionKey: 'auth.verifyCode.description',
 };

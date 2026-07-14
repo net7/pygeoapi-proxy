@@ -2,6 +2,10 @@ export type User = {
     id: number;
     name: string;
     email: string;
+    role: 'user' | 'admin';
+    is_admin: boolean;
+    is_deactivated: boolean;
+    deactivated_at: string | null;
     avatar: string | null;
     has_custom_avatar: boolean;
     email_verified_at: string | null;
@@ -32,6 +36,7 @@ export type Auth = {
     canResetPassword: boolean;
     canUsePasskeys: boolean;
     canUsePasswordLogin: boolean;
+    canDeleteAccount: boolean;
     routes: {
         register: string | null;
         passwordRequest: string | null;

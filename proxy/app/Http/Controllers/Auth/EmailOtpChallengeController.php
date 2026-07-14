@@ -66,10 +66,17 @@ class EmailOtpChallengeController extends Controller
             $challenge->email,
         );
 
+        if ($user->isDeactivated()) {
+            session()->forget('social_auth.pending_profile');
+
+            return to_route('login')
+                ->withErrors(['email' => __('Your account has been deactivated.')]);
+        }
+
         Auth::login($user, remember: true);
         session()->forget('social_auth.pending_profile');
         session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended(route('jobs.index', absolute: false));
     }
 }

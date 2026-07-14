@@ -24,6 +24,10 @@ class SocialAuthController extends Controller
         }
 
         if ($provider === 'orcid') {
+            if ($redirect = $this->orcidRegisteredHostRedirect($request)) {
+                return $this->externalRedirect($request, $redirect);
+            }
+
             return $this->externalRedirect($request, $orcid->redirect());
         }
 
@@ -53,10 +57,18 @@ class SocialAuthController extends Controller
             return to_route('auth.social.email.create');
         }
 
-        Auth::login($result->user, remember: true);
+        $user = $result->user;
+
+        abort_unless($user !== null, 500);
+
+        if ($user->isDeactivated()) {
+            return $this->inactiveUserLoginResponse();
+        }
+
+        Auth::login($user, remember: true);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended(route('jobs.index', absolute: false));
     }
 
     private function googleProfile(SocialiteFactory $socialite): ProviderProfile
@@ -82,5 +94,39 @@ class SocialAuthController extends Controller
         }
 
         return $redirect;
+    }
+
+    private function orcidRegisteredHostRedirect(Request $request): ?RedirectResponse
+    {
+        if (! in_array($request->host(), ['localhost', '127.0.0.1', '::1'], true)) {
+            return null;
+        }
+
+        $redirectUri = config('services.orcid.redirect');
+
+        if (! is_string($redirectUri) || $redirectUri === '') {
+            return null;
+        }
+
+        $parts = parse_url($redirectUri);
+
+        if (! is_array($parts) || ! isset($parts['scheme'], $parts['host'])) {
+            return null;
+        }
+
+        if ($parts['host'] === $request->host()) {
+            return null;
+        }
+
+        $port = isset($parts['port']) ? ':'.$parts['port'] : '';
+        $path = route('auth.social.redirect', ['provider' => 'orcid'], absolute: false);
+
+        return redirect()->away("{$parts['scheme']}://{$parts['host']}{$port}{$path}");
+    }
+
+    private function inactiveUserLoginResponse(): RedirectResponse
+    {
+        return to_route('login')
+            ->withErrors(['email' => __('Your account has been deactivated.')]);
     }
 }

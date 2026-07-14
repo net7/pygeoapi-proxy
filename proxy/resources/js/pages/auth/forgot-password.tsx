@@ -1,11 +1,14 @@
 // Components
 import { Form, Head } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
+import { MailIcon } from 'lucide-react';
 import InputError from '@/components/input-error';
+import StatusNotice from '@/components/status-notice';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/hooks/use-translation';
 import { login } from '@/routes';
 
 type Props = {
@@ -14,22 +17,25 @@ type Props = {
 };
 
 export default function ForgotPassword({ passwordEmailAction, status }: Props) {
+    const { t } = useTranslation();
+
     return (
         <>
-            <Head title="Forgot password" />
+            <Head title={t('auth.forgotPassword.title')} />
 
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
+            <StatusNotice
+                message={status}
+                title={t('auth.forgotPassword.resetLinkSent')}
+            />
 
-            <div className="space-y-6">
+            <div className="flex flex-col gap-6">
                 <Form action={passwordEmailAction} method="post">
                     {({ processing, errors }) => (
                         <>
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                <Label htmlFor="email">
+                                    {t('auth.emailAddress')}
+                                </Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -48,19 +54,21 @@ export default function ForgotPassword({ passwordEmailAction, status }: Props) {
                                     disabled={processing}
                                     data-test="email-password-reset-link-button"
                                 >
-                                    {processing && (
-                                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                                    {processing ? (
+                                        <Spinner data-icon="inline-start" />
+                                    ) : (
+                                        <MailIcon data-icon="inline-start" />
                                     )}
-                                    Email password reset link
+                                    {t('auth.forgotPassword.submit')}
                                 </Button>
                             </div>
                         </>
                     )}
                 </Form>
 
-                <div className="space-x-1 text-center text-sm text-muted-foreground">
-                    <span>Or, return to</span>
-                    <TextLink href={login()}>log in</TextLink>
+                <div className="flex justify-center gap-1 text-center text-sm text-muted-foreground">
+                    <span>{t('auth.forgotPassword.returnTo')}</span>
+                    <TextLink href={login()}>{t('auth.loginLink')}</TextLink>
                 </div>
             </div>
         </>
@@ -69,5 +77,7 @@ export default function ForgotPassword({ passwordEmailAction, status }: Props) {
 
 ForgotPassword.layout = {
     title: 'Forgot password',
+    titleKey: 'auth.forgotPassword.title',
     description: 'Enter your email to receive a password reset link',
+    descriptionKey: 'auth.forgotPassword.description',
 };

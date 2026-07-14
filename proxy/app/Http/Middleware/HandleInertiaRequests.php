@@ -41,12 +41,14 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'language' => app()->getLocale(),
             'auth' => [
                 'user' => $this->user($request),
                 'canRegister' => Features::enabled(Features::registration()),
                 'canResetPassword' => Features::enabled(Features::resetPasswords()),
                 'canUsePasskeys' => Features::enabled(Features::passkeys()),
                 'canUsePasswordLogin' => AuthFeatures::enabled(AuthFeatures::passwordLogin()),
+                'canDeleteAccount' => AuthFeatures::enabled(AuthFeatures::accountDeletion()),
                 'routes' => $this->authRoutes($request),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
@@ -69,6 +71,9 @@ class HandleInertiaRequests extends Middleware
 
         return [
             ...$userData,
+            'role' => $user->role->value,
+            'is_admin' => $user->isAdmin(),
+            'is_deactivated' => $user->isDeactivated(),
             'avatar' => $user->avatar(),
             'has_custom_avatar' => filled($user->avatar_path),
             'has_local_password' => $user->hasLocalPassword(),
@@ -100,7 +105,9 @@ class HandleInertiaRequests extends Middleware
                 ]
                 : null,
             'socialProviders' => $this->socialProviderRoutes(),
-            'sensitiveConfirmation' => $request->user() !== null && ! $request->user()->hasLocalPassword()
+            'sensitiveConfirmation' => $request->user() !== null
+                && AuthFeatures::enabled(AuthFeatures::accountDeletion())
+                && ! $request->user()->hasLocalPassword()
                 ? route('settings.sensitive-confirmation.send', absolute: false)
                 : null,
         ];
