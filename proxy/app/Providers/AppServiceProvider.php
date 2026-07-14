@@ -6,6 +6,7 @@ use App\Services\Ogc\OgcProcessCacheWarmupDispatcher;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -24,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(OgcProcessCacheWarmupDispatcher $warmupDispatcher): void
     {
+        $this->configureUrlScheme();
         $this->configureDefaults();
         $warmupDispatcher->dispatchIfAppropriate();
     }
@@ -48,5 +50,12 @@ class AppServiceProvider extends ServiceProvider
                 ->uncompromised()
             : null,
         );
+    }
+
+    protected function configureUrlScheme(): void
+    {
+        if ($this->app->environment(['staging', 'production'])) {
+            URL::forceScheme('https');
+        }
     }
 }
