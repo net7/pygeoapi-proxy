@@ -89,6 +89,16 @@ test('geotiff previews render through the protected map tile route', function ()
         ->not->toContain('geotiff-canvas');
 });
 
+test('map controls keep their light appearance in dark mode', function () {
+    $source = file_get_contents(getcwd().'/resources/js/components/ogc/geotiff-map-result-preview.tsx');
+
+    preg_match('/class RecenterBoundsControl.*?(?=function validBounds)/s', $source, $matches);
+
+    expect($matches[0] ?? '')
+        ->toContain("this.button.style.color = '#333'")
+        ->not->toContain('dark:');
+});
+
 test('decimal process number inputs are valid after prefill', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/schema-field-renderer.tsx');
     $tableSource = file_get_contents(getcwd().'/resources/js/components/ogc/array-table-field.tsx');

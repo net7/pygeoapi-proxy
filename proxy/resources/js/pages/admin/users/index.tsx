@@ -1128,7 +1128,12 @@ function UserFormDialog({
                 </DialogHeader>
 
                 <form onSubmit={submit} className="flex flex-col gap-5">
-                    <div className="grid gap-4 px-6 pt-5 sm:grid-cols-2">
+                    <div
+                        className={cn(
+                            'grid gap-4 px-6 pt-5',
+                            isEditing && 'sm:grid-cols-2',
+                        )}
+                    >
                         <div className="grid gap-2">
                             <Label htmlFor="admin-user-name">
                                 {t('common.name')}

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 
 test('language defaults to italian', function () {
@@ -63,4 +64,35 @@ test('custom server side user messages have italian translations', function () {
         ->values();
 
     expect($missing->all())->toBe([]);
+});
+
+test('italian validation messages cover the installed Laravel catalog', function () {
+    $frameworkMessages = require base_path('vendor/laravel/framework/src/Illuminate/Translation/lang/en/validation.php');
+    $italianMessages = require lang_path('it/validation.php');
+
+    unset(
+        $frameworkMessages['custom'],
+        $frameworkMessages['attributes'],
+        $italianMessages['custom'],
+        $italianMessages['attributes'],
+    );
+
+    $frameworkMessages = Arr::dot($frameworkMessages);
+    $italianMessages = Arr::dot($italianMessages);
+
+    expect(array_keys($italianMessages))->toBe(array_keys($frameworkMessages));
+
+    $placeholders = function (string $message): array {
+        preg_match_all('/:[A-Za-z_]+/', $message, $matches);
+
+        $placeholders = array_values(array_unique(array_map(strtolower(...), $matches[0])));
+        sort($placeholders);
+
+        return $placeholders;
+    };
+
+    foreach ($frameworkMessages as $key => $frameworkMessage) {
+        expect($italianMessages[$key])->not->toBe($frameworkMessage)
+            ->and($placeholders($italianMessages[$key]))->toBe($placeholders($frameworkMessage));
+    }
 });
