@@ -94,3 +94,19 @@ test('it ignores schema variants without a media type', function () {
         ],
     ]);
 });
+
+test('it removes display-only and unexpected data from request formats', function () {
+    $requestFormat = app(ProcessOutputFormatExtractor::class)->requestFormat([
+        'label' => 'GeoJSON document',
+        'mediaType' => 'application/geo+json',
+        'encoding' => 'utf-8',
+        'schema' => ['type' => 'object'],
+        'unexpected' => 'not trusted',
+    ]);
+
+    expect($requestFormat)->toBe([
+        'mediaType' => 'application/geo+json',
+        'encoding' => 'utf-8',
+        'schema' => ['type' => 'object'],
+    ]);
+});
