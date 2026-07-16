@@ -43,8 +43,29 @@ class OgcProcessesClient
     {
         return $this->request()
             ->withHeader('Prefer', $prefer)
-            ->post($this->path("/processes/{$processId}/execution"), $payload)
+            ->post(
+                $this->path("/processes/{$processId}/execution"),
+                $this->payloadForTransport($payload),
+            )
             ->throw();
+    }
+
+    /**
+     * Keep job and model payloads as arrays, but serialize the OGC output map as an object.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function payloadForTransport(array $payload): array
+    {
+        if (
+            array_key_exists('outputs', $payload)
+            && is_array($payload['outputs'])
+        ) {
+            $payload['outputs'] = (object) $payload['outputs'];
+        }
+
+        return $payload;
     }
 
     /**
