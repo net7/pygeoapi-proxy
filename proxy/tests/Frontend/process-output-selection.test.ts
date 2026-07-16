@@ -79,6 +79,62 @@ describe('process output selection', () => {
         });
     });
 
+    test('returns the same state when selecting unknown outputs', () => {
+        const selections = initialOutputSelections(outputs);
+
+        for (const outputId of ['missing', 'constructor', 'toString']) {
+            expect(setOutputSelected(selections, outputId, false)).toBe(
+                selections,
+            );
+        }
+    });
+
+    test('returns the same state when formatting unknown outputs', () => {
+        const selections = initialOutputSelections(outputs);
+
+        for (const outputId of ['missing', 'constructor', 'toString']) {
+            expect(setOutputFormat(selections, outputId, textFormat)).toBe(
+                selections,
+            );
+        }
+    });
+
+    test('updates selection without mutating the original state', () => {
+        const selections = initialOutputSelections(outputs);
+        const originalSelection = selections.solwcad_out;
+
+        const updated = setOutputSelected(selections, 'solwcad_out', false);
+
+        expect(updated).not.toBe(selections);
+        expect(updated.solwcad_out).not.toBe(originalSelection);
+        expect(selections.solwcad_out).toEqual({
+            selected: true,
+            format: jsonFormat,
+        });
+        expect(updated.solwcad_out).toEqual({
+            selected: false,
+            format: jsonFormat,
+        });
+    });
+
+    test('updates format without mutating the original state', () => {
+        const selections = initialOutputSelections(outputs);
+        const originalSelection = selections.solwcad_out;
+
+        const updated = setOutputFormat(selections, 'solwcad_out', textFormat);
+
+        expect(updated).not.toBe(selections);
+        expect(updated.solwcad_out).not.toBe(originalSelection);
+        expect(selections.solwcad_out).toEqual({
+            selected: true,
+            format: jsonFormat,
+        });
+        expect(updated.solwcad_out).toEqual({
+            selected: true,
+            format: textFormat,
+        });
+    });
+
     test('serializes only selected outputs and removes display labels', () => {
         let selections = initialOutputSelections(outputs);
 
@@ -130,6 +186,51 @@ describe('process output selection', () => {
         });
     });
 
+    test('serializes a present empty encoding', () => {
+        const selections = {
+            solwcad_out: {
+                selected: true,
+                format: {
+                    ...jsonFormat,
+                    encoding: '',
+                },
+            },
+        };
+
+        expect(buildRequestedOutputs(selections)).toEqual({
+            solwcad_out: {
+                format: {
+                    mediaType: 'application/json',
+                    encoding: '',
+                },
+            },
+        });
+    });
+
+    test('does not serialize browser-only transmission mode state', () => {
+        const selections = {
+            chart: {
+                selected: true,
+                format: {
+                    ...chartFormat,
+                    transmissionMode: 'reference',
+                },
+            },
+        };
+
+        expect(buildRequestedOutputs(selections)).toEqual({
+            chart: {
+                format: {
+                    mediaType: 'application/json',
+                    schema: {
+                        type: 'object',
+                        required: ['series'],
+                    },
+                },
+            },
+        });
+    });
+
     test('builds stable select keys and readable labels', () => {
         expect(outputFormatKey(jsonFormat)).toBe(
             outputFormatKey({ ...jsonFormat }),
@@ -138,6 +239,35 @@ describe('process output selection', () => {
             'JSON Array — application/json',
         );
         expect(outputFormatLabel(chartFormat)).toBe('application/json');
+    });
+
+    test('canonicalizes nested schema key order for stable select keys', () => {
+        const firstFormat: OgcOutputFormat = {
+            label: 'Chart',
+            mediaType: 'application/json',
+            schema: {
+                type: 'object',
+                properties: {
+                    series: { type: 'array' },
+                    title: { type: 'string' },
+                },
+            },
+        };
+        const secondFormat: OgcOutputFormat = {
+            label: 'Chart',
+            mediaType: 'application/json',
+            schema: {
+                properties: {
+                    title: { type: 'string' },
+                    series: { type: 'array' },
+                },
+                type: 'object',
+            },
+        };
+
+        expect(outputFormatKey(firstFormat)).toBe(
+            outputFormatKey(secondFormat),
+        );
     });
 
     test('returns the first nested output validation error', () => {
@@ -149,5 +279,25 @@ describe('process output selection', () => {
             }),
         ).toBe('This output format is not available.');
         expect(firstOutputError({ inputs: 'Ignore' })).toBeUndefined();
+    });
+
+    test('returns the direct outputs validation error first', () => {
+        expect(
+            firstOutputError({
+                outputs: 'Select at least one output.',
+                'outputs.solwcad_out.format':
+                    'This output format is not available.',
+            }),
+        ).toBe('Select at least one output.');
+    });
+
+    test('skips empty output validation errors', () => {
+        expect(
+            firstOutputError({
+                outputs: '',
+                'outputs.solwcad_out': undefined,
+                'outputs.chart.format': 'This output format is not available.',
+            }),
+        ).toBe('This output format is not available.');
     });
 });

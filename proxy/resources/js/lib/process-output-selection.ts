@@ -37,11 +37,11 @@ export function setOutputSelected(
     outputId: string,
     selected: boolean,
 ): ProcessOutputSelections {
-    const current = selections[outputId];
-
-    if (!current) {
+    if (!Object.hasOwn(selections, outputId)) {
         return selections;
     }
+
+    const current = selections[outputId];
 
     return {
         ...selections,
@@ -57,11 +57,11 @@ export function setOutputFormat(
     outputId: string,
     format: OgcOutputFormat,
 ): ProcessOutputSelections {
-    const current = selections[outputId];
-
-    if (!current) {
+    if (!Object.hasOwn(selections, outputId)) {
         return selections;
     }
+
+    const current = selections[outputId];
 
     return {
         ...selections,
@@ -117,7 +117,7 @@ export function firstOutputError(
 function requestFormat(format: OgcOutputFormat) {
     return {
         mediaType: format.mediaType,
-        ...(format.encoding ? { encoding: format.encoding } : {}),
+        ...(format.encoding !== undefined ? { encoding: format.encoding } : {}),
         ...(format.schema !== undefined ? { schema: format.schema } : {}),
     };
 }
