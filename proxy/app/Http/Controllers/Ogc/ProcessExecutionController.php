@@ -75,7 +75,10 @@ class ProcessExecutionController extends Controller
 
         $payload = [
             'inputs' => $request->executionInputs(),
-            'outputs' => $outputRequestBuilder->forProcess($processDescription),
+            'outputs' => $outputRequestBuilder->forProcess(
+                $processDescription,
+                $request->outputSelection(),
+            ),
         ];
         $mode = $request->executionMode();
 

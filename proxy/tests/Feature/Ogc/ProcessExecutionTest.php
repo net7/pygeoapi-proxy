@@ -29,14 +29,23 @@ test('starting a process creates an async local execution and redirects without 
 
     $payload = [
         'inputs' => conduitExampleInputs(),
-        'outputs' => ['gas' => ['transmissionMode' => 'reference']],
+        'outputs' => [
+            'gas' => [
+                'format' => [
+                    'mediaType' => 'application/json',
+                    'schema' => '#/$defs/chart',
+                ],
+            ],
+        ],
     ];
     $expectedOutputs = [
-        'gas' => ['transmissionMode' => 'value'],
-        'velocity' => ['transmissionMode' => 'value'],
-        'pressure' => ['transmissionMode' => 'value'],
-        'outfile' => ['transmissionMode' => 'reference'],
-        'exit' => ['transmissionMode' => 'value'],
+        'gas' => [
+            'format' => [
+                'mediaType' => 'application/json',
+                'schema' => '#/$defs/chart',
+            ],
+            'transmissionMode' => 'value',
+        ],
     ];
 
     $response = $this->actingAs($user)->post(route('processes.jobs.store', 'conduit'), $payload);
@@ -97,13 +106,7 @@ test('starting a process stores an optional user note without sending it to the 
         'inputs' => conduitExampleInputs(),
         'note' => $note,
     ];
-    $expectedOutputs = [
-        'gas' => ['transmissionMode' => 'value'],
-        'velocity' => ['transmissionMode' => 'value'],
-        'pressure' => ['transmissionMode' => 'value'],
-        'outfile' => ['transmissionMode' => 'reference'],
-        'exit' => ['transmissionMode' => 'value'],
-    ];
+    $expectedOutputs = expectedConduitOutputRequestsForExecution();
 
     $this->actingAs($user)->post(route('processes.jobs.store', 'conduit'), $payload);
 
@@ -127,7 +130,6 @@ test('starting a process without a note leaves note timestamps empty', function 
 
     $this->actingAs($user)->post(route('processes.jobs.store', 'conduit'), [
         'inputs' => conduitExampleInputs(),
-        'outputs' => ['gas' => ['transmissionMode' => 'value']],
     ]);
 
     $execution = ProcessExecution::query()->sole();
@@ -146,7 +148,6 @@ test('starting a process ignores a client requested synchronous mode', function 
     $response = $this->actingAs($user)->post(route('processes.jobs.store', 'conduit'), [
         'mode' => 'sync',
         'inputs' => conduitExampleInputs(),
-        'outputs' => ['gas' => ['transmissionMode' => 'value']],
     ]);
 
     $execution = ProcessExecution::query()->sole();
@@ -182,7 +183,6 @@ test('starting a process does not fall back to pygeoapi when process cache is mi
 
     $response = $this->actingAs(User::factory()->create())->post(route('processes.jobs.store', 'conduit'), [
         'inputs' => ['lat' => 14.47],
-        'outputs' => ['gas' => ['transmissionMode' => 'value']],
     ]);
 
     $response->assertStatus(409);
@@ -192,6 +192,224 @@ test('starting a process does not fall back to pygeoapi when process cache is mi
     Bus::assertNotDispatched(SubmitProcessExecutionJob::class);
     Http::assertNothingSent();
 });
+
+test('starting a process without outputs requests every advertised output', function () {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    app(OgcProcessCache::class)->putProcess(
+        'conduit',
+        ogcFixture('process-conduit'),
+    );
+
+    $this->actingAs($user)->post(
+        route('processes.jobs.store', 'conduit'),
+        ['inputs' => conduitExampleInputs()],
+    )->assertRedirect();
+
+    $execution = ProcessExecution::query()->sole();
+
+    expect($execution->requested_outputs)->toBe(
+        expectedConduitOutputRequestsForExecution(),
+    );
+
+    Bus::assertDispatched(
+        SubmitProcessExecutionJob::class,
+        fn (SubmitProcessExecutionJob $job): bool => $job->payload['outputs'] ===
+                expectedConduitOutputRequestsForExecution(),
+    );
+});
+
+test('starting a process accepts an explicitly empty output selection', function () {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    app(OgcProcessCache::class)->putProcess(
+        'conduit',
+        ogcFixture('process-conduit'),
+    );
+
+    $this->actingAs($user)->post(
+        route('processes.jobs.store', 'conduit'),
+        [
+            'inputs' => conduitExampleInputs(),
+            'outputs' => [],
+        ],
+    )->assertRedirect();
+
+    $execution = ProcessExecution::query()->sole();
+
+    expect($execution->requested_outputs)->toBe([]);
+
+    Bus::assertDispatched(
+        SubmitProcessExecutionJob::class,
+        fn (SubmitProcessExecutionJob $job): bool => $job->payload['outputs'] === [],
+    );
+});
+
+test('starting a process rejects unknown output identifiers and formats', function (
+    array $outputs,
+    string $errorKey,
+) {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    $inputs = ogcFixture(
+        'process-solwcad',
+    )['examples'][0]['payload_example']['inputs'];
+    app(OgcProcessCache::class)->putProcess(
+        'solwcad',
+        ogcFixture('process-solwcad'),
+    );
+
+    $this->actingAs($user)->post(
+        route('processes.jobs.store', 'solwcad'),
+        [
+            'inputs' => $inputs,
+            'outputs' => $outputs,
+        ],
+    )->assertInvalid([$errorKey]);
+
+    expect(ProcessExecution::query()->count())->toBe(0);
+    Bus::assertNotDispatched(SubmitProcessExecutionJob::class);
+    Http::assertNothingSent();
+})->with([
+    'unknown output' => [
+        ['unknown' => []],
+        'outputs.unknown',
+    ],
+    'unknown format' => [
+        [
+            'solwcad_out' => [
+                'format' => ['mediaType' => 'application/xml'],
+            ],
+        ],
+        'outputs.solwcad_out.format',
+    ],
+]);
+
+test('starting a process rejects positional outputs and client transmission mode', function (
+    array $outputs,
+    string $errorKey,
+) {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    $inputs = ogcFixture(
+        'process-solwcad',
+    )['examples'][0]['payload_example']['inputs'];
+    app(OgcProcessCache::class)->putProcess(
+        'solwcad',
+        ogcFixture('process-solwcad'),
+    );
+
+    $this->actingAs($user)->post(
+        route('processes.jobs.store', 'solwcad'),
+        [
+            'inputs' => $inputs,
+            'outputs' => $outputs,
+        ],
+    )->assertInvalid([$errorKey]);
+
+    expect(ProcessExecution::query()->count())->toBe(0);
+    Bus::assertNotDispatched(SubmitProcessExecutionJob::class);
+})->with([
+    'positional list' => [
+        [['format' => ['mediaType' => 'application/json']]],
+        'outputs',
+    ],
+    'transmission mode' => [
+        ['solwcad_out' => ['transmissionMode' => 'reference']],
+        'outputs.solwcad_out',
+    ],
+]);
+
+test('starting a process rejects malformed output selection structures', function (
+    mixed $outputs,
+    string $errorKey,
+) {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    $inputs = ogcFixture(
+        'process-solwcad',
+    )['examples'][0]['payload_example']['inputs'];
+    app(OgcProcessCache::class)->putProcess(
+        'solwcad',
+        ogcFixture('process-solwcad'),
+    );
+
+    $this->actingAs($user)->post(
+        route('processes.jobs.store', 'solwcad'),
+        [
+            'inputs' => $inputs,
+            'outputs' => $outputs,
+        ],
+    )->assertInvalid([$errorKey]);
+
+    expect(ProcessExecution::query()->count())->toBe(0);
+    Bus::assertNotDispatched(SubmitProcessExecutionJob::class);
+    Http::assertNothingSent();
+})->with([
+    'outputs is not an array' => [
+        'solwcad_out',
+        'outputs',
+    ],
+    'output configuration is not an array' => [
+        ['solwcad_out' => 'application/json'],
+        'outputs.solwcad_out',
+    ],
+    'format is not an array' => [
+        ['solwcad_out' => ['format' => 'application/json']],
+        'outputs.solwcad_out.format',
+    ],
+    'format omits media type' => [
+        ['solwcad_out' => ['format' => ['encoding' => 'utf-8']]],
+        'outputs.solwcad_out.format.mediaType',
+    ],
+    'media type is not a string' => [
+        ['solwcad_out' => ['format' => ['mediaType' => 123]]],
+        'outputs.solwcad_out.format.mediaType',
+    ],
+    'encoding is not a string' => [
+        [
+            'solwcad_out' => [
+                'format' => [
+                    'mediaType' => 'application/json',
+                    'encoding' => 123,
+                ],
+            ],
+        ],
+        'outputs.solwcad_out.format.encoding',
+    ],
+    'schema is neither a string nor an object' => [
+        [
+            'solwcad_out' => [
+                'format' => [
+                    'mediaType' => 'application/json',
+                    'schema' => true,
+                ],
+            ],
+        ],
+        'outputs.solwcad_out.format.schema',
+    ],
+    'format has an unexpected key' => [
+        [
+            'solwcad_out' => [
+                'format' => [
+                    'mediaType' => 'application/json',
+                    'label' => 'JSON',
+                ],
+            ],
+        ],
+        'outputs.solwcad_out.format',
+    ],
+]);
 
 test('it creates a submitting local execution with redacted stored payload', function () {
     $user = User::factory()->create();
@@ -328,4 +546,35 @@ test('submission job ignores missing terminal and already submitted executions',
 function conduitExampleInputs(): array
 {
     return ogcFixture('process-conduit')['examples'][0]['payload_example']['inputs'];
+}
+
+function expectedConduitOutputRequestsForExecution(): array
+{
+    $chartFormat = [
+        'mediaType' => 'application/json',
+        'schema' => '#/$defs/chart',
+    ];
+
+    return [
+        'gas' => [
+            'format' => $chartFormat,
+            'transmissionMode' => 'value',
+        ],
+        'velocity' => [
+            'format' => $chartFormat,
+            'transmissionMode' => 'value',
+        ],
+        'pressure' => [
+            'format' => $chartFormat,
+            'transmissionMode' => 'value',
+        ],
+        'outfile' => [
+            'format' => ['mediaType' => 'text/csv; header=present'],
+            'transmissionMode' => 'reference',
+        ],
+        'exit' => [
+            'format' => ['mediaType' => 'text/plain'],
+            'transmissionMode' => 'value',
+        ],
+    ];
 }
