@@ -92,7 +92,7 @@ test('it serializes an empty output map as a json object', function () {
             flags: JSON_THROW_ON_ERROR,
         );
 
-        return $json->outputs instanceof \stdClass
+        return $json->outputs instanceof stdClass
             && get_object_vars($json->outputs) === [];
     });
 });
