@@ -48,6 +48,17 @@ describe('i18n', () => {
         );
     });
 
+    test('translates process output selection controls', () => {
+        expect(translate('it', 'ogc.outputFormat')).toBe('Formato output');
+        expect(translate('en', 'ogc.outputFormat')).toBe('Output format');
+        expect(translate('it', 'ogc.noOutputsSelected')).toBe(
+            'Nessun output verrà richiesto',
+        );
+        expect(translate('en', 'ogc.noOutputsSelected')).toBe(
+            'No outputs will be requested',
+        );
+    });
+
     test('uses italian process wording for job labels', () => {
         expect(translate('it', 'navigation.myJobs')).toBe('I miei processi');
         expect(translate('it', 'admin.userJobs')).toBe('Processi');

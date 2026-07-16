@@ -2,8 +2,8 @@ import { useForm } from '@inertiajs/react';
 import { AlertCircleIcon, PlayIcon, WandSparklesIcon } from 'lucide-react';
 
 import InputError from '@/components/input-error';
-import ExpectedOutputs from '@/components/ogc/expected-outputs';
 import { JobNoteEditor } from '@/components/ogc/job-note-editor';
+import ProcessOutputSelector from '@/components/ogc/process-output-selector';
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -18,17 +18,36 @@ import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
 import { markJobsIndexStale } from '@/lib/job-list-refresh';
+import {
+    buildRequestedOutputs,
+    firstOutputError,
+    initialOutputSelections,
+} from '@/lib/process-output-selection';
+import type { ProcessOutputSelections } from '@/lib/process-output-selection';
 import { store } from '@/routes/processes/jobs';
 import type {
     OgcFormSchema,
     OgcNormalizedField,
+    OgcOutputFormat,
     TiptapDocument,
 } from '@/types';
+
+type FormOutputSelections = Record<
+    string,
+    Omit<ProcessOutputSelections[string], 'format'> & {
+        format:
+            | (Omit<OgcOutputFormat, 'schema'> & {
+                  schema?: string | Record<string, any>;
+              })
+            | null;
+    }
+>;
 
 type FormData = {
     name: string;
     inputs: Record<string, any>;
     note: TiptapDocument | null;
+    outputs: FormOutputSelections;
 };
 
 export default function DynamicProcessForm({
@@ -42,7 +61,9 @@ export default function DynamicProcessForm({
             name: '',
             inputs: initialInputValues(schema.fields),
             note: null,
+            outputs: initialOutputSelections(schema.outputs),
         });
+    const outputSelections = data.outputs;
 
     function setInput(name: string, value: unknown) {
         setData('inputs', {
@@ -78,6 +99,7 @@ export default function DynamicProcessForm({
                 transform((formData) => ({
                     ...formData,
                     inputs: normalizeInputs(schema.fields, formData.inputs),
+                    outputs: buildRequestedOutputs(formData.outputs),
                 }));
                 submit(store(schema.id), {
                     onSuccess: () => markJobsIndexStale(),
@@ -87,7 +109,7 @@ export default function DynamicProcessForm({
             {Object.keys(errors).length > 0 ? (
                 <Alert variant="destructive">
                     <AlertCircleIcon />
-                    <AlertTitle>{t('ogc.checkInputs')}</AlertTitle>
+                    <AlertTitle>{t('ogc.checkProcessData')}</AlertTitle>
                     <AlertDescription>
                         {t('ogc.someValuesNeedAttention')}
                     </AlertDescription>
@@ -145,7 +167,14 @@ export default function DynamicProcessForm({
                 </CardContent>
             </Card>
 
-            <ExpectedOutputs outputs={schema.outputs} />
+            <ProcessOutputSelector
+                outputs={schema.outputs}
+                selections={outputSelections}
+                onChange={(outputs) => setData('outputs', outputs)}
+                error={firstOutputError(
+                    errors as Record<string, string | undefined>,
+                )}
+            />
 
             <Card className="min-w-0">
                 <CardHeader>

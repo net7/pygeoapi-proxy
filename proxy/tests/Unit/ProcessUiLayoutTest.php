@@ -1,20 +1,21 @@
 <?php
 
-test('process form stacks name inputs expected outputs and note as full width sections', function () {
+test('process form stacks name inputs selectable outputs and note as full width sections', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/dynamic-process-form.tsx');
 
     expect($source)
         ->toContain("name: ''")
-        ->toContain('ExpectedOutputs')
+        ->toContain('ProcessOutputSelector')
+        ->toContain('outputs: initialOutputSelections(schema.outputs)')
+        ->toContain("setData('outputs'")
+        ->toContain('buildRequestedOutputs(')
         ->toContain("t('jobs.processName')")
         ->toContain("t('jobs.processNamePlaceholder')")
         ->toContain("t('jobs.noteDescription')")
         ->toContain('aria-label={t(\'jobs.processName\')}')
         ->toContain('@/routes/processes/jobs')
         ->toContain('ogc.inputs')
-        ->not->toContain('OutputSelector')
-        ->not->toContain('outputs: initialOutputValues')
-        ->not->toContain("setData('outputs'")
+        ->not->toContain('ExpectedOutputs')
         ->not->toContain('ogc.execution')
         ->not->toContain('<Label htmlFor="process-name">')
         ->not->toContain('lg:grid-cols-[minmax(0,1fr)_22rem]')
@@ -945,17 +946,22 @@ test('csv result previews use structured normalization instead of comma splittin
         ->not->toContain("row.split(',')");
 });
 
-test('expected outputs renders a simple unordered list', function () {
-    $source = file_get_contents(getcwd().'/resources/js/components/ogc/expected-outputs.tsx');
+test('process output selector renders checkboxes formats and empty selection feedback', function () {
+    $source = file_get_contents(
+        getcwd().'/resources/js/components/ogc/process-output-selector.tsx',
+    );
 
     expect($source)
-        ->toContain('<ul')
-        ->toContain('list-disc')
-        ->toContain('output.title')
-        ->toContain('output.description')
-        ->not->toContain('output.mediaType')
-        ->not->toContain('automaticOutputTransmissionMode')
-        ->not->toContain('outputComponents');
+        ->toContain('<Checkbox')
+        ->toContain('checked={selection.selected}')
+        ->toContain('setOutputSelected')
+        ->toContain('<Select')
+        ->toContain('output.formats.length > 1')
+        ->toContain('output.formats.length === 1')
+        ->toContain('disabled={!selection.selected}')
+        ->toContain("t('ogc.outputFormat')")
+        ->toContain("t('ogc.noOutputsSelected')")
+        ->toContain('<InputError message={error}');
 });
 
 test('one of descriptions are shown before the selector', function () {
@@ -972,21 +978,25 @@ test('one of descriptions are shown before the selector', function () {
         ->and($selectedDescriptionPosition)->toBeLessThan($selectPosition);
 });
 
-test('process form does not expose output selection controls', function () {
+test('process form sends output selections without browser transmission modes', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/dynamic-process-form.tsx');
-    $helperSource = file_get_contents(getcwd().'/resources/js/lib/ogc-outputs.ts');
+    $helperSource = file_get_contents(
+        getcwd().'/resources/js/lib/process-output-selection.ts',
+    );
 
     expect($source)
-        ->toContain('<ExpectedOutputs outputs={schema.outputs} />')
-        ->not->toContain('initialOutputValues(schema.outputs)')
-        ->not->toContain('exampleTransmissionMode(')
-        ->not->toContain("setData('outputs'");
+        ->toContain('<ProcessOutputSelector')
+        ->toContain('initialOutputSelections(schema.outputs)')
+        ->toContain('buildRequestedOutputs')
+        ->toContain("setData('outputs'")
+        ->toContain('firstOutputError')
+        ->not->toContain('ExpectedOutputs');
 
     expect($helperSource)
-        ->toContain('automaticOutputTransmissionMode')
-        ->toContain("'text/plain'")
-        ->toContain("endsWith('+json')")
-        ->toContain("'reference'");
+        ->toContain('mediaType: format.mediaType')
+        ->toContain('encoding: format.encoding')
+        ->toContain('schema: format.schema')
+        ->not->toContain('transmissionMode');
 });
 
 test('sidebar labels process executions as jobs', function () {

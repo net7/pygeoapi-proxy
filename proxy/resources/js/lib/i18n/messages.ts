@@ -343,6 +343,7 @@ const it = {
         chartShowAll: 'Mostra tutte le serie',
         chartValueAxis: 'Valore',
         checkInputs: 'Controlla gli input del processo',
+        checkProcessData: 'Controlla i dati del processo',
         csvPreviewTruncated:
             'Anteprima limitata alle prime righe. Scarica il CSV per il file completo.',
         defaultResponse: 'Risposta predefinita',
@@ -362,11 +363,15 @@ const it = {
         mapLayerUnavailable: 'Mappa non disponibile.',
         mapLayerUnpublished: 'Mappa non ancora pubblicata.',
         noDescription: 'Nessuna descrizione disponibile.',
+        noOutputsSelected: 'Nessun output verrà richiesto',
+        noOutputsSelectedDescription:
+            'Il processo verrà avviato senza richiedere risultati.',
         notAdvertised: 'Non pubblicizzato',
         openProcess: 'Apri processo',
         outputModes: 'Modalità output',
         outputCountMany: '{count} output',
         outputCountOne: '{count} output',
+        outputFormat: 'Formato output',
         outputs: 'Output',
         prefillTestData: 'PRECOMPILA DATI TEST',
         previewUnavailable: 'Anteprima non disponibile.',
@@ -392,6 +397,8 @@ const it = {
         servicePreparingDescription:
             'La lista processi apparirà al termine del warm-up in background.',
         servicePreparingTitle: 'Catalogo servizi in preparazione',
+        selectOutputsDescription:
+            'Scegli gli output da richiedere e, quando disponibile, il formato desiderato.',
         servicesLastUpdatedAt: 'Ultimo aggiornamento servizi: {date}',
         sldDownload: 'SLD',
         someValuesNeedAttention:
@@ -809,6 +816,7 @@ const en = {
         chartShowAll: 'Show all series',
         chartValueAxis: 'Value',
         checkInputs: 'Check the process inputs',
+        checkProcessData: 'Check the process data',
         csvPreviewTruncated:
             'Preview limited to the first rows. Download the CSV for the full file.',
         defaultResponse: 'Default response',
@@ -828,11 +836,15 @@ const en = {
         mapLayerUnavailable: 'Map unavailable.',
         mapLayerUnpublished: 'Map not published yet.',
         noDescription: 'No description provided.',
+        noOutputsSelected: 'No outputs will be requested',
+        noOutputsSelectedDescription:
+            'The process will start without requesting results.',
         notAdvertised: 'Not advertised',
         openProcess: 'Open process',
         outputModes: 'Output modes',
         outputCountMany: '{count} outputs',
         outputCountOne: '{count} output',
+        outputFormat: 'Output format',
         outputs: 'Outputs',
         prefillTestData: 'PREFILL TEST DATA',
         previewUnavailable: 'Preview unavailable.',
@@ -857,6 +869,8 @@ const en = {
         servicePreparingDescription:
             'The process list will appear when the background warm-up finishes.',
         servicePreparingTitle: 'Service catalog is being prepared',
+        selectOutputsDescription:
+            'Choose the outputs to request and, when available, the preferred format.',
         servicesLastUpdatedAt: 'Services last updated: {date}',
         sldDownload: 'SLD',
         someValuesNeedAttention:
