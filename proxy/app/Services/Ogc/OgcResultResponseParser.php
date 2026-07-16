@@ -30,6 +30,10 @@ class OgcResultResponseParser
      */
     public function parse(ProcessExecution $execution, Response $response, ?string $outputId = null): array
     {
+        if ($outputId === null && $execution->requested_outputs === []) {
+            return [];
+        }
+
         $contentType = (string) $response->header('Content-Type');
         $mediaType = $this->mediaType($contentType);
         $resultMediaType = $this->resultMediaType($contentType);

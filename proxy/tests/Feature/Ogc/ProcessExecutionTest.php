@@ -458,7 +458,44 @@ test('it submits a synchronous execution with the original payload and stores pr
 
     Http::assertSent(fn (Request $request): bool => $request->url() === 'https://voice.pi.ingv.it/geoinquire/processes/conduit/execution'
         && $request['inputs'] === $payload['inputs']
-        && $request['outputs'] === $payload['outputs']);
+        && $request['outputs'] instanceof stdClass
+        && get_object_vars($request['outputs']) === $payload['outputs']);
+});
+
+test('it completes a synchronous zero output execution without storing results', function () {
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    $process = ogcFixture('process-conduit');
+    $payload = [
+        'inputs' => [
+            'melt_composition' => [
+                'value' => ['sio2' => 0.7, 'tio2' => 0.01],
+            ],
+        ],
+        'outputs' => [],
+    ];
+    $execution = app(CreateProcessExecution::class)->handle(
+        $user,
+        $process,
+        $payload,
+        ExecutionMode::Sync,
+    );
+
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/processes/conduit/execution' => Http::response(ogcFixture('chart-result')),
+    ]);
+
+    $execution = app(SubmitProcessExecution::class)->handle(
+        $execution,
+        $payload,
+    );
+
+    expect($execution->status)->toBe(ExecutionStatus::Successful)
+        ->and($execution->requested_outputs)->toBe([])
+        ->and($execution->results)->toHaveCount(0);
+
+    Http::assertSentCount(1);
 });
 
 test('it submits an asynchronous execution and dispatches polling', function () {
