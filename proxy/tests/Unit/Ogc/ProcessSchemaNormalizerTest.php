@@ -133,6 +133,24 @@ test('it normalizes array tables', function () {
         ->and($normalized['outputs']['solwcad_out']['mediaType'])->toBe('application/json');
 });
 
+test('it normalizes ordered selectable output formats from solwcad', function () {
+    $normalized = app(ProcessSchemaNormalizer::class)->normalize(
+        ogcFixture('process-solwcad'),
+    );
+
+    expect($normalized['outputs']['solwcad_out']['formats'])->toBe([
+        [
+            'label' => 'JSON Array',
+            'mediaType' => 'application/json',
+        ],
+        [
+            'label' => 'Plain text Array',
+            'mediaType' => 'text/plain',
+        ],
+    ])->and($normalized['outputs']['solwcad_out']['mediaType'])
+        ->toBe('application/json');
+});
+
 test('it normalizes repeatable object arrays', function () {
     $process = ogcFixture('process-pybox');
 

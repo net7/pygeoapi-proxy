@@ -6,6 +6,10 @@ use Illuminate\Support\Arr;
 
 class ProcessSchemaNormalizer
 {
+    public function __construct(
+        private ProcessOutputFormatExtractor $outputFormatExtractor,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $process
      * @return array<string, mixed>
@@ -266,7 +270,9 @@ class ProcessSchemaNormalizer
         $normalized = [];
 
         foreach ($outputs as $name => $output) {
-            $schema = $output['schema'] ?? [];
+            $schema = is_array($output['schema'] ?? null)
+                ? $output['schema']
+                : [];
             $components = $this->normalizeOutputComponents($schema);
 
             $normalized[$name] = [
@@ -278,6 +284,7 @@ class ProcessSchemaNormalizer
                 'schemaRef' => $schema['$ref'] ?? null,
                 'schemaType' => $schema['type'] ?? null,
                 'components' => $components,
+                'formats' => $this->outputFormatExtractor->formats($schema),
             ];
         }
 

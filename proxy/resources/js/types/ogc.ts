@@ -56,6 +56,13 @@ export type OgcNormalizedField = {
     references?: { label: string; href: string; mediaType?: string | null }[];
 };
 
+export type OgcOutputFormat = {
+    label: string;
+    mediaType: string;
+    encoding?: string;
+    schema?: string | Record<string, unknown>;
+};
+
 export type OgcNormalizedOutput = {
     name: string;
     title: string;
@@ -64,6 +71,7 @@ export type OgcNormalizedOutput = {
     contentEncoding?: string | null;
     schemaRef?: string | null;
     schemaType?: string | null;
+    formats: OgcOutputFormat[];
     components?: Record<
         string,
         {
