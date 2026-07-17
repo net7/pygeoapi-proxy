@@ -25,7 +25,7 @@ export default function SectionFieldSet({
     return (
         <FieldSet
             className={cn(
-                'max-w-full min-w-0 gap-4 rounded-md border bg-muted/30 p-4 shadow-xs dark:border-border/70 dark:bg-muted/20',
+                'block max-w-full min-w-0 gap-4 rounded-md border bg-muted/30 p-4 shadow-xs dark:border-border/70 dark:bg-muted/20',
                 className,
             )}
             data-field-path={fieldPath}
@@ -36,13 +36,15 @@ export default function SectionFieldSet({
             <FieldLegend className="mb-1 w-fit px-1 text-sm">
                 {label}
             </FieldLegend>
-            {description ? (
-                <FieldDescription className="break-words">
-                    {description}
-                </FieldDescription>
-            ) : null}
-            <InputError id={errorId} message={error} />
-            {children}
+            <div className="flex min-w-0 flex-col gap-4">
+                {description ? (
+                    <FieldDescription className="break-words">
+                        {description}
+                    </FieldDescription>
+                ) : null}
+                <InputError id={errorId} message={error} />
+                {children}
+            </div>
         </FieldSet>
     );
 }

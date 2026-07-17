@@ -136,4 +136,18 @@ describe('OGC form values', () => {
         expect(source).toContain('{variant.label}');
         expect(source).not.toContain('{variant.id}: {variant.label}');
     });
+
+    test('keeps conditional fields in normal layout flow before select interaction', () => {
+        const source = readFileSync(
+            'resources/js/components/ogc/section-field-set.tsx',
+            'utf8',
+        );
+
+        expect(source).toContain(
+            "'block max-w-full min-w-0 gap-4 rounded-md border",
+        );
+        expect(source).toContain(
+            '<div className="flex min-w-0 flex-col gap-4">',
+        );
+    });
 });
