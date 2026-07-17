@@ -312,7 +312,7 @@ function DetailSection({
 }) {
     const header = (
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0">
+            <div className="flex min-w-0 flex-col gap-1">
                 <CardTitleWithIcon
                     titleIcon={Icon}
                     collapsible={defaultOpen !== undefined}

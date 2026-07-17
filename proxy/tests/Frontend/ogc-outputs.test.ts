@@ -333,4 +333,25 @@ describe('groupProcessResults', () => {
         );
         expect(source).not.toContain('result.description !== result.title');
     });
+
+    test('keeps title and description spacing consistent across result cards', () => {
+        const resultPreviewSource = readFileSync(
+            'resources/js/components/ogc/result-preview.tsx',
+            'utf8',
+        );
+        const jobDetailSource = readFileSync(
+            'resources/js/pages/process-executions/show.tsx',
+            'utf8',
+        );
+
+        expect(resultPreviewSource).toContain(
+            '<div className="flex min-w-0 flex-col gap-1">',
+        );
+        expect(resultPreviewSource).toContain(
+            '<div className="flex items-start justify-between gap-3">',
+        );
+        expect(jobDetailSource).toContain(
+            '<div className="flex min-w-0 flex-col gap-1">',
+        );
+    });
 });

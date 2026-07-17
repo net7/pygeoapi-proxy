@@ -47,8 +47,8 @@ export default function ResultPreview({
         <Collapsible defaultOpen asChild>
             <Card className="shadow-sm dark:border-border/70 dark:bg-card/95">
                 <CardHeader>
-                    <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 flex-col gap-1">
                             <CardTitle className="flex min-w-0 items-center gap-2">
                                 <FileTextIcon
                                     aria-hidden="true"
