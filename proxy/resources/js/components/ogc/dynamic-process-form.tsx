@@ -19,6 +19,11 @@ import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
 import { markJobsIndexStale } from '@/lib/job-list-refresh';
 import {
+    exampleInputsToFormValues,
+    initialInputValues,
+    normalizeInputs,
+} from '@/lib/ogc-form-values';
+import {
     buildRequestedOutputs,
     firstOutputError,
     initialOutputSelections,
@@ -27,7 +32,6 @@ import type { ProcessOutputSelections } from '@/lib/process-output-selection';
 import { store } from '@/routes/processes/jobs';
 import type {
     OgcFormSchema,
-    OgcNormalizedField,
     OgcOutputFormat,
     TiptapDocument,
 } from '@/types';
@@ -205,186 +209,4 @@ export default function DynamicProcessForm({
             </Button>
         </form>
     );
-}
-
-function exampleInputsToFormValues(
-    fields: Record<string, OgcNormalizedField>,
-    inputs: Record<string, unknown>,
-): Record<string, unknown> {
-    return Object.fromEntries(
-        Object.entries(inputs)
-            .filter(([name]) => Boolean(fields[name]))
-            .map(([name, value]) => [
-                name,
-                exampleInputToFormValue(fields[name], value),
-            ]),
-    );
-}
-
-function exampleInputToFormValue(
-    field: OgcNormalizedField,
-    input: unknown,
-): unknown {
-    const value = unwrapExampleValue(input);
-
-    if (field.kind === 'oneOf') {
-        const objectValue = isRecord(value) ? value : {};
-        const variant =
-            field.variants?.find((candidate) =>
-                Object.keys(objectValue).some((key) =>
-                    Object.prototype.hasOwnProperty.call(candidate.fields, key),
-                ),
-            ) ?? field.variants?.[0];
-
-        if (!variant) {
-            return value;
-        }
-
-        return {
-            variant: variant.id,
-            value: objectValue,
-        };
-    }
-
-    if (field.kind === 'object') {
-        return isRecord(value) ? value : {};
-    }
-
-    return value;
-}
-
-function unwrapExampleValue(value: unknown): unknown {
-    if (
-        isRecord(value) &&
-        Object.prototype.hasOwnProperty.call(value, 'value')
-    ) {
-        return value.value;
-    }
-
-    return value;
-}
-
-function initialInputValues(
-    fields: Record<string, OgcNormalizedField>,
-): Record<string, unknown> {
-    return Object.fromEntries(
-        Object.entries(fields)
-            .map(([name, field]) => [name, defaultFieldValue(field)] as const)
-            .filter(([, value]) => value !== undefined),
-    );
-}
-
-function defaultFieldValue(field: OgcNormalizedField): unknown {
-    if (field.kind === 'enum' && field.options?.length === 1) {
-        return field.options[0];
-    }
-
-    if (field.kind === 'oneOf') {
-        const variant = field.variants?.[0];
-
-        if (!variant) {
-            return undefined;
-        }
-
-        return {
-            variant: variant.id,
-            value: defaultObjectValue(variant.fields),
-        };
-    }
-
-    if (field.kind === 'object' && field.fields) {
-        const value = defaultObjectValue(field.fields);
-
-        return Object.keys(value).length > 0 ? value : undefined;
-    }
-
-    if (field.kind === 'array_table' && field.minItems && field.minItems > 0) {
-        return Array.from({ length: field.minItems }, () =>
-            (field.columns ?? []).map(() => ''),
-        );
-    }
-
-    if (field.kind === 'array_object' && field.minItems && field.minItems > 0) {
-        return Array.from({ length: field.minItems }, () =>
-            defaultObjectValue(field.fields ?? {}),
-        );
-    }
-
-    return undefined;
-}
-
-function defaultObjectValue(
-    fields: Record<string, OgcNormalizedField>,
-): Record<string, unknown> {
-    return Object.fromEntries(
-        Object.entries(fields)
-            .map(([name, field]) => [name, defaultFieldValue(field)] as const)
-            .filter(([, value]) => value !== undefined),
-    );
-}
-
-function normalizeInputs(
-    fields: Record<string, OgcNormalizedField>,
-    inputs: Record<string, unknown>,
-): Record<string, any> {
-    return Object.fromEntries(
-        Object.entries(inputs).map(([name, value]) => [
-            name,
-            normalizeValue(value, fields[name]),
-        ]),
-    );
-}
-
-function normalizeValue(value: unknown, field?: OgcNormalizedField): any {
-    if (
-        typeof value === 'object' &&
-        value !== null &&
-        'variant' in value &&
-        'value' in value
-    ) {
-        return {
-            value: toFormValue(
-                (value as { value: Record<string, unknown> }).value,
-            ),
-        };
-    }
-
-    if (field?.kind === 'object') {
-        return {
-            value: toFormValue(value),
-        };
-    }
-
-    return toFormValue(value);
-}
-
-function toFormValue(value: unknown): any {
-    if (
-        value === null ||
-        value === undefined ||
-        typeof value === 'string' ||
-        typeof value === 'number' ||
-        typeof value === 'boolean'
-    ) {
-        return value;
-    }
-
-    if (Array.isArray(value)) {
-        return value.map((item) => toFormValue(item));
-    }
-
-    if (typeof value === 'object') {
-        return Object.fromEntries(
-            Object.entries(value).map(([key, item]) => [
-                key,
-                toFormValue(item),
-            ]),
-        );
-    }
-
-    return String(value);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
