@@ -22,10 +22,7 @@ describe('normalizeCsvPreview', () => {
     test('pads irregular structured rows to a stable column count', () => {
         const preview = normalizeCsvPreview({
             headers: ['a'],
-            rows: [
-                ['1', '2'],
-                ['3'],
-            ],
+            rows: [['1', '2'], ['3']],
             truncated: false,
         });
 

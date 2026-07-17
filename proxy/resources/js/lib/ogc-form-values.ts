@@ -70,10 +70,7 @@ function exampleInputToFormValue(
         const variant =
             field.variants?.find((candidate) =>
                 Object.keys(objectValue).some((key) =>
-                    Object.prototype.hasOwnProperty.call(
-                        candidate.fields,
-                        key,
-                    ),
+                    Object.prototype.hasOwnProperty.call(candidate.fields, key),
                 ),
             ) ?? field.variants?.[0];
 
@@ -147,10 +144,7 @@ function defaultFieldValue(field: OgcNormalizedField): unknown {
     return undefined;
 }
 
-function normalizeValue(
-    value: unknown,
-    field?: OgcNormalizedField,
-): unknown {
+function normalizeValue(value: unknown, field?: OgcNormalizedField): unknown {
     if (isOneOfValue(value)) {
         return {
             variant: value.variant,
@@ -195,7 +189,5 @@ function toFormValue(value: unknown): unknown {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-    return (
-        typeof value === 'object' && value !== null && !Array.isArray(value)
-    );
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
