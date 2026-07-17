@@ -44,13 +44,33 @@ class ProcessInputValidator
         $kind = $field['kind'] ?? 'scalar';
 
         match ($kind) {
-            'object' => $this->validateObject($field, $this->unwrapValue($value), $path, $errors),
-            'oneOf' => $this->validateOneOf($field, $this->unwrapValue($value), $path, $errors),
+            'object' => $this->validateWrappedObject($field, $value, $path, $errors),
+            'oneOf' => $this->validateOneOf($field, $value, $path, $errors),
             'array_object' => $this->validateArrayObject($field, $value, $path, $errors),
             'array_table' => $this->validateArrayTable($field, $value, $path, $errors),
             'enum' => $this->validateEnum($field, $value, $path, $errors),
             default => $this->validateScalar($field, $value, $path, $errors),
         };
+    }
+
+    /**
+     * @param  array<string, mixed>  $field
+     * @param  array<string, string>  $errors
+     */
+    private function validateWrappedObject(array $field, mixed $value, string $path, array &$errors): void
+    {
+        if (is_array($value) && array_key_exists('value', $value)) {
+            $this->validateObject(
+                $field,
+                $value['value'],
+                $path.'.value',
+                $errors,
+            );
+
+            return;
+        }
+
+        $this->validateObject($field, $value, $path, $errors);
     }
 
     /**
@@ -97,15 +117,58 @@ class ProcessInputValidator
             return;
         }
 
-        $variant = $this->matchingVariant($field, $value);
+        $hasWrappedValue = array_key_exists('value', $value);
+        $objectValue = $hasWrappedValue ? $value['value'] : $value;
+        $objectPath = $hasWrappedValue ? $path.'.value' : $path;
 
-        if ($variant === null) {
-            $errors[$path] = __('This input does not match an available option.');
+        if (! is_array($objectValue)) {
+            $errors[$objectPath] = __('This input must be an object.');
 
             return;
         }
 
-        $this->validateObject(['fields' => $variant['fields'] ?? []], $value, $path, $errors);
+        if (array_key_exists('variant', $value)) {
+            $variantId = $value['variant'];
+
+            if (! is_string($variantId) && ! is_int($variantId)) {
+                $errors[$path.'.variant'] = __(
+                    'This input does not match an available option.',
+                );
+
+                return;
+            }
+
+            $variant = collect($field['variants'] ?? [])
+                ->first(
+                    fn (mixed $candidate): bool => is_array($candidate)
+                        && (string) ($candidate['id'] ?? '') === (string) $variantId,
+                );
+
+            if (! is_array($variant)) {
+                $errors[$path.'.variant'] = __(
+                    'This input does not match an available option.',
+                );
+
+                return;
+            }
+        } else {
+            $variant = $this->matchingVariant($field, $objectValue);
+
+            if ($variant === null) {
+                $errors[$path] = __(
+                    'This input does not match an available option.',
+                );
+
+                return;
+            }
+        }
+
+        $this->validateObject(
+            ['fields' => $variant['fields'] ?? []],
+            $objectValue,
+            $objectPath,
+            $errors,
+        );
     }
 
     /**
@@ -115,25 +178,27 @@ class ProcessInputValidator
      */
     private function matchingVariant(array $field, array $value): ?array
     {
-        foreach (($field['variants'] ?? []) as $variant) {
-            if (! is_array($variant)) {
-                continue;
-            }
+        $matches = collect($field['variants'] ?? [])
+            ->filter(function (mixed $variant) use ($value): bool {
+                if (! is_array($variant)) {
+                    return false;
+                }
 
-            $required = array_filter($variant['required'] ?? [], 'is_string');
+                $required = array_filter(
+                    $variant['required'] ?? [],
+                    'is_string',
+                );
 
-            if ($required !== [] && collect($required)->every(fn (string $key): bool => array_key_exists($key, $value))) {
-                return $variant;
-            }
-        }
+                return collect($required)->every(
+                    fn (string $key): bool => array_key_exists($key, $value)
+                        && ! $this->isBlank($value[$key]),
+                );
+            })
+            ->values();
 
-        foreach (($field['variants'] ?? []) as $variant) {
-            if (is_array($variant)) {
-                return $variant;
-            }
-        }
-
-        return null;
+        return $matches->count() === 1 && is_array($matches->first())
+            ? $matches->first()
+            : null;
     }
 
     /**
@@ -181,7 +246,24 @@ class ProcessInputValidator
                     continue;
                 }
 
-                $this->validateScalar($column, $row[$columnIndex] ?? null, "{$path}.{$rowIndex}.{$columnIndex}", $errors);
+                $cellPath = "{$path}.{$rowIndex}.{$columnIndex}";
+                $cellValue = $row[$columnIndex] ?? null;
+
+                if (
+                    ($column['required'] ?? false) === true
+                    && $this->isBlank($cellValue)
+                ) {
+                    $errors[$cellPath] = __('This input is required.');
+
+                    continue;
+                }
+
+                $this->validateScalar(
+                    $column,
+                    $cellValue,
+                    $cellPath,
+                    $errors,
+                );
             }
         }
     }
@@ -265,15 +347,6 @@ class ProcessInputValidator
         if (isset($field['exclusiveMaximum']) && $field['exclusiveMaximum'] !== null && $number >= (float) $field['exclusiveMaximum']) {
             $errors[$path] = __('This input must be less than the maximum value.');
         }
-    }
-
-    private function unwrapValue(mixed $value): mixed
-    {
-        if (is_array($value) && array_key_exists('value', $value)) {
-            return $value['value'];
-        }
-
-        return $value;
     }
 
     private function isBlank(mixed $value): bool

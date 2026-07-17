@@ -170,7 +170,7 @@ test('starting a process validates schema exclusive bounds before queueing', fun
 
     $this->actingAs($user)
         ->post(route('processes.jobs.store', 'conduit'), ['inputs' => $inputs])
-        ->assertInvalid(['inputs.melt_composition.sio2']);
+        ->assertInvalid(['inputs.melt_composition.value.sio2']);
 
     expect(ProcessExecution::query()->count())->toBe(0);
     Bus::assertNotDispatched(SubmitProcessExecutionJob::class);
@@ -260,6 +260,7 @@ test('starting a process rejects unknown output identifiers and formats', functi
     $inputs = ogcFixture(
         'process-solwcad',
     )['examples'][0]['payload_example']['inputs'];
+    $inputs['swinput.data']['variant'] = '0';
     app(OgcProcessCache::class)->putProcess(
         'solwcad',
         ogcFixture('process-solwcad'),
@@ -302,6 +303,7 @@ test('starting a process rejects positional outputs and client transmission mode
     $inputs = ogcFixture(
         'process-solwcad',
     )['examples'][0]['payload_example']['inputs'];
+    $inputs['swinput.data']['variant'] = '0';
     app(OgcProcessCache::class)->putProcess(
         'solwcad',
         ogcFixture('process-solwcad'),
@@ -339,6 +341,7 @@ test('starting a process rejects malformed output selection structures', functio
     $inputs = ogcFixture(
         'process-solwcad',
     )['examples'][0]['payload_example']['inputs'];
+    $inputs['swinput.data']['variant'] = '0';
     app(OgcProcessCache::class)->putProcess(
         'solwcad',
         ogcFixture('process-solwcad'),
@@ -577,6 +580,119 @@ test('submission job ignores missing terminal and already submitted executions',
 
     (new SubmitProcessExecutionJob($alreadySubmitted->id, ['inputs' => []]))->handle(app(SubmitProcessExecution::class));
 
+    Http::assertNothingSent();
+});
+
+test('starting solwcad returns the selected variant field error without queueing', function () {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    app(OgcProcessCache::class)->putProcess(
+        'solwcad',
+        ogcFixture('process-solwcad'),
+    );
+
+    $row = [
+        '1000.',
+        '1273.',
+        '.0400',
+        '.0200',
+        '.7653',
+        '.0032',
+        '.1201',
+        '.0027',
+        '.0246',
+        '.0006',
+        '.0018',
+        '.0132',
+        '.0378',
+        '.0306',
+    ];
+
+    $response = $this->actingAs($user)->post(
+        route('processes.jobs.store', 'solwcad'),
+        [
+            'inputs' => [
+                'swinput.data' => [
+                    'variant' => '1',
+                    'value' => [
+                        'ndat1' => 1,
+                        'kl' => 1,
+                    ],
+                ],
+                'sw.data' => [$row],
+            ],
+        ],
+    );
+
+    $response
+        ->assertInvalid(['inputs.swinput.data.value.iopen'])
+        ->assertValid(['inputs.swinput.data.value.ndat2']);
+
+    expect(ProcessExecution::query()->count())->toBe(0);
+    Bus::assertNotDispatched(SubmitProcessExecutionJob::class);
+    Http::assertNothingSent();
+});
+
+test('starting solwcad strips variant metadata from the stored and queued payload', function () {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    app(OgcProcessCache::class)->putProcess(
+        'solwcad',
+        ogcFixture('process-solwcad'),
+    );
+
+    $row = [
+        '1000.',
+        '1273.',
+        '.0400',
+        '.0200',
+        '.7653',
+        '.0032',
+        '.1201',
+        '.0027',
+        '.0246',
+        '.0006',
+        '.0018',
+        '.0132',
+        '.0378',
+        '.0306',
+    ];
+    $selectedValue = [
+        'ndat1' => 1,
+        'kl' => 1,
+        'iopen' => 0,
+    ];
+
+    $this->actingAs($user)->post(
+        route('processes.jobs.store', 'solwcad'),
+        [
+            'inputs' => [
+                'swinput.data' => [
+                    'variant' => '1',
+                    'value' => $selectedValue,
+                ],
+                'sw.data' => [$row],
+            ],
+        ],
+    )->assertRedirect();
+
+    $execution = ProcessExecution::query()->sole();
+
+    expect($execution->request_payload['inputs']['swinput.data'])
+        ->toBe(['value' => $selectedValue]);
+
+    Bus::assertDispatched(
+        SubmitProcessExecutionJob::class,
+        fn (SubmitProcessExecutionJob $job): bool => $job->payload['inputs']['swinput.data'] === ['value' => $selectedValue]
+            && ! array_key_exists(
+                'variant',
+                $job->payload['inputs']['swinput.data'],
+            ),
+    );
     Http::assertNothingSent();
 });
 

@@ -16,6 +16,7 @@ use App\Models\ProcessExecutionResult;
 use App\Models\User;
 use App\Services\Ogc\CsvPreviewBuilder;
 use App\Services\Ogc\OgcProcessCache;
+use App\Services\Ogc\ProcessInputPayloadBuilder;
 use App\Services\Ogc\ProcessInputValidator;
 use App\Services\Ogc\ProcessOutputRequestBuilder;
 use App\Services\Ogc\ProcessSchemaNormalizer;
@@ -54,6 +55,7 @@ class ProcessExecutionController extends Controller
         OgcProcessCache $cache,
         ProcessSchemaNormalizer $schemaNormalizer,
         ProcessInputValidator $inputValidator,
+        ProcessInputPayloadBuilder $inputPayloadBuilder,
         ProcessOutputRequestBuilder $outputRequestBuilder,
         CreateProcessExecution $createProcessExecution,
     ): RedirectResponse {
@@ -64,17 +66,21 @@ class ProcessExecutionController extends Controller
 
         abort_if($processDescription === null, 409, 'Process description is still warming up.');
 
-        $inputErrors = $inputValidator->errors(
-            $schemaNormalizer->normalize($processDescription)['fields'],
-            $request->executionInputs(),
-        );
+        $fields = $schemaNormalizer->normalize($processDescription)['fields'];
+        $submittedInputs = $request->executionInputs();
+        $inputErrors = $inputValidator->errors($fields, $submittedInputs);
 
         if ($inputErrors !== []) {
             throw ValidationException::withMessages($inputErrors);
         }
 
+        $executionInputs = $inputPayloadBuilder->build(
+            $fields,
+            $submittedInputs,
+        );
+
         $payload = [
-            'inputs' => $request->executionInputs(),
+            'inputs' => $executionInputs,
             'outputs' => $outputRequestBuilder->forProcess(
                 $processDescription,
                 $request->outputSelection(),
