@@ -83,7 +83,7 @@ Per ogni input `oneOf`, il client conserva fino al backend una struttura concett
 
 ```json
 {
-  "variant": 1,
+  "variant": "1",
   "value": {
     "ndat1": 1,
     "kl": 1
@@ -91,14 +91,14 @@ Per ogni input `oneOf`, il client conserva fino al backend una struttura concett
 }
 ```
 
-`variant` e un dato non fidato e viene validato come indice intero esistente nello schema normalizzato del processo. `ProcessInputValidator` valida esclusivamente `value` contro la variante esplicitamente scelta. Non tenta di indovinare un'altra variante quando il valore e incompleto e non ricade silenziosamente sulla prima alternativa.
+`variant` e un dato non fidato e viene validato come identificatore di una variante esistente nello schema normalizzato del processo. Gli identificatori correnti sono stringhe che rappresentano la posizione della variante, ma non vengono mostrati all'utente. `ProcessInputValidator` valida esclusivamente `value` contro la variante esplicitamente scelta. Non tenta di indovinare un'altra variante quando il valore e incompleto e non ricade silenziosamente sulla prima alternativa.
 
-Dopo la validazione, il backend costruisce il payload remoto canonico eliminando il wrapper applicativo. Il servizio OGC riceve quindi soltanto il valore previsto:
+Dopo la validazione, il backend costruisce il payload remoto canonico eliminando soltanto il metadato applicativo `variant` e conservando il wrapper OGC standard `value`:
 
 ```json
 {
-  "swinput": {
-    "data": {
+  "swinput.data": {
+    "value": {
       "ndat1": 1,
       "kl": 1
     }
@@ -191,7 +191,7 @@ Comportamento:
 - `false`, valore predefinito: l'analisi diagnostica dello stile non viene eseguita e il warning non viene renderizzato;
 - `true`: viene conservato il comportamento diagnostico attuale, visibile soltanto agli amministratori.
 
-Laravel risolve il valore dalla configurazione e passa alla pagina soltanto un booleano, senza esporre la variabile d'ambiente. Il componente mappa istanzia l'analizzatore diagnostico esclusivamente quando questo booleano e attivo e l'utente e amministratore.
+Laravel risolve il valore dalla configurazione nel controller della pagina. `SldVisualizationInspector` viene invocato esclusivamente quando il flag e attivo e l'utente e amministratore; negli altri casi il risultato espone `warning: null`. Il frontend riceve soltanto l'eventuale codice diagnostico, senza conoscere la variabile d'ambiente.
 
 La configurazione non influenza l'applicazione dello SLD, la mappa, i download o i normali errori di caricamento. Controlla esclusivamente il warning informativo sulla resa dello stile.
 
@@ -213,7 +213,7 @@ Per gli output, il presenter della pagina ricava da `process_outputs` la mappa d
 6. In caso di errore, i percorsi tornano al controllo corrispondente; nessun job viene creato.
 7. In caso di successo, il backend rimuove i metadati UI, costruisce gli input OGC canonici e prosegue con il flusso di esecuzione esistente.
 
-La ricostruzione del payload avviene sul backend usando la descrizione fidata in cache. Il client non puo usare `variant` per introdurre proprieta estranee allo schema.
+La ricostruzione del payload avviene sul backend usando la descrizione fidata in cache. Il client non puo usare `variant` per far validare il valore contro una variante diversa da quella selezionata.
 
 ### Rendering Dei Risultati
 
