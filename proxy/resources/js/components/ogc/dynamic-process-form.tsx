@@ -1,5 +1,6 @@
 import { useForm } from '@inertiajs/react';
 import { AlertCircleIcon, PlayIcon, WandSparklesIcon } from 'lucide-react';
+import { useRef } from 'react';
 
 import InputError from '@/components/input-error';
 import { JobNoteEditor } from '@/components/ogc/job-note-editor';
@@ -18,6 +19,8 @@ import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
 import { markJobsIndexStale } from '@/lib/job-list-refresh';
+import { focusFirstInvalidField } from '@/lib/ogc-form-errors';
+import type { OgcFormErrors } from '@/lib/ogc-form-errors';
 import {
     exampleInputsToFormValues,
     initialInputValues,
@@ -30,11 +33,7 @@ import {
 } from '@/lib/process-output-selection';
 import type { ProcessOutputSelections } from '@/lib/process-output-selection';
 import { store } from '@/routes/processes/jobs';
-import type {
-    OgcFormSchema,
-    OgcOutputFormat,
-    TiptapDocument,
-} from '@/types';
+import type { OgcFormSchema, OgcOutputFormat, TiptapDocument } from '@/types';
 
 type FormOutputSelections = Record<
     string,
@@ -60,6 +59,7 @@ export default function DynamicProcessForm({
     schema: OgcFormSchema;
 }) {
     const { t } = useTranslation();
+    const formRef = useRef<HTMLFormElement>(null);
     const { data, setData, submit, transform, processing, errors } =
         useForm<FormData>({
             name: '',
@@ -68,6 +68,7 @@ export default function DynamicProcessForm({
             outputs: initialOutputSelections(schema.outputs),
         });
     const outputSelections = data.outputs;
+    const fieldErrors = errors as OgcFormErrors;
 
     function setInput(name: string, value: unknown) {
         setData('inputs', {
@@ -97,6 +98,7 @@ export default function DynamicProcessForm({
 
     return (
         <form
+            ref={formRef}
             className="flex max-w-full min-w-0 flex-col gap-4"
             onSubmit={(event) => {
                 event.preventDefault();
@@ -107,6 +109,14 @@ export default function DynamicProcessForm({
                 }));
                 submit(store(schema.id), {
                     onSuccess: () => markJobsIndexStale(),
+                    onError: (nextErrors) => {
+                        window.requestAnimationFrame(() => {
+                            focusFirstInvalidField(
+                                formRef.current,
+                                nextErrors as OgcFormErrors,
+                            );
+                        });
+                    },
                 });
             }}
         >
@@ -138,8 +148,12 @@ export default function DynamicProcessForm({
                         maxLength={255}
                         aria-label={t('jobs.processName')}
                         aria-invalid={Boolean(errors.name)}
+                        data-field-path="name"
+                        aria-describedby={
+                            errors.name ? 'error-name' : undefined
+                        }
                     />
-                    <InputError message={errors.name} />
+                    <InputError id="error-name" message={errors.name} />
                 </CardContent>
             </Card>
 
@@ -166,6 +180,9 @@ export default function DynamicProcessForm({
                             field={field}
                             value={data.inputs[name]}
                             onChange={(value) => setInput(name, value)}
+                            path={'inputs.' + name}
+                            errors={fieldErrors}
+                            topLevel
                         />
                     ))}
                 </CardContent>

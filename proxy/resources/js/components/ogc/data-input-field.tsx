@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import InputError from '@/components/input-error';
 import SectionFieldSet from '@/components/ogc/section-field-set';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useTranslation } from '@/hooks/use-translation';
 import { fieldDisplayLabel, referenceDisplayLabel } from '@/lib/ogc-fields';
+import { errorIdForPath, fieldError } from '@/lib/ogc-form-errors';
+import type { OgcFormErrors } from '@/lib/ogc-form-errors';
 import type { OgcNormalizedField } from '@/types';
 
 type InputMode = 'inline' | 'reference' | 'upload';
@@ -23,16 +26,22 @@ export default function DataInputField({
     field,
     value,
     onChange,
+    path,
+    errors,
 }: {
     field: OgcNormalizedField;
     value: unknown;
     onChange: (value: unknown) => void;
+    path: string;
+    errors: OgcFormErrors;
 }) {
     const { t } = useTranslation();
     const [mode, setMode] = useState<InputMode>(() =>
         initialMode(value, field),
     );
     const selectedReference = isHrefValue(value) ? value.href : '';
+    const error = fieldError(errors, path);
+    const errorId = errorIdForPath(path);
 
     function changeMode(nextMode: string) {
         if (
@@ -111,6 +120,9 @@ export default function DataInputField({
                         <FieldLabel>{t('ogc.value')}</FieldLabel>
                         <Textarea
                             className="min-w-0"
+                            data-field-path={path}
+                            aria-invalid={error ? true : undefined}
+                            aria-describedby={error ? errorId : undefined}
                             value={inlineValue(value)}
                             onChange={(event) =>
                                 onChange(
@@ -129,7 +141,14 @@ export default function DataInputField({
                                 value={selectedReference || undefined}
                                 onValueChange={setReference}
                             >
-                                <SelectTrigger className="w-full min-w-0">
+                                <SelectTrigger
+                                    className="w-full min-w-0"
+                                    data-field-path={path}
+                                    aria-invalid={error ? true : undefined}
+                                    aria-describedby={
+                                        error ? errorId : undefined
+                                    }
+                                >
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -151,6 +170,9 @@ export default function DataInputField({
                         <Input
                             type="url"
                             className="min-w-0"
+                            data-field-path={path}
+                            aria-invalid={error ? true : undefined}
+                            aria-describedby={error ? errorId : undefined}
                             value={selectedReference}
                             onChange={(event) =>
                                 setReference(event.target.value)
@@ -165,6 +187,9 @@ export default function DataInputField({
                         <Input
                             type="file"
                             className="min-w-0"
+                            data-field-path={path}
+                            aria-invalid={error ? true : undefined}
+                            aria-describedby={error ? errorId : undefined}
                             accept={field.mediaType ?? undefined}
                             onChange={(event) =>
                                 readFile(event.target.files?.item(0) ?? null)
@@ -173,6 +198,7 @@ export default function DataInputField({
                     </Field>
                 ) : null}
             </FieldGroup>
+            <InputError id={errorId} message={error} />
         </SectionFieldSet>
     );
 }

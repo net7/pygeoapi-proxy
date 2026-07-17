@@ -1,3 +1,4 @@
+import InputError from '@/components/input-error';
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
 import SectionFieldSet from '@/components/ogc/section-field-set';
 import { FieldDescription, FieldGroup } from '@/components/ui/field';
@@ -10,20 +11,23 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { fieldDisplayLabel } from '@/lib/ogc-fields';
-import {
-    defaultObjectValue,
-    isOneOfValue,
-} from '@/lib/ogc-form-values';
+import { errorIdForPath, fieldError } from '@/lib/ogc-form-errors';
+import type { OgcFormErrors } from '@/lib/ogc-form-errors';
+import { defaultObjectValue, isOneOfValue } from '@/lib/ogc-form-values';
 import type { OgcNormalizedField } from '@/types';
 
 export default function OneOfField({
     field,
     value,
     onChange,
+    path,
+    errors,
 }: {
     field: OgcNormalizedField;
     value: unknown;
     onChange: (value: unknown) => void;
+    path: string;
+    errors: OgcFormErrors;
 }) {
     const variants = field.variants ?? [];
     const current = isOneOfValue(value)
@@ -42,6 +46,8 @@ export default function OneOfField({
             label={fieldDisplayLabel(field)}
             description={field.description}
             className="overflow-hidden"
+            fieldPath={path}
+            error={fieldError(errors, path)}
         >
             <Select
                 value={current.variant}
@@ -58,7 +64,18 @@ export default function OneOfField({
                     });
                 }}
             >
-                <SelectTrigger className="w-full max-w-full min-w-0">
+                <SelectTrigger
+                    className="w-full max-w-full min-w-0"
+                    data-field-path={path + '.variant'}
+                    aria-invalid={
+                        fieldError(errors, path + '.variant') ? true : undefined
+                    }
+                    aria-describedby={
+                        fieldError(errors, path + '.variant')
+                            ? errorIdForPath(path + '.variant')
+                            : undefined
+                    }
+                >
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -71,6 +88,10 @@ export default function OneOfField({
                     </SelectGroup>
                 </SelectContent>
             </Select>
+            <InputError
+                id={errorIdForPath(path + '.variant')}
+                message={fieldError(errors, path + '.variant')}
+            />
             {selected.description ? (
                 <FieldDescription className="break-words">
                     {selected.description}
@@ -89,6 +110,8 @@ export default function OneOfField({
                                 value: { ...current.value, [key]: nextValue },
                             })
                         }
+                        path={path + '.value.' + key}
+                        errors={errors}
                     />
                 ))}
             </FieldGroup>

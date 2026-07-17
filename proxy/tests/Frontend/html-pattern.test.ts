@@ -48,4 +48,22 @@ describe('htmlPatternForInput', () => {
             }),
         ).toBe('[0-9]*');
     });
+
+    test('requires an escaped hyphen for browser v flag character classes', () => {
+        expect(
+            htmlPatternForInput({
+                type: 'string',
+                pattern:
+                    '^[+-]?(?:[0-9]+\\.|[0-9]*\\.[0-9]+)(?:[Dd][+-]?[0-9]+)?$',
+            }),
+        ).toBeUndefined();
+
+        expect(
+            htmlPatternForInput({
+                type: 'string',
+                pattern:
+                    '^[+\\-]?(?:[0-9]+\\.|[0-9]*\\.[0-9]+)(?:[Dd][+\\-]?[0-9]+)?$',
+            }),
+        ).toBe('^[+\\-]?(?:[0-9]+\\.|[0-9]*\\.[0-9]+)(?:[Dd][+\\-]?[0-9]+)?$');
+    });
 });

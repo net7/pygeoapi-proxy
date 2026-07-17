@@ -1,3 +1,4 @@
+import InputError from '@/components/input-error';
 import ArrayObjectField from '@/components/ogc/array-object-field';
 import ArrayTableField from '@/components/ogc/array-table-field';
 import DataInputField from '@/components/ogc/data-input-field';
@@ -20,24 +21,36 @@ import {
 } from '@/components/ui/select';
 import { htmlPatternForInput } from '@/lib/html-pattern';
 import { fieldDisplayLabel, optionDisplayLabel } from '@/lib/ogc-fields';
+import { errorIdForPath, fieldError } from '@/lib/ogc-form-errors';
+import type { OgcFormErrors } from '@/lib/ogc-form-errors';
 import type { OgcNormalizedField } from '@/types';
 
 export default function SchemaFieldRenderer({
     field,
     value,
     onChange,
+    path,
+    errors,
+    topLevel = false,
 }: {
     field: OgcNormalizedField;
     value: unknown;
     onChange: (value: unknown) => void;
+    path: string;
+    errors: OgcFormErrors;
+    topLevel?: boolean;
 }) {
     if (field.kind === 'object' && field.fields) {
         const objectValue = isRecord(value) ? value : {};
+        const objectPath = topLevel ? path + '.value' : path;
+        const error = fieldError(errors, path);
 
         return (
             <SectionFieldSet
                 label={fieldDisplayLabel(field)}
                 description={field.description}
+                fieldPath={path}
+                error={error}
             >
                 <FieldGroup className="min-w-0">
                     {Object.entries(field.fields).map(([key, child]) => (
@@ -48,6 +61,8 @@ export default function SchemaFieldRenderer({
                             onChange={(nextValue) =>
                                 onChange({ ...objectValue, [key]: nextValue })
                             }
+                            path={objectPath + '.' + key}
+                            errors={errors}
                         />
                     ))}
                 </FieldGroup>
@@ -56,30 +71,59 @@ export default function SchemaFieldRenderer({
     }
 
     if (field.kind === 'oneOf') {
-        return <OneOfField field={field} value={value} onChange={onChange} />;
+        return (
+            <OneOfField
+                field={field}
+                value={value}
+                onChange={onChange}
+                path={path}
+                errors={errors}
+            />
+        );
     }
 
     if (field.kind === 'array_object') {
         return (
-            <ArrayObjectField field={field} value={value} onChange={onChange} />
+            <ArrayObjectField
+                field={field}
+                value={value}
+                onChange={onChange}
+                path={path}
+                errors={errors}
+            />
         );
     }
 
     if (field.kind === 'array_table') {
         return (
-            <ArrayTableField field={field} value={value} onChange={onChange} />
+            <ArrayTableField
+                field={field}
+                value={value}
+                onChange={onChange}
+                path={path}
+                errors={errors}
+            />
         );
     }
 
     if (isComplexInput(field)) {
         return (
-            <DataInputField field={field} value={value} onChange={onChange} />
+            <DataInputField
+                field={field}
+                value={value}
+                onChange={onChange}
+                path={path}
+                errors={errors}
+            />
         );
     }
 
+    const error = fieldError(errors, path);
+    const errorId = errorIdForPath(path);
+
     if (field.kind === 'enum') {
         return (
-            <Field className="min-w-0">
+            <Field className="min-w-0" data-invalid={error ? true : undefined}>
                 <FieldLabel>{fieldDisplayLabel(field)}</FieldLabel>
                 {field.description ? (
                     <FieldDescription className="break-words">
@@ -92,7 +136,12 @@ export default function SchemaFieldRenderer({
                         onChange(enumValueFromString(field, selected))
                     }
                 >
-                    <SelectTrigger className="w-full min-w-0">
+                    <SelectTrigger
+                        className="w-full min-w-0"
+                        data-field-path={path}
+                        aria-invalid={error ? true : undefined}
+                        aria-describedby={error ? errorId : undefined}
+                    >
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -108,12 +157,13 @@ export default function SchemaFieldRenderer({
                         </SelectGroup>
                     </SelectContent>
                 </Select>
+                <InputError id={errorId} message={error} />
             </Field>
         );
     }
 
     return (
-        <Field className="min-w-0">
+        <Field className="min-w-0" data-invalid={error ? true : undefined}>
             <FieldLabel>{fieldDisplayLabel(field)}</FieldLabel>
             {field.description ? (
                 <FieldDescription className="break-words">
@@ -122,6 +172,9 @@ export default function SchemaFieldRenderer({
             ) : null}
             <Input
                 className="min-w-0"
+                data-field-path={path}
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? errorId : undefined}
                 type={
                     field.type === 'number' || field.type === 'integer'
                         ? 'number'
@@ -156,6 +209,7 @@ export default function SchemaFieldRenderer({
                     );
                 }}
             />
+            <InputError id={errorId} message={error} />
         </Field>
     );
 }

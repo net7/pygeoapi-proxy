@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react';
 
+import InputError from '@/components/input-error';
 import SectionFieldSet from '@/components/ogc/section-field-set';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,16 +15,22 @@ import {
 import { useTranslation } from '@/hooks/use-translation';
 import { htmlPatternForInput } from '@/lib/html-pattern';
 import { fieldDisplayLabel } from '@/lib/ogc-fields';
+import { errorIdForPath, fieldError } from '@/lib/ogc-form-errors';
+import type { OgcFormErrors } from '@/lib/ogc-form-errors';
 import type { OgcNormalizedField } from '@/types';
 
 export default function ArrayTableField({
     field,
     value,
     onChange,
+    path,
+    errors,
 }: {
     field: OgcNormalizedField;
     value: unknown;
     onChange: (value: unknown) => void;
+    path: string;
+    errors: OgcFormErrors;
 }) {
     const { t } = useTranslation();
     const rows = Array.isArray(value) ? value : [];
@@ -52,6 +59,8 @@ export default function ArrayTableField({
         <SectionFieldSet
             label={fieldDisplayLabel(field)}
             description={field.description}
+            fieldPath={path}
+            error={fieldError(errors, path)}
         >
             <div className="w-full max-w-full overflow-x-auto rounded-md border bg-background dark:bg-background/60">
                 <Table style={{ minWidth: tableMinWidth }}>
@@ -71,52 +80,89 @@ export default function ArrayTableField({
 
                             return (
                                 <TableRow key={rowIndex}>
-                                    {columns.map((column, columnIndex) => (
-                                        <TableCell key={column.key}>
-                                            <Input
-                                                type={
-                                                    column.type === 'number' ||
-                                                    column.type === 'integer'
-                                                        ? 'number'
-                                                        : 'text'
-                                                }
-                                                value={String(
-                                                    rowValues[columnIndex] ??
-                                                        '',
-                                                )}
-                                                step={
-                                                    column.type === 'number'
-                                                        ? 'any'
-                                                        : undefined
-                                                }
-                                                min={
-                                                    column.minimum ?? undefined
-                                                }
-                                                max={
-                                                    column.maximum ?? undefined
-                                                }
-                                                data-exclusive-minimum={
-                                                    column.exclusiveMinimum ??
-                                                    undefined
-                                                }
-                                                data-exclusive-maximum={
-                                                    column.exclusiveMaximum ??
-                                                    undefined
-                                                }
-                                                pattern={htmlPatternForInput({
-                                                    type: column.type,
-                                                    pattern: column.pattern,
-                                                })}
-                                                onChange={(event) =>
-                                                    updateCell(
-                                                        rowIndex,
-                                                        columnIndex,
-                                                        event.target.value,
-                                                    )
-                                                }
-                                            />
-                                        </TableCell>
-                                    ))}
+                                    {columns.map((column, columnIndex) => {
+                                        const cellPath =
+                                            path +
+                                            '.' +
+                                            rowIndex +
+                                            '.' +
+                                            columnIndex;
+                                        const error = fieldError(
+                                            errors,
+                                            cellPath,
+                                        );
+                                        const errorId =
+                                            errorIdForPath(cellPath);
+
+                                        return (
+                                            <TableCell key={column.key}>
+                                                <Input
+                                                    required={column.required}
+                                                    data-field-path={cellPath}
+                                                    aria-invalid={
+                                                        error ? true : undefined
+                                                    }
+                                                    aria-describedby={
+                                                        error
+                                                            ? errorId
+                                                            : undefined
+                                                    }
+                                                    type={
+                                                        column.type ===
+                                                            'number' ||
+                                                        column.type ===
+                                                            'integer'
+                                                            ? 'number'
+                                                            : 'text'
+                                                    }
+                                                    value={String(
+                                                        rowValues[
+                                                            columnIndex
+                                                        ] ?? '',
+                                                    )}
+                                                    step={
+                                                        column.type === 'number'
+                                                            ? 'any'
+                                                            : undefined
+                                                    }
+                                                    min={
+                                                        column.minimum ??
+                                                        undefined
+                                                    }
+                                                    max={
+                                                        column.maximum ??
+                                                        undefined
+                                                    }
+                                                    data-exclusive-minimum={
+                                                        column.exclusiveMinimum ??
+                                                        undefined
+                                                    }
+                                                    data-exclusive-maximum={
+                                                        column.exclusiveMaximum ??
+                                                        undefined
+                                                    }
+                                                    pattern={htmlPatternForInput(
+                                                        {
+                                                            type: column.type,
+                                                            pattern:
+                                                                column.pattern,
+                                                        },
+                                                    )}
+                                                    onChange={(event) =>
+                                                        updateCell(
+                                                            rowIndex,
+                                                            columnIndex,
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                />
+                                                <InputError
+                                                    id={errorId}
+                                                    message={error}
+                                                />
+                                            </TableCell>
+                                        );
+                                    })}
                                     <TableCell>
                                         <Button
                                             type="button"

@@ -6,16 +6,22 @@ import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
 import { useTranslation } from '@/hooks/use-translation';
 import { fieldDisplayLabel } from '@/lib/ogc-fields';
+import { fieldError } from '@/lib/ogc-form-errors';
+import type { OgcFormErrors } from '@/lib/ogc-form-errors';
 import type { OgcNormalizedField } from '@/types';
 
 export default function ArrayObjectField({
     field,
     value,
     onChange,
+    path,
+    errors,
 }: {
     field: OgcNormalizedField;
     value: unknown;
     onChange: (value: unknown) => void;
+    path: string;
+    errors: OgcFormErrors;
 }) {
     const { t } = useTranslation();
     const rows = Array.isArray(value) ? value : [];
@@ -30,6 +36,8 @@ export default function ArrayObjectField({
         <SectionFieldSet
             label={fieldDisplayLabel(field)}
             description={field.description}
+            fieldPath={path}
+            error={fieldError(errors, path)}
         >
             <FieldGroup className="min-w-0">
                 {rows.map((row, index) => {
@@ -75,6 +83,8 @@ export default function ArrayObjectField({
                                                 [key]: nextValue,
                                             })
                                         }
+                                        path={path + '.' + index + '.' + key}
+                                        errors={errors}
                                     />
                                 ),
                             )}
