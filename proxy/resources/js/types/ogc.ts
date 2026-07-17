@@ -38,6 +38,7 @@ export type OgcNormalizedField = {
         key: string;
         label: string;
         type: string;
+        required: boolean;
         pattern?: string | null;
         minimum?: number | null;
         maximum?: number | null;

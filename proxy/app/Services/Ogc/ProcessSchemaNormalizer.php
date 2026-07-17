@@ -58,7 +58,7 @@ class ProcessSchemaNormalizer
                     ->values()
                     ->map(fn (array $variant, int $index): array => [
                         'id' => (string) $index,
-                        'label' => $this->variantLabel($variant, $index),
+                        'label' => $this->variantLabel($variant),
                         'description' => $variant['description'] ?? null,
                         'required' => $variant['required'] ?? [],
                         'fields' => $this->normalizeProperties($variant['properties'] ?? [], $variant['required'] ?? []),
@@ -106,6 +106,7 @@ class ProcessSchemaNormalizer
 
         if (($items['type'] ?? null) === 'array') {
             $columnCount = (int) ($items['maxItems'] ?? $items['minItems'] ?? 1);
+            $requiredColumnCount = max(0, (int) ($items['minItems'] ?? 0));
 
             return [
                 ...$this->baseField($name, $schema, $metadata, $processId),
@@ -117,6 +118,7 @@ class ProcessSchemaNormalizer
                         'key' => (string) ($column - 1),
                         'label' => 'Column '.$column,
                         'type' => Arr::get($items, 'items.type', 'string'),
+                        'required' => $column <= $requiredColumnCount,
                         'pattern' => Arr::get($items, 'items.pattern'),
                         'minimum' => Arr::get($items, 'items.minimum'),
                         'maximum' => Arr::get($items, 'items.maximum'),
@@ -150,12 +152,22 @@ class ProcessSchemaNormalizer
     /**
      * @param  array<string, mixed>  $variant
      */
-    private function variantLabel(array $variant, int $index): string
+    private function variantLabel(array $variant): string
     {
         $title = $variant['title'] ?? null;
 
         if (is_string($title) && trim($title) !== '') {
-            return $title;
+            return trim($title);
+        }
+
+        $description = $variant['description'] ?? null;
+
+        if (
+            is_string($description)
+            && trim($description) !== ''
+            && mb_strlen(trim($description)) <= 80
+        ) {
+            return trim($description);
         }
 
         $constantLabels = collect($variant['properties'] ?? [])
@@ -180,23 +192,18 @@ class ProcessSchemaNormalizer
         }
 
         $requiredLabels = collect($variant['required'] ?? [])
-            ->map(function (string $name) use ($variant): ?string {
-                $title = Arr::get($variant, "properties.{$name}.title");
+            ->map(function (string $name) use ($variant): string {
+                $title = data_get($variant, "properties.{$name}.title");
 
-                if (is_string($title) && trim($title) !== '') {
-                    return $title;
-                }
-
-                return $name;
+                return is_string($title) && trim($title) !== ''
+                    ? trim($title)
+                    : $name;
             })
-            ->filter()
             ->values();
 
-        if ($requiredLabels->isNotEmpty()) {
-            return $requiredLabels->implode(', ');
-        }
-
-        return 'Variant '.($index + 1);
+        return $requiredLabels->isNotEmpty()
+            ? $requiredLabels->implode(', ')
+            : 'Variant';
     }
 
     private function formatVariantConstant(mixed $value): string

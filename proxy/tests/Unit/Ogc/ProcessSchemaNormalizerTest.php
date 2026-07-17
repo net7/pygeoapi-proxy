@@ -80,7 +80,7 @@ test('it normalizes live pybox inputs and outputs', function () {
         ->and($normalized['outputs']['invasion_map']['components']['sld']['mediaType'])->toBe('application/vnd.ogc.sld+xml');
 });
 
-test('it keeps description only one of variant labels compact', function () {
+test('it keeps long one of descriptions out of compact index free labels', function () {
     $process = [
         'id' => 'description-only',
         'inputs' => [
@@ -103,8 +103,32 @@ test('it keeps description only one of variant labels compact', function () {
     $variant = app(ProcessSchemaNormalizer::class)
         ->normalize($process)['fields']['mode']['variants'][0];
 
-    expect($variant['label'])->toBe('Variant 1')
+    expect($variant['label'])->toBe('Variant')
+        ->and($variant['label'])->not->toContain('1')
         ->and($variant['description'])->toStartWith('Long variant description');
+});
+
+test('it uses a short one of description when no title is available', function () {
+    $process = [
+        'id' => 'short-description',
+        'inputs' => [
+            'mode' => [
+                'schema' => [
+                    'oneOf' => [
+                        [
+                            'description' => 'Pressure sweep',
+                            'properties' => [],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ];
+
+    $variant = app(ProcessSchemaNormalizer::class)
+        ->normalize($process)['fields']['mode']['variants'][0];
+
+    expect($variant['label'])->toBe('Pressure sweep');
 });
 
 test('it preserves advertised one of variant titles', function () {
@@ -129,6 +153,8 @@ test('it normalizes array tables', function () {
     expect($field['kind'])->toBe('array_table')
         ->and($field['minItems'])->toBe(1)
         ->and($field['columns'])->toHaveCount(14)
+        ->and(array_column($field['columns'], 'required'))
+        ->toBe(array_fill(0, 14, true))
         ->and($field['columns'][0]['pattern'])->toBe('^([+-]?([\d]+\.|[\d]*\.[\d]+))([Dd][+-]?[\d]+)?$')
         ->and($normalized['outputs']['solwcad_out']['mediaType'])->toBe('application/json');
 });
