@@ -118,6 +118,13 @@ class ProcessInputValidator
         }
 
         $hasWrappedValue = array_key_exists('value', $value);
+
+        if (array_key_exists('variant', $value) && ! $hasWrappedValue) {
+            $errors[$path.'.value'] = __('This input must be an object.');
+
+            return;
+        }
+
         $objectValue = $hasWrappedValue ? $value['value'] : $value;
         $objectPath = $hasWrappedValue ? $path.'.value' : $path;
 
@@ -184,15 +191,15 @@ class ProcessInputValidator
                     return false;
                 }
 
-                $required = array_filter(
-                    $variant['required'] ?? [],
-                    'is_string',
+                $candidateErrors = [];
+                $this->validateObject(
+                    ['fields' => $variant['fields'] ?? []],
+                    $value,
+                    'candidate',
+                    $candidateErrors,
                 );
 
-                return collect($required)->every(
-                    fn (string $key): bool => array_key_exists($key, $value)
-                        && ! $this->isBlank($value[$key]),
-                );
+                return $candidateErrors === [];
             })
             ->values();
 

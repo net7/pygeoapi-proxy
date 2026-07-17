@@ -260,7 +260,6 @@ test('starting a process rejects unknown output identifiers and formats', functi
     $inputs = ogcFixture(
         'process-solwcad',
     )['examples'][0]['payload_example']['inputs'];
-    $inputs['swinput.data']['variant'] = '0';
     app(OgcProcessCache::class)->putProcess(
         'solwcad',
         ogcFixture('process-solwcad'),
@@ -303,7 +302,6 @@ test('starting a process rejects positional outputs and client transmission mode
     $inputs = ogcFixture(
         'process-solwcad',
     )['examples'][0]['payload_example']['inputs'];
-    $inputs['swinput.data']['variant'] = '0';
     app(OgcProcessCache::class)->putProcess(
         'solwcad',
         ogcFixture('process-solwcad'),
@@ -341,7 +339,6 @@ test('starting a process rejects malformed output selection structures', functio
     $inputs = ogcFixture(
         'process-solwcad',
     )['examples'][0]['payload_example']['inputs'];
-    $inputs['swinput.data']['variant'] = '0';
     app(OgcProcessCache::class)->putProcess(
         'solwcad',
         ogcFixture('process-solwcad'),

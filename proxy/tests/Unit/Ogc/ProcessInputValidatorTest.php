@@ -79,6 +79,22 @@ test('it validates only the explicitly selected one of variant', function () {
         ->not->toHaveKey('inputs.swinput.data.value.ndat2');
 });
 
+test('it requires the value wrapper for an explicitly selected one of variant', function () {
+    $errors = app(ProcessInputValidator::class)->errors(
+        normalizedOgcFields('process-solwcad'),
+        [
+            'swinput.data' => [
+                'variant' => '1',
+                'ndat1' => 1,
+                'kl' => 1,
+                'iopen' => 0,
+            ],
+        ],
+    );
+
+    expect($errors)->toHaveKey('inputs.swinput.data.value');
+});
+
 test('it rejects unknown one of variant identifiers at the selector path', function () {
     $errors = app(ProcessInputValidator::class)->errors(
         normalizedOgcFields('process-solwcad'),
@@ -97,18 +113,9 @@ test('it rejects unknown one of variant identifiers at the selector path', funct
     expect($errors)->toHaveKey('inputs.swinput.data.variant');
 });
 
-test('it accepts legacy one of input only when one complete variant matches', function () {
+test('it accepts legacy one of input only when one fully valid variant matches', function () {
     $fields = normalizedOgcFields('process-solwcad');
-    $unique = app(ProcessInputValidator::class)->errors($fields, [
-        'swinput.data' => [
-            'value' => [
-                'ndat1' => 1,
-                'kl' => 1,
-                'iopen' => 0,
-            ],
-        ],
-    ]);
-    $ambiguous = app(ProcessInputValidator::class)->errors($fields, [
+    $variantZero = app(ProcessInputValidator::class)->errors($fields, [
         'swinput.data' => [
             'value' => [
                 'ndat1' => 1,
@@ -117,9 +124,70 @@ test('it accepts legacy one of input only when one complete variant matches', fu
             ],
         ],
     ]);
+    $variantNegativeOne = app(ProcessInputValidator::class)->errors($fields, [
+        'swinput.data' => [
+            'value' => [
+                'ndat1' => 1,
+                'ndat2' => 1,
+                'kl' => -1,
+            ],
+        ],
+    ]);
+    $ambiguous = app(ProcessInputValidator::class)->errors([
+        'choice' => [
+            'kind' => 'oneOf',
+            'variants' => [
+                [
+                    'id' => '0',
+                    'required' => ['name'],
+                    'fields' => [
+                        'name' => [
+                            'kind' => 'scalar',
+                            'type' => 'string',
+                            'required' => true,
+                        ],
+                    ],
+                ],
+                [
+                    'id' => '1',
+                    'required' => ['name'],
+                    'fields' => [
+                        'name' => [
+                            'kind' => 'scalar',
+                            'type' => 'string',
+                            'required' => true,
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ], [
+        'choice' => [
+            'value' => [
+                'name' => 'same',
+            ],
+        ],
+    ]);
 
-    expect($unique)->not->toHaveKey('inputs.swinput.data')
-        ->and($ambiguous)->toHaveKey('inputs.swinput.data');
+    expect($variantZero)->not->toHaveKey('inputs.swinput.data')
+        ->and($variantNegativeOne)->not->toHaveKey('inputs.swinput.data')
+        ->and($ambiguous)->toHaveKey('inputs.choice');
+});
+
+test('it rejects legacy one of input when no complete variant matches', function () {
+    $errors = app(ProcessInputValidator::class)->errors(
+        normalizedOgcFields('process-solwcad'),
+        [
+            'swinput.data' => [
+                'value' => [
+                    'ndat1' => 1,
+                    'kl' => 1,
+                ],
+            ],
+        ],
+    );
+
+    expect($errors)->toHaveKey('inputs.swinput.data');
 });
 
 test('it rejects blank required array table cells', function () {

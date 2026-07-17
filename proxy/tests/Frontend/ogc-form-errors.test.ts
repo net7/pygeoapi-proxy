@@ -5,6 +5,7 @@ import {
     errorIdForPath,
     fieldError,
     firstInvalidFieldPath,
+    oneOfStructuralError,
 } from '../../resources/js/lib/ogc-form-errors';
 
 describe('OGC form errors', () => {
@@ -44,6 +45,23 @@ describe('OGC form errors', () => {
         };
 
         expect(firstInvalidFieldPath(controls, errors)).toBe('inputs.sw.data');
+    });
+
+    test('surfaces only exact one of container and value wrapper errors', () => {
+        const path = 'inputs.swinput.data';
+
+        expect(
+            oneOfStructuralError(
+                { [path + '.value']: 'This input must be an object.' },
+                path,
+            ),
+        ).toBe('This input must be an object.');
+        expect(
+            oneOfStructuralError(
+                { [path + '.value.iopen']: 'This input is required.' },
+                path,
+            ),
+        ).toBeUndefined();
     });
 
     test('wires failed submit focus and field accessibility', () => {

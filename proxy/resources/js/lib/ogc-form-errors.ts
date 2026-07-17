@@ -11,6 +11,13 @@ export function errorIdForPath(path: string): string {
     return 'error-' + path.replaceAll(/[^a-zA-Z0-9_-]/g, '-');
 }
 
+export function oneOfStructuralError(
+    errors: OgcFormErrors,
+    path: string,
+): string | undefined {
+    return fieldError(errors, path) ?? fieldError(errors, path + '.value');
+}
+
 export function firstInvalidFieldPath(
     controlPaths: string[],
     errors: OgcFormErrors,

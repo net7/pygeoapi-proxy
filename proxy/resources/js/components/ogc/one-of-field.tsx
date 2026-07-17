@@ -11,7 +11,11 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { fieldDisplayLabel } from '@/lib/ogc-fields';
-import { errorIdForPath, fieldError } from '@/lib/ogc-form-errors';
+import {
+    errorIdForPath,
+    fieldError,
+    oneOfStructuralError,
+} from '@/lib/ogc-form-errors';
 import type { OgcFormErrors } from '@/lib/ogc-form-errors';
 import { defaultObjectValue, isOneOfValue } from '@/lib/ogc-form-values';
 import type { OgcNormalizedField } from '@/types';
@@ -36,6 +40,7 @@ export default function OneOfField({
     const selected =
         variants.find((variant) => variant.id === current.variant) ??
         variants[0];
+    const structuralError = oneOfStructuralError(errors, path);
 
     if (!selected) {
         return null;
@@ -47,7 +52,7 @@ export default function OneOfField({
             description={field.description}
             className="overflow-hidden"
             fieldPath={path}
-            error={fieldError(errors, path)}
+            error={structuralError}
         >
             <Select
                 value={current.variant}
