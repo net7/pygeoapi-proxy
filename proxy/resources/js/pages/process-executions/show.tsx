@@ -72,7 +72,10 @@ export default function ProcessExecutionShow({
     const isPolling = !isJobTerminal(execution.status);
     const shouldRefreshMapLayers =
         !isPolling && hasPendingMapLayers(execution.results);
-    const visualResults = groupProcessResults(execution.results);
+    const visualResults = groupProcessResults(
+        execution.results,
+        execution.outputMetadata,
+    );
 
     return (
         <>

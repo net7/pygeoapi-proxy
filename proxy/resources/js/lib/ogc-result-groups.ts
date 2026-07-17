@@ -1,4 +1,4 @@
-import type { ProcessExecutionResult } from '@/types';
+import type { ProcessExecutionResult, ProcessOutputMetadata } from '@/types';
 
 export type ProcessResultVisualItem =
     | {
@@ -23,6 +23,7 @@ type OutputComponentMatch = {
 
 export function groupProcessResults(
     results: ProcessExecutionResult[],
+    outputMetadata: ProcessOutputMetadata = {},
 ): ProcessResultVisualItem[] {
     const components = new Map<
         string,
@@ -78,11 +79,17 @@ export function groupProcessResults(
             continue;
         }
 
+        const logicalMetadata = outputMetadata[match.outputId];
+        const logicalDescription = logicalMetadata?.description?.trim();
+
         visualItems.push({
             kind: 'geotiff-map',
             outputId: match.outputId,
-            title: groupedTitle(match.outputId, geotiff, sld),
-            description: geotiff.description ?? sld.description,
+            title:
+                logicalMetadata?.title?.trim() ||
+                groupedTitle(match.outputId, geotiff, sld),
+            description:
+                logicalDescription || geotiff.description || sld.description,
             geotiff,
             sld,
         });

@@ -137,6 +137,7 @@ class ProcessExecutionController extends Controller
             'note' => $processExecution->note,
             'noteUpdatedAt' => $processExecution->note_updated_at?->toIso8601String(),
             'requestedOutputs' => $processExecution->requested_outputs,
+            'outputMetadata' => (object) $this->outputMetadata($processExecution),
             'results' => $processExecution->results->map(fn (ProcessExecutionResult $result): array => [
                 'id' => $result->id,
                 'outputId' => $result->output_id,
@@ -166,6 +167,38 @@ class ProcessExecutionController extends Controller
             'pollingInterval' => $this->pollingInterval(),
             'execution' => $execution,
         ]);
+    }
+
+    /**
+     * @return array<string, array{
+     *     title: string,
+     *     description: string|null
+     * }>
+     */
+    private function outputMetadata(ProcessExecution $processExecution): array
+    {
+        $metadata = [];
+
+        foreach ($processExecution->process_outputs ?? [] as $outputId => $output) {
+            if (! is_array($output)) {
+                continue;
+            }
+
+            $title = $output['title'] ?? null;
+            $description = $output['description'] ?? null;
+
+            $metadata[(string) $outputId] = [
+                'title' => is_string($title) && trim($title) !== ''
+                    ? $title
+                    : (string) $outputId,
+                'description' => is_string($description)
+                    && trim($description) !== ''
+                        ? $description
+                        : null,
+            ];
+        }
+
+        return $metadata;
     }
 
     /**

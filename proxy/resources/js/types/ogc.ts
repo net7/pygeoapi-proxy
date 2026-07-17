@@ -146,11 +146,20 @@ export type ProcessExecutionResultMapLayer = {
     warning: 'hillshade_without_color_map' | null;
 };
 
+export type ProcessOutputMetadata = Record<
+    string,
+    {
+        title: string;
+        description?: string | null;
+    }
+>;
+
 export type ProcessExecutionDetail = ProcessExecutionListItem & {
     processVersion?: string | null;
     note?: TiptapDocument | null;
     noteUpdatedAt?: string | null;
     requestPayload?: Record<string, unknown> | null;
     requestedOutputs?: Record<string, unknown> | null;
+    outputMetadata: ProcessOutputMetadata;
     results: ProcessExecutionResult[];
 };

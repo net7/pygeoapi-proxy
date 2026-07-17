@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'bun:test';
 
 import { hasPendingMapLayers } from '../../resources/js/lib/ogc-map-layers';
@@ -261,5 +262,75 @@ describe('groupProcessResults', () => {
             outputId: 'invasion_map',
             title: 'Invasion Map',
         });
+    });
+
+    test('prefers logical output title and description for map groups', () => {
+        const groups = groupProcessResults(
+            [
+                result({
+                    id: 10,
+                    outputId: 'dem.geotiff',
+                    title: 'Primary DEM - GeoTIFF',
+                    description: 'GeoTIFF component description',
+                    mediaType: 'image/tiff; application=geotiff',
+                }),
+                result({
+                    id: 11,
+                    outputId: 'dem.sld',
+                    title: 'Primary DEM - SLD',
+                    description: 'SLD component description',
+                    mediaType: 'application/vnd.ogc.sld+xml',
+                }),
+            ],
+            {
+                dem: {
+                    title: 'Primary DEM',
+                    description:
+                        'The local DSM (GeoTIFF) used for the simulation.',
+                },
+            },
+        );
+
+        expect(groups[0]).toMatchObject({
+            kind: 'geotiff-map',
+            outputId: 'dem',
+            title: 'Primary DEM',
+            description: 'The local DSM (GeoTIFF) used for the simulation.',
+        });
+    });
+
+    test('keeps component metadata as a fallback for historical executions', () => {
+        const groups = groupProcessResults([
+            result({
+                id: 10,
+                outputId: 'dem.geotiff',
+                title: 'Primary DEM - GeoTIFF',
+                description: 'GeoTIFF component description',
+                mediaType: 'image/tiff',
+            }),
+            result({
+                id: 11,
+                outputId: 'dem.sld',
+                mediaType: 'application/vnd.ogc.sld+xml',
+            }),
+        ]);
+
+        expect(groups[0]).toMatchObject({
+            kind: 'geotiff-map',
+            title: 'Primary DEM',
+            description: 'GeoTIFF component description',
+        });
+    });
+
+    test('renders every non empty result description even when it matches title', () => {
+        const source = readFileSync(
+            'resources/js/components/ogc/result-preview.tsx',
+            'utf8',
+        );
+
+        expect(source).toMatch(
+            /<CardDescription>\s*\{result\.description\}\s*<\/CardDescription>/,
+        );
+        expect(source).not.toContain('result.description !== result.title');
     });
 });

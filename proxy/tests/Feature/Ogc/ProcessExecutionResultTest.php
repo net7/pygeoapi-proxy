@@ -137,6 +137,29 @@ test('users can view map layer metadata on their execution detail', function () 
             ->where('execution.results.0.mapLayer.error', null));
 });
 
+test('execution detail exposes logical process output metadata', function () {
+    $user = User::factory()->create();
+    $process = ogcFixture('process-pybox');
+    $execution = ProcessExecution::factory()->for($user)->create([
+        'process_outputs' => $process['outputs'],
+    ]);
+
+    $response = $this->actingAs($user)
+        ->get("/jobs/{$execution->id}")
+        ->assertOk();
+
+    expect($response->inertiaProps('execution.outputMetadata.dem'))
+        ->toBe([
+            'title' => 'Primary DEM',
+            'description' => 'The local DSM (GeoTIFF) used for the simulation.',
+        ])
+        ->and(
+            $response->inertiaProps(
+                'execution.outputMetadata.invasion_map.description',
+            ),
+        )->toBe($process['outputs']['invasion_map']['description']);
+});
+
 test('admin users can view a map layer warning when the sld only defines hillshade', function () {
     Storage::fake('local');
 

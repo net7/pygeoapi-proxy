@@ -3,7 +3,13 @@ import { ChevronDownIcon, Download, FileTextIcon } from 'lucide-react';
 import ChartResultPreview from '@/components/ogc/chart-result-preview';
 import RawPayloadBlock from '@/components/ogc/raw-payload-block';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import {
     Collapsible,
     CollapsibleContent,
@@ -58,6 +64,11 @@ export default function ResultPreview({
                                     />
                                 </CollapsibleTrigger>
                             </CardTitle>
+                            {result.description ? (
+                                <CardDescription>
+                                    {result.description}
+                                </CardDescription>
+                            ) : null}
                         </div>
                         {canDownload ? (
                             <Button asChild variant="outline" size="sm">
