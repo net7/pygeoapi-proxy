@@ -124,7 +124,12 @@ class ProcessExecutionController extends Controller
         $processExecution->load('results');
 
         $includeAdminData = $user->isAdmin();
-        $mapLayerWarnings = $includeAdminData
+        $showMapLayerWarnings = $includeAdminData
+            && (bool) config(
+                'services.ogc_processes.show_map_layer_warnings',
+                false,
+            );
+        $mapLayerWarnings = $showMapLayerWarnings
             ? $this->mapLayerWarnings(
                 $processExecution,
                 $findGeoTiffSldResultPairs,

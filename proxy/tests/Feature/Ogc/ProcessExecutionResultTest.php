@@ -4,6 +4,7 @@ use App\Enums\Ogc\ResultCacheStatus;
 use App\Models\ProcessExecution;
 use App\Models\ProcessExecutionResult;
 use App\Models\User;
+use App\Support\Ogc\SldVisualizationInspector;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -160,12 +161,34 @@ test('execution detail exposes logical process output metadata', function () {
         )->toBe($process['outputs']['invasion_map']['description']);
 });
 
-test('admin users can view a map layer warning when the sld only defines hillshade', function () {
+test('map layer warnings are disabled by default without running inspection', function () {
     Storage::fake('local');
 
     $admin = User::factory()->admin()->create();
     $execution = ProcessExecution::factory()->for($admin)->create();
+    $geotiff = cachedHillshadeMapPair($execution);
 
+    $this->mock(SldVisualizationInspector::class)
+        ->shouldNotReceive('warningForResult');
+
+    $response = $this->actingAs($admin)
+        ->get("/jobs/{$execution->id}")
+        ->assertOk();
+
+    $results = collect($response->inertiaProps('execution.results'))->keyBy('id');
+
+    expect(data_get($results->get($geotiff->id), 'mapLayer.warning'))
+        ->toBeNull();
+});
+
+test('admin users can enable map layer warnings', function () {
+    Storage::fake('local');
+    config([
+        'services.ogc_processes.show_map_layer_warnings' => true,
+    ]);
+
+    $admin = User::factory()->admin()->create();
+    $execution = ProcessExecution::factory()->for($admin)->create();
     $geotiff = cachedHillshadeMapPair($execution);
 
     $response = $this->actingAs($admin)
@@ -180,6 +203,9 @@ test('admin users can view a map layer warning when the sld only defines hillsha
 
 test('non admin users cannot view map layer warnings', function () {
     Storage::fake('local');
+    config([
+        'services.ogc_processes.show_map_layer_warnings' => true,
+    ]);
 
     $user = User::factory()->create();
     $execution = ProcessExecution::factory()->for($user)->create();
