@@ -107,12 +107,12 @@ test('decimal process number inputs are valid after prefill', function () {
     expect($source)
         ->toContain("step={field.type === 'number' ? 'any' : undefined}")
         ->toContain('@/lib/html-pattern')
-        ->toContain('htmlPatternForInput({')
+        ->toContain('htmlPatternForInput(')
         ->not->toContain('pattern={field.pattern ?? undefined}');
 
     expect($tableSource)
         ->toContain('@/lib/html-pattern')
-        ->toContain('htmlPatternForInput({')
+        ->toContain('htmlPatternForInput(')
         ->toContain("column.type === 'number'")
         ->not->toContain('column.pattern ?? undefined');
 });
@@ -964,7 +964,7 @@ test('process output selector renders checkboxes formats and empty selection fee
         ->toContain('<InputError message={error}');
 });
 
-test('one of descriptions are shown before the selector', function () {
+test('one of field description precedes the selector and the selected description follows it', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/one-of-field.tsx');
 
     $fieldDescriptionPosition = strpos($source, 'description={field.description}');
@@ -975,7 +975,7 @@ test('one of descriptions are shown before the selector', function () {
         ->and($selectedDescriptionPosition)->not->toBeFalse()
         ->and($selectPosition)->not->toBeFalse()
         ->and($fieldDescriptionPosition)->toBeLessThan($selectPosition)
-        ->and($selectedDescriptionPosition)->toBeLessThan($selectPosition);
+        ->and($selectPosition)->toBeLessThan($selectedDescriptionPosition);
 });
 
 test('process form sends output selections without browser transmission modes', function () {
@@ -1086,7 +1086,8 @@ test('job detail groups geotiff and sld results for map previews', function () {
     $showSource = file_get_contents(getcwd().'/resources/js/pages/process-executions/show.tsx');
 
     expect($showSource)
-        ->toContain('groupProcessResults(execution.results)')
+        ->toContain('groupProcessResults(')
+        ->toContain('execution.outputMetadata')
         ->toContain('<GeoTiffMapResultPreview')
         ->toContain('visualResults.length')
         ->toContain("item.kind === 'geotiff-map'");
