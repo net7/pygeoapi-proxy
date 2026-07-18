@@ -11,12 +11,42 @@ GitLab runner -> SSH -> deploy user -> stable checkout -> deploy.sh -> Docker Co
 
 - Checkout: `/docker-data/configuration/pygeoapi-proxy/proxy`
 - URL: `https://proxygeoapi.netseven.work`
+- SSH endpoint: `91.107.228.84:1024`
+- SSH host-key fingerprint: `SHA256:3Baw8zxKivSOBGHO0ohYDFd59ACasF0c3p/M19jFhxI`
 - Laravel host port: `127.0.0.1:7070`
 - Reverb host port: `127.0.0.1:7071`
 
 Il runner esegue soltanto i quality gate e il trigger SSH. Composer, Bun e Vite
 girano negli stage del Dockerfile sul server; le immagini applicative non sono
 pubblicate nel Container Registry.
+
+## Bootstrap utente deploy
+
+Verificare prima se l'account esiste già, senza modificarlo:
+
+```bash
+getent passwd deploy
+id deploy
+sudo -u deploy sh -lc 'printf "home=%s\n" "$HOME"; id; command -v git docker make curl flock'
+```
+
+Se `getent passwd deploy` restituisce l'account, conservarne UID, home, shell,
+gruppi e chiavi autorizzate. Se invece conferma che l'account è assente,
+eseguire una sola volta:
+
+```bash
+sudo useradd --create-home --shell /bin/bash deploy
+sudo usermod --append --groups docker deploy
+sudo install -d -m 0700 -o deploy -g deploy /home/deploy/.ssh
+sudo touch /home/deploy/.ssh/authorized_keys
+sudo chown deploy:deploy /home/deploy/.ssh/authorized_keys
+sudo chmod 0600 /home/deploy/.ssh/authorized_keys
+```
+
+Non assegnare passwordless sudo all'utente di deploy. Dopo l'aggiunta al gruppo
+Docker, aprire una nuova sessione prima di verificare `docker info`. La pipeline
+non crea l'account e non modifica `authorized_keys`: l'installazione della
+chiave pubblica dedicata resta un'operazione amministrativa sorvegliata.
 
 ## Prerequisiti server
 
@@ -53,11 +83,14 @@ Usare una chiave Ed25519 dedicata al progetto. Da una workstation
 amministrativa, in una directory temporanea protetta:
 
 ```bash
+DEPLOY_HOST=91.107.228.84
+DEPLOY_PORT=1024
 umask 077
-ssh-keygen -t ed25519 -a 100 -C 'gitlab-pygeoapi-proxy-staging' -f ./pygeoapi-proxy-staging
-ssh-copy-id -i ./pygeoapi-proxy-staging.pub "deploy@$DEPLOY_HOST"
-ssh-keyscan -H "$DEPLOY_HOST" > ./pygeoapi-proxy-staging.known_hosts
+ssh-keygen -q -t ed25519 -a 100 -N '' -C 'gitlab-pygeoapi-proxy-staging' -f ./pygeoapi-proxy-staging
+ssh-copy-id -p "$DEPLOY_PORT" -i ./pygeoapi-proxy-staging.pub "deploy@$DEPLOY_HOST"
+ssh-keyscan -H -p "$DEPLOY_PORT" -t ed25519 "$DEPLOY_HOST" > ./pygeoapi-proxy-staging.known_hosts
 ssh-keygen -lf ./pygeoapi-proxy-staging.known_hosts
+ssh -p "$DEPLOY_PORT" -i ./pygeoapi-proxy-staging "deploy@$DEPLOY_HOST" true
 ```
 
 Sul server ottenere la fingerprint autorevole:
@@ -66,8 +99,10 @@ Sul server ottenere la fingerprint autorevole:
 sudo ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
 ```
 
-Confrontare le fingerprint tramite un canale amministrativo distinto prima di
-caricare `known_hosts` in GitLab. Non disabilitare mai la verifica dell'host.
+La fingerprint letta dal file deve essere esattamente
+`SHA256:3Baw8zxKivSOBGHO0ohYDFd59ACasF0c3p/M19jFhxI`. Confrontarla tramite un
+canale amministrativo distinto prima di caricare `known_hosts` in GitLab. Non
+disabilitare mai la verifica dell'host.
 Caricare la chiave privata e il file `known_hosts`, poi eliminare in modo sicuro
 le copie temporanee quando non servono più.
 
@@ -80,6 +115,7 @@ Configurare in **Settings > CI/CD > Variables**:
 | `DEPLOY_SSH_KEY` | File | Protected; masked se supportato | Chiave privata dedicata |
 | `DEPLOY_KNOWN_HOSTS` | File | Protected | Host key verificata |
 | `DEPLOY_HOST` | Variable | Protected | Hostname o IP dello staging |
+| `DEPLOY_PORT` | Variable | Protected | `1024` |
 | `DEPLOY_USER` | Variable | Protected | `deploy` |
 | `DEPLOY_PATH` | Variable | Protected | `/docker-data/configuration/pygeoapi-proxy/proxy` |
 
@@ -161,7 +197,7 @@ ps -ef | grep '[d]eploy.sh staging'
 
 | Problema | Controllo | Azione |
 | --- | --- | --- |
-| Chiave SSH rifiutata | `ssh -vvv -i ./pygeoapi-proxy-staging "deploy@$DEPLOY_HOST" true` | Verificare chiave pubblica in `~deploy/.ssh/authorized_keys`, owner e permessi; rigenerare `DEPLOY_SSH_KEY` solo se necessario. |
+| Chiave SSH rifiutata | `ssh -vvv -p "$DEPLOY_PORT" -i ./pygeoapi-proxy-staging "deploy@$DEPLOY_HOST" true` | Verificare chiave pubblica in `~deploy/.ssh/authorized_keys`, owner e permessi; rigenerare `DEPLOY_SSH_KEY` solo se necessario. |
 | Host key errata | `ssh-keygen -lf ./pygeoapi-proxy-staging.known_hosts` e `sudo ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` | Dopo verifica su canale distinto, rigenerare il file con `ssh-keyscan` e aggiornare `DEPLOY_KNOWN_HOSTS`. |
 | `.env.staging` assente | `sudo -u deploy test -f /docker-data/configuration/pygeoapi-proxy/proxy/.env.staging` | Ripristinare il file approvato da backup o secret store; il deploy non lo crea dal template example. |
 | Lock occupato | `ps -ef \| grep '[d]eploy.sh staging'` | Attendere il deploy attivo; rimuovere il lock soltanto dopo aver verificato che non esista alcun processo. |
