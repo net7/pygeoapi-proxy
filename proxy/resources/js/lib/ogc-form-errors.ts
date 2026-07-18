@@ -29,17 +29,23 @@ export function firstInvalidFieldPath(
         )
         .map(([path]) => path);
 
-    const exact = controlPaths.find((path) => errorPaths.includes(path));
+    const resolvedTargets = new Set<string>();
 
-    if (exact) {
-        return exact;
+    for (const errorPath of errorPaths) {
+        const closest = controlPaths
+            .filter(
+                (controlPath) =>
+                    errorPath === controlPath ||
+                    errorPath.startsWith(controlPath + '.'),
+            )
+            .sort((left, right) => right.length - left.length)[0];
+
+        if (closest) {
+            resolvedTargets.add(closest);
+        }
     }
 
-    return (
-        controlPaths.find((path) =>
-            errorPaths.some((errorPath) => errorPath.startsWith(path + '.')),
-        ) ?? null
-    );
+    return controlPaths.find((path) => resolvedTargets.has(path)) ?? null;
 }
 
 export function focusFirstInvalidField(

@@ -1,10 +1,11 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
 
 import {
     errorIdForPath,
     fieldError,
     firstInvalidFieldPath,
+    focusFirstInvalidField,
     oneOfStructuralError,
 } from '../../resources/js/lib/ogc-form-errors';
 
@@ -45,6 +46,41 @@ describe('OGC form errors', () => {
         };
 
         expect(firstInvalidFieldPath(controls, errors)).toBe('inputs.sw.data');
+    });
+
+    test('chooses the deepest structural target for a nested error', () => {
+        const controls = ['outputs', 'outputs.chart', 'outputs.chart.format'];
+        const errors = {
+            'outputs.chart.format.mediaType': 'Format is invalid.',
+        };
+
+        expect(firstInvalidFieldPath(controls, errors)).toBe(
+            'outputs.chart.format',
+        );
+    });
+
+    test('centers and focuses the first invalid control without a second scroll', () => {
+        const scrollIntoView = mock(() => undefined);
+        const focus = mock(() => undefined);
+        const target = {
+            dataset: { fieldPath: 'inputs.value' },
+            scrollIntoView,
+            focus,
+        } as unknown as HTMLElement;
+        const form = {
+            querySelectorAll: () => [target],
+        } as unknown as HTMLFormElement;
+
+        expect(
+            focusFirstInvalidField(form, {
+                'inputs.value': 'Complete this field.',
+            }),
+        ).toBe(true);
+        expect(scrollIntoView).toHaveBeenCalledWith({
+            behavior: 'smooth',
+            block: 'center',
+        });
+        expect(focus).toHaveBeenCalledWith({ preventScroll: true });
     });
 
     test('surfaces only exact one of container and value wrapper errors', () => {
