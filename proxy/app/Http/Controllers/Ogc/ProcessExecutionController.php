@@ -16,6 +16,7 @@ use App\Models\ProcessExecutionResult;
 use App\Models\User;
 use App\Services\Ogc\CsvPreviewBuilder;
 use App\Services\Ogc\OgcProcessCache;
+use App\Services\Ogc\ProcessInputPayloadBuilder;
 use App\Services\Ogc\ProcessInputValidator;
 use App\Services\Ogc\ProcessOutputRequestBuilder;
 use App\Services\Ogc\ProcessSchemaNormalizer;
@@ -54,6 +55,7 @@ class ProcessExecutionController extends Controller
         OgcProcessCache $cache,
         ProcessSchemaNormalizer $schemaNormalizer,
         ProcessInputValidator $inputValidator,
+        ProcessInputPayloadBuilder $inputPayloadBuilder,
         ProcessOutputRequestBuilder $outputRequestBuilder,
         CreateProcessExecution $createProcessExecution,
     ): RedirectResponse {
@@ -64,18 +66,25 @@ class ProcessExecutionController extends Controller
 
         abort_if($processDescription === null, 409, 'Process description is still warming up.');
 
-        $inputErrors = $inputValidator->errors(
-            $schemaNormalizer->normalize($processDescription)['fields'],
-            $request->executionInputs(),
-        );
+        $fields = $schemaNormalizer->normalize($processDescription)['fields'];
+        $submittedInputs = $request->executionInputs();
+        $inputErrors = $inputValidator->errors($fields, $submittedInputs);
 
         if ($inputErrors !== []) {
             throw ValidationException::withMessages($inputErrors);
         }
 
+        $executionInputs = $inputPayloadBuilder->build(
+            $fields,
+            $submittedInputs,
+        );
+
         $payload = [
-            'inputs' => $request->executionInputs(),
-            'outputs' => $outputRequestBuilder->forProcess($processDescription),
+            'inputs' => $executionInputs,
+            'outputs' => $outputRequestBuilder->forProcess(
+                $processDescription,
+                $request->outputSelection(),
+            ),
         ];
         $mode = $request->executionMode();
 
@@ -115,7 +124,12 @@ class ProcessExecutionController extends Controller
         $processExecution->load('results');
 
         $includeAdminData = $user->isAdmin();
-        $mapLayerWarnings = $includeAdminData
+        $showMapLayerWarnings = $includeAdminData
+            && (bool) config(
+                'services.ogc_processes.show_map_layer_warnings',
+                false,
+            );
+        $mapLayerWarnings = $showMapLayerWarnings
             ? $this->mapLayerWarnings(
                 $processExecution,
                 $findGeoTiffSldResultPairs,
@@ -128,6 +142,7 @@ class ProcessExecutionController extends Controller
             'note' => $processExecution->note,
             'noteUpdatedAt' => $processExecution->note_updated_at?->toIso8601String(),
             'requestedOutputs' => $processExecution->requested_outputs,
+            'outputMetadata' => (object) $this->outputMetadata($processExecution),
             'results' => $processExecution->results->map(fn (ProcessExecutionResult $result): array => [
                 'id' => $result->id,
                 'outputId' => $result->output_id,
@@ -157,6 +172,38 @@ class ProcessExecutionController extends Controller
             'pollingInterval' => $this->pollingInterval(),
             'execution' => $execution,
         ]);
+    }
+
+    /**
+     * @return array<string, array{
+     *     title: string,
+     *     description: string|null
+     * }>
+     */
+    private function outputMetadata(ProcessExecution $processExecution): array
+    {
+        $metadata = [];
+
+        foreach ($processExecution->process_outputs ?? [] as $outputId => $output) {
+            if (! is_array($output)) {
+                continue;
+            }
+
+            $title = $output['title'] ?? null;
+            $description = $output['description'] ?? null;
+
+            $metadata[(string) $outputId] = [
+                'title' => is_string($title) && trim($title) !== ''
+                    ? $title
+                    : (string) $outputId,
+                'description' => is_string($description)
+                    && trim($description) !== ''
+                        ? $description
+                        : null,
+            ];
+        }
+
+        return $metadata;
     }
 
     /**

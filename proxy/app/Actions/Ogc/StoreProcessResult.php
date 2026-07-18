@@ -23,6 +23,10 @@ class StoreProcessResult
 
     public function fromResponse(ProcessExecution $execution, Response $response, ?string $outputId = null): void
     {
+        if ($outputId === null && $execution->requested_outputs === []) {
+            return;
+        }
+
         foreach ($this->parser->parse($execution, $response, $outputId) as $result) {
             $storagePath = null;
 
@@ -70,6 +74,10 @@ class StoreProcessResult
      */
     public function fromLink(ProcessExecution $execution, array $link, ?string $outputId = null): void
     {
+        if ($outputId === null && $execution->requested_outputs === []) {
+            return;
+        }
+
         $outputId ??= $this->firstRequestedOutputId($execution);
         $mediaType = Str::of((string) ($link['type'] ?? 'application/octet-stream'))->trim()->lower()->toString();
         $remoteHref = $link['href'] ?? null;

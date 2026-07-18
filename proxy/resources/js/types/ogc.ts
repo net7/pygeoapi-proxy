@@ -38,6 +38,7 @@ export type OgcNormalizedField = {
         key: string;
         label: string;
         type: string;
+        required: boolean;
         pattern?: string | null;
         minimum?: number | null;
         maximum?: number | null;
@@ -56,6 +57,13 @@ export type OgcNormalizedField = {
     references?: { label: string; href: string; mediaType?: string | null }[];
 };
 
+export type OgcOutputFormat = {
+    label: string;
+    mediaType: string;
+    encoding?: string;
+    schema?: string | Record<string, unknown>;
+};
+
 export type OgcNormalizedOutput = {
     name: string;
     title: string;
@@ -64,6 +72,7 @@ export type OgcNormalizedOutput = {
     contentEncoding?: string | null;
     schemaRef?: string | null;
     schemaType?: string | null;
+    formats: OgcOutputFormat[];
     components?: Record<
         string,
         {
@@ -137,11 +146,20 @@ export type ProcessExecutionResultMapLayer = {
     warning: 'hillshade_without_color_map' | null;
 };
 
+export type ProcessOutputMetadata = Record<
+    string,
+    {
+        title: string;
+        description?: string | null;
+    }
+>;
+
 export type ProcessExecutionDetail = ProcessExecutionListItem & {
     processVersion?: string | null;
     note?: TiptapDocument | null;
     noteUpdatedAt?: string | null;
     requestPayload?: Record<string, unknown> | null;
     requestedOutputs?: Record<string, unknown> | null;
+    outputMetadata: ProcessOutputMetadata;
     results: ProcessExecutionResult[];
 };

@@ -29,14 +29,23 @@ test('starting a process creates an async local execution and redirects without 
 
     $payload = [
         'inputs' => conduitExampleInputs(),
-        'outputs' => ['gas' => ['transmissionMode' => 'reference']],
+        'outputs' => [
+            'gas' => [
+                'format' => [
+                    'mediaType' => 'application/json',
+                    'schema' => '#/$defs/chart',
+                ],
+            ],
+        ],
     ];
     $expectedOutputs = [
-        'gas' => ['transmissionMode' => 'value'],
-        'velocity' => ['transmissionMode' => 'value'],
-        'pressure' => ['transmissionMode' => 'value'],
-        'outfile' => ['transmissionMode' => 'reference'],
-        'exit' => ['transmissionMode' => 'value'],
+        'gas' => [
+            'format' => [
+                'mediaType' => 'application/json',
+                'schema' => '#/$defs/chart',
+            ],
+            'transmissionMode' => 'value',
+        ],
     ];
 
     $response = $this->actingAs($user)->post(route('processes.jobs.store', 'conduit'), $payload);
@@ -97,13 +106,7 @@ test('starting a process stores an optional user note without sending it to the 
         'inputs' => conduitExampleInputs(),
         'note' => $note,
     ];
-    $expectedOutputs = [
-        'gas' => ['transmissionMode' => 'value'],
-        'velocity' => ['transmissionMode' => 'value'],
-        'pressure' => ['transmissionMode' => 'value'],
-        'outfile' => ['transmissionMode' => 'reference'],
-        'exit' => ['transmissionMode' => 'value'],
-    ];
+    $expectedOutputs = expectedConduitOutputRequestsForExecution();
 
     $this->actingAs($user)->post(route('processes.jobs.store', 'conduit'), $payload);
 
@@ -127,7 +130,6 @@ test('starting a process without a note leaves note timestamps empty', function 
 
     $this->actingAs($user)->post(route('processes.jobs.store', 'conduit'), [
         'inputs' => conduitExampleInputs(),
-        'outputs' => ['gas' => ['transmissionMode' => 'value']],
     ]);
 
     $execution = ProcessExecution::query()->sole();
@@ -146,7 +148,6 @@ test('starting a process ignores a client requested synchronous mode', function 
     $response = $this->actingAs($user)->post(route('processes.jobs.store', 'conduit'), [
         'mode' => 'sync',
         'inputs' => conduitExampleInputs(),
-        'outputs' => ['gas' => ['transmissionMode' => 'value']],
     ]);
 
     $execution = ProcessExecution::query()->sole();
@@ -169,7 +170,7 @@ test('starting a process validates schema exclusive bounds before queueing', fun
 
     $this->actingAs($user)
         ->post(route('processes.jobs.store', 'conduit'), ['inputs' => $inputs])
-        ->assertInvalid(['inputs.melt_composition.sio2']);
+        ->assertInvalid(['inputs.melt_composition.value.sio2']);
 
     expect(ProcessExecution::query()->count())->toBe(0);
     Bus::assertNotDispatched(SubmitProcessExecutionJob::class);
@@ -182,7 +183,6 @@ test('starting a process does not fall back to pygeoapi when process cache is mi
 
     $response = $this->actingAs(User::factory()->create())->post(route('processes.jobs.store', 'conduit'), [
         'inputs' => ['lat' => 14.47],
-        'outputs' => ['gas' => ['transmissionMode' => 'value']],
     ]);
 
     $response->assertStatus(409);
@@ -192,6 +192,224 @@ test('starting a process does not fall back to pygeoapi when process cache is mi
     Bus::assertNotDispatched(SubmitProcessExecutionJob::class);
     Http::assertNothingSent();
 });
+
+test('starting a process without outputs requests every advertised output', function () {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    app(OgcProcessCache::class)->putProcess(
+        'conduit',
+        ogcFixture('process-conduit'),
+    );
+
+    $this->actingAs($user)->post(
+        route('processes.jobs.store', 'conduit'),
+        ['inputs' => conduitExampleInputs()],
+    )->assertRedirect();
+
+    $execution = ProcessExecution::query()->sole();
+
+    expect($execution->requested_outputs)->toBe(
+        expectedConduitOutputRequestsForExecution(),
+    );
+
+    Bus::assertDispatched(
+        SubmitProcessExecutionJob::class,
+        fn (SubmitProcessExecutionJob $job): bool => $job->payload['outputs'] ===
+                expectedConduitOutputRequestsForExecution(),
+    );
+});
+
+test('starting a process accepts an explicitly empty output selection', function () {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    app(OgcProcessCache::class)->putProcess(
+        'conduit',
+        ogcFixture('process-conduit'),
+    );
+
+    $this->actingAs($user)->post(
+        route('processes.jobs.store', 'conduit'),
+        [
+            'inputs' => conduitExampleInputs(),
+            'outputs' => [],
+        ],
+    )->assertRedirect();
+
+    $execution = ProcessExecution::query()->sole();
+
+    expect($execution->requested_outputs)->toBe([]);
+
+    Bus::assertDispatched(
+        SubmitProcessExecutionJob::class,
+        fn (SubmitProcessExecutionJob $job): bool => $job->payload['outputs'] === [],
+    );
+});
+
+test('starting a process rejects unknown output identifiers and formats', function (
+    array $outputs,
+    string $errorKey,
+) {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    $inputs = ogcFixture(
+        'process-solwcad',
+    )['examples'][0]['payload_example']['inputs'];
+    app(OgcProcessCache::class)->putProcess(
+        'solwcad',
+        ogcFixture('process-solwcad'),
+    );
+
+    $this->actingAs($user)->post(
+        route('processes.jobs.store', 'solwcad'),
+        [
+            'inputs' => $inputs,
+            'outputs' => $outputs,
+        ],
+    )->assertInvalid([$errorKey]);
+
+    expect(ProcessExecution::query()->count())->toBe(0);
+    Bus::assertNotDispatched(SubmitProcessExecutionJob::class);
+    Http::assertNothingSent();
+})->with([
+    'unknown output' => [
+        ['unknown' => []],
+        'outputs.unknown',
+    ],
+    'unknown format' => [
+        [
+            'solwcad_out' => [
+                'format' => ['mediaType' => 'application/xml'],
+            ],
+        ],
+        'outputs.solwcad_out.format',
+    ],
+]);
+
+test('starting a process rejects positional outputs and client transmission mode', function (
+    array $outputs,
+    string $errorKey,
+) {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    $inputs = ogcFixture(
+        'process-solwcad',
+    )['examples'][0]['payload_example']['inputs'];
+    app(OgcProcessCache::class)->putProcess(
+        'solwcad',
+        ogcFixture('process-solwcad'),
+    );
+
+    $this->actingAs($user)->post(
+        route('processes.jobs.store', 'solwcad'),
+        [
+            'inputs' => $inputs,
+            'outputs' => $outputs,
+        ],
+    )->assertInvalid([$errorKey]);
+
+    expect(ProcessExecution::query()->count())->toBe(0);
+    Bus::assertNotDispatched(SubmitProcessExecutionJob::class);
+})->with([
+    'positional list' => [
+        [['format' => ['mediaType' => 'application/json']]],
+        'outputs',
+    ],
+    'transmission mode' => [
+        ['solwcad_out' => ['transmissionMode' => 'reference']],
+        'outputs.solwcad_out',
+    ],
+]);
+
+test('starting a process rejects malformed output selection structures', function (
+    mixed $outputs,
+    string $errorKey,
+) {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    $inputs = ogcFixture(
+        'process-solwcad',
+    )['examples'][0]['payload_example']['inputs'];
+    app(OgcProcessCache::class)->putProcess(
+        'solwcad',
+        ogcFixture('process-solwcad'),
+    );
+
+    $this->actingAs($user)->post(
+        route('processes.jobs.store', 'solwcad'),
+        [
+            'inputs' => $inputs,
+            'outputs' => $outputs,
+        ],
+    )->assertInvalid([$errorKey]);
+
+    expect(ProcessExecution::query()->count())->toBe(0);
+    Bus::assertNotDispatched(SubmitProcessExecutionJob::class);
+    Http::assertNothingSent();
+})->with([
+    'outputs is not an array' => [
+        'solwcad_out',
+        'outputs',
+    ],
+    'output configuration is not an array' => [
+        ['solwcad_out' => 'application/json'],
+        'outputs.solwcad_out',
+    ],
+    'format is not an array' => [
+        ['solwcad_out' => ['format' => 'application/json']],
+        'outputs.solwcad_out.format',
+    ],
+    'format omits media type' => [
+        ['solwcad_out' => ['format' => ['encoding' => 'utf-8']]],
+        'outputs.solwcad_out.format.mediaType',
+    ],
+    'media type is not a string' => [
+        ['solwcad_out' => ['format' => ['mediaType' => 123]]],
+        'outputs.solwcad_out.format.mediaType',
+    ],
+    'encoding is not a string' => [
+        [
+            'solwcad_out' => [
+                'format' => [
+                    'mediaType' => 'application/json',
+                    'encoding' => 123,
+                ],
+            ],
+        ],
+        'outputs.solwcad_out.format.encoding',
+    ],
+    'schema is neither a string nor an object' => [
+        [
+            'solwcad_out' => [
+                'format' => [
+                    'mediaType' => 'application/json',
+                    'schema' => true,
+                ],
+            ],
+        ],
+        'outputs.solwcad_out.format.schema',
+    ],
+    'format has an unexpected key' => [
+        [
+            'solwcad_out' => [
+                'format' => [
+                    'mediaType' => 'application/json',
+                    'label' => 'JSON',
+                ],
+            ],
+        ],
+        'outputs.solwcad_out.format',
+    ],
+]);
 
 test('it creates a submitting local execution with redacted stored payload', function () {
     $user = User::factory()->create();
@@ -240,7 +458,44 @@ test('it submits a synchronous execution with the original payload and stores pr
 
     Http::assertSent(fn (Request $request): bool => $request->url() === 'https://voice.pi.ingv.it/geoinquire/processes/conduit/execution'
         && $request['inputs'] === $payload['inputs']
-        && $request['outputs'] === $payload['outputs']);
+        && $request['outputs'] instanceof stdClass
+        && get_object_vars($request['outputs']) === $payload['outputs']);
+});
+
+test('it completes a synchronous zero output execution without storing results', function () {
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    $process = ogcFixture('process-conduit');
+    $payload = [
+        'inputs' => [
+            'melt_composition' => [
+                'value' => ['sio2' => 0.7, 'tio2' => 0.01],
+            ],
+        ],
+        'outputs' => [],
+    ];
+    $execution = app(CreateProcessExecution::class)->handle(
+        $user,
+        $process,
+        $payload,
+        ExecutionMode::Sync,
+    );
+
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/processes/conduit/execution' => Http::response(ogcFixture('chart-result')),
+    ]);
+
+    $execution = app(SubmitProcessExecution::class)->handle(
+        $execution,
+        $payload,
+    );
+
+    expect($execution->status)->toBe(ExecutionStatus::Successful)
+        ->and($execution->requested_outputs)->toBe([])
+        ->and($execution->results)->toHaveCount(0);
+
+    Http::assertSentCount(1);
 });
 
 test('it submits an asynchronous execution and dispatches polling', function () {
@@ -325,7 +580,151 @@ test('submission job ignores missing terminal and already submitted executions',
     Http::assertNothingSent();
 });
 
+test('starting solwcad returns the selected variant field error without queueing', function () {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    app(OgcProcessCache::class)->putProcess(
+        'solwcad',
+        ogcFixture('process-solwcad'),
+    );
+
+    $row = [
+        '1000.',
+        '1273.',
+        '.0400',
+        '.0200',
+        '.7653',
+        '.0032',
+        '.1201',
+        '.0027',
+        '.0246',
+        '.0006',
+        '.0018',
+        '.0132',
+        '.0378',
+        '.0306',
+    ];
+
+    $response = $this->actingAs($user)->post(
+        route('processes.jobs.store', 'solwcad'),
+        [
+            'inputs' => [
+                'swinput.data' => [
+                    'variant' => '1',
+                    'value' => [
+                        'ndat1' => 1,
+                        'kl' => 1,
+                    ],
+                ],
+                'sw.data' => [$row],
+            ],
+        ],
+    );
+
+    $response
+        ->assertInvalid(['inputs.swinput.data.value.iopen'])
+        ->assertValid(['inputs.swinput.data.value.ndat2']);
+
+    expect(ProcessExecution::query()->count())->toBe(0);
+    Bus::assertNotDispatched(SubmitProcessExecutionJob::class);
+    Http::assertNothingSent();
+});
+
+test('starting solwcad strips variant metadata from the stored and queued payload', function () {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    app(OgcProcessCache::class)->putProcess(
+        'solwcad',
+        ogcFixture('process-solwcad'),
+    );
+
+    $row = [
+        '1000.',
+        '1273.',
+        '.0400',
+        '.0200',
+        '.7653',
+        '.0032',
+        '.1201',
+        '.0027',
+        '.0246',
+        '.0006',
+        '.0018',
+        '.0132',
+        '.0378',
+        '.0306',
+    ];
+    $selectedValue = [
+        'ndat1' => 1,
+        'kl' => 1,
+        'iopen' => 0,
+    ];
+
+    $this->actingAs($user)->post(
+        route('processes.jobs.store', 'solwcad'),
+        [
+            'inputs' => [
+                'swinput.data' => [
+                    'variant' => '1',
+                    'value' => $selectedValue,
+                ],
+                'sw.data' => [$row],
+            ],
+        ],
+    )->assertRedirect();
+
+    $execution = ProcessExecution::query()->sole();
+
+    expect($execution->request_payload['inputs']['swinput.data'])
+        ->toBe(['value' => $selectedValue]);
+
+    Bus::assertDispatched(
+        SubmitProcessExecutionJob::class,
+        fn (SubmitProcessExecutionJob $job): bool => $job->payload['inputs']['swinput.data'] === ['value' => $selectedValue]
+            && ! array_key_exists(
+                'variant',
+                $job->payload['inputs']['swinput.data'],
+            ),
+    );
+    Http::assertNothingSent();
+});
+
 function conduitExampleInputs(): array
 {
     return ogcFixture('process-conduit')['examples'][0]['payload_example']['inputs'];
+}
+
+function expectedConduitOutputRequestsForExecution(): array
+{
+    $chartFormat = [
+        'mediaType' => 'application/json',
+        'schema' => '#/$defs/chart',
+    ];
+
+    return [
+        'gas' => [
+            'format' => $chartFormat,
+            'transmissionMode' => 'value',
+        ],
+        'velocity' => [
+            'format' => $chartFormat,
+            'transmissionMode' => 'value',
+        ],
+        'pressure' => [
+            'format' => $chartFormat,
+            'transmissionMode' => 'value',
+        ],
+        'outfile' => [
+            'format' => ['mediaType' => 'text/csv; header=present'],
+            'transmissionMode' => 'reference',
+        ],
+        'exit' => [
+            'format' => ['mediaType' => 'text/plain'],
+            'transmissionMode' => 'value',
+        ],
+    ];
 }

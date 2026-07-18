@@ -13,9 +13,7 @@ export function fieldDisplayLabel(
 }
 
 export function optionDisplayLabel(option: string | number | boolean): string {
-    const value = String(option);
-
-    return `${value}: ${value}`;
+    return String(option);
 }
 
 export function referenceDisplayLabel(reference: {

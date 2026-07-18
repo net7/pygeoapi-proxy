@@ -72,7 +72,10 @@ export default function ProcessExecutionShow({
     const isPolling = !isJobTerminal(execution.status);
     const shouldRefreshMapLayers =
         !isPolling && hasPendingMapLayers(execution.results);
-    const visualResults = groupProcessResults(execution.results);
+    const visualResults = groupProcessResults(
+        execution.results,
+        execution.outputMetadata,
+    );
 
     return (
         <>
@@ -309,7 +312,7 @@ function DetailSection({
 }) {
     const header = (
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0">
+            <div className="flex min-w-0 flex-col gap-1">
                 <CardTitleWithIcon
                     titleIcon={Icon}
                     collapsible={defaultOpen !== undefined}

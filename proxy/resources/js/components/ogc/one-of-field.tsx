@@ -1,3 +1,9 @@
+import {
+    OgcFieldError,
+    OgcValidationControl,
+    ogcValidationControlClassName,
+    ogcValidationDataState,
+} from '@/components/ogc/field-validation-feedback';
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
 import SectionFieldSet from '@/components/ogc/section-field-set';
 import { FieldDescription, FieldGroup } from '@/components/ui/field';
@@ -10,22 +16,30 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { fieldDisplayLabel } from '@/lib/ogc-fields';
+import {
+    errorIdForPath,
+    fieldError,
+    oneOfStructuralError,
+} from '@/lib/ogc-form-errors';
+import type { OgcFieldValidationController } from '@/lib/ogc-form-validation';
+import { defaultObjectValue, isOneOfValue } from '@/lib/ogc-form-values';
+import { cn } from '@/lib/utils';
 import type { OgcNormalizedField } from '@/types';
-
-type OneOfValue = {
-    variant: string;
-    value: Record<string, unknown>;
-};
 
 export default function OneOfField({
     field,
     value,
     onChange,
+    path,
+    validation,
 }: {
     field: OgcNormalizedField;
     value: unknown;
     onChange: (value: unknown) => void;
+    path: string;
+    validation: OgcFieldValidationController;
 }) {
+    const errors = validation.errors;
     const variants = field.variants ?? [];
     const current = isOneOfValue(value)
         ? value
@@ -33,6 +47,18 @@ export default function OneOfField({
     const selected =
         variants.find((variant) => variant.id === current.variant) ??
         variants[0];
+    const structuralError = oneOfStructuralError(errors, path);
+    const structuralState = validation.stateFor(path, structuralError);
+    const variantPath = path + '.variant';
+    const variantError = fieldError(errors, variantPath);
+    const variantErrorId = errorIdForPath(variantPath);
+    const variantState = validation.stateFor(variantPath, variantError);
+    const sectionState =
+        structuralState === 'invalid' || variantState === 'invalid'
+            ? 'invalid'
+            : structuralState === 'corrected' || variantState === 'corrected'
+              ? 'corrected'
+              : 'neutral';
 
     if (!selected) {
         return null;
@@ -43,40 +69,67 @@ export default function OneOfField({
             label={fieldDisplayLabel(field)}
             description={field.description}
             className="overflow-hidden"
+            fieldPath={path}
+            error={structuralError}
+            validationState={sectionState}
         >
+            <OgcValidationControl
+                state={variantState}
+                validLabel={validation.validLabel}
+                hasBuiltInEndIcon
+            >
+                <Select
+                    value={current.variant}
+                    onValueChange={(variant) => {
+                        const selectedVariant = variants.find(
+                            (item) => item.id === variant,
+                        );
+
+                        validation.resetPathPrefix(path + '.value');
+                        validation.fieldChanged(variantPath);
+                        onChange({
+                            variant,
+                            value: selectedVariant
+                                ? defaultObjectValue(selectedVariant.fields)
+                                : {},
+                        });
+                    }}
+                >
+                    <SelectTrigger
+                        className={cn(
+                            'w-full max-w-full min-w-0',
+                            ogcValidationControlClassName(variantState, true),
+                        )}
+                        data-field-path={variantPath}
+                        data-validation-state={ogcValidationDataState(
+                            variantState,
+                        )}
+                        aria-invalid={
+                            variantState === 'invalid' ? true : undefined
+                        }
+                        aria-describedby={
+                            variantError ? variantErrorId : undefined
+                        }
+                    >
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectGroup>
+                            {variants.map((variant) => (
+                                <SelectItem key={variant.id} value={variant.id}>
+                                    {variant.label}
+                                </SelectItem>
+                            ))}
+                        </SelectGroup>
+                    </SelectContent>
+                </Select>
+            </OgcValidationControl>
+            <OgcFieldError id={variantErrorId} message={variantError} />
             {selected.description ? (
                 <FieldDescription className="break-words">
                     {selected.description}
                 </FieldDescription>
             ) : null}
-            <Select
-                value={current.variant}
-                onValueChange={(variant) => {
-                    const selectedVariant = variants.find(
-                        (item) => item.id === variant,
-                    );
-
-                    onChange({
-                        variant,
-                        value: selectedVariant
-                            ? defaultObjectValue(selectedVariant.fields)
-                            : {},
-                    });
-                }}
-            >
-                <SelectTrigger className="w-full max-w-full min-w-0">
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectGroup>
-                        {variants.map((variant) => (
-                            <SelectItem key={variant.id} value={variant.id}>
-                                {variant.id}: {variant.label}
-                            </SelectItem>
-                        ))}
-                    </SelectGroup>
-                </SelectContent>
-            </Select>
 
             <FieldGroup className="min-w-0">
                 {Object.entries(selected.fields).map(([key, child]) => (
@@ -90,48 +143,11 @@ export default function OneOfField({
                                 value: { ...current.value, [key]: nextValue },
                             })
                         }
+                        path={path + '.value.' + key}
+                        validation={validation}
                     />
                 ))}
             </FieldGroup>
         </SectionFieldSet>
     );
-}
-
-function isOneOfValue(value: unknown): value is OneOfValue {
-    return (
-        typeof value === 'object' &&
-        value !== null &&
-        'variant' in value &&
-        'value' in value
-    );
-}
-
-function defaultObjectValue(
-    fields: Record<string, OgcNormalizedField>,
-): Record<string, unknown> {
-    return Object.fromEntries(
-        Object.entries(fields)
-            .map(([name, field]) => [name, defaultFieldValue(field)] as const)
-            .filter(([, value]) => value !== undefined),
-    );
-}
-
-function defaultFieldValue(field: OgcNormalizedField): unknown {
-    if (field.kind === 'enum' && field.options?.length === 1) {
-        return field.options[0];
-    }
-
-    if (field.kind === 'object' && field.fields) {
-        const value = defaultObjectValue(field.fields);
-
-        return Object.keys(value).length > 0 ? value : undefined;
-    }
-
-    if (field.kind === 'array_object' && field.minItems && field.minItems > 0) {
-        return Array.from({ length: field.minItems }, () =>
-            defaultObjectValue(field.fields ?? {}),
-        );
-    }
-
-    return undefined;
 }

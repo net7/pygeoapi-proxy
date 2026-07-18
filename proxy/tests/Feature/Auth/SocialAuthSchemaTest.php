@@ -5,6 +5,7 @@ use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 test('social auth tables are migrated', function () {
     expect(Schema::hasTable('social_accounts'))->toBeTrue()
@@ -44,6 +45,15 @@ test('social account provider identity is unique', function () {
             'provider' => 'orcid',
             'provider_user_id' => '0000-0002-1825-0097',
         ]))->toThrow(QueryException::class);
+});
+
+test('social account avatar preserves long provider urls', function () {
+    $avatar = 'https://example.org/avatar/'.Str::repeat('a', 2048);
+
+    $account = SocialAccount::factory()->create(['avatar' => $avatar]);
+
+    expect(Schema::getColumnType('social_accounts', 'avatar'))->toBe('text')
+        ->and($account->refresh()->avatar)->toBe($avatar);
 });
 
 test('otp challenge uses uuid as route key and casts payload', function () {

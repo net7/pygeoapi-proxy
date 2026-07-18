@@ -48,6 +48,56 @@ describe('i18n', () => {
         );
     });
 
+    test('translates process output selection controls', () => {
+        expect(translate('it', 'ogc.outputFormat')).toBe('Formato output');
+        expect(translate('en', 'ogc.outputFormat')).toBe('Output format');
+        expect(translate('it', 'ogc.noOutputsSelected')).toBe(
+            'Nessun output verrà richiesto',
+        );
+        expect(translate('en', 'ogc.noOutputsSelected')).toBe(
+            'No outputs will be requested',
+        );
+    });
+
+    test('translates corrected OGC field status', () => {
+        expect(translate('it', 'ogc.fieldValid')).toBe('Campo valido');
+        expect(translate('en', 'ogc.fieldValid')).toBe('Field is valid');
+    });
+
+    test('translates the OGC validation toast', () => {
+        expect(translate('it', 'ogc.checkProcessData')).toBe(
+            'Controlla i dati del processo',
+        );
+        expect(translate('en', 'ogc.checkProcessData')).toBe(
+            'Check the process data',
+        );
+        expect(translate('it', 'ogc.someValuesNeedAttention')).toBe(
+            'Alcuni valori richiedono attenzione prima di eseguire il processo.',
+        );
+        expect(translate('en', 'ogc.someValuesNeedAttention')).toBe(
+            'Some values need attention before the process can run.',
+        );
+        expect(translate('it', 'toast.close')).toBe('Chiudi notifica');
+        expect(translate('en', 'toast.close')).toBe('Close notification');
+        expect(translate('it', 'toast.notifications')).toBe('Notifiche');
+        expect(translate('en', 'toast.notifications')).toBe('Notifications');
+    });
+
+    test('translates native OGC constraint messages', () => {
+        expect(translate('it', 'ogc.validationRequired')).toBe(
+            'Compila questo campo.',
+        );
+        expect(translate('en', 'ogc.validationRequired')).toBe(
+            'Please fill out this field.',
+        );
+        expect(translate('it', 'ogc.validationMinimum', { value: 5 })).toBe(
+            'Il valore deve essere maggiore o uguale a 5.',
+        );
+        expect(translate('en', 'ogc.validationMinimum', { value: 5 })).toBe(
+            'The value must be greater than or equal to 5.',
+        );
+    });
+
     test('uses italian process wording for job labels', () => {
         expect(translate('it', 'navigation.myJobs')).toBe('I miei processi');
         expect(translate('it', 'admin.userJobs')).toBe('Processi');

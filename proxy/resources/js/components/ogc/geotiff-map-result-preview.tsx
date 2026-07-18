@@ -336,6 +336,7 @@ class RecenterBoundsControl implements IControl {
         this.button.style.display = 'flex';
         this.button.style.alignItems = 'center';
         this.button.style.justifyContent = 'center';
+        this.button.style.color = '#333';
         this.button.addEventListener('click', this.recenter);
 
         this.iconRoot = createRoot(this.button);

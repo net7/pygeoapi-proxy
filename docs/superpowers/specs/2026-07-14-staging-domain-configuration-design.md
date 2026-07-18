@@ -16,7 +16,7 @@ HTTPS/WSS sulla porta standard `443`.
 Il repository è installato sullo staging in:
 
 ```text
-/docker-data/configuration/pygeoapi-proxy/proxy
+/docker-data/configuration/pygeoapi-proxy
 ```
 
 Lo stack carica `.env.staging` tramite il `Makefile` e combina `compose.yaml`

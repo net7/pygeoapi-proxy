@@ -49,6 +49,10 @@ return [
         'cache_ttl' => (int) env('OGC_PROCESSES_CACHE_TTL', 300),
         'binary_cache_ttl_days' => (int) env('OGC_PROCESSES_BINARY_CACHE_TTL_DAYS', 30),
         'polling_interval' => (int) env('OGC_PROCESSES_POLLING_INTERVAL', 5000),
+        'show_map_layer_warnings' => (bool) env(
+            'OGC_PROCESSES_SHOW_MAP_LAYER_WARNINGS',
+            false,
+        ),
         'result_url_hosts' => array_values(array_filter(array_map('trim', explode(',', env('OGC_PROCESSES_RESULT_URL_HOSTS', 'voice_hrefs.pi.ingv.it'))))),
         'input_references' => [
             // 'process_id' => [

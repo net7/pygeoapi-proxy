@@ -3,7 +3,13 @@ import { ChevronDownIcon, Download, FileTextIcon } from 'lucide-react';
 import ChartResultPreview from '@/components/ogc/chart-result-preview';
 import RawPayloadBlock from '@/components/ogc/raw-payload-block';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import {
     Collapsible,
     CollapsibleContent,
@@ -41,8 +47,8 @@ export default function ResultPreview({
         <Collapsible defaultOpen asChild>
             <Card className="shadow-sm dark:border-border/70 dark:bg-card/95">
                 <CardHeader>
-                    <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 flex-col gap-1">
                             <CardTitle className="flex min-w-0 items-center gap-2">
                                 <FileTextIcon
                                     aria-hidden="true"
@@ -58,6 +64,11 @@ export default function ResultPreview({
                                     />
                                 </CollapsibleTrigger>
                             </CardTitle>
+                            {result.description ? (
+                                <CardDescription>
+                                    {result.description}
+                                </CardDescription>
+                            ) : null}
                         </div>
                         {canDownload ? (
                             <Button asChild variant="outline" size="sm">

@@ -1,20 +1,21 @@
 <?php
 
-test('process form stacks name inputs expected outputs and note as full width sections', function () {
+test('process form stacks name inputs selectable outputs and note as full width sections', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/dynamic-process-form.tsx');
 
     expect($source)
         ->toContain("name: ''")
-        ->toContain('ExpectedOutputs')
+        ->toContain('ProcessOutputSelector')
+        ->toContain('outputs: initialOutputSelections(schema.outputs)')
+        ->toContain("setData('outputs'")
+        ->toContain('buildRequestedOutputs(')
         ->toContain("t('jobs.processName')")
         ->toContain("t('jobs.processNamePlaceholder')")
         ->toContain("t('jobs.noteDescription')")
         ->toContain('aria-label={t(\'jobs.processName\')}')
         ->toContain('@/routes/processes/jobs')
         ->toContain('ogc.inputs')
-        ->not->toContain('OutputSelector')
-        ->not->toContain('outputs: initialOutputValues')
-        ->not->toContain("setData('outputs'")
+        ->not->toContain('ExpectedOutputs')
         ->not->toContain('ogc.execution')
         ->not->toContain('<Label htmlFor="process-name">')
         ->not->toContain('lg:grid-cols-[minmax(0,1fr)_22rem]')
@@ -89,6 +90,16 @@ test('geotiff previews render through the protected map tile route', function ()
         ->not->toContain('geotiff-canvas');
 });
 
+test('map controls keep their light appearance in dark mode', function () {
+    $source = file_get_contents(getcwd().'/resources/js/components/ogc/geotiff-map-result-preview.tsx');
+
+    preg_match('/class RecenterBoundsControl.*?(?=function validBounds)/s', $source, $matches);
+
+    expect($matches[0] ?? '')
+        ->toContain("this.button.style.color = '#333'")
+        ->not->toContain('dark:');
+});
+
 test('decimal process number inputs are valid after prefill', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/schema-field-renderer.tsx');
     $tableSource = file_get_contents(getcwd().'/resources/js/components/ogc/array-table-field.tsx');
@@ -96,13 +107,13 @@ test('decimal process number inputs are valid after prefill', function () {
     expect($source)
         ->toContain("step={field.type === 'number' ? 'any' : undefined}")
         ->toContain('@/lib/html-pattern')
-        ->toContain('htmlPatternForInput({')
+        ->toContain('htmlPatternForInput(')
         ->not->toContain('pattern={field.pattern ?? undefined}');
 
     expect($tableSource)
         ->toContain('@/lib/html-pattern')
-        ->toContain('htmlPatternForInput({')
-        ->toContain("column.type === 'number'")
+        ->toContain('htmlPatternForInput(')
+        ->toMatch("/column\\.type\\s*===\\s*'number'/")
         ->not->toContain('column.pattern ?? undefined');
 });
 
@@ -935,20 +946,25 @@ test('csv result previews use structured normalization instead of comma splittin
         ->not->toContain("row.split(',')");
 });
 
-test('expected outputs renders a simple unordered list', function () {
-    $source = file_get_contents(getcwd().'/resources/js/components/ogc/expected-outputs.tsx');
+test('process output selector renders checkboxes formats and empty selection feedback', function () {
+    $source = file_get_contents(
+        getcwd().'/resources/js/components/ogc/process-output-selector.tsx',
+    );
 
     expect($source)
-        ->toContain('<ul')
-        ->toContain('list-disc')
-        ->toContain('output.title')
-        ->toContain('output.description')
-        ->not->toContain('output.mediaType')
-        ->not->toContain('automaticOutputTransmissionMode')
-        ->not->toContain('outputComponents');
+        ->toContain('<Checkbox')
+        ->toContain('checked={selection.selected}')
+        ->toContain('setOutputSelected')
+        ->toContain('<Select')
+        ->toContain('output.formats.length > 1')
+        ->toContain('output.formats.length === 1')
+        ->toContain('disabled={!selection.selected}')
+        ->toContain("t('ogc.outputFormat')")
+        ->toContain("t('ogc.noOutputsSelected')")
+        ->toContain('<OgcFieldError id={sectionErrorId} message={sectionError} />');
 });
 
-test('one of descriptions are shown before the selector', function () {
+test('one of field description precedes the selector and the selected description follows it', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/one-of-field.tsx');
 
     $fieldDescriptionPosition = strpos($source, 'description={field.description}');
@@ -959,24 +975,32 @@ test('one of descriptions are shown before the selector', function () {
         ->and($selectedDescriptionPosition)->not->toBeFalse()
         ->and($selectPosition)->not->toBeFalse()
         ->and($fieldDescriptionPosition)->toBeLessThan($selectPosition)
-        ->and($selectedDescriptionPosition)->toBeLessThan($selectPosition);
+        ->and($selectPosition)->toBeLessThan($selectedDescriptionPosition);
 });
 
-test('process form does not expose output selection controls', function () {
+test('process form sends output selections without browser transmission modes', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/dynamic-process-form.tsx');
-    $helperSource = file_get_contents(getcwd().'/resources/js/lib/ogc-outputs.ts');
+    $selectorSource = file_get_contents(
+        getcwd().'/resources/js/components/ogc/process-output-selector.tsx',
+    );
+    $helperSource = file_get_contents(
+        getcwd().'/resources/js/lib/process-output-selection.ts',
+    );
 
     expect($source)
-        ->toContain('<ExpectedOutputs outputs={schema.outputs} />')
-        ->not->toContain('initialOutputValues(schema.outputs)')
-        ->not->toContain('exampleTransmissionMode(')
-        ->not->toContain("setData('outputs'");
+        ->toContain('<ProcessOutputSelector')
+        ->toContain('initialOutputSelections(schema.outputs)')
+        ->toContain('buildRequestedOutputs')
+        ->toContain("setData('outputs'")
+        ->not->toContain('ExpectedOutputs');
+
+    expect($selectorSource)->toContain('firstOutputError');
 
     expect($helperSource)
-        ->toContain('automaticOutputTransmissionMode')
-        ->toContain("'text/plain'")
-        ->toContain("endsWith('+json')")
-        ->toContain("'reference'");
+        ->toContain('mediaType: format.mediaType')
+        ->toContain('encoding: format.encoding')
+        ->toContain('schema: format.schema')
+        ->not->toContain('transmissionMode');
 });
 
 test('sidebar labels process executions as jobs', function () {
@@ -1066,7 +1090,8 @@ test('job detail groups geotiff and sld results for map previews', function () {
     $showSource = file_get_contents(getcwd().'/resources/js/pages/process-executions/show.tsx');
 
     expect($showSource)
-        ->toContain('groupProcessResults(execution.results)')
+        ->toContain('groupProcessResults(')
+        ->toContain('execution.outputMetadata')
         ->toContain('<GeoTiffMapResultPreview')
         ->toContain('visualResults.length')
         ->toContain("item.kind === 'geotiff-map'");

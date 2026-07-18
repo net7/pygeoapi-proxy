@@ -96,7 +96,8 @@ test('admin user creation supports precognitive validation', function () {
             'role' => UserRole::User->value,
         ])
         ->assertUnprocessable()
-        ->assertJsonValidationErrors('email');
+        ->assertJsonValidationErrors('email')
+        ->assertJsonPath('errors.email.0', 'Il campo email è già stato utilizzato.');
 
     expect(User::query()->where('name', 'Taken User')->exists())->toBeFalse();
 });

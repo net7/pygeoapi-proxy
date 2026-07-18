@@ -1,11 +1,12 @@
 <?php
 
 use App\Services\Ogc\OgcProcessesClient;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function () {
     Http::preventStrayRequests();
@@ -69,6 +70,32 @@ test('it submits sync execution with prefer header', function () {
     Http::assertSent(fn (Request $request): bool => $request->hasHeader('Prefer', 'respond-sync')
         && $request->hasHeader('Content-Type', 'application/json')
         && $request->url() === 'https://voice.pi.ingv.it/geoinquire/processes/conduit/execution');
+});
+
+test('it serializes an empty output map as a json object', function () {
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/processes/solwcad/execution' => Http::response([], 201),
+    ]);
+
+    app(OgcProcessesClient::class)->execute(
+        'solwcad',
+        [
+            'inputs' => [],
+            'outputs' => [],
+        ],
+        'respond-async',
+    );
+
+    Http::assertSent(function (Request $request): bool {
+        $json = json_decode(
+            $request->body(),
+            associative: false,
+            flags: JSON_THROW_ON_ERROR,
+        );
+
+        return $json->outputs instanceof stdClass
+            && get_object_vars($json->outputs) === [];
+    });
 });
 
 test('it fetches a remote job and results', function () {

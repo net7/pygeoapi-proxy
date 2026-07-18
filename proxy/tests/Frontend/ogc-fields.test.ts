@@ -26,10 +26,10 @@ describe('OGC field display helpers', () => {
         ).toBe('(sw.data)');
     });
 
-    test('shows select options as key value pairs', () => {
-        expect(optionDisplayLabel('conduit')).toBe('conduit: conduit');
-        expect(optionDisplayLabel(1)).toBe('1: 1');
-        expect(optionDisplayLabel(true)).toBe('true: true');
+    test('shows enum options once', () => {
+        expect(optionDisplayLabel('conduit')).toBe('conduit');
+        expect(optionDisplayLabel(1)).toBe('1');
+        expect(optionDisplayLabel(true)).toBe('true');
     });
 
     test('shows reference options as label href pairs', () => {

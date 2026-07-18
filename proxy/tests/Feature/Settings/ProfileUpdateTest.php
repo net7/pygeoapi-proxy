@@ -128,14 +128,14 @@ test('admins can view another users local profile avatar', function () {
         ->assertNotFound();
 });
 
-test('profile avatar can be removed to reveal provider avatar', function () {
+test('profile avatar removal clears local and provider avatars', function () {
     Storage::fake('public');
     Storage::disk('public')->put('avatars/local-avatar.jpg', 'avatar');
 
     $user = User::factory()->create([
         'avatar_path' => 'avatars/local-avatar.jpg',
     ]);
-    SocialAccount::factory()->for($user)->create([
+    $account = SocialAccount::factory()->for($user)->create([
         'avatar' => 'https://example.org/provider-avatar.png',
     ]);
 
@@ -148,9 +148,26 @@ test('profile avatar can be removed to reveal provider avatar', function () {
         ->assertRedirect(route('profile.edit'));
 
     expect($user->refresh()->avatar_path)->toBeNull()
-        ->and($user->avatar())->toBe('https://example.org/provider-avatar.png');
+        ->and($account->refresh()->avatar)->toBeNull()
+        ->and($user->avatar())->toBeNull();
 
     Storage::disk('public')->assertMissing('avatars/local-avatar.jpg');
+});
+
+test('provider avatar can be removed without a local avatar', function () {
+    $user = User::factory()->create();
+    $account = SocialAccount::factory()->for($user)->create([
+        'avatar' => 'https://example.org/provider-avatar.png',
+    ]);
+
+    $this
+        ->actingAs($user)
+        ->delete(route('profile.avatar.destroy'))
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('profile.edit'));
+
+    expect($account->refresh()->avatar)->toBeNull()
+        ->and($user->avatar())->toBeNull();
 });
 
 test('user can delete their account', function () {

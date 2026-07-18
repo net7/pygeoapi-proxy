@@ -98,7 +98,7 @@ export default function Profile() {
                                 )}
                             </Form>
 
-                            {auth.user.has_custom_avatar && (
+                            {auth.user.avatar && (
                                 <Form
                                     {...ProfileController.destroyAvatar.form()}
                                     options={{

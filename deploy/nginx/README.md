@@ -8,13 +8,13 @@ staging host.
 The repository is installed at:
 
 ```text
-/docker-data/configuration/pygeoapi-proxy/proxy
+/docker-data/configuration/pygeoapi-proxy
 ```
 
 ## 1. Start the staging stack
 
 ```bash
-cd /docker-data/configuration/pygeoapi-proxy/proxy
+cd /docker-data/configuration/pygeoapi-proxy
 make staging config >/dev/null
 make staging up
 curl --fail --silent --show-error http://127.0.0.1:7070/up >/dev/null

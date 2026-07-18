@@ -66,10 +66,12 @@ const it = {
         settings: 'Impostazioni',
     },
     toast: {
+        close: 'Chiudi notifica',
         defaultError: 'La richiesta non è stata completata.',
         defaultInfo: 'Sono disponibili nuove informazioni.',
         defaultSuccess: 'La modifica è stata salvata.',
         defaultWarning: 'Controlla questo elemento prima di continuare.',
+        notifications: 'Notifiche',
     },
     auth: {
         accountNotice: 'Avviso account',
@@ -343,6 +345,7 @@ const it = {
         chartShowAll: 'Mostra tutte le serie',
         chartValueAxis: 'Valore',
         checkInputs: 'Controlla gli input del processo',
+        checkProcessData: 'Controlla i dati del processo',
         csvPreviewTruncated:
             'Anteprima limitata alle prime righe. Scarica il CSV per il file completo.',
         defaultResponse: 'Risposta predefinita',
@@ -351,6 +354,7 @@ const it = {
         expectedOutputs: 'Output previsti',
         expectedOutputsDescription:
             'Il processo produrrà automaticamente questi risultati.',
+        fieldValid: 'Campo valido',
         file: 'File',
         geotiffDownload: 'GeoTIFF',
         inline: 'Inline',
@@ -362,11 +366,15 @@ const it = {
         mapLayerUnavailable: 'Mappa non disponibile.',
         mapLayerUnpublished: 'Mappa non ancora pubblicata.',
         noDescription: 'Nessuna descrizione disponibile.',
+        noOutputsSelected: 'Nessun output verrà richiesto',
+        noOutputsSelectedDescription:
+            'Il processo verrà avviato senza richiedere risultati.',
         notAdvertised: 'Non pubblicizzato',
         openProcess: 'Apri processo',
         outputModes: 'Modalità output',
         outputCountMany: '{count} output',
         outputCountOne: '{count} output',
+        outputFormat: 'Formato output',
         outputs: 'Output',
         prefillTestData: 'PRECOMPILA DATI TEST',
         previewUnavailable: 'Anteprima non disponibile.',
@@ -392,6 +400,8 @@ const it = {
         servicePreparingDescription:
             'La lista processi apparirà al termine del warm-up in background.',
         servicePreparingTitle: 'Catalogo servizi in preparazione',
+        selectOutputsDescription:
+            'Scegli gli output da richiedere e, quando disponibile, il formato desiderato.',
         servicesLastUpdatedAt: 'Ultimo aggiornamento servizi: {date}',
         sldDownload: 'SLD',
         someValuesNeedAttention:
@@ -400,6 +410,15 @@ const it = {
         transmissionReference: 'Riferimento',
         transmissionValue: 'Valore',
         upload: 'Carica',
+        validationInvalid: 'Inserisci un valore valido.',
+        validationInvalidNumber: 'Inserisci un numero valido.',
+        validationInvalidUrl: 'Inserisci un URL valido.',
+        validationMaximum: 'Il valore deve essere minore o uguale a {value}.',
+        validationMaximumLength: 'Inserisci al massimo {count} caratteri.',
+        validationMinimum: 'Il valore deve essere maggiore o uguale a {value}.',
+        validationMinimumLength: 'Inserisci almeno {count} caratteri.',
+        validationPattern: 'Usa il formato richiesto.',
+        validationRequired: 'Compila questo campo.',
         value: 'Valore',
     },
     settings: {
@@ -538,10 +557,12 @@ const en = {
         settings: 'Settings',
     },
     toast: {
+        close: 'Close notification',
         defaultError: 'The request could not be completed.',
         defaultInfo: 'New information is available.',
         defaultSuccess: 'The change has been saved.',
         defaultWarning: 'Review this before continuing.',
+        notifications: 'Notifications',
     },
     auth: {
         accountNotice: 'Account notice',
@@ -809,6 +830,7 @@ const en = {
         chartShowAll: 'Show all series',
         chartValueAxis: 'Value',
         checkInputs: 'Check the process inputs',
+        checkProcessData: 'Check the process data',
         csvPreviewTruncated:
             'Preview limited to the first rows. Download the CSV for the full file.',
         defaultResponse: 'Default response',
@@ -817,6 +839,7 @@ const en = {
         expectedOutputs: 'Expected outputs',
         expectedOutputsDescription:
             'The process will automatically produce these results.',
+        fieldValid: 'Field is valid',
         file: 'File',
         geotiffDownload: 'GeoTIFF',
         inline: 'Inline',
@@ -828,11 +851,15 @@ const en = {
         mapLayerUnavailable: 'Map unavailable.',
         mapLayerUnpublished: 'Map not published yet.',
         noDescription: 'No description provided.',
+        noOutputsSelected: 'No outputs will be requested',
+        noOutputsSelectedDescription:
+            'The process will start without requesting results.',
         notAdvertised: 'Not advertised',
         openProcess: 'Open process',
         outputModes: 'Output modes',
         outputCountMany: '{count} outputs',
         outputCountOne: '{count} output',
+        outputFormat: 'Output format',
         outputs: 'Outputs',
         prefillTestData: 'PREFILL TEST DATA',
         previewUnavailable: 'Preview unavailable.',
@@ -857,6 +884,8 @@ const en = {
         servicePreparingDescription:
             'The process list will appear when the background warm-up finishes.',
         servicePreparingTitle: 'Service catalog is being prepared',
+        selectOutputsDescription:
+            'Choose the outputs to request and, when available, the preferred format.',
         servicesLastUpdatedAt: 'Services last updated: {date}',
         sldDownload: 'SLD',
         someValuesNeedAttention:
@@ -865,6 +894,16 @@ const en = {
         transmissionReference: 'Reference',
         transmissionValue: 'Value',
         upload: 'Upload',
+        validationInvalid: 'Enter a valid value.',
+        validationInvalidNumber: 'Enter a valid number.',
+        validationInvalidUrl: 'Enter a valid URL.',
+        validationMaximum: 'The value must be less than or equal to {value}.',
+        validationMaximumLength: 'Enter no more than {count} characters.',
+        validationMinimum:
+            'The value must be greater than or equal to {value}.',
+        validationMinimumLength: 'Enter at least {count} characters.',
+        validationPattern: 'Use the requested format.',
+        validationRequired: 'Please fill out this field.',
         value: 'Value',
     },
     settings: {

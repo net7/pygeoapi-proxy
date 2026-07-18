@@ -9,7 +9,11 @@ use App\Jobs\Ogc\PollProcessExecutionJob;
 use App\Jobs\Ogc\PublishGeoTiffMapLayerJob;
 use App\Models\ProcessExecution;
 use App\Notifications\Ogc\ProcessExecutionCompleted;
+use App\Services\Ogc\CsvPreviewBuilder;
 use App\Services\Ogc\OgcProcessesClient;
+use App\Services\Ogc\OgcResultResponseParser;
+use GuzzleHttp\Psr7\Response as Psr7Response;
+use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
@@ -18,6 +22,56 @@ use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     Bus::fake([PublishGeoTiffMapLayerJob::class]);
+});
+
+test('it ignores direct response storage for an explicit empty requested output map', function () {
+    $execution = ProcessExecution::factory()->create([
+        'requested_outputs' => [],
+    ]);
+    $parser = new class(app(OgcProcessesClient::class), app(CsvPreviewBuilder::class)) extends OgcResultResponseParser
+    {
+        public bool $wasCalled = false;
+
+        public function parse(ProcessExecution $execution, Response $response, ?string $outputId = null): array
+        {
+            $this->wasCalled = true;
+
+            return [];
+        }
+    };
+    app()->instance(OgcResultResponseParser::class, $parser);
+
+    app(StoreProcessResult::class)->fromResponse(
+        $execution,
+        new Response(new Psr7Response(200)),
+    );
+
+    expect($parser->wasCalled)->toBeFalse()
+        ->and($execution->refresh()->results)->toHaveCount(0);
+});
+
+test('it ignores direct link storage for an explicit empty requested output map', function () {
+    Storage::fake('local');
+    Http::preventStrayRequests();
+
+    $execution = ProcessExecution::factory()->create([
+        'requested_outputs' => [],
+    ]);
+    $href = 'https://voice.pi.ingv.it/geoinquire/jobs/job-no-outputs/results/result.bin';
+
+    Http::fake([
+        $href => Http::response('RESULT-CONTENT', 200, [
+            'Content-Type' => 'application/octet-stream',
+        ]),
+    ]);
+
+    app(StoreProcessResult::class)->fromLink($execution, [
+        'href' => $href,
+        'type' => 'application/octet-stream',
+    ]);
+
+    Http::assertNothingSent();
+    expect($execution->refresh()->results)->toHaveCount(0);
 });
 
 test('it marks successful jobs and stores results', function () {
@@ -56,6 +110,40 @@ test('it marks successful jobs and stores results', function () {
                 && $data['tone'] === 'success'
                 && $data['action_url'] === route('jobs.show', $execution);
         },
+    );
+});
+
+test('it completes a successful zero output job without requesting results', function () {
+    Notification::fake();
+    Http::preventStrayRequests();
+
+    $execution = ProcessExecution::factory()->create([
+        'remote_job_id' => 'job-no-outputs',
+        'status' => ExecutionStatus::Running,
+        'requested_outputs' => [],
+    ]);
+
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-no-outputs?f=json' => Http::response(ogcFixture('job-successful')),
+    ]);
+
+    (new PollProcessExecutionJob($execution->id))->handle(
+        app(PollProcessExecution::class),
+    );
+
+    $execution->refresh();
+
+    expect($execution->status)->toBe(ExecutionStatus::Successful)
+        ->and($execution->completed_at)->not->toBeNull()
+        ->and($execution->results)->toHaveCount(0);
+
+    Http::assertSentCount(1);
+    Http::assertNotSent(
+        fn (Request $request): bool => str_contains($request->url(), '/results'),
+    );
+    Notification::assertSentTo(
+        $execution->user,
+        ProcessExecutionCompleted::class,
     );
 });
 

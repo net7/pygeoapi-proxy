@@ -59,13 +59,18 @@ class PollProcessExecution
         $execution->refresh();
 
         if ($status === ExecutionStatus::Successful) {
-            $resultLink = collect($job['links'] ?? [])
-                ->first(fn (array $link): bool => str_contains((string) ($link['rel'] ?? ''), 'results'));
+            if ($execution->requested_outputs !== []) {
+                $resultLink = collect($job['links'] ?? [])
+                    ->first(fn (array $link): bool => str_contains(
+                        (string) ($link['rel'] ?? ''),
+                        'results',
+                    ));
 
-            if (is_array($resultLink) && $this->shouldDeferResultDownload($resultLink)) {
-                $this->storeProcessResult->fromLink($execution, $resultLink);
-            } else {
-                $this->storeProcessResult->fromResponse($execution, $this->client->jobResults($execution->remote_job_id));
+                if (is_array($resultLink) && $this->shouldDeferResultDownload($resultLink)) {
+                    $this->storeProcessResult->fromLink($execution, $resultLink);
+                } else {
+                    $this->storeProcessResult->fromResponse($execution, $this->client->jobResults($execution->remote_job_id));
+                }
             }
 
             $execution->update([

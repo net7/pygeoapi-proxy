@@ -118,6 +118,15 @@ test('admin edit user modal explains email reconciliation and requires confirmat
         ->not->toContain('mx-6 border-sky-200');
 });
 
+test('admin create user modal stacks fields while edit keeps two columns', function () {
+    $source = file_get_contents(dirname(__DIR__, 2).'/resources/js/pages/admin/users/index.tsx');
+
+    expect($source)
+        ->toContain("'grid gap-4 px-6 pt-5'")
+        ->toContain("isEditing && 'sm:grid-cols-2'")
+        ->not->toContain('className="grid gap-4 px-6 pt-5 sm:grid-cols-2"');
+});
+
 test('admin user status modal uses contextual confirmation panels', function () {
     $source = file_get_contents(dirname(__DIR__, 2).'/resources/js/pages/admin/users/index.tsx');
 
