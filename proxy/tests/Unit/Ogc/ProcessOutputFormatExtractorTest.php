@@ -1,9 +1,10 @@
 <?php
 
 use App\Services\Ogc\ProcessOutputFormatExtractor;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 test('it extracts direct output format qualifiers', function () {
     $formats = app(ProcessOutputFormatExtractor::class)->formats([

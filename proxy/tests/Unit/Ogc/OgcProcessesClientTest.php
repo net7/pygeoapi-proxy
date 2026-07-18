@@ -1,11 +1,12 @@
 <?php
 
 use App\Services\Ogc\OgcProcessesClient;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function () {
     Http::preventStrayRequests();

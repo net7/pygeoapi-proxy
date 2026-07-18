@@ -1,9 +1,10 @@
 <?php
 
 use App\Services\Ogc\ProcessSchemaNormalizer;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 test('it normalizes scalar object and enum fields', function () {
     $process = ogcFixture('process-conduit');

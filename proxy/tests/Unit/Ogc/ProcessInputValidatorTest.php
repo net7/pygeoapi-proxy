@@ -2,9 +2,10 @@
 
 use App\Services\Ogc\ProcessInputValidator;
 use App\Services\Ogc\ProcessSchemaNormalizer;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 function normalizedOgcFields(string $fixture): array
 {

@@ -1,10 +1,11 @@
 <?php
 
 use App\Services\Ogc\ProcessOutputRequestBuilder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 test('it defaults to all conduit outputs with trusted formats and automatic transmission modes', function () {
     $outputs = app(ProcessOutputRequestBuilder::class)->forProcess(

@@ -113,7 +113,7 @@ test('decimal process number inputs are valid after prefill', function () {
     expect($tableSource)
         ->toContain('@/lib/html-pattern')
         ->toContain('htmlPatternForInput(')
-        ->toContain("column.type === 'number'")
+        ->toMatch("/column\\.type\\s*===\\s*'number'/")
         ->not->toContain('column.pattern ?? undefined');
 });
 
@@ -961,7 +961,7 @@ test('process output selector renders checkboxes formats and empty selection fee
         ->toContain('disabled={!selection.selected}')
         ->toContain("t('ogc.outputFormat')")
         ->toContain("t('ogc.noOutputsSelected')")
-        ->toContain('<InputError message={error}');
+        ->toContain('<OgcFieldError id={sectionErrorId} message={sectionError} />');
 });
 
 test('one of field description precedes the selector and the selected description follows it', function () {
@@ -980,6 +980,9 @@ test('one of field description precedes the selector and the selected descriptio
 
 test('process form sends output selections without browser transmission modes', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/dynamic-process-form.tsx');
+    $selectorSource = file_get_contents(
+        getcwd().'/resources/js/components/ogc/process-output-selector.tsx',
+    );
     $helperSource = file_get_contents(
         getcwd().'/resources/js/lib/process-output-selection.ts',
     );
@@ -989,8 +992,9 @@ test('process form sends output selections without browser transmission modes', 
         ->toContain('initialOutputSelections(schema.outputs)')
         ->toContain('buildRequestedOutputs')
         ->toContain("setData('outputs'")
-        ->toContain('firstOutputError')
         ->not->toContain('ExpectedOutputs');
+
+    expect($selectorSource)->toContain('firstOutputError');
 
     expect($helperSource)
         ->toContain('mediaType: format.mediaType')

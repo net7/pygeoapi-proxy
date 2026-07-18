@@ -3,10 +3,11 @@
 use App\Models\ProcessExecution;
 use App\Services\Ogc\OgcResultResponseParser;
 use GuzzleHttp\Psr7\Response as Psr7Response;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Response;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 test('it returns no parsed results for an explicit empty requested output map', function () {
     $execution = ProcessExecution::factory()->make([

@@ -1,9 +1,10 @@
 <?php
 
 use App\Services\Ogc\ProcessInputPayloadBuilder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 test('it removes only the selected variant marker from one of inputs', function () {
     $fields = [
