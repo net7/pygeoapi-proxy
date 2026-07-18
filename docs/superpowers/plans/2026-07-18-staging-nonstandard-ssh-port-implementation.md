@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task inline on `develop`. Do not create a worktree and do not dispatch subagents.
 
-**Goal:** Make the staging deploy use SSH port `1024`, create and verify a dedicated deployment identity, configure all protected GitLab variables, and document the supervised bootstrap of the potentially absent `deploy` server account.
+**Goal:** Make the staging deploy use SSH port `1024`, verify the existing `gitlab_deploy` identity, configure all protected GitLab variables, and document its supervised SSH bootstrap.
 
 **Architecture:** Keep the server-side `deploy.sh` interface unchanged and add the port only at the GitLab Runner-to-server SSH boundary. Store host, port, user, path, private key, and verified host key as protected variables scoped to `staging`; reject invalid port values before networking. Generate key material outside the repository, upload the private portion without logging it, and stop before any server mutation or `develop` to `staging` merge.
 
@@ -14,7 +14,7 @@
 
 - Modify `.gitlab-ci.yml`: validate `DEPLOY_PORT` and pass it to the SSH client.
 - Modify `deploy/tests/gitlab-ci.sh`: contract-test the new variable, validation messages, and SSH invocation.
-- Modify `deploy/README.md`: document port `1024`, the sixth GitLab variable, verified fingerprint, and supervised `deploy` account bootstrap.
+- Modify `deploy/README.md`: document port `1024`, the sixth GitLab variable, verified fingerprint, and supervised `gitlab_deploy` SSH bootstrap.
 - No application, Compose, Laravel, production, or server-side `deploy.sh` behavior changes.
 - No key material is created under the repository root.
 
@@ -125,30 +125,27 @@ Document these staging values near the topology:
 Add account checks before checkout checks:
 
 ```bash
-getent passwd deploy
-id deploy
-sudo -u deploy sh -lc 'printf "home=%s\n" "$HOME"; id; command -v git docker make curl flock'
+getent passwd gitlab_deploy
+id gitlab_deploy
+sudo -u gitlab_deploy sh -lc 'printf "home=%s\n" "$HOME"; id; command -v git docker make curl flock'
 ```
 
-State explicitly that a missing account is not created implicitly by the
-pipeline.
+State explicitly that the pipeline does not create or modify the account.
 
-- [ ] **Step 2: Add separate account-creation commands for the absent case**
+- [ ] **Step 2: Document the confirmed account and required permissions**
 
-Document these commands under a heading that says to run them only when
-`getent passwd deploy` confirms the account is absent:
+Document that `gitlab_deploy` already exists and must retain membership in the
+`docker` and `www-data` groups. Prepare its SSH directory without replacing
+existing authorized keys:
 
 ```bash
-sudo useradd --create-home --shell /bin/bash deploy
-sudo usermod --append --groups docker deploy
-sudo install -d -m 0700 -o deploy -g deploy /home/deploy/.ssh
-sudo touch /home/deploy/.ssh/authorized_keys
-sudo chown deploy:deploy /home/deploy/.ssh/authorized_keys
-sudo chmod 0600 /home/deploy/.ssh/authorized_keys
+sudo install -d -m 0700 -o gitlab_deploy -g gitlab_deploy /home/gitlab_deploy/.ssh
+sudo touch /home/gitlab_deploy/.ssh/authorized_keys
+sudo chown gitlab_deploy:gitlab_deploy /home/gitlab_deploy/.ssh/authorized_keys
+sudo chmod 0600 /home/gitlab_deploy/.ssh/authorized_keys
 ```
 
-Do not grant passwordless sudo. Note that a new group membership requires a
-new login session before `docker info` is retested.
+Do not grant passwordless sudo and do not overwrite existing keys.
 
 - [ ] **Step 3: Update every workstation SSH command for port `1024`**
 
@@ -157,10 +154,10 @@ Use:
 ```bash
 DEPLOY_HOST=91.107.228.84
 DEPLOY_PORT=1024
-ssh-copy-id -p "$DEPLOY_PORT" -i ./pygeoapi-proxy-staging.pub "deploy@$DEPLOY_HOST"
+ssh-copy-id -p "$DEPLOY_PORT" -i ./pygeoapi-proxy-staging.pub "gitlab_deploy@$DEPLOY_HOST"
 ssh-keyscan -H -p "$DEPLOY_PORT" -t ed25519 "$DEPLOY_HOST" > ./pygeoapi-proxy-staging.known_hosts
 ssh-keygen -lf ./pygeoapi-proxy-staging.known_hosts
-ssh -p "$DEPLOY_PORT" -i ./pygeoapi-proxy-staging "deploy@$DEPLOY_HOST" true
+ssh -p "$DEPLOY_PORT" -i ./pygeoapi-proxy-staging "gitlab_deploy@$DEPLOY_HOST" true
 ```
 
 The documented fingerprint must exactly match the administrator-supplied
@@ -295,8 +292,8 @@ Send these exact values:
 ```text
 DEPLOY_HOST=91.107.228.84
 DEPLOY_PORT=1024
-DEPLOY_USER=deploy
-DEPLOY_PATH=/docker-data/configuration/pygeoapi-proxy/proxy
+DEPLOY_USER=gitlab_deploy
+DEPLOY_PATH=/docker-data/configuration/pygeoapi-proxy
 ```
 
 Send these exact attributes with every variable:
@@ -406,12 +403,12 @@ Expected: the local and GitLab `develop` commit IDs are identical.
 Provide the administrator with:
 
 - the dedicated public key line and client-key SHA256 fingerprint;
-- the exact account verification and conditional creation commands from
+- the exact account verification and SSH bootstrap commands from
   `deploy/README.md`;
 - confirmation that all six variables are present and protected;
 - confirmation that no Merge Request was created or merged and no server state
   was changed.
 
-Wait for the administrator to verify or create `deploy`, install the public
-key, prepare the checkout and `.env.staging`, and complete the first supervised
+Wait for the administrator to verify `gitlab_deploy`, install the public key,
+prepare the checkout and `.env.staging`, and complete the first supervised
 server checks before creating the `develop` to `staging` Merge Request.

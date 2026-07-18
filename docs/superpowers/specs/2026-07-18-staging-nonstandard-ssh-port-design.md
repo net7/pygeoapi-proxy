@@ -10,9 +10,10 @@ authoritative Ed25519 host-key fingerprint:
 SHA256:3Baw8zxKivSOBGHO0ohYDFd59ACasF0c3p/M19jFhxI
 ```
 
-The deployment checkout remains
-`/docker-data/configuration/pygeoapi-proxy/proxy`. The intended account is
-`deploy`, but its existence on the new server still has to be verified.
+The deployment checkout is
+`/docker-data/configuration/pygeoapi-proxy`. The server account is the existing
+`gitlab_deploy` identity, already assigned to the `docker` and `www-data`
+groups.
 
 This design extends the approved staging CI/CD design without changing its
 branch workflow, Laravel deployment sequence, or production scope.
@@ -44,8 +45,8 @@ The complete staging variable set becomes:
 | `DEPLOY_KNOWN_HOSTS` | File | Protected | Verified host-key entry for `[91.107.228.84]:1024` |
 | `DEPLOY_HOST` | Variable | Protected | `91.107.228.84` |
 | `DEPLOY_PORT` | Variable | Protected | `1024` |
-| `DEPLOY_USER` | Variable | Protected | `deploy` |
-| `DEPLOY_PATH` | Variable | Protected | `/docker-data/configuration/pygeoapi-proxy/proxy` |
+| `DEPLOY_USER` | Variable | Protected | `gitlab_deploy` |
+| `DEPLOY_PATH` | Variable | Protected | `/docker-data/configuration/pygeoapi-proxy` |
 
 All six variables use environment scope `staging`. No value is copied from the
 unrelated 3P project.
@@ -86,22 +87,20 @@ removed after GitLab variable creation has been verified.
 Before the first merge to `staging`, an administrator will run the documented
 checks on the target server.
 
-If `deploy` exists, preserve its UID, home, shell, groups, and authorized keys.
-If it does not exist, create it with a home directory and an interactive shell,
-then grant Docker access according to the server's existing Docker group
-policy. Do not grant passwordless sudo merely for the deployment.
+Preserve the existing `gitlab_deploy` UID, home, shell, groups, and authorized
+keys. Do not grant passwordless sudo merely for the deployment.
 
 The administrator will then:
 
-1. create `~deploy/.ssh` with owner `deploy`, mode `0700`;
+1. create `~gitlab_deploy/.ssh` with owner `gitlab_deploy`, mode `0700`;
 2. add the generated public key to `authorized_keys` only if it is not already
    present;
-3. set `authorized_keys` owner to `deploy` and mode `0600`;
+3. set `authorized_keys` owner to `gitlab_deploy` and mode `0600`;
 4. from an administrative workstation, verify that the dedicated key connects
-   as `deploy` on port `1024` using the verified `known_hosts` file;
-5. verify `sudo -u deploy docker info` and `docker compose version`;
+   as `gitlab_deploy` on port `1024` using the verified `known_hosts` file;
+5. verify `sudo -u gitlab_deploy docker info` and `docker compose version`;
 6. prepare the checkout and existing `.env.staging` with ownership suitable for
-   `deploy`.
+   `gitlab_deploy`.
 
 These server operations remain manual and supervised. No pipeline is merged to
 `staging` until the checks pass.
@@ -112,8 +111,9 @@ These server operations remain manual and supervised. No pipeline is merged to
   `DEPLOY_PORT` fails before any network connection.
 - A host-key fingerprint mismatch prevents creation of
   `DEPLOY_KNOWN_HOSTS`.
-- An absent `deploy` account or rejected client key blocks the first deployment
-  and is diagnosed with the runbook; it does not weaken SSH verification.
+- An unavailable `gitlab_deploy` account or rejected client key blocks the
+  first deployment and is diagnosed with the runbook; it does not weaken SSH
+  verification.
 - GitLab variable updates are applied idempotently by key and environment
   scope. Existing unrelated variables are not changed.
 

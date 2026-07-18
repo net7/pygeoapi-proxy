@@ -16,7 +16,7 @@
 - Non pubblicare immagini applicative nel GitLab Container Registry.
 - Non installare un GitLab Runner sul server staging.
 - `.env.staging` resta soltanto sul server e non deve comparire in Git, artefatti o log.
-- Il checkout server resta `/docker-data/configuration/pygeoapi-proxy/proxy` e viene gestito dall'utente `deploy`.
+- Il checkout server resta `/docker-data/configuration/pygeoapi-proxy` e viene gestito dall'utente `gitlab_deploy`.
 - Il job GitLab deve distribuire esattamente `CI_COMMIT_SHA`, non la punta corrente del branch al momento dell'esecuzione.
 - Una breve interruzione durante la ricreazione dei container staging è accettabile.
 - Migrazioni Laravel: una sola esecuzione, `--force --isolated`, sul servizio web.
@@ -960,7 +960,7 @@ git commit -m "ci: add staging verification and deployment pipeline"
 
 **Interfaces:**
 - Consumes: nomi job, variabili, target e comandi definiti nei task precedenti.
-- Produces: procedura completa per amministratore GitLab e utente server `deploy`, senza segreti reali.
+- Produces: procedura completa per amministratore GitLab e utente server `gitlab_deploy`, senza segreti reali.
 
 - [ ] **Step 1: Aggiungere la panoramica CI/CD al README principale**
 
@@ -973,7 +973,7 @@ Le Merge Request verso `develop` e `staging` eseguono i controlli PHP,
 frontend e Docker Compose. Un merge riuscito su `staging` avvia inoltre il
 deploy automatico su `https://proxygeoapi.netseven.work`.
 
-Il job GitLab si collega via SSH con l'utente `deploy` e invoca nel checkout
+Il job GitLab si collega via SSH con l'utente `gitlab_deploy` e invoca nel checkout
 stabile:
 
 ```bash
@@ -1008,28 +1008,28 @@ Il documento deve avere le sezioni e i contenuti operativi seguenti, con comandi
 
 ## Topologia
 
-GitLab runner -> SSH -> deploy user -> stable checkout -> deploy.sh -> Docker Compose
+GitLab runner -> SSH -> gitlab_deploy -> stable checkout -> deploy.sh -> Docker Compose
 
-Checkout: `/docker-data/configuration/pygeoapi-proxy/proxy`
+Checkout: `/docker-data/configuration/pygeoapi-proxy`
 URL: `https://proxygeoapi.netseven.work`
 
 ## Prerequisiti server
 
 ```bash
-sudo -u deploy test -d /docker-data/configuration/pygeoapi-proxy/proxy/.git
-sudo -u deploy test -f /docker-data/configuration/pygeoapi-proxy/proxy/.env.staging
-sudo -u deploy sh -lc 'command -v git bash flock curl docker'
-sudo -u deploy git -C /docker-data/configuration/pygeoapi-proxy/proxy remote -v
-sudo -u deploy git -C /docker-data/configuration/pygeoapi-proxy/proxy ls-remote --exit-code origin refs/heads/staging
-sudo -u deploy git -C /docker-data/configuration/pygeoapi-proxy/proxy status --short --untracked-files=no
-sudo -u deploy git -C /docker-data/configuration/pygeoapi-proxy/proxy check-ignore .env.staging
-sudo -u deploy stat -c '%a %U:%G %n' /docker-data/configuration/pygeoapi-proxy/proxy/.env.staging
-sudo -u deploy docker info
-sudo -u deploy docker compose version
+sudo -u gitlab_deploy test -d /docker-data/configuration/pygeoapi-proxy/.git
+sudo -u gitlab_deploy test -f /docker-data/configuration/pygeoapi-proxy/.env.staging
+sudo -u gitlab_deploy sh -lc 'command -v git bash flock curl docker'
+sudo -u gitlab_deploy git -C /docker-data/configuration/pygeoapi-proxy remote -v
+sudo -u gitlab_deploy git -C /docker-data/configuration/pygeoapi-proxy ls-remote --exit-code origin refs/heads/staging
+sudo -u gitlab_deploy git -C /docker-data/configuration/pygeoapi-proxy status --short --untracked-files=no
+sudo -u gitlab_deploy git -C /docker-data/configuration/pygeoapi-proxy check-ignore .env.staging
+sudo -u gitlab_deploy stat -c '%a %U:%G %n' /docker-data/configuration/pygeoapi-proxy/.env.staging
+sudo -u gitlab_deploy docker info
+sudo -u gitlab_deploy docker compose version
 sudo nginx -T 2>&1 | grep -E '127\.0\.0\.1:(7070|7071)'
 ```
 
-L'utente `deploy` deve poter usare Docker senza password interattiva. Il
+L'utente `gitlab_deploy` deve poter usare Docker senza password interattiva. Il
 checkout è gestito dal deploy: le modifiche manuali ai file versionati vengono
 sostituite. `.env.staging` resta ignorato e non viene rimosso.
 
@@ -1049,7 +1049,7 @@ Da una workstation amministrativa, usando un percorso temporaneo protetto:
 ```bash
 umask 077
 ssh-keygen -t ed25519 -a 100 -C 'gitlab-pygeoapi-proxy-staging' -f ./pygeoapi-proxy-staging
-ssh-copy-id -i ./pygeoapi-proxy-staging.pub "deploy@$DEPLOY_HOST"
+ssh-copy-id -i ./pygeoapi-proxy-staging.pub "gitlab_deploy@$DEPLOY_HOST"
 ssh-keyscan -H "$DEPLOY_HOST" > ./pygeoapi-proxy-staging.known_hosts
 ssh-keygen -lf ./pygeoapi-proxy-staging.known_hosts
 ```
@@ -1063,8 +1063,8 @@ quindi eliminare in modo sicuro le copie temporanee quando non servono più.
 - `DEPLOY_SSH_KEY`: File, protected, masked se supportato.
 - `DEPLOY_KNOWN_HOSTS`: File, protected.
 - `DEPLOY_HOST`: protected.
-- `DEPLOY_USER`: protected, valore `deploy`.
-- `DEPLOY_PATH`: protected, valore `/docker-data/configuration/pygeoapi-proxy/proxy`.
+- `DEPLOY_USER`: protected, valore `gitlab_deploy`.
+- `DEPLOY_PATH`: protected, valore `/docker-data/configuration/pygeoapi-proxy`.
 
 ## Impostazioni progetto
 
@@ -1077,7 +1077,7 @@ quindi eliminare in modo sicuro le copie temporanee quando non servono più.
 ## Primo deploy sorvegliato
 
 ```bash
-cd /docker-data/configuration/pygeoapi-proxy/proxy
+cd /docker-data/configuration/pygeoapi-proxy
 git fetch origin --tags --prune
 git checkout -f --detach "$(git rev-parse origin/staging)"
 ./deploy.sh staging "$(git rev-parse origin/staging)"

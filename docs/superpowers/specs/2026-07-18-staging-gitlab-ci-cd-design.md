@@ -9,7 +9,7 @@ su `staging`.
 
 Il deploy segue il modello già in uso per `AI/3p-italia-pgf`: GitLab usa un
 runner generico per i controlli e apre una connessione SSH verso l'utente
-`deploy`; tutta la logica operativa vive in un `deploy.sh` versionato ed
+`gitlab_deploy`; tutta la logica operativa vive in un `deploy.sh` versionato ed
 eseguito nel checkout stabile sul server.
 
 La produzione avrà un flusso differente e non deve comparire nella pipeline,
@@ -21,10 +21,10 @@ nello script o nelle nuove procedure operative.
   `https://gitlab.netseven.it/net7-main/ingv/pygeoapi-proxy`.
 - Il branch predefinito è `develop`; `develop` e `staging` esistono e sono
   protetti.
-- Il server staging ospita già l'utente `deploy`, usato anche dal progetto
-  `AI/3p-italia-pgf`.
+- Il server staging ospita già l'utente `gitlab_deploy`, membro dei gruppi
+  `docker` e `www-data`.
 - Il checkout stabile è
-  `/docker-data/configuration/pygeoapi-proxy/proxy`.
+  `/docker-data/configuration/pygeoapi-proxy`.
 - Lo stack usa `compose.yaml` insieme a `compose.staging.yaml` e carica
   `.env.staging` tramite il Makefile.
 - `.env.staging` è presente soltanto sul server, è ignorato da Git e resta la
@@ -203,8 +203,8 @@ Il job di deploy richiede:
 | `DEPLOY_SSH_KEY` | File | protected, masked se supportato | chiave privata dedicata al progetto |
 | `DEPLOY_KNOWN_HOSTS` | File | protected | host key verificata del server |
 | `DEPLOY_HOST` | Variable | protected | hostname o IP del server |
-| `DEPLOY_USER` | Variable | protected | utente `deploy` |
-| `DEPLOY_PATH` | Variable | protected | `/docker-data/configuration/pygeoapi-proxy/proxy` |
+| `DEPLOY_USER` | Variable | protected | utente `gitlab_deploy` |
+| `DEPLOY_PATH` | Variable | protected | `/docker-data/configuration/pygeoapi-proxy` |
 
 Nessun valore di `.env.staging` viene duplicato in GitLab. Il job copia il file
 `known_hosts` nella home temporanea, avvia `ssh-agent`, carica la chiave e non
@@ -235,13 +235,13 @@ production prima che il relativo flusso venga progettato.
 La procedura operativa verifica e documenta:
 
 - checkout stabile presente in `DEPLOY_PATH`;
-- remote `origin` configurato e accessibile dall'utente `deploy`;
+- remote `origin` configurato e accessibile dall'utente `gitlab_deploy`;
 - `.env.staging` presente, non versionato e leggibile soltanto dagli utenti
   necessari;
-- utente `deploy` autorizzato a usare Docker senza `sudo` interattivo;
+- utente `gitlab_deploy` autorizzato a usare Docker senza `sudo` interattivo;
 - Docker Engine, Docker Compose v2, Git, Bash, `flock` e Curl disponibili;
 - porte `127.0.0.1:7070` e `127.0.0.1:7071` coerenti con Nginx;
-- chiave pubblica dedicata aggiunta all'utente `deploy`;
+- chiave pubblica dedicata aggiunta all'utente `gitlab_deploy`;
 - directory priva di modifiche manuali ai file versionati.
 
 Il checkout è deployment-managed. `deploy.sh` può sostituire modifiche ai file

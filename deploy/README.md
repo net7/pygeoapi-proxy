@@ -6,10 +6,10 @@ ha un ciclo di rilascio distinto e non è inclusa nella pipeline corrente.
 ## Topologia
 
 ```text
-GitLab runner -> SSH -> deploy user -> stable checkout -> deploy.sh -> Docker Compose
+GitLab runner -> SSH -> gitlab_deploy -> stable checkout -> deploy.sh -> Docker Compose
 ```
 
-- Checkout: `/docker-data/configuration/pygeoapi-proxy/proxy`
+- Checkout: `/docker-data/configuration/pygeoapi-proxy`
 - URL: `https://proxygeoapi.netseven.work`
 - SSH endpoint: `91.107.228.84:1024`
 - SSH host-key fingerprint: `SHA256:3Baw8zxKivSOBGHO0ohYDFd59ACasF0c3p/M19jFhxI`
@@ -20,53 +20,41 @@ Il runner esegue soltanto i quality gate e il trigger SSH. Composer, Bun e Vite
 girano negli stage del Dockerfile sul server; le immagini applicative non sono
 pubblicate nel Container Registry.
 
-## Bootstrap utente deploy
+## Account di deploy
 
-Verificare prima se l'account esiste già, senza modificarlo:
-
-```bash
-getent passwd deploy
-id deploy
-sudo -u deploy sh -lc 'printf "home=%s\n" "$HOME"; id; command -v git docker make curl flock'
-```
-
-Se `getent passwd deploy` restituisce l'account, conservarne UID, home, shell,
-gruppi e chiavi autorizzate. Se invece conferma che l'account è assente,
-eseguire una sola volta:
+Il server usa l'account esistente `gitlab_deploy`. Verificarne identità, gruppi
+e strumenti senza modificarlo:
 
 ```bash
-sudo useradd --create-home --shell /bin/bash deploy
-sudo usermod --append --groups docker deploy
-sudo install -d -m 0700 -o deploy -g deploy /home/deploy/.ssh
-sudo touch /home/deploy/.ssh/authorized_keys
-sudo chown deploy:deploy /home/deploy/.ssh/authorized_keys
-sudo chmod 0600 /home/deploy/.ssh/authorized_keys
+getent passwd gitlab_deploy
+id gitlab_deploy
+sudo -u gitlab_deploy sh -lc 'printf "home=%s\n" "$HOME"; id; command -v git docker make curl flock'
 ```
 
-Non assegnare passwordless sudo all'utente di deploy. Dopo l'aggiunta al gruppo
-Docker, aprire una nuova sessione prima di verificare `docker info`. La pipeline
-non crea l'account e non modifica `authorized_keys`: l'installazione della
-chiave pubblica dedicata resta un'operazione amministrativa sorvegliata.
+L'account deve appartenere ai gruppi `docker` e `www-data`; non assegnargli
+passwordless sudo. La pipeline non crea l'account e non modifica
+`authorized_keys`: l'installazione della chiave pubblica dedicata resta
+un'operazione amministrativa sorvegliata.
 
 ## Prerequisiti server
 
 Eseguire questi controlli con un account amministrativo:
 
 ```bash
-sudo -u deploy test -d /docker-data/configuration/pygeoapi-proxy/proxy/.git
-sudo -u deploy test -f /docker-data/configuration/pygeoapi-proxy/proxy/.env.staging
-sudo -u deploy sh -lc 'command -v git bash flock curl docker make'
-sudo -u deploy git -C /docker-data/configuration/pygeoapi-proxy/proxy remote -v
-sudo -u deploy git -C /docker-data/configuration/pygeoapi-proxy/proxy ls-remote --exit-code origin refs/heads/staging
-sudo -u deploy git -C /docker-data/configuration/pygeoapi-proxy/proxy status --short --untracked-files=no
-sudo -u deploy git -C /docker-data/configuration/pygeoapi-proxy/proxy check-ignore .env.staging
-sudo -u deploy stat -c '%a %U:%G %n' /docker-data/configuration/pygeoapi-proxy/proxy/.env.staging
-sudo -u deploy docker info
-sudo -u deploy docker compose version
+sudo -u gitlab_deploy test -d /docker-data/configuration/pygeoapi-proxy/.git
+sudo -u gitlab_deploy test -f /docker-data/configuration/pygeoapi-proxy/.env.staging
+sudo -u gitlab_deploy sh -lc 'command -v git bash flock curl docker make'
+sudo -u gitlab_deploy git -C /docker-data/configuration/pygeoapi-proxy remote -v
+sudo -u gitlab_deploy git -C /docker-data/configuration/pygeoapi-proxy ls-remote --exit-code origin refs/heads/staging
+sudo -u gitlab_deploy git -C /docker-data/configuration/pygeoapi-proxy status --short --untracked-files=no
+sudo -u gitlab_deploy git -C /docker-data/configuration/pygeoapi-proxy check-ignore .env.staging
+sudo -u gitlab_deploy stat -c '%a %U:%G %n' /docker-data/configuration/pygeoapi-proxy/.env.staging
+sudo -u gitlab_deploy docker info
+sudo -u gitlab_deploy docker compose version
 sudo nginx -T 2>&1 | grep -E '127\.0\.0\.1:(7070|7071)'
 ```
 
-L'utente `deploy` deve poter usare Docker senza password interattiva. Il
+L'utente `gitlab_deploy` deve poter usare Docker senza password interattiva. Il
 controllo `status --short --untracked-files=no` deve essere vuoto prima del
 primo deploy; i file versionati sono infatti gestiti dallo script e le
 modifiche manuali vengono sostituite. `check-ignore` deve confermare che
@@ -87,10 +75,10 @@ DEPLOY_HOST=91.107.228.84
 DEPLOY_PORT=1024
 umask 077
 ssh-keygen -q -t ed25519 -a 100 -N '' -C 'gitlab-pygeoapi-proxy-staging' -f ./pygeoapi-proxy-staging
-ssh-copy-id -p "$DEPLOY_PORT" -i ./pygeoapi-proxy-staging.pub "deploy@$DEPLOY_HOST"
+ssh-copy-id -p "$DEPLOY_PORT" -i ./pygeoapi-proxy-staging.pub "gitlab_deploy@$DEPLOY_HOST"
 ssh-keyscan -H -p "$DEPLOY_PORT" -t ed25519 "$DEPLOY_HOST" > ./pygeoapi-proxy-staging.known_hosts
 ssh-keygen -lf ./pygeoapi-proxy-staging.known_hosts
-ssh -p "$DEPLOY_PORT" -i ./pygeoapi-proxy-staging "deploy@$DEPLOY_HOST" true
+ssh -p "$DEPLOY_PORT" -i ./pygeoapi-proxy-staging "gitlab_deploy@$DEPLOY_HOST" true
 ```
 
 Sul server ottenere la fingerprint autorevole:
@@ -116,8 +104,8 @@ Configurare in **Settings > CI/CD > Variables**:
 | `DEPLOY_KNOWN_HOSTS` | File | Protected | Host key verificata |
 | `DEPLOY_HOST` | Variable | Protected | Hostname o IP dello staging |
 | `DEPLOY_PORT` | Variable | Protected | `1024` |
-| `DEPLOY_USER` | Variable | Protected | `deploy` |
-| `DEPLOY_PATH` | Variable | Protected | `/docker-data/configuration/pygeoapi-proxy/proxy` |
+| `DEPLOY_USER` | Variable | Protected | `gitlab_deploy` |
+| `DEPLOY_PATH` | Variable | Protected | `/docker-data/configuration/pygeoapi-proxy` |
 
 Non copiare `.env.staging` nelle variabili GitLab: resta soltanto sul server.
 
@@ -143,11 +131,11 @@ bloccate finché non verrà aggiunta la pipeline di produzione.
 
 ## Primo deploy sorvegliato
 
-Eseguire come utente `deploy`, dopo che il codice è stato mergiato in
+Eseguire come utente `gitlab_deploy`, dopo che il codice è stato mergiato in
 `staging`:
 
 ```bash
-cd /docker-data/configuration/pygeoapi-proxy/proxy
+cd /docker-data/configuration/pygeoapi-proxy
 git fetch origin --tags --prune
 git checkout -f --detach "$(git rev-parse origin/staging)"
 ./deploy.sh staging "$(git rev-parse origin/staging)"
@@ -197,9 +185,9 @@ ps -ef | grep '[d]eploy.sh staging'
 
 | Problema | Controllo | Azione |
 | --- | --- | --- |
-| Chiave SSH rifiutata | `ssh -vvv -p "$DEPLOY_PORT" -i ./pygeoapi-proxy-staging "deploy@$DEPLOY_HOST" true` | Verificare chiave pubblica in `~deploy/.ssh/authorized_keys`, owner e permessi; rigenerare `DEPLOY_SSH_KEY` solo se necessario. |
+| Chiave SSH rifiutata | `ssh -vvv -p "$DEPLOY_PORT" -i ./pygeoapi-proxy-staging "gitlab_deploy@$DEPLOY_HOST" true` | Verificare chiave pubblica in `~gitlab_deploy/.ssh/authorized_keys`, owner e permessi; rigenerare `DEPLOY_SSH_KEY` solo se necessario. |
 | Host key errata | `ssh-keygen -lf ./pygeoapi-proxy-staging.known_hosts` e `sudo ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` | Dopo verifica su canale distinto, rigenerare il file con `ssh-keyscan` e aggiornare `DEPLOY_KNOWN_HOSTS`. |
-| `.env.staging` assente | `sudo -u deploy test -f /docker-data/configuration/pygeoapi-proxy/proxy/.env.staging` | Ripristinare il file approvato da backup o secret store; il deploy non lo crea dal template example. |
+| `.env.staging` assente | `sudo -u gitlab_deploy test -f /docker-data/configuration/pygeoapi-proxy/.env.staging` | Ripristinare il file approvato da backup o secret store; il deploy non lo crea dal template example. |
 | Lock occupato | `ps -ef \| grep '[d]eploy.sh staging'` | Attendere il deploy attivo; rimuovere il lock soltanto dopo aver verificato che non esista alcun processo. |
 | Build fallita | `make staging deploy-build` | Correggere il primo errore Composer, Bun/Vite o Docker mostrato nella fase **Build images**, poi rieseguire lo stesso SHA. |
 | Migrazione fallita | `make staging logs SERVICE=laravel LOG_FOLLOW= LOG_TAIL=200` | Correggere migrazione o connettività database; verificare lo schema prima di qualunque rollback del codice. |

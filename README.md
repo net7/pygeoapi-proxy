@@ -168,8 +168,8 @@ Le Merge Request verso `develop` e `staging` eseguono i controlli PHP,
 frontend e Docker Compose. Un merge riuscito su `staging` avvia inoltre il
 deploy automatico su `https://proxygeoapi.netseven.work`.
 
-Il job GitLab si collega via SSH con l'utente `deploy` e invoca nel checkout
-stabile:
+Il job GitLab si collega via SSH con l'utente `gitlab_deploy` e invoca nel
+checkout stabile:
 
 ```bash
 ./deploy.sh staging <commit-sha>
