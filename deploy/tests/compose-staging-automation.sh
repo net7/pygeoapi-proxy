@@ -2,7 +2,7 @@
 
 set -eu
 
-repository_root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+repository_root=$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd)
 rendered_config=$(mktemp)
 trap 'rm -f "$rendered_config"' EXIT HUP INT TERM
 
