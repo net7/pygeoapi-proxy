@@ -93,7 +93,14 @@ In GitLab:
 2. configurare **Allowed to merge** con i ruoli autorizzati dal progetto;
 3. impostare **Allowed to push and merge > No one**, così i push diretti restano bloccati senza impedire i merge autorizzati;
 4. abilitare **Pipelines must succeed**;
-5. proteggere l'ambiente `staging` e limitarne il deploy ai ruoli autorizzati.
+5. sulle istanze Premium o Ultimate, proteggere anche l'ambiente `staging` e
+   limitarne il deploy ai ruoli autorizzati.
+
+L'istanza attuale usa GitLab Community Edition, che non include gli ambienti
+protetti. In questo caso il confine di sicurezza è composto dal branch
+`staging` senza push diretto e da tutte le variabili di deploy marcate
+`Protected`. Se l'istanza verrà aggiornata a Premium o Ultimate, applicare anche
+il punto 5.
 
 Il gate è globale: le Merge Request verso `main` restano intenzionalmente
 bloccate finché non verrà aggiunta la pipeline di produzione.
