@@ -352,6 +352,7 @@ const it = {
         expectedOutputs: 'Output previsti',
         expectedOutputsDescription:
             'Il processo produrrà automaticamente questi risultati.',
+        fieldValid: 'Campo valido',
         file: 'File',
         geotiffDownload: 'GeoTIFF',
         inline: 'Inline',
@@ -825,6 +826,7 @@ const en = {
         expectedOutputs: 'Expected outputs',
         expectedOutputsDescription:
             'The process will automatically produce these results.',
+        fieldValid: 'Field is valid',
         file: 'File',
         geotiffDownload: 'GeoTIFF',
         inline: 'Inline',

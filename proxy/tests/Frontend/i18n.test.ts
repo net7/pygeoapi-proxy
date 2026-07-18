@@ -59,6 +59,11 @@ describe('i18n', () => {
         );
     });
 
+    test('translates corrected OGC field status', () => {
+        expect(translate('it', 'ogc.fieldValid')).toBe('Campo valido');
+        expect(translate('en', 'ogc.fieldValid')).toBe('Field is valid');
+    });
+
     test('uses italian process wording for job labels', () => {
         expect(translate('it', 'navigation.myJobs')).toBe('I miei processi');
         expect(translate('it', 'admin.userJobs')).toBe('Processi');
