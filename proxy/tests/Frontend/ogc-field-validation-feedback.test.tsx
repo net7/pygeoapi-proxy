@@ -97,6 +97,8 @@ describe('OGC field validation feedback', () => {
         expect(toaster).toContain(
             "'--warning-text': 'var(--warning-emphasis)'",
         );
+        expect(toaster).toContain("t('toast.close')");
+        expect(toaster).toContain("t('toast.notifications')");
         expect(css).toContain(
             '--color-destructive-emphasis: var(--destructive-emphasis)',
         );

@@ -1,9 +1,11 @@
 import { useFlashToast } from '@/hooks/use-flash-toast';
 import { useAppearance } from '@/hooks/use-appearance';
+import { useTranslation } from '@/hooks/use-translation';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
-function Toaster({ ...props }: ToasterProps) {
+function Toaster({ toastOptions, ...props }: ToasterProps) {
     const { appearance } = useAppearance();
+    const { t } = useTranslation();
 
     useFlashToast();
 
@@ -14,6 +16,11 @@ function Toaster({ ...props }: ToasterProps) {
             position="bottom-right"
             richColors
             closeButton
+            containerAriaLabel={t('toast.notifications')}
+            toastOptions={{
+                closeButtonAriaLabel: t('toast.close'),
+                ...toastOptions,
+            }}
             style={
                 {
                     '--normal-bg': 'var(--popover)',

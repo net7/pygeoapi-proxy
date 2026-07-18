@@ -66,10 +66,12 @@ const it = {
         settings: 'Impostazioni',
     },
     toast: {
+        close: 'Chiudi notifica',
         defaultError: 'La richiesta non è stata completata.',
         defaultInfo: 'Sono disponibili nuove informazioni.',
         defaultSuccess: 'La modifica è stata salvata.',
         defaultWarning: 'Controlla questo elemento prima di continuare.',
+        notifications: 'Notifiche',
     },
     auth: {
         accountNotice: 'Avviso account',
@@ -555,10 +557,12 @@ const en = {
         settings: 'Settings',
     },
     toast: {
+        close: 'Close notification',
         defaultError: 'The request could not be completed.',
         defaultInfo: 'New information is available.',
         defaultSuccess: 'The change has been saved.',
         defaultWarning: 'Review this before continuing.',
+        notifications: 'Notifications',
     },
     auth: {
         accountNotice: 'Account notice',

@@ -77,6 +77,10 @@ describe('i18n', () => {
         expect(translate('en', 'ogc.someValuesNeedAttention')).toBe(
             'Some values need attention before the process can run.',
         );
+        expect(translate('it', 'toast.close')).toBe('Chiudi notifica');
+        expect(translate('en', 'toast.close')).toBe('Close notification');
+        expect(translate('it', 'toast.notifications')).toBe('Notifiche');
+        expect(translate('en', 'toast.notifications')).toBe('Notifications');
     });
 
     test('translates native OGC constraint messages', () => {
