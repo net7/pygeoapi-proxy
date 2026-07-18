@@ -36,6 +36,10 @@ require_text '*[!0-9a-f]*'
 require_text "\${#CI_COMMIT_SHA}"
 require_text 'DEPLOY_KNOWN_HOSTS'
 require_text 'DEPLOY_SSH_KEY'
+require_text 'DEPLOY_PORT'
+require_text 'DEPLOY_PORT must contain only decimal digits'
+require_text 'DEPLOY_PORT must be between 1 and 65535'
+require_text "ssh -p \"\$DEPLOY_PORT\""
 
 if grep -E 'deploy:prod|CI_COMMIT_TAG|environment:[[:space:]]*production' "$ci_file" > /dev/null; then
     printf 'Production behavior must not exist in .gitlab-ci.yml\n' >&2

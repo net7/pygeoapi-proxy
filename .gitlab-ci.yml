@@ -73,6 +73,13 @@ deploy:staging:
     - ssh-add "$DEPLOY_SSH_KEY"
   script:
     - |
+      case "$DEPLOY_PORT" in
+        ''|*[!0-9]*) printf '%s\n' 'DEPLOY_PORT must contain only decimal digits' >&2; exit 1 ;;
+      esac
+      if [ "${#DEPLOY_PORT}" -gt 5 ] || [ "$DEPLOY_PORT" -lt 1 ] || [ "$DEPLOY_PORT" -gt 65535 ]; then
+        printf '%s\n' 'DEPLOY_PORT must be between 1 and 65535' >&2
+        exit 1
+      fi
       case "$DEPLOY_PATH" in
         /*) ;;
         *) printf '%s\n' 'DEPLOY_PATH must be absolute' >&2; exit 1 ;;
@@ -87,6 +94,6 @@ deploy:staging:
         printf '%s\n' 'CI_COMMIT_SHA must contain 40 hexadecimal characters' >&2
         exit 1
       fi
-      ssh "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' && ./deploy.sh staging '$CI_COMMIT_SHA'"
+      ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' && ./deploy.sh staging '$CI_COMMIT_SHA'"
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "staging"'
