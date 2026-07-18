@@ -162,6 +162,26 @@ Il template `staging` preconfigura inoltre `HOST_BIND_ADDRESS=127.0.0.1`,
 `APP_PORT=7070`, `REVERB_HOST_PORT=7071` e `REVERB_PORT=443` per l'Nginx host.
 Questi valori non sono i default di `develop` o `production`.
 
+## CI/CD staging
+
+Le Merge Request verso `develop` e `staging` eseguono i controlli PHP,
+frontend e Docker Compose. Un merge riuscito su `staging` avvia inoltre il
+deploy automatico su `https://proxygeoapi.netseven.work`.
+
+Il job GitLab si collega via SSH con l'utente `deploy` e invoca nel checkout
+stabile:
+
+```bash
+./deploy.sh staging <commit-sha>
+```
+
+Il server conserva `.env.staging`, costruisce le immagini, esegue le migrazioni
+Laravel `--force --isolated`, rigenera le cache e verifica gli health check.
+Le immagini applicative non vengono pubblicate nel Container Registry.
+
+La configurazione GitLab, il bootstrap del server, il rollback e il
+troubleshooting sono descritti in `deploy/README.md`.
+
 ## Comandi rapidi
 
 Mostra l'aiuto:
@@ -178,11 +198,25 @@ make staging config
 make production config
 ```
 
+Validazione Compose senza stampare la configurazione risolta:
+
+```bash
+make staging config-check
+```
+
 Build immagini:
 
 ```bash
 make build
 make staging build
+```
+
+Build e aggiornamento ordinato dello staging:
+
+```bash
+make staging deploy-build
+make staging deploy-up
+make staging deploy-status
 ```
 
 Avvio stack:
@@ -346,6 +380,9 @@ La procedura staging completa è in `deploy/nginx/README.md`.
 - `proxy/Dockerfile`: immagine Laravel Server Side Up + build asset Bun.
 - `Dockerfile`: immagine pygeoapi.
 - `Makefile`: comandi rapidi.
+- `.gitlab-ci.yml`: quality gate e deploy automatico dello staging.
+- `deploy.sh`: orchestrazione versionata eseguita sul server staging.
+- `deploy/README.md`: bootstrap GitLab/server, rollback e troubleshooting.
 - `.env.*.example`: template env per ambiente.
 - `deploy/nginx/proxygeoapi.netseven.work.conf`: vhost HTTP iniziale staging.
 - `deploy/nginx/README.md`: installazione Nginx e bootstrap Certbot.
@@ -357,9 +394,11 @@ file `.env.*`. Questo permette a `develop`, `staging` e `production` di avere
 database e Redis separati anche se si usa la stessa porta host quando un solo
 ambiente e' attivo alla volta.
 
-Le automazioni Server Side Up sono disabilitate in `develop` e abilitate sul
-servizio web in `staging` e `production`. Horizon, Scheduler e Reverb restano
-processi separati e non eseguono migrazioni automatiche.
+Le automazioni Server Side Up sono disabilitate in `develop`. In `staging`, il
+servizio Laravel esegue migrazioni isolate e forzate, crea il link storage e
+rigenera le cache; Horizon, Scheduler e Reverb rigenerano le proprie cache ma
+non eseguono migrazioni. In `production` resta valida la configurazione
+specifica già presente, indipendente dalla pipeline staging.
 
 Il servizio Vite in `develop` usa la stessa immagine Laravel, con PHP e Bun
 disponibili. Questo serve per Wayfinder, che genera tipi chiamando
