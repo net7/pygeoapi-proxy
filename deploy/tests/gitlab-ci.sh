@@ -41,6 +41,21 @@ require_text 'DEPLOY_PORT must contain only decimal digits'
 require_text 'DEPLOY_PORT must be between 1 and 65535'
 require_text "ssh -p \"\$DEPLOY_PORT\""
 
+php_job=$(sed -n '/^php-check:/,/^frontend-check:/p' "$ci_file")
+
+require_php_text() {
+    text=$1
+    if ! printf '%s\n' "$php_job" | grep -F "$text" > /dev/null; then
+        printf 'Missing php-check contract: %s\n' "$text" >&2
+        exit 1
+    fi
+}
+
+require_php_text 'install-php-extensions gd'
+require_php_text 'name: serversideup/php:8.5-cli'
+require_php_text 'user: root'
+require_php_text 'COMPOSER_ALLOW_SUPERUSER: "1"'
+
 if grep -E 'deploy:prod|CI_COMMIT_TAG|environment:[[:space:]]*production' "$ci_file" > /dev/null; then
     printf 'Production behavior must not exist in .gitlab-ci.yml\n' >&2
     exit 1

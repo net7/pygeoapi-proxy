@@ -20,12 +20,24 @@ deployment-check:
 
 php-check:
   stage: test
-  image: serversideup/php:8.5-cli
+  image:
+    name: serversideup/php:8.5-cli
+    docker:
+      user: root
   variables:
     APP_ENV: testing
     APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+    COMPOSER_ALLOW_SUPERUSER: "1"
     COMPOSER_CACHE_DIR: $CI_PROJECT_DIR/.cache/composer
   before_script:
+    - |
+      printf '\n==> PHP extension: gd\n'
+      if ! install-php-extensions gd > /tmp/install-php-extensions.log 2>&1; then
+        cat /tmp/install-php-extensions.log
+        exit 1
+      fi
+      php -m | grep -Fx gd > /dev/null
+      printf 'gd: OK\n'
     - cd proxy
     - composer install --no-interaction --prefer-dist --no-progress
   script:
