@@ -1,17 +1,17 @@
 import { useForm } from '@inertiajs/react';
-import { AlertCircleIcon, PlayIcon, WandSparklesIcon } from 'lucide-react';
+import { PlayIcon, WandSparklesIcon } from 'lucide-react';
 import { useRef } from 'react';
+import { toast } from 'sonner';
 
-import { JobNoteEditor } from '@/components/ogc/job-note-editor';
 import {
     OgcFieldError,
     OgcValidationControl,
     ogcValidationControlClassName,
     ogcValidationDataState,
 } from '@/components/ogc/field-validation-feedback';
+import { JobNoteEditor } from '@/components/ogc/job-note-editor';
 import ProcessOutputSelector from '@/components/ogc/process-output-selector';
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -93,6 +93,12 @@ export default function DynamicProcessForm({
     const nameError = fieldError(validation.errors, 'name');
     const nameState = validation.stateFor('name', nameError);
 
+    function notifyValidationFailure() {
+        toast.error(t('ogc.checkProcessData'), {
+            description: t('ogc.someValuesNeedAttention'),
+        });
+    }
+
     function setInput(name: string, value: unknown) {
         setData('inputs', {
             ...data.inputs,
@@ -130,6 +136,8 @@ export default function DynamicProcessForm({
                 event.preventDefault();
 
                 if (!validation.validateForm()) {
+                    notifyValidationFailure();
+
                     return;
                 }
 
@@ -141,21 +149,12 @@ export default function DynamicProcessForm({
                 submit(store(schema.id), {
                     onSuccess: () => markJobsIndexStale(),
                     onError: (nextErrors) => {
+                        notifyValidationFailure();
                         validation.focusErrors(nextErrors as OgcFormErrors);
                     },
                 });
             }}
         >
-            {Object.keys(validation.errors).length > 0 ? (
-                <Alert variant="destructive">
-                    <AlertCircleIcon />
-                    <AlertTitle>{t('ogc.checkProcessData')}</AlertTitle>
-                    <AlertDescription>
-                        {t('ogc.someValuesNeedAttention')}
-                    </AlertDescription>
-                </Alert>
-            ) : null}
-
             <Card className="min-w-0">
                 <CardHeader>
                     <CardTitle>{t('jobs.processName')}</CardTitle>
@@ -227,7 +226,7 @@ export default function DynamicProcessForm({
                             value={data.inputs[name]}
                             onChange={(value) => setInput(name, value)}
                             path={'inputs.' + name}
-                            errors={validation.errors}
+                            validation={validation}
                             topLevel
                         />
                     ))}

@@ -1,7 +1,12 @@
-import InputError from '@/components/input-error';
 import ArrayObjectField from '@/components/ogc/array-object-field';
 import ArrayTableField from '@/components/ogc/array-table-field';
 import DataInputField from '@/components/ogc/data-input-field';
+import {
+    OgcFieldError,
+    OgcValidationControl,
+    ogcValidationControlClassName,
+    ogcValidationDataState,
+} from '@/components/ogc/field-validation-feedback';
 import OneOfField from '@/components/ogc/one-of-field';
 import SectionFieldSet from '@/components/ogc/section-field-set';
 import {
@@ -22,7 +27,8 @@ import {
 import { htmlPatternForInput } from '@/lib/html-pattern';
 import { fieldDisplayLabel, optionDisplayLabel } from '@/lib/ogc-fields';
 import { errorIdForPath, fieldError } from '@/lib/ogc-form-errors';
-import type { OgcFormErrors } from '@/lib/ogc-form-errors';
+import type { OgcFieldValidationController } from '@/lib/ogc-form-validation';
+import { cn } from '@/lib/utils';
 import type { OgcNormalizedField } from '@/types';
 
 export default function SchemaFieldRenderer({
@@ -30,16 +36,18 @@ export default function SchemaFieldRenderer({
     value,
     onChange,
     path,
-    errors,
+    validation,
     topLevel = false,
 }: {
     field: OgcNormalizedField;
     value: unknown;
     onChange: (value: unknown) => void;
     path: string;
-    errors: OgcFormErrors;
+    validation: OgcFieldValidationController;
     topLevel?: boolean;
 }) {
+    const errors = validation.errors;
+
     if (field.kind === 'object' && field.fields) {
         const objectValue = isRecord(value) ? value : {};
         const objectPath = topLevel ? path + '.value' : path;
@@ -51,6 +59,7 @@ export default function SchemaFieldRenderer({
                 description={field.description}
                 fieldPath={path}
                 error={error}
+                validationState={validation.stateFor(path, error)}
             >
                 <FieldGroup className="min-w-0">
                     {Object.entries(field.fields).map(([key, child]) => (
@@ -62,7 +71,7 @@ export default function SchemaFieldRenderer({
                                 onChange({ ...objectValue, [key]: nextValue })
                             }
                             path={objectPath + '.' + key}
-                            errors={errors}
+                            validation={validation}
                         />
                     ))}
                 </FieldGroup>
@@ -77,7 +86,7 @@ export default function SchemaFieldRenderer({
                 value={value}
                 onChange={onChange}
                 path={path}
-                errors={errors}
+                validation={validation}
             />
         );
     }
@@ -89,7 +98,7 @@ export default function SchemaFieldRenderer({
                 value={value}
                 onChange={onChange}
                 path={path}
-                errors={errors}
+                validation={validation}
             />
         );
     }
@@ -101,7 +110,7 @@ export default function SchemaFieldRenderer({
                 value={value}
                 onChange={onChange}
                 path={path}
-                errors={errors}
+                validation={validation}
             />
         );
     }
@@ -113,103 +122,136 @@ export default function SchemaFieldRenderer({
                 value={value}
                 onChange={onChange}
                 path={path}
-                errors={errors}
+                validation={validation}
             />
         );
     }
 
     const error = fieldError(errors, path);
     const errorId = errorIdForPath(path);
+    const state = validation.stateFor(path, error);
 
     if (field.kind === 'enum') {
         return (
-            <Field className="min-w-0" data-invalid={error ? true : undefined}>
+            <Field
+                className="min-w-0"
+                data-invalid={state === 'invalid' ? true : undefined}
+            >
                 <FieldLabel>{fieldDisplayLabel(field)}</FieldLabel>
                 {field.description ? (
                     <FieldDescription className="break-words">
                         {field.description}
                     </FieldDescription>
                 ) : null}
-                <Select
-                    value={String(value ?? '')}
-                    onValueChange={(selected) =>
-                        onChange(enumValueFromString(field, selected))
-                    }
+                <OgcValidationControl
+                    state={state}
+                    validLabel={validation.validLabel}
+                    hasBuiltInEndIcon
                 >
-                    <SelectTrigger
-                        className="w-full min-w-0"
-                        data-field-path={path}
-                        aria-invalid={error ? true : undefined}
-                        aria-describedby={error ? errorId : undefined}
+                    <Select
+                        value={String(value ?? '')}
+                        onValueChange={(selected) => {
+                            validation.fieldChanged(path);
+                            onChange(enumValueFromString(field, selected));
+                        }}
                     >
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectGroup>
-                            {field.options?.map((option) => (
-                                <SelectItem
-                                    key={String(option)}
-                                    value={String(option)}
-                                >
-                                    {optionDisplayLabel(option)}
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
-                    </SelectContent>
-                </Select>
-                <InputError id={errorId} message={error} />
+                        <SelectTrigger
+                            className={cn(
+                                'w-full min-w-0',
+                                ogcValidationControlClassName(state, true),
+                            )}
+                            data-field-path={path}
+                            data-validation-state={ogcValidationDataState(
+                                state,
+                            )}
+                            aria-invalid={
+                                state === 'invalid' ? true : undefined
+                            }
+                            aria-describedby={error ? errorId : undefined}
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectGroup>
+                                {field.options?.map((option) => (
+                                    <SelectItem
+                                        key={String(option)}
+                                        value={String(option)}
+                                    >
+                                        {optionDisplayLabel(option)}
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
+                        </SelectContent>
+                    </Select>
+                </OgcValidationControl>
+                <OgcFieldError id={errorId} message={error} />
             </Field>
         );
     }
 
     return (
-        <Field className="min-w-0" data-invalid={error ? true : undefined}>
+        <Field
+            className="min-w-0"
+            data-invalid={state === 'invalid' ? true : undefined}
+        >
             <FieldLabel>{fieldDisplayLabel(field)}</FieldLabel>
             {field.description ? (
                 <FieldDescription className="break-words">
                     {field.description}
                 </FieldDescription>
             ) : null}
-            <Input
-                className="min-w-0"
-                data-field-path={path}
-                aria-invalid={error ? true : undefined}
-                aria-describedby={error ? errorId : undefined}
-                type={
-                    field.type === 'number' || field.type === 'integer'
-                        ? 'number'
-                        : 'text'
-                }
-                value={String(value ?? '')}
-                required={field.required === true || Boolean(field.minOccurs)}
-                min={field.minimum ?? undefined}
-                max={field.maximum ?? undefined}
-                data-exclusive-minimum={field.exclusiveMinimum ?? undefined}
-                data-exclusive-maximum={field.exclusiveMaximum ?? undefined}
-                step={field.type === 'number' ? 'any' : undefined}
-                pattern={htmlPatternForInput({
-                    type: field.type,
-                    pattern: field.pattern,
-                })}
-                onChange={(event) => {
-                    const raw = event.target.value;
-
-                    if (raw === '') {
-                        onChange(null);
-
-                        return;
+            <OgcValidationControl
+                state={state}
+                validLabel={validation.validLabel}
+            >
+                <Input
+                    className={cn(
+                        'min-w-0',
+                        ogcValidationControlClassName(state),
+                    )}
+                    data-field-path={path}
+                    data-validation-state={ogcValidationDataState(state)}
+                    aria-invalid={state === 'invalid' ? true : undefined}
+                    aria-describedby={error ? errorId : undefined}
+                    type={
+                        field.type === 'number' || field.type === 'integer'
+                            ? 'number'
+                            : 'text'
                     }
+                    value={String(value ?? '')}
+                    required={
+                        field.required === true || Boolean(field.minOccurs)
+                    }
+                    min={field.minimum ?? undefined}
+                    max={field.maximum ?? undefined}
+                    data-exclusive-minimum={field.exclusiveMinimum ?? undefined}
+                    data-exclusive-maximum={field.exclusiveMaximum ?? undefined}
+                    step={field.type === 'number' ? 'any' : undefined}
+                    pattern={htmlPatternForInput({
+                        type: field.type,
+                        pattern: field.pattern,
+                    })}
+                    onChange={(event) => {
+                        const raw = event.target.value;
 
-                    onChange(
-                        field.type === 'number'
-                            ? Number(raw)
-                            : field.type === 'integer'
-                              ? Number.parseInt(raw, 10)
-                              : raw,
-                    );
-                }}
-            />
-            <InputError id={errorId} message={error} />
+                        if (raw === '') {
+                            onChange(null);
+
+                            return;
+                        }
+
+                        onChange(
+                            field.type === 'number'
+                                ? Number(raw)
+                                : field.type === 'integer'
+                                  ? Number.parseInt(raw, 10)
+                                  : raw,
+                        );
+                    }}
+                />
+            </OgcValidationControl>
+            <OgcFieldError id={errorId} message={error} />
         </Field>
     );
 }

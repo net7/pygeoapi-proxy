@@ -122,8 +122,10 @@ describe('OGC form errors', () => {
         expect(form).toContain('validation.focusErrors');
         expect(renderer).toContain('data-field-path');
         expect(renderer).toContain('aria-invalid');
-        expect(table).toContain('required={column.required}');
-        expect(table).toContain('InputError');
+        expect(table).toMatch(/required=\{\s*column\.required\s*\}/);
+        expect(table).toContain('OgcFieldError');
+        expect(table).toContain('OgcValidationControl');
+        expect(table).not.toContain('@/components/input-error');
         expect(dataInput).not.toContain('fieldPath={path}');
     });
 });

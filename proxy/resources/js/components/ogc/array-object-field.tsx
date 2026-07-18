@@ -7,7 +7,7 @@ import { FieldGroup } from '@/components/ui/field';
 import { useTranslation } from '@/hooks/use-translation';
 import { fieldDisplayLabel } from '@/lib/ogc-fields';
 import { fieldError } from '@/lib/ogc-form-errors';
-import type { OgcFormErrors } from '@/lib/ogc-form-errors';
+import type { OgcFieldValidationController } from '@/lib/ogc-form-validation';
 import type { OgcNormalizedField } from '@/types';
 
 export default function ArrayObjectField({
@@ -15,16 +15,19 @@ export default function ArrayObjectField({
     value,
     onChange,
     path,
-    errors,
+    validation,
 }: {
     field: OgcNormalizedField;
     value: unknown;
     onChange: (value: unknown) => void;
     path: string;
-    errors: OgcFormErrors;
+    validation: OgcFieldValidationController;
 }) {
     const { t } = useTranslation();
+    const errors = validation.errors;
     const rows = Array.isArray(value) ? value : [];
+    const structuralError = fieldError(errors, path);
+    const structuralState = validation.stateFor(path, structuralError);
 
     function updateRow(index: number, row: Record<string, unknown>) {
         onChange(
@@ -37,7 +40,8 @@ export default function ArrayObjectField({
             label={fieldDisplayLabel(field)}
             description={field.description}
             fieldPath={path}
-            error={fieldError(errors, path)}
+            error={structuralError}
+            validationState={structuralState}
         >
             <FieldGroup className="min-w-0">
                 {rows.map((row, index) => {
@@ -59,14 +63,15 @@ export default function ArrayObjectField({
                                         field.minItems !== undefined &&
                                         rows.length <= field.minItems
                                     }
-                                    onClick={() =>
+                                    onClick={() => {
+                                        validation.resetPathPrefix(path);
                                         onChange(
                                             rows.filter(
                                                 (_, rowIndex) =>
                                                     rowIndex !== index,
                                             ),
-                                        )
-                                    }
+                                        );
+                                    }}
                                 >
                                     <Trash2 data-icon="icon" />
                                 </Button>
@@ -84,7 +89,7 @@ export default function ArrayObjectField({
                                             })
                                         }
                                         path={path + '.' + index + '.' + key}
-                                        errors={errors}
+                                        validation={validation}
                                     />
                                 ),
                             )}
@@ -100,7 +105,10 @@ export default function ArrayObjectField({
                     field.maxItems !== undefined &&
                     rows.length >= field.maxItems
                 }
-                onClick={() => onChange([...rows, {}])}
+                onClick={() => {
+                    validation.fieldChanged(path);
+                    onChange([...rows, {}]);
+                }}
             >
                 <Plus data-icon="inline-start" />
                 {t('ogc.addRow')}

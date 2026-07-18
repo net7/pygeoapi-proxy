@@ -1,8 +1,13 @@
 import type { ReactNode } from 'react';
 
-import InputError from '@/components/input-error';
+import {
+    OgcFieldError,
+    ogcValidationContainerClassName,
+    ogcValidationDataState,
+} from '@/components/ogc/field-validation-feedback';
 import { FieldDescription, FieldLegend, FieldSet } from '@/components/ui/field';
 import { errorIdForPath } from '@/lib/ogc-form-errors';
+import type { OgcFieldValidationState } from '@/lib/ogc-form-validation';
 import { cn } from '@/lib/utils';
 
 export default function SectionFieldSet({
@@ -12,6 +17,7 @@ export default function SectionFieldSet({
     className,
     fieldPath,
     error,
+    validationState,
 }: {
     label: string;
     description?: string | null;
@@ -19,18 +25,30 @@ export default function SectionFieldSet({
     className?: string;
     fieldPath?: string;
     error?: string;
+    validationState?: OgcFieldValidationState;
 }) {
     const errorId = fieldPath ? errorIdForPath(fieldPath) : undefined;
+    const resolvedValidationState =
+        validationState ?? (error ? 'invalid' : 'neutral');
 
     return (
         <FieldSet
             className={cn(
                 'block max-w-full min-w-0 gap-4 rounded-md border bg-muted/30 p-4 shadow-xs dark:border-border/70 dark:bg-muted/20',
+                ogcValidationContainerClassName(resolvedValidationState),
                 className,
             )}
             data-field-path={fieldPath}
+            data-invalid={
+                resolvedValidationState === 'invalid' ? true : undefined
+            }
+            data-validation-state={ogcValidationDataState(
+                resolvedValidationState,
+            )}
             tabIndex={fieldPath ? -1 : undefined}
-            aria-invalid={error ? true : undefined}
+            aria-invalid={
+                resolvedValidationState === 'invalid' ? true : undefined
+            }
             aria-describedby={error ? errorId : undefined}
         >
             <FieldLegend className="mb-1 w-fit px-1 text-sm">
@@ -42,7 +60,7 @@ export default function SectionFieldSet({
                         {description}
                     </FieldDescription>
                 ) : null}
-                <InputError id={errorId} message={error} />
+                <OgcFieldError id={errorId} message={error} />
                 {children}
             </div>
         </FieldSet>

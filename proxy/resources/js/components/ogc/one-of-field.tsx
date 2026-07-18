@@ -1,4 +1,9 @@
-import InputError from '@/components/input-error';
+import {
+    OgcFieldError,
+    OgcValidationControl,
+    ogcValidationControlClassName,
+    ogcValidationDataState,
+} from '@/components/ogc/field-validation-feedback';
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
 import SectionFieldSet from '@/components/ogc/section-field-set';
 import { FieldDescription, FieldGroup } from '@/components/ui/field';
@@ -16,8 +21,9 @@ import {
     fieldError,
     oneOfStructuralError,
 } from '@/lib/ogc-form-errors';
-import type { OgcFormErrors } from '@/lib/ogc-form-errors';
+import type { OgcFieldValidationController } from '@/lib/ogc-form-validation';
 import { defaultObjectValue, isOneOfValue } from '@/lib/ogc-form-values';
+import { cn } from '@/lib/utils';
 import type { OgcNormalizedField } from '@/types';
 
 export default function OneOfField({
@@ -25,14 +31,15 @@ export default function OneOfField({
     value,
     onChange,
     path,
-    errors,
+    validation,
 }: {
     field: OgcNormalizedField;
     value: unknown;
     onChange: (value: unknown) => void;
     path: string;
-    errors: OgcFormErrors;
+    validation: OgcFieldValidationController;
 }) {
+    const errors = validation.errors;
     const variants = field.variants ?? [];
     const current = isOneOfValue(value)
         ? value
@@ -41,6 +48,11 @@ export default function OneOfField({
         variants.find((variant) => variant.id === current.variant) ??
         variants[0];
     const structuralError = oneOfStructuralError(errors, path);
+    const structuralState = validation.stateFor(path, structuralError);
+    const variantPath = path + '.variant';
+    const variantError = fieldError(errors, variantPath);
+    const variantErrorId = errorIdForPath(variantPath);
+    const variantState = validation.stateFor(variantPath, variantError);
 
     if (!selected) {
         return null;
@@ -53,50 +65,60 @@ export default function OneOfField({
             className="overflow-hidden"
             fieldPath={path}
             error={structuralError}
+            validationState={structuralState}
         >
-            <Select
-                value={current.variant}
-                onValueChange={(variant) => {
-                    const selectedVariant = variants.find(
-                        (item) => item.id === variant,
-                    );
-
-                    onChange({
-                        variant,
-                        value: selectedVariant
-                            ? defaultObjectValue(selectedVariant.fields)
-                            : {},
-                    });
-                }}
+            <OgcValidationControl
+                state={variantState}
+                validLabel={validation.validLabel}
+                hasBuiltInEndIcon
             >
-                <SelectTrigger
-                    className="w-full max-w-full min-w-0"
-                    data-field-path={path + '.variant'}
-                    aria-invalid={
-                        fieldError(errors, path + '.variant') ? true : undefined
-                    }
-                    aria-describedby={
-                        fieldError(errors, path + '.variant')
-                            ? errorIdForPath(path + '.variant')
-                            : undefined
-                    }
+                <Select
+                    value={current.variant}
+                    onValueChange={(variant) => {
+                        const selectedVariant = variants.find(
+                            (item) => item.id === variant,
+                        );
+
+                        validation.resetPathPrefix(path + '.value');
+                        validation.fieldChanged(variantPath);
+                        onChange({
+                            variant,
+                            value: selectedVariant
+                                ? defaultObjectValue(selectedVariant.fields)
+                                : {},
+                        });
+                    }}
                 >
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectGroup>
-                        {variants.map((variant) => (
-                            <SelectItem key={variant.id} value={variant.id}>
-                                {variant.label}
-                            </SelectItem>
-                        ))}
-                    </SelectGroup>
-                </SelectContent>
-            </Select>
-            <InputError
-                id={errorIdForPath(path + '.variant')}
-                message={fieldError(errors, path + '.variant')}
-            />
+                    <SelectTrigger
+                        className={cn(
+                            'w-full max-w-full min-w-0',
+                            ogcValidationControlClassName(variantState, true),
+                        )}
+                        data-field-path={variantPath}
+                        data-validation-state={ogcValidationDataState(
+                            variantState,
+                        )}
+                        aria-invalid={
+                            variantState === 'invalid' ? true : undefined
+                        }
+                        aria-describedby={
+                            variantError ? variantErrorId : undefined
+                        }
+                    >
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectGroup>
+                            {variants.map((variant) => (
+                                <SelectItem key={variant.id} value={variant.id}>
+                                    {variant.label}
+                                </SelectItem>
+                            ))}
+                        </SelectGroup>
+                    </SelectContent>
+                </Select>
+            </OgcValidationControl>
+            <OgcFieldError id={variantErrorId} message={variantError} />
             {selected.description ? (
                 <FieldDescription className="break-words">
                     {selected.description}
@@ -116,7 +138,7 @@ export default function OneOfField({
                             })
                         }
                         path={path + '.value.' + key}
-                        errors={errors}
+                        validation={validation}
                     />
                 ))}
             </FieldGroup>
