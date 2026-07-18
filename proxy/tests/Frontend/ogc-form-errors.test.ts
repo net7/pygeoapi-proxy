@@ -83,6 +83,39 @@ describe('OGC form errors', () => {
         expect(focus).toHaveBeenCalledWith({ preventScroll: true });
     });
 
+    test('prefers the natively invalid control when a path has multiple controls', () => {
+        const selectFocus = mock(() => undefined);
+        const inputFocus = mock(() => undefined);
+        const inputScroll = mock(() => undefined);
+        const referenceSelect = {
+            dataset: { fieldPath: 'inputs.reference' },
+            matches: () => false,
+            scrollIntoView: mock(() => undefined),
+            focus: selectFocus,
+        } as unknown as HTMLElement;
+        const invalidUrlInput = {
+            dataset: { fieldPath: 'inputs.reference' },
+            matches: (selector: string) => selector === ':invalid',
+            scrollIntoView: inputScroll,
+            focus: inputFocus,
+        } as unknown as HTMLElement;
+        const form = {
+            querySelectorAll: () => [referenceSelect, invalidUrlInput],
+        } as unknown as HTMLFormElement;
+
+        expect(
+            focusFirstInvalidField(form, {
+                'inputs.reference': 'Inserisci un URL valido.',
+            }),
+        ).toBe(true);
+        expect(inputScroll).toHaveBeenCalledWith({
+            behavior: 'smooth',
+            block: 'center',
+        });
+        expect(inputFocus).toHaveBeenCalledWith({ preventScroll: true });
+        expect(selectFocus).not.toHaveBeenCalled();
+    });
+
     test('surfaces only exact one of container and value wrapper errors', () => {
         const path = 'inputs.swinput.data';
 

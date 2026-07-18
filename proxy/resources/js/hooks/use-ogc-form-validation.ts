@@ -13,6 +13,7 @@ import {
     ogcValidationReducer,
     pathMatchesPrefix,
     renderedFieldPaths,
+    tracksClientValidationState,
 } from '@/lib/ogc-form-validation';
 import type {
     OgcConstraintControl,
@@ -87,7 +88,7 @@ export function useOgcFormValidation({
                 clearServerErrors(path);
             }
 
-            if (!fieldError(lifecycle.clientErrors, path)) {
+            if (!tracksClientValidationState(lifecycle, path)) {
                 return;
             }
 
@@ -119,7 +120,7 @@ export function useOgcFormValidation({
             clearServerErrors,
             constraintMessage,
             formRef,
-            lifecycle.clientErrors,
+            lifecycle,
             serverErrors,
         ],
     );
@@ -170,9 +171,12 @@ export function useOgcFormValidation({
     const valuesReplaced = useCallback(
         (prefix: string): void => {
             clearServerErrorsForPrefix(prefix);
-            const paths = Object.keys(lifecycle.clientErrors).filter((path) =>
-                pathMatchesPrefix(path, prefix),
-            );
+            const paths = [
+                ...new Set([
+                    ...Object.keys(lifecycle.clientErrors),
+                    ...lifecycle.correctedPaths,
+                ]),
+            ].filter((path) => pathMatchesPrefix(path, prefix));
 
             window.requestAnimationFrame(() => {
                 for (const path of paths) {
@@ -180,7 +184,12 @@ export function useOgcFormValidation({
                 }
             });
         },
-        [clearServerErrorsForPrefix, fieldChanged, lifecycle.clientErrors],
+        [
+            clearServerErrorsForPrefix,
+            fieldChanged,
+            lifecycle.clientErrors,
+            lifecycle.correctedPaths,
+        ],
     );
 
     const stateFor = useCallback(

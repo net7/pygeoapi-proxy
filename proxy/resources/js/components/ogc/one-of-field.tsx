@@ -53,6 +53,12 @@ export default function OneOfField({
     const variantError = fieldError(errors, variantPath);
     const variantErrorId = errorIdForPath(variantPath);
     const variantState = validation.stateFor(variantPath, variantError);
+    const sectionState =
+        structuralState === 'invalid' || variantState === 'invalid'
+            ? 'invalid'
+            : structuralState === 'corrected' || variantState === 'corrected'
+              ? 'corrected'
+              : 'neutral';
 
     if (!selected) {
         return null;
@@ -65,7 +71,7 @@ export default function OneOfField({
             className="overflow-hidden"
             fieldPath={path}
             error={structuralError}
-            validationState={structuralState}
+            validationState={sectionState}
         >
             <OgcValidationControl
                 state={variantState}

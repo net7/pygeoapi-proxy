@@ -35,6 +35,7 @@ describe('OGC validation wiring', () => {
 
         expect(hook).toContain('clearServerErrors(path)');
         expect(hook).toContain('lifecycle.clientErrors');
+        expect(hook).toContain('tracksClientValidationState');
         expect(hook).toContain("type: 'field-corrected'");
         expect(hook).toContain('collectFormConstraintErrors');
         expect(hook).toContain('requestAnimationFrame');
@@ -73,6 +74,8 @@ describe('OGC validation wiring', () => {
         expect(table).toMatch(/resetPathPrefix\(\s*path,?\s*\)/);
         expect(objects).toMatch(/resetPathPrefix\(\s*path,?\s*\)/);
         expect(dataInput).toMatch(/resetPathPrefix\(\s*path,?\s*\)/);
+        expect(dataInput).toContain('validationState={state}');
+        expect(oneOf).toContain('validationState={sectionState}');
     });
 
     test('renders corrected icons and data state on scalar, enum, and table controls', () => {

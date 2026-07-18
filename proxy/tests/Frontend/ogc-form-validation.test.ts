@@ -8,6 +8,7 @@ import {
     ogcConstraintMessage,
     ogcFieldValidationState,
     ogcValidationReducer,
+    tracksClientValidationState,
 } from '../../resources/js/lib/ogc-form-validation';
 import type { OgcConstraintControl } from '../../resources/js/lib/ogc-form-validation';
 
@@ -188,6 +189,24 @@ describe('OGC form validation', () => {
                 invalid.correctedPaths,
             ),
         ).toBe('invalid');
+    });
+
+    test('keeps revalidating a corrected field on later edits', () => {
+        expect(
+            tracksClientValidationState(
+                {
+                    clientErrors: {},
+                    correctedPaths: new Set(['inputs.value']),
+                },
+                'inputs.value',
+            ),
+        ).toBe(true);
+        expect(
+            tracksClientValidationState(
+                initialOgcValidationLifecycle,
+                'inputs.untouched',
+            ),
+        ).toBe(false);
     });
 
     test('prefix reset removes reindexed and unmounted state only', () => {

@@ -65,9 +65,11 @@ export function focusFirstInvalidField(
             .filter((value): value is string => Boolean(value)),
         errors,
     );
-    const target = controls.find(
+    const matchingControls = controls.filter(
         (control) => control.dataset.fieldPath === path,
     );
+    const target =
+        matchingControls.find(isNativelyInvalidControl) ?? matchingControls[0];
 
     if (!target) {
         return false;
@@ -82,4 +84,12 @@ export function focusFirstInvalidField(
     });
 
     return true;
+}
+
+function isNativelyInvalidControl(control: HTMLElement): boolean {
+    try {
+        return control.matches(':invalid');
+    } catch {
+        return false;
+    }
 }

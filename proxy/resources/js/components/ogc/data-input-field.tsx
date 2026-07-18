@@ -112,6 +112,7 @@ export default function DataInputField({
         <SectionFieldSet
             label={fieldDisplayLabel(field)}
             description={field.description}
+            validationState={state}
         >
             <ToggleGroup
                 type="single"

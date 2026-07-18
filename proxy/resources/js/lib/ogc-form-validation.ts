@@ -258,6 +258,16 @@ export function ogcFieldValidationState(
     return correctedPaths.has(path) ? 'corrected' : 'neutral';
 }
 
+export function tracksClientValidationState(
+    lifecycle: OgcValidationLifecycle,
+    path: string,
+): boolean {
+    return (
+        Boolean(fieldError(lifecycle.clientErrors, path)) ||
+        lifecycle.correctedPaths.has(path)
+    );
+}
+
 export function pathMatchesPrefix(path: string, prefix: string): boolean {
     return path === prefix || path.startsWith(prefix + '.');
 }
