@@ -50,7 +50,7 @@ compose_prefix="compose --env-file $environment_file -f compose.yaml -f compose.
 
 for expected_command in \
     "$compose_prefix config --quiet" \
-    "$compose_prefix build --pull" \
+    "$compose_prefix build --pull laravel pygeoapi" \
     "$compose_prefix stop -t 45 horizon scheduler reverb" \
     "$compose_prefix up -d --no-build --wait --wait-timeout 90 laravel" \
     "$compose_prefix up -d --no-build --remove-orphans --wait --wait-timeout 90" \

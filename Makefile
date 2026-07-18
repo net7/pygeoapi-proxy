@@ -73,7 +73,7 @@ build: env
 	$(COMPOSE) build --pull
 
 deploy-build: require-env
-	BUILDKIT_PROGRESS=$(DEPLOY_BUILD_PROGRESS) $(COMPOSE) build --pull
+	BUILDKIT_PROGRESS=$(DEPLOY_BUILD_PROGRESS) $(COMPOSE) build --pull laravel pygeoapi
 
 pull: env
 	$(COMPOSE) pull
