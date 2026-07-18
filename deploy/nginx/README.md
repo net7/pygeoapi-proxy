@@ -54,7 +54,12 @@ sudo cp \
 sudo certbot --nginx -d proxygeoapi.netseven.work --redirect
 sudo nginx -t
 sudo systemctl reload nginx
-curl --fail --head https://proxygeoapi.netseven.work
+PUBLIC_STATUS=$(curl --silent --show-error --output /dev/null \
+  --write-out '%{http_code}' https://proxygeoapi.netseven.work)
+case "$PUBLIC_STATUS" in
+  200|401) printf 'HTTPS reachable: %s\n' "$PUBLIC_STATUS" ;;
+  *) printf 'Unexpected HTTPS status: %s\n' "$PUBLIC_STATUS" >&2; exit 1 ;;
+esac
 ```
 
 Certbot modifies the installed copy under `/etc/nginx/conf.d`; the repository
@@ -65,14 +70,28 @@ generated TLS directives.
 ## 4. Verify routing
 
 ```bash
-curl --fail --silent --show-error https://proxygeoapi.netseven.work/up >/dev/null
-curl --silent --output /dev/null --write-out '%{http_code}\n' \
-  https://proxygeoapi.netseven.work/app/invalid
+bash <<'BASH'
+set -Eeuo pipefail
+read -r -s -p 'Staging Basic Auth (user:password): ' STAGING_BASIC_AUTH
+printf '\n'
+curl --fail --silent --show-error --user "$STAGING_BASIC_AUTH" \
+  https://proxygeoapi.netseven.work/up > /dev/null
+REVERB_STATUS=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+  --user "$STAGING_BASIC_AUTH" \
+  https://proxygeoapi.netseven.work/app/invalid)
+unset STAGING_BASIC_AUTH
+printf 'Application health: OK\nReverb probe: %s\n' "$REVERB_STATUS"
+case "$REVERB_STATUS" in
+  000|502) exit 1 ;;
+esac
+BASH
 ```
 
-The first command must exit `0`. The second command may return an application
-error for the invalid Reverb key, but it must not return `000` or `502`; either
-value indicates that Nginx cannot reach Reverb on `127.0.0.1:7071`.
+The application health check must exit `0`. The Reverb probe may return an
+application error for the invalid key, but it must not return `000` or `502`;
+either value indicates that Nginx cannot reach Reverb on `127.0.0.1:7071`.
+Enter `user:password` only at the hidden prompt; never place staging Basic Auth
+credentials in this repository or in shell history.
 
 Public endpoints after Certbot:
 
