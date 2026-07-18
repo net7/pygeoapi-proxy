@@ -5,8 +5,13 @@ COMPOSE_FILES := -f compose.yaml -f compose.$(ENV).yaml
 COMPOSE := docker compose --env-file $(ENV_FILE) $(COMPOSE_FILES)
 SERVICE ?=
 CMD ?=
+DEPLOY_WAIT_TIMEOUT ?= 180
+DEPLOY_STOP_TIMEOUT ?= 60
+DEPLOY_BUILD_PROGRESS ?= plain
+LOG_FOLLOW ?= -f
+LOG_TAIL ?= 100
 
-.PHONY: help develop staging production env config build pull up start stop down restart ps logs shell artisan migrate fresh seed test pint composer bun-install bun-build optimize clear horizon-status pygeoapi-validate destroy
+.PHONY: help develop staging production env require-env config config-check build deploy-build pull up start deploy-up stop down restart ps deploy-status logs shell artisan migrate fresh seed test pint composer bun-install bun-build optimize clear horizon-status pygeoapi-validate destroy
 
 help:
 	@printf '%s\n' 'Usage: make [develop|staging|production] <target>'
@@ -21,14 +26,18 @@ help:
 	@printf '%s\n' 'Targets:'
 	@printf '%s\n' '  env               Create .env.<env> from .env.<env>.example if missing'
 	@printf '%s\n' '  config            Render merged Docker Compose configuration'
+	@printf '%s\n' '  config-check      Validate Compose without printing resolved values'
 	@printf '%s\n' '  build             Build images with latest base image pulls'
+	@printf '%s\n' '  deploy-build      Build deployment images with plain progress logs'
 	@printf '%s\n' '  pull              Pull service images'
 	@printf '%s\n' '  up                Build and start the stack in background'
 	@printf '%s\n' '  start             Start the stack without rebuilding'
+	@printf '%s\n' '  deploy-up         Update staging services in migration-safe order'
 	@printf '%s\n' '  stop              Stop running containers'
 	@printf '%s\n' '  down              Stop and remove containers/network'
 	@printf '%s\n' '  restart           Restart the stack'
 	@printf '%s\n' '  ps                Show container status'
+	@printf '%s\n' '  deploy-status     Show final deployment service status'
 	@printf '%s\n' '  logs              Follow logs, optionally SERVICE=name'
 	@printf '%s\n' '  shell             Open a shell in the Laravel container'
 	@printf '%s\n' '  artisan           Run php artisan CMD="..."'
@@ -51,11 +60,20 @@ develop staging production:
 env:
 	@if [ ! -f "$(ENV_FILE)" ]; then cp "$(ENV_FILE).example" "$(ENV_FILE)"; printf 'Created %s\n' "$(ENV_FILE)"; else printf 'Using %s\n' "$(ENV_FILE)"; fi
 
+require-env:
+	@if [ ! -f "$(ENV_FILE)" ]; then printf 'Missing required environment file: %s\n' "$(ENV_FILE)" >&2; exit 1; fi
+
 config: env
 	$(COMPOSE) config
 
+config-check: require-env
+	$(COMPOSE) config --quiet
+
 build: env
 	$(COMPOSE) build --pull
+
+deploy-build: require-env
+	BUILDKIT_PROGRESS=$(DEPLOY_BUILD_PROGRESS) $(COMPOSE) build --pull
 
 pull: env
 	$(COMPOSE) pull
@@ -65,6 +83,11 @@ up: env
 
 start: env
 	$(COMPOSE) up -d
+
+deploy-up: require-env
+	$(COMPOSE) stop -t $(DEPLOY_STOP_TIMEOUT) horizon scheduler reverb
+	$(COMPOSE) up -d --no-build --wait --wait-timeout $(DEPLOY_WAIT_TIMEOUT) laravel
+	$(COMPOSE) up -d --no-build --remove-orphans --wait --wait-timeout $(DEPLOY_WAIT_TIMEOUT)
 
 stop: env
 	$(COMPOSE) stop
@@ -78,8 +101,11 @@ restart: env
 ps: env
 	$(COMPOSE) ps
 
+deploy-status: require-env
+	$(COMPOSE) ps
+
 logs: env
-	$(COMPOSE) logs -f --tail=100 $(SERVICE)
+	$(COMPOSE) logs $(LOG_FOLLOW) --tail=$(LOG_TAIL) $(SERVICE)
 
 shell: env
 	$(COMPOSE) exec laravel sh
