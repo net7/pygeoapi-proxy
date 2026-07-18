@@ -28,6 +28,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import { markJobsIndexStale } from '@/lib/job-list-refresh';
 import { fieldError } from '@/lib/ogc-form-errors';
 import type { OgcFormErrors } from '@/lib/ogc-form-errors';
+import { ogcConstraintMessage } from '@/lib/ogc-form-validation';
 import {
     exampleInputsToFormValues,
     initialInputValues,
@@ -87,6 +88,7 @@ export default function DynamicProcessForm({
         formRef,
         serverErrors: fieldErrors,
         clearServerErrors: clearErrors as (...paths: string[]) => void,
+        constraintMessage: (control) => ogcConstraintMessage(control, t),
         validLabel: t('ogc.fieldValid'),
     });
     const nameError = fieldError(validation.errors, 'name');

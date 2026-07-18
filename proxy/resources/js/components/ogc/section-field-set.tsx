@@ -51,7 +51,13 @@ export default function SectionFieldSet({
             }
             aria-describedby={error ? errorId : undefined}
         >
-            <FieldLegend className="mb-1 w-fit px-1 text-sm">
+            <FieldLegend
+                className={cn(
+                    'mb-1 w-fit px-1 text-sm',
+                    resolvedValidationState === 'invalid' &&
+                        'text-destructive-emphasis',
+                )}
+            >
                 {label}
             </FieldLegend>
             <div className="flex min-w-0 flex-col gap-4">

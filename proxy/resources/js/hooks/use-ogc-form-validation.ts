@@ -16,6 +16,7 @@ import {
 } from '@/lib/ogc-form-validation';
 import type {
     OgcConstraintControl,
+    OgcConstraintMessageResolver,
     OgcFieldValidationController,
     OgcFieldValidationState,
 } from '@/lib/ogc-form-validation';
@@ -24,6 +25,7 @@ type UseOgcFormValidationOptions = {
     formRef: RefObject<HTMLFormElement | null>;
     serverErrors: OgcFormErrors;
     clearServerErrors: (...paths: string[]) => void;
+    constraintMessage: OgcConstraintMessageResolver;
     validLabel: string;
 };
 
@@ -37,6 +39,7 @@ export function useOgcFormValidation({
     formRef,
     serverErrors,
     clearServerErrors,
+    constraintMessage,
     validLabel,
 }: UseOgcFormValidationOptions): UseOgcFormValidationResult {
     const [lifecycle, dispatch] = useReducer(
@@ -107,12 +110,18 @@ export function useOgcFormValidation({
                 type: 'field-invalid',
                 path,
                 message:
-                    control.validationMessage ||
+                    constraintMessage(control) ||
                     lifecycle.clientErrors[path] ||
                     '',
             });
         },
-        [clearServerErrors, formRef, lifecycle.clientErrors, serverErrors],
+        [
+            clearServerErrors,
+            constraintMessage,
+            formRef,
+            lifecycle.clientErrors,
+            serverErrors,
+        ],
     );
 
     const resetPathPrefix = useCallback(
@@ -138,7 +147,10 @@ export function useOgcFormValidation({
     );
 
     const validateForm = useCallback((): boolean => {
-        const nextClientErrors = collectFormConstraintErrors(formRef.current);
+        const nextClientErrors = collectFormConstraintErrors(
+            formRef.current,
+            constraintMessage,
+        );
 
         dispatch({
             type: 'submitted',
@@ -153,7 +165,7 @@ export function useOgcFormValidation({
         focusErrors(mergeOgcFormErrors(nextClientErrors, serverErrors));
 
         return false;
-    }, [focusErrors, formRef, serverErrors]);
+    }, [constraintMessage, focusErrors, formRef, serverErrors]);
 
     const valuesReplaced = useCallback(
         (prefix: string): void => {

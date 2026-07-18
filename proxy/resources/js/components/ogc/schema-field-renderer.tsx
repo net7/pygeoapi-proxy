@@ -6,6 +6,7 @@ import {
     OgcValidationControl,
     ogcValidationControlClassName,
     ogcValidationDataState,
+    ogcValidationFieldClassName,
 } from '@/components/ogc/field-validation-feedback';
 import OneOfField from '@/components/ogc/one-of-field';
 import SectionFieldSet from '@/components/ogc/section-field-set';
@@ -134,7 +135,7 @@ export default function SchemaFieldRenderer({
     if (field.kind === 'enum') {
         return (
             <Field
-                className="min-w-0"
+                className={cn('min-w-0', ogcValidationFieldClassName(state))}
                 data-invalid={state === 'invalid' ? true : undefined}
             >
                 <FieldLabel>{fieldDisplayLabel(field)}</FieldLabel>
@@ -192,7 +193,7 @@ export default function SchemaFieldRenderer({
 
     return (
         <Field
-            className="min-w-0"
+            className={cn('min-w-0', ogcValidationFieldClassName(state))}
             data-invalid={state === 'invalid' ? true : undefined}
         >
             <FieldLabel>{fieldDisplayLabel(field)}</FieldLabel>

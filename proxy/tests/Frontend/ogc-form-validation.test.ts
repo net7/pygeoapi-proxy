@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 
+import { translate } from '../../resources/js/lib/i18n/translation';
 import {
     collectConstraintErrors,
     initialOgcValidationLifecycle,
     mergeOgcFormErrors,
+    ogcConstraintMessage,
     ogcFieldValidationState,
     ogcValidationReducer,
 } from '../../resources/js/lib/ogc-form-validation';
@@ -58,6 +60,41 @@ describe('OGC form validation', () => {
 
         expect(errors).toEqual({
             'inputs.reference': 'Enter a URL.',
+        });
+    });
+
+    test('uses the app language instead of the browser validation language', () => {
+        const errors = collectConstraintErrors(
+            [
+                control('inputs.required', {
+                    validationMessage: 'Please fill out this field.',
+                    validity: { valueMissing: true },
+                    checkValidity: () => false,
+                }),
+                control('inputs.url', {
+                    validationMessage: 'Please enter a URL.',
+                    validity: { typeMismatch: true },
+                    getAttribute: (name) => (name === 'type' ? 'url' : null),
+                    checkValidity: () => false,
+                }),
+                control('inputs.minimum', {
+                    validationMessage:
+                        'Value must be greater than or equal to 5.',
+                    validity: { rangeUnderflow: true },
+                    getAttribute: (name) => (name === 'min' ? '5' : null),
+                    checkValidity: () => false,
+                }),
+            ],
+            (currentControl) =>
+                ogcConstraintMessage(currentControl, (key, values) =>
+                    translate('it', key, values),
+                ),
+        );
+
+        expect(errors).toEqual({
+            'inputs.required': 'Compila questo campo.',
+            'inputs.url': 'Inserisci un URL valido.',
+            'inputs.minimum': 'Il valore deve essere maggiore o uguale a 5.',
         });
     });
 

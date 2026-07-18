@@ -6,6 +6,7 @@ import {
     ogcValidationContainerClassName,
     ogcValidationControlClassName,
     ogcValidationDataState,
+    ogcValidationFieldClassName,
 } from '@/components/ogc/field-validation-feedback';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -212,7 +213,11 @@ function OutputSelectionRow({
                 <div className="min-w-0">
                     <Label
                         htmlFor={controlId}
-                        className="cursor-pointer break-words"
+                        className={cn(
+                            'cursor-pointer break-words',
+                            outputState === 'invalid' &&
+                                'text-destructive-emphasis',
+                        )}
                     >
                         {output.title}
                     </Label>
@@ -229,7 +234,13 @@ function OutputSelectionRow({
             </div>
 
             {output.formats.length > 1 ? (
-                <Field className="min-w-0 sm:w-72">
+                <Field
+                    className={cn(
+                        'min-w-0 sm:w-72',
+                        ogcValidationFieldClassName(formatState),
+                    )}
+                    data-invalid={formatState === 'invalid' ? true : undefined}
+                >
                     <FieldLabel htmlFor={formatControlId}>
                         {t('ogc.outputFormat')}
                     </FieldLabel>

@@ -19,7 +19,7 @@ export function OgcFieldError({
     return (
         <FieldError
             id={id}
-            className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive-foreground shadow-xs [&>svg]:mt-0.5 [&>svg]:size-4 [&>svg]:shrink-0"
+            className="flex items-start gap-2 rounded-md border border-destructive-emphasis bg-destructive/10 px-3 py-2 text-destructive-emphasis shadow-xs [&>svg]:mt-0.5 [&>svg]:size-4 [&>svg]:shrink-0"
         >
             <CircleAlertIcon aria-hidden="true" />
             <span className="min-w-0 break-words">{message}</span>
@@ -63,7 +63,7 @@ export function ogcValidationControlClassName(
 ): string {
     return cn(
         state === 'invalid' &&
-            'border-destructive ring-[3px] ring-destructive/20 focus-visible:border-destructive focus-visible:ring-destructive/30',
+            'border-destructive-emphasis ring-[3px] ring-destructive-emphasis/80 focus-visible:border-destructive-emphasis focus-visible:ring-destructive-emphasis/90 aria-invalid:border-destructive-emphasis aria-invalid:ring-destructive-emphasis/80 dark:aria-invalid:ring-destructive-emphasis/80',
         state === 'corrected' && [
             'border-success ring-[3px] ring-success/20 focus-visible:border-success focus-visible:ring-success/30',
             hasBuiltInEndIcon ? 'pr-14' : 'pr-10',
@@ -76,8 +76,16 @@ export function ogcValidationContainerClassName(
 ): string {
     return cn(
         state === 'invalid' &&
-            'border-destructive ring-[3px] ring-destructive/20',
+            'border-destructive-emphasis ring-[3px] ring-destructive-emphasis/80',
         state === 'corrected' && 'border-success ring-[3px] ring-success/20',
+    );
+}
+
+export function ogcValidationFieldClassName(
+    state: OgcFieldValidationState,
+): string {
+    return cn(
+        state === 'invalid' && 'data-[invalid=true]:text-destructive-emphasis',
     );
 }
 

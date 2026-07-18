@@ -1,3 +1,4 @@
+import type { TranslationKey, TranslationValues } from '@/lib/i18n/translation';
 import { fieldError } from '@/lib/ogc-form-errors';
 import type { OgcFormErrors } from '@/lib/ogc-form-errors';
 
@@ -9,9 +10,33 @@ export type OgcConstraintControl = {
     hidden: boolean;
     willValidate: boolean;
     validationMessage: string;
+    validity?: Partial<
+        Pick<
+            ValidityState,
+            | 'badInput'
+            | 'customError'
+            | 'patternMismatch'
+            | 'rangeOverflow'
+            | 'rangeUnderflow'
+            | 'stepMismatch'
+            | 'tooLong'
+            | 'tooShort'
+            | 'typeMismatch'
+            | 'valueMissing'
+        >
+    >;
     getAttribute: (name: string) => string | null;
     checkValidity: () => boolean;
 };
+
+export type OgcConstraintMessageResolver = (
+    control: OgcConstraintControl,
+) => string;
+
+type OgcConstraintTranslator = (
+    key: TranslationKey,
+    values?: TranslationValues,
+) => string;
 
 export type OgcValidationLifecycle = {
     clientErrors: OgcFormErrors;
@@ -42,8 +67,77 @@ export const initialOgcValidationLifecycle: OgcValidationLifecycle = {
     correctedPaths: new Set<string>(),
 };
 
+export function ogcConstraintMessage(
+    control: OgcConstraintControl,
+    translate: OgcConstraintTranslator,
+): string {
+    const validity = control.validity ?? {};
+
+    if (validity.valueMissing) {
+        return translate('ogc.validationRequired');
+    }
+
+    if (validity.typeMismatch) {
+        return control.getAttribute('type') === 'url'
+            ? translate('ogc.validationInvalidUrl')
+            : translate('ogc.validationInvalid');
+    }
+
+    if (validity.patternMismatch) {
+        return translate('ogc.validationPattern');
+    }
+
+    if (validity.tooShort) {
+        return translatedConstraintWithAttribute(
+            control,
+            translate,
+            'minlength',
+            'ogc.validationMinimumLength',
+            'count',
+        );
+    }
+
+    if (validity.tooLong) {
+        return translatedConstraintWithAttribute(
+            control,
+            translate,
+            'maxlength',
+            'ogc.validationMaximumLength',
+            'count',
+        );
+    }
+
+    if (validity.rangeUnderflow) {
+        return translatedConstraintWithAttribute(
+            control,
+            translate,
+            'min',
+            'ogc.validationMinimum',
+            'value',
+        );
+    }
+
+    if (validity.rangeOverflow) {
+        return translatedConstraintWithAttribute(
+            control,
+            translate,
+            'max',
+            'ogc.validationMaximum',
+            'value',
+        );
+    }
+
+    if (validity.badInput) {
+        return translate('ogc.validationInvalidNumber');
+    }
+
+    return translate('ogc.validationInvalid');
+}
+
 export function collectConstraintErrors(
     controls: Iterable<OgcConstraintControl>,
+    resolveMessage: OgcConstraintMessageResolver = (control) =>
+        control.validationMessage,
 ): OgcFormErrors {
     const errors: OgcFormErrors = {};
 
@@ -53,13 +147,16 @@ export function collectConstraintErrors(
         if (
             !path ||
             !isActiveConstraintControl(control) ||
-            control.checkValidity() ||
-            !control.validationMessage
+            control.checkValidity()
         ) {
             continue;
         }
 
-        errors[path] ??= control.validationMessage;
+        const message = resolveMessage(control);
+
+        if (message) {
+            errors[path] ??= message;
+        }
     }
 
     return errors;
@@ -67,6 +164,7 @@ export function collectConstraintErrors(
 
 export function collectFormConstraintErrors(
     form: HTMLFormElement | null,
+    resolveMessage?: OgcConstraintMessageResolver,
 ): OgcFormErrors {
     if (!form) {
         return {};
@@ -76,6 +174,7 @@ export function collectFormConstraintErrors(
         Array.from(form.querySelectorAll('[data-field-path]')).filter(
             isConstraintControl,
         ),
+        resolveMessage,
     );
 }
 
@@ -229,4 +328,18 @@ function isActiveConstraintControl(control: OgcConstraintControl): boolean {
         control.willValidate &&
         control.getAttribute('aria-hidden') !== 'true'
     );
+}
+
+function translatedConstraintWithAttribute(
+    control: OgcConstraintControl,
+    translate: OgcConstraintTranslator,
+    attribute: string,
+    key: TranslationKey,
+    parameter: string,
+): string {
+    const value = control.getAttribute(attribute);
+
+    return value === null
+        ? translate('ogc.validationInvalid')
+        : translate(key, { [parameter]: value });
 }

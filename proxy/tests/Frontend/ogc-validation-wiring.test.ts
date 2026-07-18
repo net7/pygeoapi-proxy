@@ -85,6 +85,7 @@ describe('OGC validation wiring', () => {
 
         expect(renderer).toContain('OgcValidationControl');
         expect(renderer).toContain('data-validation-state');
+        expect(renderer).toContain('ogcValidationFieldClassName');
         expect(table).toContain('OgcValidationControl');
         expect(table).toContain('ogcValidationControlClassName');
     });

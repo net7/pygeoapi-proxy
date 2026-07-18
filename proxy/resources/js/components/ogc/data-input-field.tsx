@@ -5,6 +5,7 @@ import {
     OgcValidationControl,
     ogcValidationControlClassName,
     ogcValidationDataState,
+    ogcValidationFieldClassName,
 } from '@/components/ogc/field-validation-feedback';
 import SectionFieldSet from '@/components/ogc/section-field-set';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
@@ -130,7 +131,10 @@ export default function DataInputField({
             <FieldGroup className="min-w-0">
                 {mode === 'inline' ? (
                     <Field
-                        className="min-w-0"
+                        className={cn(
+                            'min-w-0',
+                            ogcValidationFieldClassName(state),
+                        )}
                         data-invalid={state === 'invalid' ? true : undefined}
                     >
                         <FieldLabel>{t('ogc.value')}</FieldLabel>
@@ -167,7 +171,10 @@ export default function DataInputField({
 
                 {mode === 'reference' ? (
                     <Field
-                        className="min-w-0"
+                        className={cn(
+                            'min-w-0',
+                            ogcValidationFieldClassName(state),
+                        )}
                         data-invalid={state === 'invalid' ? true : undefined}
                     >
                         <FieldLabel>{t('ogc.referenceUrl')}</FieldLabel>
@@ -252,7 +259,10 @@ export default function DataInputField({
 
                 {mode === 'upload' ? (
                     <Field
-                        className="min-w-0"
+                        className={cn(
+                            'min-w-0',
+                            ogcValidationFieldClassName(state),
+                        )}
                         data-invalid={state === 'invalid' ? true : undefined}
                     >
                         <FieldLabel>{t('ogc.file')}</FieldLabel>
