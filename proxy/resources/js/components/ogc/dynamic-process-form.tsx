@@ -2,8 +2,13 @@ import { useForm } from '@inertiajs/react';
 import { AlertCircleIcon, PlayIcon, WandSparklesIcon } from 'lucide-react';
 import { useRef } from 'react';
 
-import InputError from '@/components/input-error';
 import { JobNoteEditor } from '@/components/ogc/job-note-editor';
+import {
+    OgcFieldError,
+    OgcValidationControl,
+    ogcValidationControlClassName,
+    ogcValidationDataState,
+} from '@/components/ogc/field-validation-feedback';
 import ProcessOutputSelector from '@/components/ogc/process-output-selector';
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -15,11 +20,13 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
+import { useOgcFormValidation } from '@/hooks/use-ogc-form-validation';
 import { useTranslation } from '@/hooks/use-translation';
 import { markJobsIndexStale } from '@/lib/job-list-refresh';
-import { focusFirstInvalidField } from '@/lib/ogc-form-errors';
+import { fieldError } from '@/lib/ogc-form-errors';
 import type { OgcFormErrors } from '@/lib/ogc-form-errors';
 import {
     exampleInputsToFormValues,
@@ -32,6 +39,7 @@ import {
     initialOutputSelections,
 } from '@/lib/process-output-selection';
 import type { ProcessOutputSelections } from '@/lib/process-output-selection';
+import { cn } from '@/lib/utils';
 import { store } from '@/routes/processes/jobs';
 import type { OgcFormSchema, OgcOutputFormat, TiptapDocument } from '@/types';
 
@@ -60,15 +68,30 @@ export default function DynamicProcessForm({
 }) {
     const { t } = useTranslation();
     const formRef = useRef<HTMLFormElement>(null);
-    const { data, setData, submit, transform, processing, errors } =
-        useForm<FormData>({
-            name: '',
-            inputs: initialInputValues(schema.fields),
-            note: null,
-            outputs: initialOutputSelections(schema.outputs),
-        });
+    const {
+        data,
+        setData,
+        submit,
+        transform,
+        processing,
+        errors,
+        clearErrors,
+    } = useForm<FormData>({
+        name: '',
+        inputs: initialInputValues(schema.fields),
+        note: null,
+        outputs: initialOutputSelections(schema.outputs),
+    });
     const outputSelections = data.outputs;
     const fieldErrors = errors as OgcFormErrors;
+    const validation = useOgcFormValidation({
+        formRef,
+        serverErrors: fieldErrors,
+        clearServerErrors: clearErrors as (...paths: string[]) => void,
+        validLabel: t('ogc.fieldValid'),
+    });
+    const nameError = fieldError(validation.errors, 'name');
+    const nameState = validation.stateFor('name', nameError);
 
     function setInput(name: string, value: unknown) {
         setData('inputs', {
@@ -94,14 +117,22 @@ export default function DynamicProcessForm({
                 ),
             },
         }));
+        validation.valuesReplaced('inputs');
     }
 
     return (
         <form
             ref={formRef}
             className="flex max-w-full min-w-0 flex-col gap-4"
+            noValidate
+            onChangeCapture={validation.handleFormChange}
             onSubmit={(event) => {
                 event.preventDefault();
+
+                if (!validation.validateForm()) {
+                    return;
+                }
+
                 transform((formData) => ({
                     ...formData,
                     inputs: normalizeInputs(schema.fields, formData.inputs),
@@ -110,17 +141,12 @@ export default function DynamicProcessForm({
                 submit(store(schema.id), {
                     onSuccess: () => markJobsIndexStale(),
                     onError: (nextErrors) => {
-                        window.requestAnimationFrame(() => {
-                            focusFirstInvalidField(
-                                formRef.current,
-                                nextErrors as OgcFormErrors,
-                            );
-                        });
+                        validation.focusErrors(nextErrors as OgcFormErrors);
                     },
                 });
             }}
         >
-            {Object.keys(errors).length > 0 ? (
+            {Object.keys(validation.errors).length > 0 ? (
                 <Alert variant="destructive">
                     <AlertCircleIcon />
                     <AlertTitle>{t('ogc.checkProcessData')}</AlertTitle>
@@ -138,22 +164,42 @@ export default function DynamicProcessForm({
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex min-w-0 flex-col gap-2">
-                    <Input
-                        id="process-name"
-                        value={data.name}
-                        onChange={(event) =>
-                            setData('name', event.target.value)
+                    <Field
+                        className="min-w-0 gap-2"
+                        data-invalid={
+                            nameState === 'invalid' ? true : undefined
                         }
-                        placeholder={t('jobs.processNamePlaceholder')}
-                        maxLength={255}
-                        aria-label={t('jobs.processName')}
-                        aria-invalid={Boolean(errors.name)}
-                        data-field-path="name"
-                        aria-describedby={
-                            errors.name ? 'error-name' : undefined
-                        }
-                    />
-                    <InputError id="error-name" message={errors.name} />
+                    >
+                        <OgcValidationControl
+                            state={nameState}
+                            validLabel={validation.validLabel}
+                        >
+                            <Input
+                                id="process-name"
+                                value={data.name}
+                                onChange={(event) =>
+                                    setData('name', event.target.value)
+                                }
+                                placeholder={t('jobs.processNamePlaceholder')}
+                                maxLength={255}
+                                aria-label={t('jobs.processName')}
+                                aria-invalid={
+                                    nameState === 'invalid' ? true : undefined
+                                }
+                                data-field-path="name"
+                                data-validation-state={ogcValidationDataState(
+                                    nameState,
+                                )}
+                                aria-describedby={
+                                    nameError ? 'error-name' : undefined
+                                }
+                                className={cn(
+                                    ogcValidationControlClassName(nameState),
+                                )}
+                            />
+                        </OgcValidationControl>
+                        <OgcFieldError id="error-name" message={nameError} />
+                    </Field>
                 </CardContent>
             </Card>
 
@@ -181,7 +227,7 @@ export default function DynamicProcessForm({
                             value={data.inputs[name]}
                             onChange={(value) => setInput(name, value)}
                             path={'inputs.' + name}
-                            errors={fieldErrors}
+                            errors={validation.errors}
                             topLevel
                         />
                     ))}
@@ -192,9 +238,7 @@ export default function DynamicProcessForm({
                 outputs={schema.outputs}
                 selections={outputSelections}
                 onChange={(outputs) => setData('outputs', outputs)}
-                error={firstOutputError(
-                    errors as Record<string, string | undefined>,
-                )}
+                error={firstOutputError(validation.errors)}
             />
 
             <Card className="min-w-0">

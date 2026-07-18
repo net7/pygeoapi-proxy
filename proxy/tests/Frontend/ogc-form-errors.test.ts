@@ -119,7 +119,7 @@ describe('OGC form errors', () => {
         );
 
         expect(form).toContain('onError:');
-        expect(form).toContain('focusFirstInvalidField');
+        expect(form).toContain('validation.focusErrors');
         expect(renderer).toContain('data-field-path');
         expect(renderer).toContain('aria-invalid');
         expect(table).toContain('required={column.required}');
