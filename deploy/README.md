@@ -274,13 +274,23 @@ make -C "$DEPLOY_PATH" --no-print-directory ENV=staging deploy-status
 curl --fail --silent --show-error http://127.0.0.1:7070/up > /dev/null
 printf 'DEPLOYED_SHA=%s\n' "$HEAD_SHA"
 BASH
+bash <<'BASH'
+set -Eeuo pipefail
+read -r -s -p 'Staging Basic Auth (user:password): ' STAGING_BASIC_AUTH
+printf '\n'
 curl --fail --silent --show-error \
+  --user "$STAGING_BASIC_AUTH" \
   https://proxygeoapi.netseven.work/up > /dev/null
+unset STAGING_BASIC_AUTH
+printf 'PUBLIC_HEALTH=OK\n'
+BASH
 ```
 
 Lo SHA `DEPLOYED_SHA` deve coincidere con `merge_commit_sha` della Merge
 Request e con lo SHA della pipeline push di `staging`. `deploy.sh` deve essere
-tracciato e il working tree deve essere pulito.
+tracciato e il working tree deve essere pulito. La Basic Auth viene richiesta
+senza eco e resta soltanto nella shell temporanea: non inserirla nel repository,
+nel comando o nelle variabili GitLab del deploy.
 
 ## Deploy automatico
 

@@ -14,7 +14,7 @@ fi
 
 require_text() {
     text=$1
-    if ! grep -F "$text" "$runbook" > /dev/null; then
+    if ! grep -F -- "$text" "$runbook" > /dev/null; then
         printf 'Missing bootstrap runbook contract: %s\n' "$text" >&2
         exit 1
     fi
@@ -29,3 +29,6 @@ require_text '?? deploy.sh'
 require_text 'git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy.sh'
 require_text '## Verifica del primo deploy automatico'
 require_text 'https://proxygeoapi.netseven.work/up'
+require_text "read -r -s -p 'Staging Basic Auth (user:password): ' STAGING_BASIC_AUTH"
+require_text '--user "$STAGING_BASIC_AUTH"'
+require_text 'unset STAGING_BASIC_AUTH'
