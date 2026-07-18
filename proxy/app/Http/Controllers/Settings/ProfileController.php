@@ -106,6 +106,10 @@ class ProfileController extends Controller
             $user->forceFill(['avatar_path' => null])->save();
         }
 
+        $user->socialAccounts()
+            ->whereNotNull('avatar')
+            ->update(['avatar' => null]);
+
         Inertia::flash('toast', [
             'type' => 'success',
             'title' => __('Avatar removed'),
