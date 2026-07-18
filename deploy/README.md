@@ -129,23 +129,158 @@ il punto 5.
 Il gate è globale: le Merge Request verso `main` restano intenzionalmente
 bloccate finché non verrà aggiunta la pipeline di produzione.
 
-## Primo deploy sorvegliato
+## Bootstrap del primo deploy automatico
 
-Eseguire come utente `gitlab_deploy`, dopo che il codice è stato mergiato in
-`staging`:
+Questa procedura si usa una sola volta, perché l'attuale `staging` non contiene
+ancora `deploy.sh`. Prima di eseguirla, creare la Merge Request da `develop` a
+`staging`, attendere il successo dei quality gate e non effettuare ancora il
+merge.
+
+Come amministratore del server, installare il bootstrap dall'esatto head
+autenticato di `develop`:
 
 ```bash
-cd /docker-data/configuration/pygeoapi-proxy
-git fetch origin --tags --prune
-git checkout -f --detach "$(git rev-parse origin/staging)"
-./deploy.sh staging "$(git rev-parse origin/staging)"
-curl --fail --silent --show-error http://127.0.0.1:7070/up > /dev/null
-make staging deploy-status
+sudo -u gitlab_deploy -H bash <<'BASH'
+set -Eeuo pipefail
+
+DEPLOY_PATH='/docker-data/configuration/pygeoapi-proxy'
+TEMPORARY_SCRIPT=
+BOOTSTRAP_INSTALLED=0
+
+cleanup() {
+    if [ -n "$TEMPORARY_SCRIPT" ]; then
+        rm -f -- "$TEMPORARY_SCRIPT"
+    fi
+    if [ "$BOOTSTRAP_INSTALLED" -eq 1 ] &&
+        ! git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy.sh \
+            > /dev/null 2>&1
+    then
+        rm -f -- "$DEPLOY_PATH/deploy.sh"
+    fi
+}
+
+trap cleanup EXIT
+
+git -C "$DEPLOY_PATH" fetch origin --tags --prune
+SOURCE_SHA=$(git -C "$DEPLOY_PATH" rev-parse 'origin/develop^{commit}')
+STAGING_SHA=$(git -C "$DEPLOY_PATH" rev-parse 'origin/staging^{commit}')
+CURRENT_SHA=$(git -C "$DEPLOY_PATH" rev-parse 'HEAD^{commit}')
+
+[ "$CURRENT_SHA" = "$STAGING_SHA" ] || {
+    printf 'HEAD non coincide con origin/staging\n' >&2
+    exit 1
+}
+
+[ -z "$(git -C "$DEPLOY_PATH" status --porcelain --untracked-files=no)" ] || {
+    printf 'Il checkout contiene modifiche a file versionati\n' >&2
+    exit 1
+}
+
+git -C "$DEPLOY_PATH" check-ignore -q .env.staging
+[ "$(stat -c '%a %U:%G' "$DEPLOY_PATH/.env.staging")" = \
+    '600 gitlab_deploy:gitlab_deploy' ] || {
+    printf '.env.staging ha owner o permessi inattesi\n' >&2
+    exit 1
+}
+
+if git -C "$DEPLOY_PATH" cat-file -e 'HEAD:deploy.sh' 2>/dev/null; then
+    printf 'deploy.sh è già tracciato nel commit corrente\n' >&2
+    exit 1
+fi
+
+[ ! -e "$DEPLOY_PATH/deploy.sh" ] || {
+    printf 'deploy.sh esiste già nel working tree\n' >&2
+    exit 1
+}
+
+TEMPORARY_SCRIPT=$(mktemp "$DEPLOY_PATH/.deploy.sh.bootstrap.XXXXXX")
+git -C "$DEPLOY_PATH" show "${SOURCE_SHA}:deploy.sh" > "$TEMPORARY_SCRIPT"
+
+EXPECTED_BLOB=$(git -C "$DEPLOY_PATH" rev-parse "${SOURCE_SHA}:deploy.sh")
+ACTUAL_BLOB=$(git -C "$DEPLOY_PATH" hash-object "$TEMPORARY_SCRIPT")
+[ "$ACTUAL_BLOB" = "$EXPECTED_BLOB" ] || {
+    printf 'Blob bootstrap inatteso\n' >&2
+    exit 1
+}
+
+bash -n "$TEMPORARY_SCRIPT"
+chmod 0755 "$TEMPORARY_SCRIPT"
+mv -- "$TEMPORARY_SCRIPT" "$DEPLOY_PATH/deploy.sh"
+TEMPORARY_SCRIPT=
+BOOTSTRAP_INSTALLED=1
+
+VISIBLE_STATUS=$(
+    git -C "$DEPLOY_PATH" status --porcelain --untracked-files=all
+)
+[ "$VISIBLE_STATUS" = '?? deploy.sh' ] || {
+    printf 'Stato working tree inatteso:\n%s\n' "$VISIBLE_STATUS" >&2
+    exit 1
+}
+
+[ "$(git -C "$DEPLOY_PATH" hash-object "$DEPLOY_PATH/deploy.sh")" = \
+    "$EXPECTED_BLOB" ]
+stat -c '%a %U:%G %n' "$DEPLOY_PATH/deploy.sh"
+printf 'BOOTSTRAP_SOURCE_SHA=%s\n' "$SOURCE_SHA"
+printf 'BOOTSTRAP_BLOB_SHA=%s\n' "$EXPECTED_BLOB"
+printf '%s\n' "$VISIBLE_STATUS"
+
+trap - EXIT
+BASH
 ```
 
-Il deploy deve concludersi mostrando SHA precedente, SHA distribuito, durata e
-URL. `deploy-status` deve riportare Laravel e Reverb healthy e gli altri servizi
-healthy o running; Nginx deve continuare a servire l'URL pubblico.
+`BOOTSTRAP_SOURCE_SHA` deve coincidere con lo SHA sorgente della MR e con
+`refs/heads/develop` immediatamente prima del merge. Se non coincide, non fare
+merge. Rimuovere soltanto il bootstrap non tracciato con:
+
+```bash
+sudo -u gitlab_deploy -H bash <<'BASH'
+set -Eeuo pipefail
+DEPLOY_PATH='/docker-data/configuration/pygeoapi-proxy'
+if git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy.sh \
+    > /dev/null 2>&1
+then
+    printf 'deploy.sh è tracciato: rimozione rifiutata\n' >&2
+    exit 1
+fi
+[ "$(git -C "$DEPLOY_PATH" status --porcelain --untracked-files=all)" = \
+    '?? deploy.sh' ]
+rm -- "$DEPLOY_PATH/deploy.sh"
+BASH
+```
+
+Il bootstrap non cambia HEAD, non avvia container e non legge il contenuto di
+`.env.staging`. Il primo job automatico lo sostituisce con il file tracciato del
+merge commit tramite `git checkout -f`.
+
+## Verifica del primo deploy automatico
+
+Dopo che la pipeline push di `staging` e il job `deploy:staging` sono terminati
+con successo, eseguire:
+
+```bash
+sudo -u gitlab_deploy -H bash <<'BASH'
+set -Eeuo pipefail
+DEPLOY_PATH='/docker-data/configuration/pygeoapi-proxy'
+git -C "$DEPLOY_PATH" fetch origin --tags --prune
+HEAD_SHA=$(git -C "$DEPLOY_PATH" rev-parse 'HEAD^{commit}')
+STAGING_SHA=$(git -C "$DEPLOY_PATH" rev-parse 'origin/staging^{commit}')
+[ "$HEAD_SHA" = "$STAGING_SHA" ]
+git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy.sh > /dev/null
+[ -z "$(git -C "$DEPLOY_PATH" status --porcelain --untracked-files=all)" ]
+git -C "$DEPLOY_PATH" check-ignore -q .env.staging
+[ "$(stat -c '%a %U:%G' "$DEPLOY_PATH/.env.staging")" = \
+    '600 gitlab_deploy:gitlab_deploy' ]
+make -C "$DEPLOY_PATH" --no-print-directory ENV=staging deploy-status
+curl --fail --silent --show-error http://127.0.0.1:7070/up > /dev/null
+printf 'DEPLOYED_SHA=%s\n' "$HEAD_SHA"
+BASH
+curl --fail --silent --show-error \
+  https://proxygeoapi.netseven.work/up > /dev/null
+```
+
+Lo SHA `DEPLOYED_SHA` deve coincidere con `merge_commit_sha` della Merge
+Request e con lo SHA della pipeline push di `staging`. `deploy.sh` deve essere
+tracciato e il working tree deve essere pulito.
 
 ## Deploy automatico
 

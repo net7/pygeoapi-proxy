@@ -9,6 +9,7 @@ for test_script in \
     makefile-deploy.sh \
     compose-staging-automation.sh \
     deploy-script.sh \
+    bootstrap-runbook.sh \
     gitlab-ci.sh
 do
     printf '\n==> %s\n' "$test_script"
