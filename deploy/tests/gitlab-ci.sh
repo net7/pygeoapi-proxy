@@ -52,10 +52,10 @@ require_php_text() {
     fi
 }
 
-require_php_text 'install-php-extensions gd'
-require_php_text 'name: serversideup/php:8.5-cli'
-require_php_text 'user: root'
+require_php_text 'install-php-extensions gd pcntl'
+require_php_text 'image: composer:2'
 require_php_text 'COMPOSER_ALLOW_SUPERUSER: "1"'
+require_php_text 'install -m 600 /dev/null .env'
 require_php_text 'php artisan wayfinder:generate --with-form --no-interaction'
 require_php_text 'artifacts:'
 require_php_text 'proxy/resources/js/actions'
@@ -73,6 +73,12 @@ require_frontend_text() {
 require_frontend_text 'needs:'
 require_frontend_text 'job: php-check'
 require_frontend_text 'artifacts: true'
+require_frontend_text 'image: oven/bun:1.3.14-alpine'
+
+if printf '%s\n' "$frontend_job" | grep -F 'docker:' > /dev/null; then
+    printf 'frontend-check must remain compatible with GitLab Runner 15.4\n' >&2
+    exit 1
+fi
 
 if grep -E 'deploy:prod|CI_COMMIT_TAG|environment:[[:space:]]*production' "$ci_file" > /dev/null; then
     printf 'Production behavior must not exist in .gitlab-ci.yml\n' >&2

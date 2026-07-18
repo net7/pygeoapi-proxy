@@ -20,10 +20,7 @@ deployment-check:
 
 php-check:
   stage: test
-  image:
-    name: serversideup/php:8.5-cli
-    docker:
-      user: root
+  image: composer:2
   variables:
     APP_ENV: testing
     APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
@@ -31,14 +28,20 @@ php-check:
     COMPOSER_CACHE_DIR: $CI_PROJECT_DIR/.cache/composer
   before_script:
     - |
-      printf '\n==> PHP extension: gd\n'
-      if ! install-php-extensions gd > /tmp/install-php-extensions.log 2>&1; then
+      printf '\n==> PHP extensions: gd, pcntl\n'
+      if ! install-php-extensions gd pcntl > /tmp/install-php-extensions.log 2>&1; then
         cat /tmp/install-php-extensions.log
         exit 1
       fi
-      php -m | grep -Fx gd > /dev/null
-      printf 'gd: OK\n'
+      for extension in gd pcntl; do
+        php -m | grep -Fx "$extension" > /dev/null
+        printf '%s: OK\n' "$extension"
+      done
     - cd proxy
+    - |
+      printf '\n==> Laravel test environment\n'
+      install -m 600 /dev/null .env
+      printf '.env: initialized empty with mode 0600\n'
     - composer install --no-interaction --prefer-dist --no-progress
     - php artisan wayfinder:generate --with-form --no-interaction
   script:
@@ -52,10 +55,7 @@ php-check:
 
 frontend-check:
   stage: test
-  image:
-    name: oven/bun:1.3.14-alpine
-    docker:
-      user: root
+  image: oven/bun:1.3.14-alpine
   needs:
     - job: php-check
       artifacts: true
