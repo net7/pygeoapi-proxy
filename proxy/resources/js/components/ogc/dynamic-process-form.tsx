@@ -35,7 +35,6 @@ import {
 } from '@/lib/ogc-form-values';
 import {
     buildRequestedOutputs,
-    firstOutputError,
     initialOutputSelections,
 } from '@/lib/process-output-selection';
 import type { ProcessOutputSelections } from '@/lib/process-output-selection';
@@ -237,7 +236,7 @@ export default function DynamicProcessForm({
                 outputs={schema.outputs}
                 selections={outputSelections}
                 onChange={(outputs) => setData('outputs', outputs)}
-                error={firstOutputError(validation.errors)}
+                validation={validation}
             />
 
             <Card className="min-w-0">

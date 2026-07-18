@@ -300,4 +300,12 @@ describe('process output selection', () => {
             }),
         ).toBe('This output format is not available.');
     });
+
+    test('keeps an unknown output error available for structural fallback', () => {
+        expect(
+            firstOutputError({
+                'outputs.unknown': 'This output is not available.',
+            }),
+        ).toBe('This output is not available.');
+    });
 });

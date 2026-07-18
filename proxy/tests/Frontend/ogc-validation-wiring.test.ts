@@ -88,4 +88,17 @@ describe('OGC validation wiring', () => {
         expect(table).toContain('OgcValidationControl');
         expect(table).toContain('ogcValidationControlClassName');
     });
+
+    test('maps output and format errors to focusable dotted paths', () => {
+        const outputs = source(
+            'resources/js/components/ogc/process-output-selector.tsx',
+        );
+
+        expect(outputs).toContain("const outputPath = 'outputs.' + outputId");
+        expect(outputs).toContain("const formatPath = outputPath + '.format'");
+        expect(outputs).toContain('data-field-path={outputPath}');
+        expect(outputs).toContain('data-field-path={formatPath}');
+        expect(outputs).toContain('OgcFieldError');
+        expect(outputs).not.toContain('@/components/input-error');
+    });
 });
