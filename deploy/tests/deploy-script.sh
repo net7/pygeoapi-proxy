@@ -16,6 +16,14 @@ git clone -q "$origin_repository" "$seed_repository"
 git -C "$seed_repository" config user.name 'Deploy Test'
 git -C "$seed_repository" config user.email 'deploy-test@example.test'
 
+printf '.env.staging\n' > "$seed_repository/.gitignore"
+printf 'staging baseline without deploy script\n' > "$seed_repository/README.md"
+git -C "$seed_repository" add .gitignore README.md
+git -C "$seed_repository" commit -q -m 'add staging bootstrap baseline'
+git -C "$seed_repository" branch -M staging
+git -C "$seed_repository" push -q -u origin staging
+bootstrap_sha=$(git -C "$seed_repository" rev-parse HEAD)
+
 if [ ! -f "$repository_root/deploy.sh" ]; then
     printf 'deploy.sh does not exist\n' >&2
     exit 1
@@ -27,8 +35,7 @@ cp "$repository_root/deploy.sh" "$seed_repository/deploy.sh"
 chmod +x "$seed_repository/deploy.sh"
 git -C "$seed_repository" add deploy.sh
 git -C "$seed_repository" commit -q -m 'add deploy script'
-git -C "$seed_repository" branch -M staging
-git -C "$seed_repository" push -q -u origin staging
+git -C "$seed_repository" push -q origin staging
 previous_sha=$(git -C "$seed_repository" rev-parse HEAD)
 
 printf 'target release\n' > "$seed_repository/release.txt"
@@ -132,6 +139,31 @@ grep -F 'curl --fail --silent --show-error --max-time 30 http://127.0.0.1:7070/u
     "$successful_commands" > /dev/null
 grep -F '[6/6] Verify staging' "$temporary_directory/success.log" > /dev/null
 grep -F "Deployed SHA: $target_sha" "$temporary_directory/success.log" > /dev/null
+
+bootstrap_checkout="$temporary_directory/bootstrap"
+bootstrap_commands="$temporary_directory/bootstrap-commands.log"
+git clone -q "$origin_repository" "$bootstrap_checkout"
+git -C "$bootstrap_checkout" checkout -q --detach "$bootstrap_sha"
+cp "$repository_root/deploy.sh" "$bootstrap_checkout/deploy.sh"
+chmod +x "$bootstrap_checkout/deploy.sh"
+: > "$bootstrap_checkout/.env.staging"
+
+[ "$(git -C "$bootstrap_checkout" status --porcelain --untracked-files=all)" = \
+    '?? deploy.sh' ]
+
+PATH="$fake_bin:$PATH" \
+DEPLOY_COMMAND_LOG="$bootstrap_commands" \
+DEPLOY_LOCK_FILE="$temporary_directory/bootstrap.lock" \
+    "$bootstrap_checkout/deploy.sh" staging "$target_sha" \
+    > "$temporary_directory/bootstrap.log" 2>&1
+
+[ "$(git -C "$bootstrap_checkout" rev-parse HEAD)" = "$target_sha" ]
+git -C "$bootstrap_checkout" ls-files --error-unmatch deploy.sh > /dev/null
+[ -z "$(git -C "$bootstrap_checkout" status --porcelain --untracked-files=all)" ]
+grep -F "Previous SHA: $bootstrap_sha" \
+    "$temporary_directory/bootstrap.log" > /dev/null
+grep -F "Deployed SHA: $target_sha" \
+    "$temporary_directory/bootstrap.log" > /dev/null
 
 failing_checkout="$temporary_directory/failure"
 failing_commands="$temporary_directory/failure-commands.log"
