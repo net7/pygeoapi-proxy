@@ -1,4 +1,5 @@
 import { MoveHorizontal, Plus, Trash2 } from 'lucide-react';
+import type { CSSProperties } from 'react';
 
 import {
     OgcFieldError,
@@ -43,6 +44,7 @@ export default function ArrayTableField({
     const errors = validation.errors;
     const rows = Array.isArray(value) ? value : [];
     const columns = field.columns ?? [];
+    const tableMinWidth = `${Math.max(columns.length * 8 + 3.5, 32)}rem`;
     const showScrollHint = columns.length > 3;
     const scrollHintId = errorIdForPath(path) + '-scroll-hint';
     const label = fieldDisplayLabel(field);
@@ -88,7 +90,7 @@ export default function ArrayTableField({
                 </p>
             ) : null}
             <Table
-                className="block w-full md:table"
+                className="block w-full md:table md:min-w-[var(--array-table-min-width)] md:table-fixed"
                 containerClassName="overflow-visible focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 md:overflow-x-auto md:rounded-md md:border md:bg-background"
                 containerProps={{
                     role: showScrollHint ? 'region' : undefined,
@@ -97,6 +99,9 @@ export default function ArrayTableField({
                         ? scrollHintId
                         : undefined,
                     tabIndex: showScrollHint ? 0 : undefined,
+                    style: {
+                        '--array-table-min-width': tableMinWidth,
+                    } as CSSProperties,
                 }}
             >
                 <TableHeader className="hidden md:table-header-group">
@@ -104,7 +109,7 @@ export default function ArrayTableField({
                         {columns.map((column) => (
                             <TableHead
                                 key={column.key}
-                                className="min-w-40 break-words whitespace-normal"
+                                className="w-32 break-words whitespace-normal"
                             >
                                 {column.label}
                             </TableHead>
@@ -143,7 +148,7 @@ export default function ArrayTableField({
                                         <TableCell
                                             key={column.key}
                                             className={cn(
-                                                'block min-w-0 border-b p-3 align-top whitespace-normal md:table-cell md:min-w-40 md:border-b-0 md:p-2',
+                                                'block min-w-0 border-b p-3 align-top whitespace-normal md:table-cell md:border-b-0 md:p-2',
                                                 columnIndex ===
                                                     columns.length - 1 &&
                                                     'border-b-0',

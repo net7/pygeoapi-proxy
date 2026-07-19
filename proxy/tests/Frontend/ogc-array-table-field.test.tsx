@@ -97,9 +97,13 @@ describe('ArrayTableField', () => {
         expect(html).toContain('hidden md:table-header-group');
         expect(html).toContain('flex flex-col');
         expect(html).toContain('md:table-row');
+        expect(html).toContain('md:table-fixed');
+        expect(html).toContain('md:min-w-[var(--array-table-min-width)]');
+        expect(html).toContain('style="--array-table-min-width:35.5rem"');
         expect(html).toContain('align-top');
         expect(html).toContain('md:table-cell');
-        expect(html).toContain('md:min-w-40');
+        expect(html).toContain('w-32');
+        expect(html).not.toContain('md:min-w-40');
         expect(html).toContain('break-words');
         expect(html).toContain('order-first');
         expect(html).toContain('md:sticky');
