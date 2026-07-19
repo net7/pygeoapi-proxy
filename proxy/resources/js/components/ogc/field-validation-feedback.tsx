@@ -72,7 +72,7 @@ export function ogcValidationControlClassName(
 ): string {
     return cn(
         state === 'invalid' &&
-            'border-destructive-emphasis ring-[3px] ring-destructive-emphasis/80 focus-visible:border-destructive-emphasis focus-visible:ring-destructive-emphasis/90 aria-invalid:border-destructive-emphasis aria-invalid:ring-destructive-emphasis/80 dark:aria-invalid:ring-destructive-emphasis/80',
+            'border-destructive-emphasis ring-[3px] ring-destructive-emphasis/20 focus-visible:border-destructive-emphasis focus-visible:ring-destructive-emphasis/30 aria-invalid:border-destructive-emphasis aria-invalid:ring-destructive-emphasis/20 dark:aria-invalid:ring-destructive-emphasis/20',
         state === 'corrected' && [
             'border-success ring-[3px] ring-success/20 focus-visible:border-success focus-visible:ring-success/30',
             hasBuiltInEndIcon ? 'pr-14' : 'pr-10',
@@ -84,8 +84,6 @@ export function ogcValidationContainerClassName(
     state: OgcFieldValidationState,
 ): string {
     return cn(
-        state === 'invalid' &&
-            'border-destructive-emphasis ring-[3px] ring-destructive-emphasis/80',
         state === 'corrected' && 'border-success ring-[3px] ring-success/20',
     );
 }
