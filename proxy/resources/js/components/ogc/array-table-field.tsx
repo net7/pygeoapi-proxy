@@ -19,6 +19,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from '@/hooks/use-translation';
 import { htmlPatternForInput } from '@/lib/html-pattern';
 import { fieldDisplayLabel } from '@/lib/ogc-fields';
@@ -41,15 +42,21 @@ export default function ArrayTableField({
     validation: OgcFieldValidationController;
 }) {
     const { t } = useTranslation();
+    const isMobile = useIsMobile();
     const errors = validation.errors;
     const rows = Array.isArray(value) ? value : [];
     const columns = field.columns ?? [];
     const tableMinWidth = `${Math.max(columns.length * 8 + 3.5, 32)}rem`;
     const showScrollHint = columns.length > 3;
+    const enableDesktopScrollRegion = showScrollHint && !isMobile;
     const scrollHintId = errorIdForPath(path) + '-scroll-hint';
     const label = fieldDisplayLabel(field);
     const structuralError = fieldError(errors, path);
     const structuralState = validation.stateFor(path, structuralError);
+    const isRemoveRowDisabled =
+        field.minItems !== null &&
+        field.minItems !== undefined &&
+        rows.length <= field.minItems;
 
     function updateCell(
         rowIndex: number,
@@ -69,6 +76,11 @@ export default function ArrayTableField({
         onChange(nextRows);
     }
 
+    function removeRow(rowIndex: number) {
+        validation.resetPathPrefix(path);
+        onChange(rows.filter((_, index) => index !== rowIndex));
+    }
+
     return (
         <SectionFieldSet
             label={label}
@@ -77,7 +89,7 @@ export default function ArrayTableField({
             error={structuralError}
             validationState={structuralState}
         >
-            {showScrollHint ? (
+            {enableDesktopScrollRegion ? (
                 <p
                     id={scrollHintId}
                     className="hidden items-center gap-2 text-xs text-muted-foreground md:flex"
@@ -93,12 +105,12 @@ export default function ArrayTableField({
                 className="block w-full md:table md:min-w-[var(--array-table-min-width)] md:table-fixed"
                 containerClassName="overflow-visible focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 md:overflow-x-auto md:rounded-md md:border md:bg-background"
                 containerProps={{
-                    role: showScrollHint ? 'region' : undefined,
-                    'aria-label': showScrollHint ? label : undefined,
-                    'aria-describedby': showScrollHint
+                    role: enableDesktopScrollRegion ? 'region' : undefined,
+                    'aria-label': enableDesktopScrollRegion ? label : undefined,
+                    'aria-describedby': enableDesktopScrollRegion
                         ? scrollHintId
                         : undefined,
-                    tabIndex: showScrollHint ? 0 : undefined,
+                    tabIndex: enableDesktopScrollRegion ? 0 : undefined,
                     style: {
                         '--array-table-min-width': tableMinWidth,
                     } as CSSProperties,
@@ -115,7 +127,7 @@ export default function ArrayTableField({
                             </TableHead>
                         ))}
                         <TableHead
-                            className="sticky right-0 z-20 w-14 min-w-14 border-l bg-muted/95 text-center shadow-sm"
+                            className="sticky right-0 z-20 w-14 min-w-14 border-l bg-muted text-center shadow-sm"
                             aria-label={t('ogc.removeRow')}
                         />
                     </TableRow>
@@ -129,6 +141,26 @@ export default function ArrayTableField({
                                 key={rowIndex}
                                 className="flex flex-col overflow-hidden rounded-md border bg-card shadow-xs md:table-row md:overflow-visible md:rounded-none md:border-x-0 md:border-t-0 md:bg-background md:shadow-none"
                             >
+                                <TableCell
+                                    data-row-action-layout="mobile"
+                                    className="flex items-center justify-between border-b bg-muted/40 p-3 align-top md:hidden"
+                                >
+                                    <span className="text-sm font-semibold">
+                                        {t('ogc.arrayTableRow', {
+                                            row: rowIndex + 1,
+                                        })}
+                                    </span>
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="icon"
+                                        aria-label={t('ogc.removeRow')}
+                                        disabled={isRemoveRowDisabled}
+                                        onClick={() => removeRow(rowIndex)}
+                                    >
+                                        <Trash2 data-icon="icon" />
+                                    </Button>
+                                </TableCell>
                                 {columns.map((column, columnIndex) => {
                                     const cellPath =
                                         path +
@@ -262,32 +294,18 @@ export default function ArrayTableField({
                                         </TableCell>
                                     );
                                 })}
-                                <TableCell className="order-first flex items-center justify-between border-b bg-muted/40 p-3 align-top md:sticky md:right-0 md:z-10 md:order-none md:table-cell md:w-14 md:min-w-14 md:border-b-0 md:border-l md:bg-background/95 md:p-2 md:text-center md:shadow-sm">
-                                    <span className="text-sm font-semibold md:sr-only">
-                                        {t('ogc.arrayTableRow', {
-                                            row: rowIndex + 1,
-                                        })}
-                                    </span>
+                                <TableCell
+                                    data-row-action-layout="desktop"
+                                    className="hidden align-top md:sticky md:right-0 md:z-10 md:table-cell md:w-14 md:min-w-14 md:border-l md:bg-background md:p-2 md:text-center md:shadow-sm"
+                                >
                                     <Button
                                         type="button"
                                         variant="destructive"
                                         size="icon"
                                         className="md:mx-auto"
                                         aria-label={t('ogc.removeRow')}
-                                        disabled={
-                                            field.minItems !== null &&
-                                            field.minItems !== undefined &&
-                                            rows.length <= field.minItems
-                                        }
-                                        onClick={() => {
-                                            validation.resetPathPrefix(path);
-                                            onChange(
-                                                rows.filter(
-                                                    (_, index) =>
-                                                        index !== rowIndex,
-                                                ),
-                                            );
-                                        }}
+                                        disabled={isRemoveRowDisabled}
+                                        onClick={() => removeRow(rowIndex)}
                                     >
                                         <Trash2 data-icon="icon" />
                                     </Button>

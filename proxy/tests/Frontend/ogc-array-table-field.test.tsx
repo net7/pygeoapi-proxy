@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 
@@ -92,6 +93,18 @@ describe('ArrayTableField', () => {
 
     test('keeps errors aligned and actions available in both layouts', () => {
         const html = renderField();
+        const mobileActionPosition = html.indexOf(
+            'data-row-action-layout="mobile"',
+        );
+        const firstControlPosition = html.indexOf(
+            'data-field-path="inputs.sw.data.0.0"',
+        );
+        const lastControlPosition = html.indexOf(
+            'data-field-path="inputs.sw.data.0.3"',
+        );
+        const desktopActionPosition = html.indexOf(
+            'data-row-action-layout="desktop"',
+        );
 
         expect(html).toContain('block w-full md:table');
         expect(html).toContain('hidden md:table-header-group');
@@ -105,12 +118,54 @@ describe('ArrayTableField', () => {
         expect(html).toContain('w-32');
         expect(html).not.toContain('md:min-w-40');
         expect(html).toContain('break-words');
-        expect(html).toContain('order-first');
+        expect(mobileActionPosition).toBeGreaterThan(-1);
+        expect(mobileActionPosition).toBeLessThan(firstControlPosition);
+        expect(desktopActionPosition).toBeGreaterThan(lastControlPosition);
+        expect(html).not.toContain('order-first');
         expect(html).toContain('md:sticky');
         expect(html).toContain('md:right-0');
         expect(html).toContain('md:sr-only');
+        expect(html).not.toContain('bg-muted/95');
+        expect(html).not.toContain('md:bg-background/95');
         expect(html).toContain('aria-describedby="error-inputs-sw-data-0-1"');
         expect(html).toContain('text-xs');
         expect(html).toContain('w-full md:w-auto');
+    });
+
+    test('limits desktop scroll semantics to non-mobile viewports', () => {
+        const source = readFileSync(
+            'resources/js/components/ogc/array-table-field.tsx',
+            'utf8',
+        );
+
+        expect(source).toContain(
+            "import { useIsMobile } from '@/hooks/use-mobile'",
+        );
+        expect(source).toContain(
+            'const enableDesktopScrollRegion = showScrollHint && !isMobile;',
+        );
+        expect(source).toContain(
+            "role: enableDesktopScrollRegion ? 'region' : undefined",
+        );
+    });
+
+    test('uses the compact width calculation for the fourteen-column schema', () => {
+        const columns = Array.from({ length: 14 }, (_, index) => ({
+            key: `column-${index + 1}`,
+            label: `Column ${index + 1}`,
+            type: 'number' as const,
+            required: true,
+        }));
+        const html = renderToStaticMarkup(
+            <ArrayTableField
+                field={{ ...field, columns }}
+                value={[columns.map(() => '')]}
+                onChange={() => undefined}
+                path="inputs.sw.data"
+                validation={validationController()}
+            />,
+        );
+
+        expect(html).toContain('style="--array-table-min-width:115.5rem"');
     });
 });
