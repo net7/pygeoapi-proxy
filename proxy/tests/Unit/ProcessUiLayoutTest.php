@@ -122,7 +122,8 @@ test('array table fields keep a practical responsive width', function () {
 
     expect($source)
         ->toContain('tableMinWidth')
-        ->toContain('overflow-x-auto rounded-md border')
+        ->toContain('overflow-visible')
+        ->toContain('md:overflow-x-auto md:rounded-md md:border')
         ->not->toContain('min-w-[960px]');
 });
 
