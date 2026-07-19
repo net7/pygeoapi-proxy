@@ -3,6 +3,7 @@ import {
     ArrowLeftIcon,
     CalendarClockIcon,
     ChevronDownIcon,
+    CircleAlertIcon,
     Clock3Icon,
     FileInputIcon,
     ListChecksIcon,
@@ -42,6 +43,7 @@ import type { TranslationKey } from '@/lib/i18n/translation';
 import {
     clampProgress,
     formatJobDate,
+    isJobFailure,
     isJobTerminal,
     jobStatusStyles,
 } from '@/lib/jobs';
@@ -231,6 +233,13 @@ export default function ProcessExecutionShow({
                                 ),
                             )}
                         </div>
+                    ) : isJobFailure(execution.status) ? (
+                        <ProcessFailureNotice
+                            title={t('jobs.failureTitle')}
+                            description={
+                                execution.message ?? t('jobs.noJobMessage')
+                            }
+                        />
                     ) : (
                         <AlertResultsEmpty
                             title={t('jobs.noResultsTitle')}
@@ -385,6 +394,27 @@ function CardTitleWithIcon({
                 title
             )}
         </CardTitle>
+    );
+}
+
+function ProcessFailureNotice({
+    title,
+    description,
+}: {
+    title: string;
+    description: string;
+}) {
+    return (
+        <Alert
+            variant="destructive"
+            className="border-destructive-emphasis bg-destructive/10 text-destructive-emphasis *:data-[slot=alert-description]:text-destructive-emphasis/80"
+        >
+            <CircleAlertIcon aria-hidden="true" />
+            <AlertTitle>{title}</AlertTitle>
+            <AlertDescription className="break-words whitespace-pre-wrap">
+                {description}
+            </AlertDescription>
+        </Alert>
     );
 }
 
