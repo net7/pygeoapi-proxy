@@ -19,6 +19,19 @@ describe('OGC validation wiring', () => {
         expect(form).toContain('validation.errors');
     });
 
+    test('gates the Inertia submit with Ajv errors from the service input schema', () => {
+        const form = source(
+            'resources/js/components/ogc/dynamic-process-form.tsx',
+        );
+        const hook = source('resources/js/hooks/use-ogc-form-validation.ts');
+
+        expect(form).toContain("from '@/lib/ogc-ajv-validation'");
+        expect(form).toContain('schema.inputValidationSchema');
+        expect(form).toContain('collectAdditionalErrors');
+        expect(hook).toContain('collectAdditionalErrors');
+        expect(hook).toContain('mergeOgcFormErrors');
+    });
+
     test('uses an error toast instead of a generic validation alert', () => {
         const form = source(
             'resources/js/components/ogc/dynamic-process-form.tsx',
@@ -93,6 +106,15 @@ describe('OGC validation wiring', () => {
         expect(table).toContain('ogcValidationControlClassName');
     });
 
+    test('keeps fractional integer input for Ajv instead of truncating it', () => {
+        const renderer = source(
+            'resources/js/components/ogc/schema-field-renderer.tsx',
+        );
+
+        expect(renderer).not.toContain('Number.parseInt(raw, 10)');
+        expect(renderer).toContain('? Number(raw)');
+    });
+
     test('maps output and format errors to focusable dotted paths', () => {
         const outputs = source(
             'resources/js/components/ogc/process-output-selector.tsx',
@@ -104,5 +126,19 @@ describe('OGC validation wiring', () => {
         expect(outputs).toContain('data-field-path={formatPath}');
         expect(outputs).toContain('OgcFieldError');
         expect(outputs).not.toContain('@/components/input-error');
+    });
+
+    test('styles the empty output notice as informational feedback', () => {
+        const outputs = source(
+            'resources/js/components/ogc/process-output-selector.tsx',
+        );
+
+        expect(outputs).toContain('border-info-emphasis');
+        expect(outputs).toContain('bg-info/10');
+        expect(outputs).toContain('text-info-emphasis');
+        expect(outputs).toContain(
+            '*:data-[slot=alert-description]:text-info-emphasis/80',
+        );
+        expect(outputs).not.toContain('<Alert variant="destructive">');
     });
 });

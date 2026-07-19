@@ -41,11 +41,11 @@ const field: OgcNormalizedField = {
     ],
 };
 
-function validationController(): OgcFieldValidationController {
-    const errors = {
+function validationController(
+    errors: Record<string, string> = {
         'inputs.sw.data.0.1': 'Compila questo campo.',
-    };
-
+    },
+): OgcFieldValidationController {
     return {
         errors,
         validLabel: 'Campo valido',
@@ -130,6 +130,22 @@ describe('ArrayTableField', () => {
         expect(html).toContain('aria-describedby="error-inputs-sw-data-0-1"');
         expect(html).toContain('text-xs');
         expect(html).toContain('w-full md:w-auto');
+    });
+
+    test('surfaces row-level schema errors in the fieldset', () => {
+        const html = renderToStaticMarkup(
+            <ArrayTableField
+                field={field}
+                value={[['1000', '1200', '0.03', '0.01']]}
+                onChange={() => undefined}
+                path="inputs.sw.data"
+                validation={validationController({
+                    'inputs.sw.data.0': 'Inserisci al massimo 4 elementi.',
+                })}
+            />,
+        );
+
+        expect(html).toContain('Inserisci al massimo 4 elementi.');
     });
 
     test('prevents desktop screen-reader labels from widening the scroll area', () => {

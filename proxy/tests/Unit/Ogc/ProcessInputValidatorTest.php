@@ -201,3 +201,191 @@ test('it rejects blank required array table cells', function () {
 
     expect($errors)->toHaveKey('inputs.sw.data.0.0');
 });
+
+test('it rejects undeclared top level inputs', function () {
+    $errors = app(ProcessInputValidator::class)->errors([
+        'known' => [
+            'kind' => 'scalar',
+            'type' => 'string',
+        ],
+    ], [
+        'known' => 'value',
+        'unknown' => 'value',
+    ]);
+
+    expect($errors)->toHaveKey('inputs.unknown');
+});
+
+test('it rejects values whose json type does not match the schema', function (
+    string $type,
+    mixed $value,
+) {
+    $errors = app(ProcessInputValidator::class)->errors([
+        'value' => [
+            'kind' => 'scalar',
+            'type' => $type,
+            'minOccurs' => 1,
+        ],
+    ], ['value' => $value]);
+
+    expect($errors)->toHaveKey('inputs.value');
+})->with([
+    'numeric string for number' => ['number', '1.25'],
+    'numeric string for integer' => ['integer', '1'],
+    'fractional number for integer' => ['integer', 1.5],
+    'number for string' => ['string', 123],
+]);
+
+test('it accepts json numbers that satisfy numeric schema types', function () {
+    $validator = app(ProcessInputValidator::class);
+
+    expect($validator->errors([
+        'value' => [
+            'kind' => 'scalar',
+            'type' => 'number',
+        ],
+    ], ['value' => 1]))->toBe([])
+        ->and($validator->errors([
+            'value' => [
+                'kind' => 'scalar',
+                'type' => 'integer',
+            ],
+        ], ['value' => 1.0]))->toBe([]);
+});
+
+test('it compares enum numbers using json schema equality', function () {
+    $validator = app(ProcessInputValidator::class);
+    $fields = [
+        'value' => [
+            'kind' => 'enum',
+            'options' => [0],
+        ],
+    ];
+
+    expect($validator->errors($fields, ['value' => 0.0]))->toBe([])
+        ->and($validator->errors($fields, ['value' => false]))
+        ->toHaveKey('inputs.value');
+});
+
+test('it validates explicitly submitted blank optional values', function () {
+    $validator = app(ProcessInputValidator::class);
+    $fields = [
+        'optional_number' => [
+            'kind' => 'scalar',
+            'type' => 'number',
+        ],
+        'optional_pattern' => [
+            'kind' => 'scalar',
+            'type' => 'string',
+            'pattern' => '^value$',
+        ],
+    ];
+
+    expect($validator->errors($fields, [
+        'optional_number' => null,
+        'optional_pattern' => '',
+    ]))
+        ->toHaveKey('inputs.optional_number')
+        ->toHaveKey('inputs.optional_pattern');
+});
+
+test('it distinguishes json arrays from json objects', function () {
+    $validator = app(ProcessInputValidator::class);
+    $objectErrors = $validator->errors([
+        'value' => [
+            'kind' => 'object',
+            'fields' => [],
+        ],
+    ], [
+        'value' => [['unexpected-list-item']],
+    ]);
+    $arrayErrors = $validator->errors([
+        'value' => [
+            'kind' => 'array_object',
+            'fields' => [],
+        ],
+    ], [
+        'value' => ['unexpected' => []],
+    ]);
+
+    expect($objectErrors)->toHaveKey('inputs.value')
+        ->and($arrayErrors)->toHaveKey('inputs.value');
+});
+
+test('it rejects additional object properties only when the schema forbids them', function () {
+    $strictField = [
+        'kind' => 'object',
+        'additionalProperties' => false,
+        'fields' => [
+            'known' => [
+                'kind' => 'scalar',
+                'type' => 'string',
+            ],
+        ],
+    ];
+    $openField = [
+        ...$strictField,
+        'additionalProperties' => null,
+    ];
+    $inputs = [
+        'value' => [
+            'value' => [
+                'known' => 'value',
+                'unknown' => 'value',
+            ],
+        ],
+    ];
+    $validator = app(ProcessInputValidator::class);
+
+    expect($validator->errors(['value' => $strictField], $inputs))
+        ->toHaveKey('inputs.value.value.unknown')
+        ->and($validator->errors(['value' => $openField], $inputs))
+        ->toBe([]);
+});
+
+test('it rejects additional properties in pybox rows', function () {
+    $errors = app(ProcessInputValidator::class)->errors(
+        normalizedOgcFields('process-pybox'),
+        [
+            'multiple_values' => [[
+                'eps0' => 0.01,
+                'rhos' => 1000,
+                'ds' => 0.0001,
+                'unknown' => true,
+            ]],
+        ],
+    );
+
+    expect($errors)->toHaveKey('inputs.multiple_values.0.unknown');
+});
+
+test('it rejects solwcad rows that do not contain exactly fourteen cells', function () {
+    $fields = normalizedOgcFields('process-solwcad');
+    $validator = app(ProcessInputValidator::class);
+
+    $tooShort = $validator->errors($fields, [
+        'sw.data' => [array_fill(0, 13, '1.')],
+    ]);
+    $tooLong = $validator->errors($fields, [
+        'sw.data' => [array_fill(0, 15, '1.')],
+    ]);
+
+    expect($tooShort)->toHaveKey('inputs.sw.data.0')
+        ->and($tooLong)->toHaveKey('inputs.sw.data.0');
+});
+
+test('it requires the sum of pybox particle fractions to be below one', function () {
+    $fields = normalizedOgcFields('process-pybox');
+    $row = ['eps0' => 0.1, 'rhos' => 1000, 'ds' => 0.0001];
+    $validator = app(ProcessInputValidator::class);
+
+    $atLimit = $validator->errors($fields, [
+        'multiple_values' => array_fill(0, 10, $row),
+    ]);
+    $belowLimit = $validator->errors($fields, [
+        'multiple_values' => array_fill(0, 9, $row),
+    ]);
+
+    expect($atLimit)->toHaveKey('inputs.multiple_values')
+        ->and($belowLimit)->not->toHaveKey('inputs.multiple_values');
+});

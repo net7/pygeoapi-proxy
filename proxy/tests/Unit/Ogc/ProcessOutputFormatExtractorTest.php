@@ -24,14 +24,10 @@ test('it extracts direct output format qualifiers', function () {
     ]);
 });
 
-test('it preserves solwcad one of format order and labels', function () {
+test('it preserves the solwcad advertised format and label', function () {
     $schema = ogcFixture('process-solwcad')['outputs']['solwcad_out']['schema'];
 
     expect(app(ProcessOutputFormatExtractor::class)->formats($schema))->toBe([
-        [
-            'label' => 'JSON Array',
-            'mediaType' => 'application/json',
-        ],
         [
             'label' => 'Plain text Array',
             'mediaType' => 'text/plain',

@@ -13,12 +13,18 @@ class ProcessInputValidator
     {
         $errors = [];
 
+        foreach ($inputs as $name => $value) {
+            if (! array_key_exists($name, $fields)) {
+                $errors["inputs.{$name}"] = __('This input is not declared by the process.');
+            }
+        }
+
         foreach ($fields as $name => $field) {
             if (! is_array($field)) {
                 continue;
             }
 
-            $hasValue = array_key_exists($name, $inputs) && ! $this->isBlank($inputs[$name]);
+            $hasValue = array_key_exists($name, $inputs);
             $path = "inputs.{$name}";
 
             if (! $hasValue) {
@@ -79,19 +85,31 @@ class ProcessInputValidator
      */
     private function validateObject(array $field, mixed $value, string $path, array &$errors): void
     {
-        if (! is_array($value)) {
+        if (! is_array($value) || ($value !== [] && array_is_list($value))) {
             $errors[$path] = __('This input must be an object.');
 
             return;
         }
 
-        foreach (($field['fields'] ?? []) as $childName => $childField) {
+        $childFields = is_array($field['fields'] ?? null)
+            ? $field['fields']
+            : [];
+
+        if (($field['additionalProperties'] ?? null) === false) {
+            foreach ($value as $childName => $childValue) {
+                if (! array_key_exists($childName, $childFields)) {
+                    $errors["{$path}.{$childName}"] = __('This property is not allowed.');
+                }
+            }
+        }
+
+        foreach ($childFields as $childName => $childField) {
             if (! is_array($childField)) {
                 continue;
             }
 
             $childPath = "{$path}.{$childName}";
-            $hasValue = array_key_exists($childName, $value) && ! $this->isBlank($value[$childName]);
+            $hasValue = array_key_exists($childName, $value);
 
             if (! $hasValue) {
                 if (($childField['required'] ?? false) === true) {
@@ -171,7 +189,10 @@ class ProcessInputValidator
         }
 
         $this->validateObject(
-            ['fields' => $variant['fields'] ?? []],
+            [
+                'fields' => $variant['fields'] ?? [],
+                'additionalProperties' => $variant['additionalProperties'] ?? null,
+            ],
             $objectValue,
             $objectPath,
             $errors,
@@ -193,7 +214,10 @@ class ProcessInputValidator
 
                 $candidateErrors = [];
                 $this->validateObject(
-                    ['fields' => $variant['fields'] ?? []],
+                    [
+                        'fields' => $variant['fields'] ?? [],
+                        'additionalProperties' => $variant['additionalProperties'] ?? null,
+                    ],
                     $value,
                     'candidate',
                     $candidateErrors,
@@ -214,7 +238,7 @@ class ProcessInputValidator
      */
     private function validateArrayObject(array $field, mixed $value, string $path, array &$errors): void
     {
-        if (! is_array($value)) {
+        if (! is_array($value) || ! array_is_list($value)) {
             $errors[$path] = __('This input must be an array.');
 
             return;
@@ -225,6 +249,8 @@ class ProcessInputValidator
         foreach (array_values($value) as $index => $row) {
             $this->validateObject($field, $row, "{$path}.{$index}", $errors);
         }
+
+        $this->validateItemPropertySum($field, $value, $path, $errors);
     }
 
     /**
@@ -233,7 +259,7 @@ class ProcessInputValidator
      */
     private function validateArrayTable(array $field, mixed $value, string $path, array &$errors): void
     {
-        if (! is_array($value)) {
+        if (! is_array($value) || ! array_is_list($value)) {
             $errors[$path] = __('This input must be an array.');
 
             return;
@@ -242,11 +268,16 @@ class ProcessInputValidator
         $this->validateArrayCount($field, $value, $path, $errors);
 
         foreach (array_values($value) as $rowIndex => $row) {
-            if (! is_array($row)) {
+            if (! is_array($row) || ! array_is_list($row)) {
                 $errors["{$path}.{$rowIndex}"] = __('This row must be an array.');
 
                 continue;
             }
+
+            $this->validateArrayCount([
+                'minItems' => $field['rowMinItems'] ?? null,
+                'maxItems' => $field['rowMaxItems'] ?? null,
+            ], $row, "{$path}.{$rowIndex}", $errors);
 
             foreach (($field['columns'] ?? []) as $columnIndex => $column) {
                 if (! is_array($column)) {
@@ -299,9 +330,20 @@ class ProcessInputValidator
      */
     private function validateEnum(array $field, mixed $value, string $path, array &$errors): void
     {
-        if (! in_array($value, $field['options'] ?? [], true)) {
-            $errors[$path] = __('This input must be one of the available options.');
+        foreach (($field['options'] ?? []) as $option) {
+            if (
+                $value === $option
+                || (
+                    $this->isJsonNumber($value)
+                    && $this->isJsonNumber($option)
+                    && (float) $value === (float) $option
+                )
+            ) {
+                return;
+            }
         }
+
+        $errors[$path] = __('This input must be one of the available options.');
     }
 
     /**
@@ -310,17 +352,39 @@ class ProcessInputValidator
      */
     private function validateScalar(array $field, mixed $value, string $path, array &$errors): void
     {
-        if ($this->isBlank($value)) {
+        $type = $field['type'] ?? null;
+
+        if ($type === 'number' && ! $this->isJsonNumber($value)) {
+            $errors[$path] = __('This input must be a number.');
+
             return;
         }
 
-        if (in_array($field['type'] ?? null, ['number', 'integer'], true)) {
+        if ($type === 'integer' && ! $this->isJsonInteger($value)) {
+            $errors[$path] = __('This input must be an integer.');
+
+            return;
+        }
+
+        if ($type === 'string' && ! is_string($value)) {
+            $errors[$path] = __('This input must be a string.');
+
+            return;
+        }
+
+        if ($type === 'boolean' && ! is_bool($value)) {
+            $errors[$path] = __('This input must be a boolean.');
+
+            return;
+        }
+
+        if (in_array($type, ['number', 'integer'], true)) {
             $this->validateNumber($field, $value, $path, $errors);
         }
 
         $pattern = $field['pattern'] ?? null;
 
-        if (is_string($pattern) && $pattern !== '' && preg_match($this->regex($pattern), (string) $value) !== 1) {
+        if (is_string($value) && is_string($pattern) && $pattern !== '' && preg_match($this->regex($pattern), $value) !== 1) {
             $errors[$path] = __('This input format is invalid.');
         }
     }
@@ -331,12 +395,6 @@ class ProcessInputValidator
      */
     private function validateNumber(array $field, mixed $value, string $path, array &$errors): void
     {
-        if (! is_numeric($value)) {
-            $errors[$path] = __('This input must be a number.');
-
-            return;
-        }
-
         $number = (float) $value;
 
         if (isset($field['minimum']) && $field['minimum'] !== null && $number < (float) $field['minimum']) {
@@ -354,6 +412,62 @@ class ProcessInputValidator
         if (isset($field['exclusiveMaximum']) && $field['exclusiveMaximum'] !== null && $number >= (float) $field['exclusiveMaximum']) {
             $errors[$path] = __('This input must be less than the maximum value.');
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $field
+     * @param  array<int, mixed>  $value
+     * @param  array<string, string>  $errors
+     */
+    private function validateItemPropertySum(array $field, array $value, string $path, array &$errors): void
+    {
+        $constraint = $field['itemPropertySum'] ?? null;
+
+        if (! is_array($constraint)) {
+            return;
+        }
+
+        $property = $constraint['property'] ?? null;
+        $exclusiveMaximum = $constraint['exclusiveMaximum'] ?? null;
+
+        if (! is_string($property) || ! $this->isJsonNumber($exclusiveMaximum)) {
+            return;
+        }
+
+        $sum = 0.0;
+
+        foreach ($value as $item) {
+            if (! is_array($item) || ! array_key_exists($property, $item) || ! $this->isJsonNumber($item[$property])) {
+                return;
+            }
+
+            $sum += (float) $item[$property];
+        }
+
+        $maximum = (float) $exclusiveMaximum;
+        $tolerance = max(1.0, abs($sum), abs($maximum)) * PHP_FLOAT_EPSILON;
+
+        if ($sum >= $maximum - $tolerance) {
+            $errors[$path] ??= __(
+                'The sum of :property must be less than :maximum.',
+                [
+                    'property' => $property,
+                    'maximum' => $exclusiveMaximum,
+                ],
+            );
+        }
+    }
+
+    private function isJsonNumber(mixed $value): bool
+    {
+        return (is_int($value) || is_float($value))
+            && is_finite((float) $value);
+    }
+
+    private function isJsonInteger(mixed $value): bool
+    {
+        return is_int($value)
+            || (is_float($value) && is_finite($value) && floor($value) === $value);
     }
 
     private function isBlank(mixed $value): bool

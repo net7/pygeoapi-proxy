@@ -26,6 +26,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useOgcFormValidation } from '@/hooks/use-ogc-form-validation';
 import { useTranslation } from '@/hooks/use-translation';
 import { markJobsIndexStale } from '@/lib/job-list-refresh';
+import { validateOgcInputs } from '@/lib/ogc-ajv-validation';
 import { fieldError } from '@/lib/ogc-form-errors';
 import type { OgcFormErrors } from '@/lib/ogc-form-errors';
 import { ogcConstraintMessage } from '@/lib/ogc-form-validation';
@@ -89,6 +90,13 @@ export default function DynamicProcessForm({
         serverErrors: fieldErrors,
         clearServerErrors: clearErrors as (...paths: string[]) => void,
         constraintMessage: (control) => ogcConstraintMessage(control, t),
+        collectAdditionalErrors: () =>
+            validateOgcInputs({
+                schema: schema.inputValidationSchema,
+                fields: schema.fields,
+                inputs: data.inputs,
+                translate: t,
+            }),
         validLabel: t('ogc.fieldValid'),
     });
     const nameError = fieldError(validation.errors, 'name');

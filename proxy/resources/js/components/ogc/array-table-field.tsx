@@ -51,7 +51,11 @@ export default function ArrayTableField({
     const enableDesktopScrollRegion = showScrollHint && !isMobile;
     const scrollHintId = errorIdForPath(path) + '-scroll-hint';
     const label = fieldDisplayLabel(field);
-    const structuralError = fieldError(errors, path);
+    const structuralError =
+        fieldError(errors, path) ??
+        rows
+            .map((_, rowIndex) => fieldError(errors, `${path}.${rowIndex}`))
+            .find((error) => error !== undefined);
     const structuralState = validation.stateFor(path, structuralError);
     const isRemoveRowDisabled =
         field.minItems !== null &&

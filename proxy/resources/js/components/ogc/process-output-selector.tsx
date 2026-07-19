@@ -133,7 +133,7 @@ export default function ProcessOutputSelector({
                 </div>
 
                 {!hasSelectedOutputs ? (
-                    <Alert>
+                    <Alert className="border-info-emphasis bg-info/10 text-info-emphasis shadow-xs *:data-[slot=alert-description]:text-info-emphasis/80">
                         <InfoIcon />
                         <AlertTitle>{t('ogc.noOutputsSelected')}</AlertTitle>
                         <AlertDescription>

@@ -16,15 +16,56 @@ class ProcessSchemaNormalizer
      */
     public function normalize(array $process): array
     {
+        $processId = (string) $process['id'];
+        $inputs = $process['inputs'] ?? [];
+
         return [
-            'id' => (string) $process['id'],
+            'id' => $processId,
             'title' => $process['title'] ?? $process['id'],
             'description' => $process['description'] ?? null,
             'version' => $process['version'] ?? null,
             'jobControlOptions' => $process['jobControlOptions'] ?? [],
             'outputTransmission' => $process['outputTransmission'] ?? [],
-            'fields' => $this->normalizeInputs((string) $process['id'], $process['inputs'] ?? []),
+            'fields' => $this->normalizeInputs($processId, $inputs),
+            'inputValidationSchema' => $this->inputValidationSchema($processId, $inputs),
             'outputs' => $this->normalizeOutputs($process['outputs'] ?? []),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $inputs
+     * @return array<string, mixed>
+     */
+    private function inputValidationSchema(string $processId, array $inputs): array
+    {
+        $properties = [];
+        $required = [];
+
+        foreach ($inputs as $name => $input) {
+            if (! is_array($input)) {
+                continue;
+            }
+
+            $inputName = (string) $name;
+            $schema = is_array($input['schema'] ?? null)
+                ? $input['schema']
+                : [];
+            $properties[$inputName] = [
+                ...$schema,
+                ...$this->inputValidationConstraints($processId, $inputName),
+            ];
+
+            if ((int) ($input['minOccurs'] ?? 0) > 0) {
+                $required[] = $inputName;
+            }
+        }
+
+        return [
+            '$schema' => 'https://json-schema.org/draft/2020-12/schema',
+            'type' => 'object',
+            'properties' => $properties,
+            'required' => $required,
+            'additionalProperties' => false,
         ];
     }
 
@@ -61,6 +102,7 @@ class ProcessSchemaNormalizer
                         'label' => $this->variantLabel($variant),
                         'description' => $variant['description'] ?? null,
                         'required' => $variant['required'] ?? [],
+                        'additionalProperties' => $variant['additionalProperties'] ?? null,
                         'fields' => $this->normalizeProperties($variant['properties'] ?? [], $variant['required'] ?? []),
                     ])
                     ->all(),
@@ -113,6 +155,8 @@ class ProcessSchemaNormalizer
                 'kind' => 'array_table',
                 'minItems' => $schema['minItems'] ?? null,
                 'maxItems' => $schema['maxItems'] ?? null,
+                'rowMinItems' => $items['minItems'] ?? null,
+                'rowMaxItems' => $items['maxItems'] ?? null,
                 'columns' => collect(range(1, $columnCount))
                     ->map(fn (int $column): array => [
                         'key' => (string) ($column - 1),
@@ -136,6 +180,7 @@ class ProcessSchemaNormalizer
                 'minItems' => $schema['minItems'] ?? null,
                 'maxItems' => $schema['maxItems'] ?? null,
                 'required' => $items['required'] ?? [],
+                'additionalProperties' => $items['additionalProperties'] ?? null,
                 'fields' => $this->normalizeProperties($items['properties'] ?? [], $items['required'] ?? []),
             ];
         }
@@ -252,10 +297,23 @@ class ProcessSchemaNormalizer
             'exclusiveMinimum' => $schema['exclusiveMinimum'] ?? null,
             'exclusiveMaximum' => $schema['exclusiveMaximum'] ?? null,
             'pattern' => $schema['pattern'] ?? null,
+            'additionalProperties' => $schema['additionalProperties'] ?? null,
             'mediaType' => $schema['contentMediaType'] ?? null,
             'contentEncoding' => $schema['contentEncoding'] ?? null,
             'references' => $processId !== null ? $this->referenceOptions($processId, $name) : [],
+            ...($processId !== null ? $this->inputValidationConstraints($processId, $name) : []),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function inputValidationConstraints(string $processId, string $inputName): array
+    {
+        $constraints = config('services.ogc_processes.input_validation_constraints', []);
+        $inputConstraints = $constraints[$processId][$inputName] ?? [];
+
+        return is_array($inputConstraints) ? $inputConstraints : [];
     }
 
     /**

@@ -61,6 +61,16 @@ return [
             //     ],
             // ],
         ],
+        'input_validation_constraints' => [
+            'pybox' => [
+                'multiple_values' => [
+                    'itemPropertySum' => [
+                        'property' => 'eps0',
+                        'exclusiveMaximum' => 1,
+                    ],
+                ],
+            ],
+        ],
     ],
 
     'slack' => [

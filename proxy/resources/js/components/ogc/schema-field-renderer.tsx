@@ -243,11 +243,9 @@ export default function SchemaFieldRenderer({
                         }
 
                         onChange(
-                            field.type === 'number'
+                            field.type === 'number' || field.type === 'integer'
                                 ? Number(raw)
-                                : field.type === 'integer'
-                                  ? Number.parseInt(raw, 10)
-                                  : raw,
+                                : raw,
                         );
                     }}
                 />
