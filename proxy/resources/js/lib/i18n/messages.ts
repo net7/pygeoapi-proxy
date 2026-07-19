@@ -255,6 +255,7 @@ const it = {
         editNoteDescription:
             'Aggiorna la nota del processo. Puoi modificarla anche mentre il processo è in corso.',
         failed: 'Fallito',
+        failureTitle: 'Processo terminato con errore',
         filterJobs: 'Filtra processi {status}',
         finished: 'Terminato',
         first: 'Prima',
@@ -744,6 +745,7 @@ const en = {
         editNoteDescription:
             'Update the job note. You can edit it while the job is still running.',
         failed: 'Failed',
+        failureTitle: 'Process ended with an error',
         filterJobs: 'Filter {status} jobs',
         finished: 'Finished',
         first: 'First',

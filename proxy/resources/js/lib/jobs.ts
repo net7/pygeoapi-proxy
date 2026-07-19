@@ -35,8 +35,14 @@ const terminalStatuses = [
     'remote_missing',
 ];
 
+const failureStatuses = ['failed', 'submission_failed', 'remote_missing'];
+
 export function isJobTerminal(status: string): boolean {
     return terminalStatuses.includes(status);
+}
+
+export function isJobFailure(status: string): boolean {
+    return failureStatuses.includes(status);
 }
 
 export function jobStatusStyles(status: string): JobStatusStyles {

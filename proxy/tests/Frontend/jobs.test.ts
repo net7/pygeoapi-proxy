@@ -1,6 +1,19 @@
 import { describe, expect, test } from 'bun:test';
 
-import { formatJobDate } from '../../resources/js/lib/jobs';
+import { formatJobDate, isJobFailure } from '../../resources/js/lib/jobs';
+
+describe('isJobFailure', () => {
+    test('classifies terminal failure statuses', () => {
+        expect(
+            ['failed', 'submission_failed', 'remote_missing'].map(isJobFailure),
+        ).toEqual([true, true, true]);
+        expect(
+            ['successful', 'submitting', 'accepted', 'running'].map(
+                isJobFailure,
+            ),
+        ).toEqual([false, false, false, false]);
+    });
+});
 
 describe('formatJobDate', () => {
     test('formats datetimes with numeric day month year and 24 hour time', () => {
