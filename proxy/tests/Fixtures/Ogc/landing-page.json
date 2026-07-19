@@ -57,6 +57,12 @@
       "href": "https://voice.pi.ingv.it/geoinquire/processes"
     },
     {
+      "rel": "http://www.opengis.net/def/rel/ogc/1.0/job-list",
+      "type": "application/json",
+      "title": "Jobs",
+      "href": "https://voice.pi.ingv.it/geoinquire/jobs"
+    },
+    {
       "rel": "http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes",
       "type": "application/json",
       "title": "The list of supported tiling schemes as JSON",
@@ -67,18 +73,6 @@
       "type": "text/html",
       "title": "The list of supported tiling schemes as HTML",
       "href": "https://voice.pi.ingv.it/geoinquire/TileMatrixSets?f=html"
-    },
-    {
-      "rel": "http://www.opengis.net/def/rel/ogc/1.0/job-list",
-      "type": "application/json",
-      "title": "Jobs",
-      "href": "https://voice.pi.ingv.it/geoinquire/jobs"
-    },
-    {
-      "rel": "http://www.opengis.net/def/rel/ogc/1.0/job-list",
-      "type": "text/html",
-      "title": "Jobs",
-      "href": "https://voice.pi.ingv.it/geoinquire/jobs?f=html"
     }
   ],
   "title": "Geo-INQUIRE Saas WP5 (based on pygeoapi)",

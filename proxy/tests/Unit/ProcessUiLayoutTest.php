@@ -105,7 +105,9 @@ test('decimal process number inputs are valid after prefill', function () {
     $tableSource = file_get_contents(getcwd().'/resources/js/components/ogc/array-table-field.tsx');
 
     expect($source)
-        ->toContain("step={field.type === 'number' ? 'any' : undefined}")
+        ->toContain("step: field.type === 'number' ? 'any' : undefined")
+        ->toContain('<NumericInput')
+        ->toContain('{...scalarInputProps}')
         ->toContain('@/lib/html-pattern')
         ->toContain('htmlPatternForInput(')
         ->not->toContain('pattern={field.pattern ?? undefined}');
@@ -973,6 +975,16 @@ test('process output selector renders checkboxes formats and empty selection fee
         ->toContain("t('ogc.outputFormat')")
         ->toContain("t('ogc.noOutputsSelected')")
         ->toContain('<OgcFieldError id={sectionErrorId} message={sectionError} />');
+});
+
+test('process output checkbox aligns with its title', function () {
+    $source = file_get_contents(
+        getcwd().'/resources/js/components/ogc/process-output-selector.tsx',
+    );
+
+    expect($source)->toMatch(
+        "/<Checkbox\\s+id=\\{controlId\\}\\s+className=\\{cn\\(\\s*'mt-1',\\s*ogcValidationControlClassName\\(outputState\\),\\s*\\)\\}/",
+    );
 });
 
 test('one of field description precedes the selector and the selected description follows it', function () {

@@ -12,16 +12,17 @@ import {
     TimerIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { lazy, Suspense } from 'react';
 import type { ReactNode } from 'react';
 
 import { DeleteJobButton } from '@/components/ogc/delete-job-dialog';
-import GeoTiffMapResultPreview from '@/components/ogc/geotiff-map-result-preview';
 import JobIdentifiers from '@/components/ogc/job-identifiers';
 import { JobNameEditDialog } from '@/components/ogc/job-name-edit-dialog';
 import { JobNoteCard } from '@/components/ogc/job-note-card';
 import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
 import RawPayloadBlock from '@/components/ogc/raw-payload-block';
 import ResultPreview from '@/components/ogc/result-preview';
+import ResultPreviewLoading from '@/components/ogc/result-preview-loading';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,10 @@ import { groupProcessResults } from '@/lib/ogc-result-groups';
 import { cn } from '@/lib/utils';
 import { index } from '@/routes/jobs';
 import type { ProcessExecutionDetail } from '@/types';
+
+const GeoTiffMapResultPreview = lazy(
+    () => import('@/components/ogc/geotiff-map-result-preview'),
+);
 
 type Translate = ReturnType<typeof useTranslation>['t'];
 
@@ -216,14 +221,20 @@ export default function ProcessExecutionShow({
                         <div className="flex min-w-0 flex-col gap-3">
                             {visualResults.map((item) =>
                                 item.kind === 'geotiff-map' ? (
-                                    <GeoTiffMapResultPreview
+                                    <Suspense
                                         key={`map-${item.outputId}`}
-                                        executionId={execution.id}
-                                        title={item.title}
-                                        description={item.description}
-                                        geotiff={item.geotiff}
-                                        sld={item.sld}
-                                    />
+                                        fallback={
+                                            <ResultPreviewLoading className="min-h-[30rem]" />
+                                        }
+                                    >
+                                        <GeoTiffMapResultPreview
+                                            executionId={execution.id}
+                                            title={item.title}
+                                            description={item.description}
+                                            geotiff={item.geotiff}
+                                            sld={item.sld}
+                                        />
+                                    </Suspense>
                                 ) : (
                                     <ResultPreview
                                         key={item.result.id}

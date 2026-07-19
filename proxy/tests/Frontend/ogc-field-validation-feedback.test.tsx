@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import {
     OgcFieldError,
     OgcValidationControl,
+    ogcValidationContainerClassName,
     ogcValidationControlClassName,
     ogcValidationDataState,
     ogcValidationFieldClassName,
@@ -65,16 +66,28 @@ describe('OGC field validation feedback', () => {
         ).not.toContain('role="status"');
     });
 
-    test('returns persistent semantic error and success border-ring classes', () => {
-        expect(ogcValidationControlClassName('invalid')).toContain(
+    test('keeps invalid fieldsets visually neutral', () => {
+        expect(ogcValidationContainerClassName('invalid')).toBe('');
+        expect(ogcValidationContainerClassName('corrected')).toContain(
+            'border-success',
+        );
+    });
+
+    test('uses matching border and ring geometry for invalid and corrected controls', () => {
+        const invalidClassName = ogcValidationControlClassName('invalid');
+        const correctedClassName = ogcValidationControlClassName('corrected');
+
+        expect(invalidClassName).toContain(
             'aria-invalid:border-destructive-emphasis',
         );
-        expect(ogcValidationControlClassName('invalid')).toContain(
-            'ring-destructive-emphasis/80',
+        expect(invalidClassName).toContain('ring-[3px]');
+        expect(invalidClassName).toContain('ring-destructive-emphasis/20');
+        expect(invalidClassName).toContain(
+            'focus-visible:ring-destructive-emphasis/30',
         );
-        expect(ogcValidationControlClassName('corrected')).toContain(
-            'ring-success/20',
-        );
+        expect(correctedClassName).toContain('ring-[3px]');
+        expect(correctedClassName).toContain('ring-success/20');
+        expect(correctedClassName).toContain('focus-visible:ring-success/30');
         expect(ogcValidationFieldClassName('invalid')).toContain(
             'data-[invalid=true]:text-destructive-emphasis',
         );

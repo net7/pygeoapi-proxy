@@ -77,6 +77,56 @@ export function ogcConstraintMessage(
         return translate('ogc.validationRequired');
     }
 
+    const numericViolation = control.getAttribute('data-numeric-validation');
+
+    if (numericViolation === 'invalid-number') {
+        return translate('ogc.validationInvalidNumber');
+    }
+
+    if (numericViolation === 'integer') {
+        return translate('ogc.validationInteger');
+    }
+
+    if (numericViolation === 'minimum') {
+        return translatedConstraintWithAttribute(
+            control,
+            translate,
+            'min',
+            'ogc.validationMinimum',
+            'value',
+        );
+    }
+
+    if (numericViolation === 'maximum') {
+        return translatedConstraintWithAttribute(
+            control,
+            translate,
+            'max',
+            'ogc.validationMaximum',
+            'value',
+        );
+    }
+
+    if (numericViolation === 'exclusive-minimum') {
+        return translatedConstraintWithAttribute(
+            control,
+            translate,
+            'data-exclusive-minimum',
+            'ogc.validationExclusiveMinimum',
+            'value',
+        );
+    }
+
+    if (numericViolation === 'exclusive-maximum') {
+        return translatedConstraintWithAttribute(
+            control,
+            translate,
+            'data-exclusive-maximum',
+            'ogc.validationExclusiveMaximum',
+            'value',
+        );
+    }
+
     if (validity.typeMismatch) {
         return control.getAttribute('type') === 'url'
             ? translate('ogc.validationInvalidUrl')

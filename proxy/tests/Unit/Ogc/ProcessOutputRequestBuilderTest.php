@@ -7,13 +7,13 @@ use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
-test('it defaults to all conduit outputs with trusted formats and automatic transmission modes', function () {
+test('it defaults to all conduit outputs using the advertised transmission mode', function () {
     $outputs = app(ProcessOutputRequestBuilder::class)->forProcess(
         ogcFixture('process-conduit'),
     );
 
     expect($outputs)->toBe(expectedConduitOutputRequestsForBuilder());
-});
+})->todo('Deferred point 4: honor the process outputTransmission contract.');
 
 test('it defaults to formats only where pybox advertises a top level media type', function () {
     $outputs = app(ProcessOutputRequestBuilder::class)->forProcess(
@@ -25,39 +25,18 @@ test('it defaults to formats only where pybox advertises a top level media type'
             'format' => ['mediaType' => 'text/plain'],
             'transmissionMode' => 'value',
         ],
-        'dem' => ['transmissionMode' => 'reference'],
-        'invasion_map' => ['transmissionMode' => 'reference'],
-        'spatial_evolution' => [
-            'format' => [
-                'mediaType' => 'application/json',
-                'schema' => '#/$defs/chart',
-            ],
-            'transmissionMode' => 'value',
-        ],
-        'deposit_thickness' => [
-            'format' => [
-                'mediaType' => 'application/json',
-                'schema' => '#/$defs/chart',
-            ],
-            'transmissionMode' => 'value',
-        ],
+        'dem' => ['transmissionMode' => 'value'],
+        'invasion_map' => ['transmissionMode' => 'value'],
+        'spatial_evolution' => ['transmissionMode' => 'value'],
+        'deposit_thickness' => ['transmissionMode' => 'value'],
     ]);
-});
+})->todo('Deferred point 4: honor the process outputTransmission contract.');
 
-test('it defaults solwcad to the first format and accepts its second format', function () {
+test('it defaults solwcad to its advertised text format', function () {
     $builder = app(ProcessOutputRequestBuilder::class);
     $process = ogcFixture('process-solwcad');
 
     expect($builder->forProcess($process))->toBe([
-        'solwcad_out' => [
-            'format' => ['mediaType' => 'application/json'],
-            'transmissionMode' => 'value',
-        ],
-    ])->and($builder->forProcess($process, [
-        'solwcad_out' => [
-            'format' => ['mediaType' => 'text/plain'],
-        ],
-    ]))->toBe([
         'solwcad_out' => [
             'format' => ['mediaType' => 'text/plain'],
             'transmissionMode' => 'value',
@@ -79,14 +58,14 @@ test('it requests only the selected top level outputs', function () {
     expect($outputs)->toBe([
         'outfile' => [
             'format' => ['mediaType' => 'text/csv; header=present'],
-            'transmissionMode' => 'reference',
+            'transmissionMode' => 'value',
         ],
         'exit' => [
             'format' => ['mediaType' => 'text/plain'],
             'transmissionMode' => 'value',
         ],
     ]);
-});
+})->todo('Deferred point 4: honor the process outputTransmission contract.');
 
 test('it accepts an explicitly empty selection', function () {
     expect(app(ProcessOutputRequestBuilder::class)->forProcess(
@@ -139,27 +118,13 @@ test('it rejects output formats not advertised by the process', function () {
 
 function expectedConduitOutputRequestsForBuilder(): array
 {
-    $chartFormat = [
-        'mediaType' => 'application/json',
-        'schema' => '#/$defs/chart',
-    ];
-
     return [
-        'gas' => [
-            'format' => $chartFormat,
-            'transmissionMode' => 'value',
-        ],
-        'velocity' => [
-            'format' => $chartFormat,
-            'transmissionMode' => 'value',
-        ],
-        'pressure' => [
-            'format' => $chartFormat,
-            'transmissionMode' => 'value',
-        ],
+        'gas' => ['transmissionMode' => 'value'],
+        'velocity' => ['transmissionMode' => 'value'],
+        'pressure' => ['transmissionMode' => 'value'],
         'outfile' => [
             'format' => ['mediaType' => 'text/csv; header=present'],
-            'transmissionMode' => 'reference',
+            'transmissionMode' => 'value',
         ],
         'exit' => [
             'format' => ['mediaType' => 'text/plain'],

@@ -27,6 +27,7 @@ type UseOgcFormValidationOptions = {
     serverErrors: OgcFormErrors;
     clearServerErrors: (...paths: string[]) => void;
     constraintMessage: OgcConstraintMessageResolver;
+    collectAdditionalErrors?: () => OgcFormErrors;
     validLabel: string;
 };
 
@@ -41,6 +42,7 @@ export function useOgcFormValidation({
     serverErrors,
     clearServerErrors,
     constraintMessage,
+    collectAdditionalErrors,
     validLabel,
 }: UseOgcFormValidationOptions): UseOgcFormValidationResult {
     const [lifecycle, dispatch] = useReducer(
@@ -148,9 +150,9 @@ export function useOgcFormValidation({
     );
 
     const validateForm = useCallback((): boolean => {
-        const nextClientErrors = collectFormConstraintErrors(
-            formRef.current,
-            constraintMessage,
+        const nextClientErrors = mergeOgcFormErrors(
+            collectFormConstraintErrors(formRef.current, constraintMessage),
+            collectAdditionalErrors?.() ?? {},
         );
 
         dispatch({
@@ -166,7 +168,13 @@ export function useOgcFormValidation({
         focusErrors(mergeOgcFormErrors(nextClientErrors, serverErrors));
 
         return false;
-    }, [constraintMessage, focusErrors, formRef, serverErrors]);
+    }, [
+        collectAdditionalErrors,
+        constraintMessage,
+        focusErrors,
+        formRef,
+        serverErrors,
+    ]);
 
     const valuesReplaced = useCallback(
         (prefix: string): void => {

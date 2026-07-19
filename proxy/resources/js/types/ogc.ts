@@ -29,11 +29,19 @@ export type OgcNormalizedField = {
         label: string;
         description?: string | null;
         required: string[];
+        additionalProperties?: boolean | Record<string, unknown> | null;
         fields: Record<string, OgcNormalizedField>;
     }[];
     options?: Array<string | number | boolean>;
     minItems?: number | null;
     maxItems?: number | null;
+    rowMinItems?: number | null;
+    rowMaxItems?: number | null;
+    additionalProperties?: boolean | Record<string, unknown> | null;
+    itemPropertySum?: {
+        property: string;
+        exclusiveMaximum: number;
+    };
     columns?: {
         key: string;
         label: string;
@@ -99,6 +107,7 @@ export type OgcFormSchema = {
     jobControlOptions: string[];
     outputTransmission: string[];
     fields: Record<string, OgcNormalizedField>;
+    inputValidationSchema: Record<string, unknown>;
     outputs: Record<string, OgcNormalizedOutput>;
     examplePayload?: OgcExamplePayload | null;
 };

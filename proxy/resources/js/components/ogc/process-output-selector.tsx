@@ -133,7 +133,7 @@ export default function ProcessOutputSelector({
                 </div>
 
                 {!hasSelectedOutputs ? (
-                    <Alert>
+                    <Alert className="border-info-emphasis bg-info/10 text-info-emphasis shadow-xs *:data-[slot=alert-description]:text-info-emphasis/80">
                         <InfoIcon />
                         <AlertTitle>{t('ogc.noOutputsSelected')}</AlertTitle>
                         <AlertDescription>
@@ -189,7 +189,10 @@ function OutputSelectionRow({
             <div className="flex min-w-0 flex-1 items-start gap-3">
                 <Checkbox
                     id={controlId}
-                    className={cn(ogcValidationControlClassName(outputState))}
+                    className={cn(
+                        'mt-1',
+                        ogcValidationControlClassName(outputState),
+                    )}
                     checked={selection.selected}
                     data-field-path={outputPath}
                     data-validation-state={ogcValidationDataState(outputState)}

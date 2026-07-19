@@ -4,12 +4,11 @@
       "id": "solwcad",
       "version": "1.0.1",
       "jobControlOptions": [
-        "async-execute",
-        "sync-execute"
+        "sync-execute",
+        "async-execute"
       ],
       "outputTransmission": [
-        "value",
-        "reference"
+        "value"
       ],
       "links": [
         {
@@ -135,10 +134,10 @@
           "curl_example": "curl -i -k -L -X POST \"https://voice.pi.ingv.it/geoinquire/processes/solwcad/execution\" -H \"Content-Type: application/json\" -d '{ \"inputs\":{\"swinput.data\":{\"value\":{\"ndat1\":1,\"ndat2\":2,\"kl\":0}},\"sw.data\":[[\"1.00d8\",\"1273.\",\".0400\",\".0200\",\".7653\",\".0032\",\".1201\",\".0027\",\".0246\",\".0006\",\".0018\",\".0132\",\".0378\",\".0306\"],[\"2.00d8\",\"1173.\",\".0200\",\".0010\",\".7053\",\".0032\",\".1301\",\".0027\",\".0146\",\".0006\",\".0118\",\".0232\",\".0378\",\".0306\"]]}, \"outputs\":{\"solwcad_out\":{\"format\":{\"mediaType\":\"text/plain\"}}}}'"
         },
         {
-          "curl_jobStatus_request": "curl -k -L \"https://voice.pi.ingv.it/jobs/&lt;jobID&gt;\""
+          "curl_jobStatus_request": "curl -k -L \"https://voice.pi.ingv.it/geoinquire/jobs/&ltjobID&gt\""
         },
         {
-          "curl_jobResults_request": "curl -k -L \"https://voice.pi.ingv.it/jobs/&lt;jobID&gt;/results?f=json\""
+          "curl_jobResults_request": "curl -k -L \"https://voice.pi.ingv.it/geoinquire/jobs/&ltjobID&gt/results?f=json\""
         }
       ]
     },
@@ -211,14 +210,13 @@
         }
       },
       "id": "conduit",
-      "version": "2.2.0",
+      "version": "2.2.1",
       "jobControlOptions": [
-        "async-execute",
-        "sync-execute"
+        "sync-execute",
+        "async-execute"
       ],
       "outputTransmission": [
-        "value",
-        "reference"
+        "value"
       ],
       "links": [
         {
@@ -463,10 +461,10 @@
           "curl_example_alsoByReference": "curl -i -k -L -X POST \"https://voice.pi.ingv.it/geoinquire/processes/conduit/execution\" -H \"Content-Type: application/json\" -d '{\"inputs\": {\"melt_composition\": {\"value\": {\"sio2\": 0.7669, \"tio2\": 0.0012, \"al2o3\": 0.1322, \"fe2o3\": 0.0039, \"feo\": 0.0038, \"mno\": 0.0007, \"mgo\": 0.0006, \"cao\": 0.0080, \"na2o\": 0.0300, \"k2o\": 0.0512} }, \"volatiles\": {\"value\": {\"h2o\": 0.0500e0, \"co2\": 0.0200e0} }, \"crystals\": {\"value\": {\"c\": 0.1, \"den\": 2800.0e0} }, \"fragmentation\": {\"value\": {\"fe\": 0.2, \"pd\": 0.9, \"dp\": 200e-6, \"ds\": 200e-6,\"dc\": 200e-6} }, \"pressure_temperature\": {\"value\": {\"p\": 1.0e8, \"t\": 1050.0e0} }, \"geometry\": {\"value\": {\"g\": \"conduit\", \"l\": 4000.0e0} }, \"searching_mode\": {\"value\": {\"f\": 0.88393e8} } },\"outputs\":{\"gas\":{\"transmissionMode\": \"reference\"}, \"velocity\":{\"transmissionMode\": \"value\"}}}'"
         },
         {
-          "curl_jobStatus_request": "curl -k -L \"https://voice.pi.ingv.it/jobs/&lt;jobID&gt;\""
+          "curl_jobStatus_request": "curl -k -L \"https://voice.pi.ingv.it/geoinquire/jobs/&ltjobID&gt\""
         },
         {
-          "curl_jobResults_request": "curl -k -L \"https://voice.pi.ingv.it/jobs/&lt;jobID&gt;/results\\?f=json\""
+          "curl_jobResults_request": "curl -k -L \"https://voice.pi.ingv.it/geoinquire/jobs/&ltjobID&gt/results\\?f=json\""
         }
       ]
     },
@@ -541,11 +539,11 @@
       "id": "pybox",
       "version": "1.0.0",
       "jobControlOptions": [
+        "sync-execute",
         "async-execute"
       ],
       "outputTransmission": [
-        "value",
-        "reference"
+        "value"
       ],
       "links": [
         {
@@ -635,6 +633,47 @@
           "title": "Silvia Giansante",
           "role": "author",
           "href": "https://orcid.org/0009-0008-2803-0873"
+        }
+      ],
+      "examples": [
+        {
+          "payload_example": {
+            "inputs": {
+              "lon": 14.428,
+              "lat": 40.82,
+              "l0": 150,
+              "h0": 150,
+              "theta0": 500,
+              "multiple_values": [
+                {
+                  "eps0": 0.01,
+                  "rhos": 1000,
+                  "ds": 0.0001
+                }
+              ],
+              "dt": 0.5,
+              "margin": 5000
+            },
+            "outputs": {
+              "input_data": {},
+              "dem": {},
+              "invasion_map": {},
+              "spatial_evolution": {},
+              "deposit_thickness": {}
+            }
+          }
+        },
+        {
+          "curl_request_example": "curl -k -L -X POST \"https://voice.pi.ingv.it/geoinquire/processes/pybox/execution\" -H \"Content-Type: application/json\" -d '{\"inputs\":{\"lon\":14.428,\"lat\":40.820,\"l0\":150,\"h0\":150,\"theta0\":500,\"multiple_values\":[{\"eps0\":0.01,\"rhos\":1000,\"ds\":0.0001}],\"dt\":0.5,\"margin\":5000},\"outputs\":{\"dem\":{\"transmissionMode\": \"reference\"},\"spatial_evolution\":{\"transmissionMode\": \"value\"}}}'"
+        },
+        {
+          "curl_request_with_qualified_example__href-only_not_supported_yet": "curl -k -L -X POST \"https://voice.pi.ingv.it/geoinquire/processes/pybox/execution\" -H \"Content-Type: application/json\" -d '{\"inputs\":{\"lon\":{\"value\":14.428},\"lat\":{\"value\":40.820},\"l0\":150,\"h0\":150,\"theta0\":500,\"multiple_values\":[{\"eps0\":0.01,\"rhos\":1000,\"ds\":0.0001}],\"dt\":0.5,\"margin\":5000},\"outputs\":{\"dem\":{\"transmissionMode\": \"reference\"},\"spatial_evolution\":{\"transmissionMode\": \"value\"}}}'"
+        },
+        {
+          "curl_jobStatus_request": "curl -k -L \"https://voice.pi.ingv.it/geoinquire/jobs/&ltjobID&gt\""
+        },
+        {
+          "curl_jobResults_request": "curl -k -L \"https://voice.pi.ingv.it/geoinquire/jobs/&ltjobID&gt/results\"?f=json"
         }
       ]
     }

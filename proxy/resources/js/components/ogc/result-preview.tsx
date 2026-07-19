@@ -1,7 +1,8 @@
 import { ChevronDownIcon, Download, FileTextIcon } from 'lucide-react';
+import { lazy, Suspense } from 'react';
 
-import ChartResultPreview from '@/components/ogc/chart-result-preview';
 import RawPayloadBlock from '@/components/ogc/raw-payload-block';
+import ResultPreviewLoading from '@/components/ogc/result-preview-loading';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -28,6 +29,10 @@ import { normalizeCsvPreview } from '@/lib/csv-preview';
 import { downloadLabelForMediaType } from '@/lib/ogc-outputs';
 import { download } from '@/routes/jobs/results';
 import type { ProcessExecutionResult } from '@/types';
+
+const ChartResultPreview = lazy(
+    () => import('@/components/ogc/chart-result-preview'),
+);
 
 export default function ResultPreview({
     executionId,
@@ -90,10 +95,16 @@ export default function ResultPreview({
                 <CollapsibleContent>
                     <CardContent className="min-h-96">
                         {preview?.kind === 'chart' ? (
-                            <ChartResultPreview
-                                data={preview.data}
-                                copyLabel={result.title ?? result.outputId}
-                            />
+                            <Suspense
+                                fallback={
+                                    <ResultPreviewLoading className="min-h-96" />
+                                }
+                            >
+                                <ChartResultPreview
+                                    data={preview.data}
+                                    copyLabel={result.title ?? result.outputId}
+                                />
+                            </Suspense>
                         ) : null}
                         {preview?.kind === 'csv' ? (
                             <CsvPreview
