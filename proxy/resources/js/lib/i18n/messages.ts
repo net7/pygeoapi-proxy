@@ -340,6 +340,9 @@ const it = {
     },
     ogc: {
         addRow: 'Aggiungi riga',
+        arrayTableRow: 'Riga {row}',
+        arrayTableScrollHint:
+            'Scorri orizzontalmente per vedere tutte le colonne.',
         async: 'Asincrono',
         chartHideAll: 'Nascondi tutte le serie',
         chartShowAll: 'Mostra tutte le serie',
@@ -825,6 +828,8 @@ const en = {
     },
     ogc: {
         addRow: 'Add row',
+        arrayTableRow: 'Row {row}',
+        arrayTableScrollHint: 'Scroll horizontally to view all columns.',
         async: 'Async',
         chartHideAll: 'Hide all series',
         chartShowAll: 'Show all series',
