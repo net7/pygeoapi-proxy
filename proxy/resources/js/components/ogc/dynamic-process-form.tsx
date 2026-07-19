@@ -140,7 +140,7 @@ export default function DynamicProcessForm({
             ref={formRef}
             className="flex max-w-full min-w-0 flex-col gap-4"
             noValidate
-            onChangeCapture={validation.handleFormChange}
+            onChange={validation.handleFormChange}
             onSubmit={(event) => {
                 event.preventDefault();
 

@@ -99,6 +99,57 @@ describe('OGC form validation', () => {
         });
     });
 
+    test('translates custom numeric constraint violations', () => {
+        const numericControl = (
+            path: string,
+            violation: string,
+            constraintAttribute?: [string, string],
+        ): OgcConstraintControl =>
+            control(path, {
+                validity: { customError: true },
+                getAttribute: (name) => {
+                    if (name === 'data-numeric-validation') {
+                        return violation;
+                    }
+
+                    return constraintAttribute?.[0] === name
+                        ? constraintAttribute[1]
+                        : null;
+                },
+                checkValidity: () => false,
+            });
+
+        const errors = collectConstraintErrors(
+            [
+                numericControl('inputs.number', 'invalid-number'),
+                numericControl('inputs.integer', 'integer'),
+                numericControl('inputs.minimum', 'minimum', ['min', '2']),
+                numericControl('inputs.maximum', 'maximum', ['max', '4']),
+                numericControl('inputs.exclusiveMinimum', 'exclusive-minimum', [
+                    'data-exclusive-minimum',
+                    '2',
+                ]),
+                numericControl('inputs.exclusiveMaximum', 'exclusive-maximum', [
+                    'data-exclusive-maximum',
+                    '4',
+                ]),
+            ],
+            (currentControl) =>
+                ogcConstraintMessage(currentControl, (key, values) =>
+                    translate('it', key, values),
+                ),
+        );
+
+        expect(errors).toEqual({
+            'inputs.number': 'Inserisci un numero valido.',
+            'inputs.integer': 'Inserisci un numero intero.',
+            'inputs.minimum': 'Il valore deve essere maggiore o uguale a 2.',
+            'inputs.maximum': 'Il valore deve essere minore o uguale a 4.',
+            'inputs.exclusiveMinimum': 'Il valore deve essere maggiore di 2.',
+            'inputs.exclusiveMaximum': 'Il valore deve essere minore di 4.',
+        });
+    });
+
     test('ignores valid, hidden, disabled, disconnected, and aria-hidden controls', () => {
         expect(
             collectConstraintErrors([

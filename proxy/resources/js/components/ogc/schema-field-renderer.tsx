@@ -8,6 +8,7 @@ import {
     ogcValidationDataState,
     ogcValidationFieldClassName,
 } from '@/components/ogc/field-validation-feedback';
+import NumericInput from '@/components/ogc/numeric-input';
 import OneOfField from '@/components/ogc/one-of-field';
 import SectionFieldSet from '@/components/ogc/section-field-set';
 import {
@@ -191,6 +192,25 @@ export default function SchemaFieldRenderer({
         );
     }
 
+    const isNumericField = field.type === 'number' || field.type === 'integer';
+    const scalarInputProps = {
+        className: cn('min-w-0', ogcValidationControlClassName(state)),
+        'data-field-path': path,
+        'data-validation-state': ogcValidationDataState(state),
+        'aria-invalid': state === 'invalid' ? true : undefined,
+        'aria-describedby': error ? errorId : undefined,
+        required: field.required === true || Boolean(field.minOccurs),
+        min: field.minimum ?? undefined,
+        max: field.maximum ?? undefined,
+        'data-exclusive-minimum': field.exclusiveMinimum ?? undefined,
+        'data-exclusive-maximum': field.exclusiveMaximum ?? undefined,
+        step: field.type === 'number' ? 'any' : undefined,
+        pattern: htmlPatternForInput({
+            type: field.type,
+            pattern: field.pattern,
+        }),
+    };
+
     return (
         <Field
             className={cn('min-w-0', ogcValidationFieldClassName(state))}
@@ -206,49 +226,31 @@ export default function SchemaFieldRenderer({
                 state={state}
                 validLabel={validation.validLabel}
             >
-                <Input
-                    className={cn(
-                        'min-w-0',
-                        ogcValidationControlClassName(state),
-                    )}
-                    data-field-path={path}
-                    data-validation-state={ogcValidationDataState(state)}
-                    aria-invalid={state === 'invalid' ? true : undefined}
-                    aria-describedby={error ? errorId : undefined}
-                    type={
-                        field.type === 'number' || field.type === 'integer'
-                            ? 'number'
-                            : 'text'
-                    }
-                    value={String(value ?? '')}
-                    required={
-                        field.required === true || Boolean(field.minOccurs)
-                    }
-                    min={field.minimum ?? undefined}
-                    max={field.maximum ?? undefined}
-                    data-exclusive-minimum={field.exclusiveMinimum ?? undefined}
-                    data-exclusive-maximum={field.exclusiveMaximum ?? undefined}
-                    step={field.type === 'number' ? 'any' : undefined}
-                    pattern={htmlPatternForInput({
-                        type: field.type,
-                        pattern: field.pattern,
-                    })}
-                    onChange={(event) => {
-                        const raw = event.target.value;
-
-                        if (raw === '') {
-                            onChange(null);
-
-                            return;
+                {isNumericField ? (
+                    <NumericInput
+                        {...scalarInputProps}
+                        value={value}
+                        integer={field.type === 'integer'}
+                        minimum={field.minimum}
+                        maximum={field.maximum}
+                        exclusiveMinimum={field.exclusiveMinimum}
+                        exclusiveMaximum={field.exclusiveMaximum}
+                        onValueChange={onChange}
+                    />
+                ) : (
+                    <Input
+                        {...scalarInputProps}
+                        type="text"
+                        value={String(value ?? '')}
+                        onChange={(event) =>
+                            onChange(
+                                event.target.value === ''
+                                    ? null
+                                    : event.target.value,
+                            )
                         }
-
-                        onChange(
-                            field.type === 'number' || field.type === 'integer'
-                                ? Number(raw)
-                                : raw,
-                        );
-                    }}
-                />
+                    />
+                )}
             </OgcValidationControl>
             <OgcFieldError id={errorId} message={error} />
         </Field>

@@ -13,7 +13,10 @@ describe('OGC validation wiring', () => {
 
         expect(form).toContain('useOgcFormValidation');
         expect(form).toContain('noValidate');
-        expect(form).toContain('onChangeCapture={validation.handleFormChange}');
+        expect(form).toContain('onChange={validation.handleFormChange}');
+        expect(form).not.toContain(
+            'onChangeCapture={validation.handleFormChange}',
+        );
         expect(form).toContain('if (!validation.validateForm())');
         expect(form).toContain('validation.focusErrors');
         expect(form).toContain('validation.errors');
@@ -106,13 +109,15 @@ describe('OGC validation wiring', () => {
         expect(table).toContain('ogcValidationControlClassName');
     });
 
-    test('keeps fractional integer input for Ajv instead of truncating it', () => {
+    test('keeps numeric editing text separate from the Ajv value', () => {
         const renderer = source(
             'resources/js/components/ogc/schema-field-renderer.tsx',
         );
 
         expect(renderer).not.toContain('Number.parseInt(raw, 10)');
-        expect(renderer).toContain('? Number(raw)');
+        expect(renderer).not.toContain('? Number(raw)');
+        expect(renderer).toContain('<NumericInput');
+        expect(renderer).toContain('onValueChange={onChange}');
     });
 
     test('maps output and format errors to focusable dotted paths', () => {
