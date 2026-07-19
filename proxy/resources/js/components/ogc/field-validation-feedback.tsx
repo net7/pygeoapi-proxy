@@ -5,12 +5,16 @@ import { FieldError } from '@/components/ui/field';
 import type { OgcFieldValidationState } from '@/lib/ogc-form-validation';
 import { cn } from '@/lib/utils';
 
+type OgcFieldErrorVariant = 'default' | 'compact';
+
 export function OgcFieldError({
     id,
     message,
+    variant = 'default',
 }: {
     id?: string;
     message?: string;
+    variant?: OgcFieldErrorVariant;
 }) {
     if (!message) {
         return null;
@@ -19,7 +23,12 @@ export function OgcFieldError({
     return (
         <FieldError
             id={id}
-            className="flex items-start gap-2 rounded-md border border-destructive-emphasis bg-destructive/10 px-3 py-2 text-destructive-emphasis shadow-xs [&>svg]:mt-0.5 [&>svg]:size-4 [&>svg]:shrink-0"
+            className={cn(
+                'flex items-start text-destructive-emphasis [&>svg]:shrink-0',
+                variant === 'default'
+                    ? 'gap-2 rounded-md border border-destructive-emphasis bg-destructive/10 px-3 py-2 shadow-xs [&>svg]:mt-0.5 [&>svg]:size-4'
+                    : 'gap-1.5 text-xs leading-snug [&>svg]:mt-0.5 [&>svg]:size-3.5',
+            )}
         >
             <CircleAlertIcon aria-hidden="true" />
             <span className="min-w-0 break-words">{message}</span>

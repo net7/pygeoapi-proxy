@@ -27,6 +27,25 @@ describe('OGC field validation feedback', () => {
         expect(html).toContain('border-destructive-emphasis');
     });
 
+    test('renders a compact error without nested alert chrome', () => {
+        const html = renderToStaticMarkup(
+            <OgcFieldError
+                id="error-inputs-data-0-0"
+                message="Complete this field."
+                variant="compact"
+            />,
+        );
+
+        expect(html).toContain('role="alert"');
+        expect(html).toContain('error-inputs-data-0-0');
+        expect(html).toContain('text-xs');
+        expect(html).toContain('leading-snug');
+        expect(html).toContain('break-words');
+        expect(html).not.toContain('bg-destructive/10');
+        expect(html).not.toContain('border-destructive-emphasis');
+        expect(html).not.toContain('shadow-xs');
+    });
+
     test('renders a corrected status only for corrected fields', () => {
         const html = renderToStaticMarkup(
             <OgcValidationControl state="corrected" validLabel="Campo valido">

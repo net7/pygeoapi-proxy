@@ -64,6 +64,17 @@ describe('i18n', () => {
         expect(translate('en', 'ogc.fieldValid')).toBe('Field is valid');
     });
 
+    test('translates responsive array table controls', () => {
+        expect(translate('it', 'ogc.arrayTableRow', { row: 2 })).toBe('Riga 2');
+        expect(translate('en', 'ogc.arrayTableRow', { row: 2 })).toBe('Row 2');
+        expect(translate('it', 'ogc.arrayTableScrollHint')).toBe(
+            'Scorri orizzontalmente per vedere tutte le colonne.',
+        );
+        expect(translate('en', 'ogc.arrayTableScrollHint')).toBe(
+            'Scroll horizontally to view all columns.',
+        );
+    });
+
     test('translates the OGC validation toast', () => {
         expect(translate('it', 'ogc.checkProcessData')).toBe(
             'Controlla i dati del processo',
