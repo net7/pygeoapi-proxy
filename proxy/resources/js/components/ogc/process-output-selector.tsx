@@ -189,7 +189,10 @@ function OutputSelectionRow({
             <div className="flex min-w-0 flex-1 items-start gap-3">
                 <Checkbox
                     id={controlId}
-                    className={cn(ogcValidationControlClassName(outputState))}
+                    className={cn(
+                        'mt-1',
+                        ogcValidationControlClassName(outputState),
+                    )}
                     checked={selection.selected}
                     data-field-path={outputPath}
                     data-validation-state={ogcValidationDataState(outputState)}

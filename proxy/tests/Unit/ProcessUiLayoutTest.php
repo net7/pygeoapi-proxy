@@ -975,6 +975,16 @@ test('process output selector renders checkboxes formats and empty selection fee
         ->toContain('<OgcFieldError id={sectionErrorId} message={sectionError} />');
 });
 
+test('process output checkbox aligns with its title', function () {
+    $source = file_get_contents(
+        getcwd().'/resources/js/components/ogc/process-output-selector.tsx',
+    );
+
+    expect($source)->toMatch(
+        "/<Checkbox\\s+id=\\{controlId\\}\\s+className=\\{cn\\(\\s*'mt-1',\\s*ogcValidationControlClassName\\(outputState\\),\\s*\\)\\}/",
+    );
+});
+
 test('one of field description precedes the selector and the selected description follows it', function () {
     $source = file_get_contents(getcwd().'/resources/js/components/ogc/one-of-field.tsx');
 
