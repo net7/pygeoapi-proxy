@@ -196,7 +196,7 @@ export default function ArrayTableField({
                                             >
                                                 <FieldLabel
                                                     htmlFor={controlId}
-                                                    className="text-xs font-medium break-words text-muted-foreground md:sr-only"
+                                                    className="text-xs font-medium break-words text-muted-foreground md:sr-only md:max-w-px"
                                                 >
                                                     {column.label}
                                                 </FieldLabel>

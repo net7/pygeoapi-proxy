@@ -132,6 +132,13 @@ describe('ArrayTableField', () => {
         expect(html).toContain('w-full md:w-auto');
     });
 
+    test('prevents desktop screen-reader labels from widening the scroll area', () => {
+        const html = renderField();
+
+        expect(html).toContain('md:sr-only');
+        expect(html).toContain('md:max-w-px');
+    });
+
     test('limits desktop scroll semantics to non-mobile viewports', () => {
         const source = readFileSync(
             'resources/js/components/ogc/array-table-field.tsx',
