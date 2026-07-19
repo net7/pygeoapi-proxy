@@ -105,7 +105,9 @@ test('decimal process number inputs are valid after prefill', function () {
     $tableSource = file_get_contents(getcwd().'/resources/js/components/ogc/array-table-field.tsx');
 
     expect($source)
-        ->toContain("step={field.type === 'number' ? 'any' : undefined}")
+        ->toContain("step: field.type === 'number' ? 'any' : undefined")
+        ->toContain('<NumericInput')
+        ->toContain('{...scalarInputProps}')
         ->toContain('@/lib/html-pattern')
         ->toContain('htmlPatternForInput(')
         ->not->toContain('pattern={field.pattern ?? undefined}');
