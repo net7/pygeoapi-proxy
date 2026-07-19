@@ -1,15 +1,19 @@
-import JsonView from '@uiw/react-json-view';
-import { nordTheme } from '@uiw/react-json-view/nord';
 import { CopyIcon } from 'lucide-react';
+import { lazy, Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 
+import ResultPreviewLoading from '@/components/ogc/result-preview-loading';
 import { Button } from '@/components/ui/button';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { useTranslation } from '@/hooks/use-translation';
 import { copyableRawText, jsonPreviewValue } from '@/lib/raw-preview';
 import type { RawPreviewKind } from '@/lib/raw-preview';
 import { cn } from '@/lib/utils';
+
+const JsonPayloadContent = lazy(
+    () => import('@/components/ogc/json-payload-content'),
+);
 
 export default function RawPayloadBlock({
     data,
@@ -96,12 +100,9 @@ function RawPayloadContent({
 
     if (jsonValue) {
         return (
-            <JsonView
-                value={jsonValue}
-                style={nordTheme}
-                enableClipboard={false}
-                className="max-h-[32rem] min-h-80 overflow-auto rounded-md p-3 text-xs ring-1 ring-border/50"
-            />
+            <Suspense fallback={<ResultPreviewLoading />}>
+                <JsonPayloadContent value={jsonValue} />
+            </Suspense>
         );
     }
 

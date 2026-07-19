@@ -46,18 +46,32 @@ describe('raw preview helpers', () => {
 });
 
 describe('raw preview wiring', () => {
-    test('uses uiw react json view with nord theme and one copy button', () => {
+    test('loads uiw react json view only for json payloads', () => {
         const source = readFileSync(
             'resources/js/components/ogc/raw-payload-block.tsx',
             'utf8',
         );
 
-        expect(source).toContain("import JsonView from '@uiw/react-json-view'");
         expect(source).toContain(
+            "import('@/components/ogc/json-payload-content')",
+        );
+        expect(source).toContain('const JsonPayloadContent = lazy(');
+        expect(source).toContain('<Suspense');
+        expect(source).not.toContain("from '@uiw/react-json-view'");
+
+        const jsonSource = readFileSync(
+            'resources/js/components/ogc/json-payload-content.tsx',
+            'utf8',
+        );
+
+        expect(jsonSource).toContain(
+            "import JsonView from '@uiw/react-json-view'",
+        );
+        expect(jsonSource).toContain(
             "import { nordTheme } from '@uiw/react-json-view/nord'",
         );
-        expect(source).toContain('style={nordTheme}');
-        expect(source).toContain('enableClipboard={false}');
+        expect(jsonSource).toContain('style={nordTheme}');
+        expect(jsonSource).toContain('enableClipboard={false}');
         expect(source).toContain("t('common.copy')");
         expect(source).toContain('CopyIcon');
     });

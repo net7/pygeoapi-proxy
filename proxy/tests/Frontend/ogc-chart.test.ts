@@ -158,13 +158,18 @@ describe('normalizeChartPayload', () => {
 });
 
 describe('chart result preview wiring', () => {
-    test('delegates chart previews to the chart renderer component', () => {
+    test('loads the chart renderer only for chart previews', () => {
         const source = readFileSync(
             'resources/js/components/ogc/result-preview.tsx',
             'utf8',
         );
 
         expect(source).toContain(
+            "import('@/components/ogc/chart-result-preview')",
+        );
+        expect(source).toContain('const ChartResultPreview = lazy(');
+        expect(source).toContain('<Suspense');
+        expect(source).not.toContain(
             "import ChartResultPreview from '@/components/ogc/chart-result-preview'",
         );
         expect(source).toContain('copyLabel={result.title ?? result.outputId}');

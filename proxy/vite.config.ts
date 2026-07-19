@@ -81,6 +81,33 @@ export default defineConfig(({ command, mode }) => {
                 formVariants: true,
             }),
         ],
+        build: {
+            // MapLibre ships as one ~1.04 MB module; every other chunk stays below 500 kB.
+            chunkSizeWarningLimit: 1100,
+            rolldownOptions: {
+                output: {
+                    codeSplitting: {
+                        groups: [
+                            {
+                                name: 'maplibre',
+                                test: /node_modules[\\/]maplibre-gl[\\/]/,
+                                priority: 30,
+                            },
+                            {
+                                name: 'chart',
+                                test: /node_modules[\\/](?:chart\.js|@kurkle[\\/]color)[\\/]/,
+                                priority: 20,
+                            },
+                            {
+                                name: 'json-view',
+                                test: /node_modules[\\/]@uiw[\\/]react-json-view[\\/]/,
+                                priority: 20,
+                            },
+                        ],
+                    },
+                },
+            },
+        },
         ...(command === 'serve'
             ? {
                   server: {
