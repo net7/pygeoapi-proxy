@@ -147,7 +147,7 @@ describe('i18n', () => {
             'VISIBILE SOLO AGLI ADMIN',
         );
         expect(translate('en', 'jobs.adminOnlySection')).toBe(
-            'VISIBILE SOLO AGLI ADMIN',
+            'VISIBLE TO ADMINS ONLY',
         );
         expect(translate('it', 'jobs.deleteDescription')).not.toContain(
             'servizio',
