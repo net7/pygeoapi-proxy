@@ -6,6 +6,7 @@ use App\Actions\Auth\SocialUserResolver;
 use App\Data\ProviderProfile;
 use App\Data\SocialLoginResult;
 use App\Http\Controllers\Controller;
+use App\Http\Responses\DeactivatedAccountResponse;
 use App\Services\Auth\OrcidOAuthClient;
 use App\Support\AuthFeatures;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +18,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 class SocialAuthController extends Controller
 {
+    public function __construct(private DeactivatedAccountResponse $deactivatedAccountResponse) {}
+
     public function redirect(string $provider, Request $request, SocialiteFactory $socialite, OrcidOAuthClient $orcid): Response
     {
         if (! AuthFeatures::providerEnabled($provider)) {
@@ -62,7 +65,7 @@ class SocialAuthController extends Controller
         abort_unless($user !== null, 500);
 
         if ($user->isDeactivated()) {
-            return $this->inactiveUserLoginResponse();
+            return $this->deactivatedAccountResponse->redirect($request);
         }
 
         Auth::login($user, remember: true);
@@ -122,11 +125,5 @@ class SocialAuthController extends Controller
         $path = route('auth.social.redirect', ['provider' => 'orcid'], absolute: false);
 
         return redirect()->away("{$parts['scheme']}://{$parts['host']}{$port}{$path}");
-    }
-
-    private function inactiveUserLoginResponse(): RedirectResponse
-    {
-        return to_route('login')
-            ->withErrors(['email' => __('Your account has been deactivated.')]);
     }
 }

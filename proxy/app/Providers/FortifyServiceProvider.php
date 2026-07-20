@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Http\Responses\DeactivatedAccountResponse;
 use App\Models\User;
 use App\Support\AuthFeatures;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -33,9 +34,9 @@ class FortifyServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
+    public function boot(DeactivatedAccountResponse $deactivatedAccountResponse): void
     {
-        $this->configureActions();
+        $this->configureActions($deactivatedAccountResponse);
         $this->configureViews();
         $this->configureRateLimiting();
     }
@@ -43,14 +44,24 @@ class FortifyServiceProvider extends ServiceProvider
     /**
      * Configure Fortify actions.
      */
-    private function configureActions(): void
+    private function configureActions(DeactivatedAccountResponse $deactivatedAccountResponse): void
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
 
-        Passkeys::authorizeLoginUsing(fn (Request $request, PasskeyUser $user, Passkey $passkey): bool => $user instanceof User && $user->isActive());
+        Passkeys::authorizeLoginUsing(function (Request $request, PasskeyUser $user, Passkey $passkey) use ($deactivatedAccountResponse): bool {
+            if (! $user instanceof User) {
+                return false;
+            }
 
-        Fortify::authenticateUsing(function (Request $request): ?User {
+            if ($user->isDeactivated()) {
+                $deactivatedAccountResponse->abort($request);
+            }
+
+            return true;
+        });
+
+        Fortify::authenticateUsing(function (Request $request) use ($deactivatedAccountResponse): ?User {
             if (! AuthFeatures::enabled(AuthFeatures::passwordLogin())) {
                 return null;
             }
@@ -59,14 +70,17 @@ class FortifyServiceProvider extends ServiceProvider
                 ->where('email', $request->string(Fortify::username())->toString())
                 ->first();
 
-            if ($user !== null
-                && $user->isActive()
-                && $user->password !== null
-                && Hash::check((string) $request->input('password'), $user->password)) {
-                return $user;
+            if ($user === null
+                || $user->password === null
+                || ! Hash::check((string) $request->input('password'), $user->password)) {
+                return null;
             }
 
-            return null;
+            if ($user->isDeactivated()) {
+                $deactivatedAccountResponse->abort($request);
+            }
+
+            return $user;
         });
     }
 

@@ -74,6 +74,14 @@ const it = {
         notifications: 'Notifiche',
     },
     auth: {
+        accountDeactivated: {
+            description: 'Non puoi accedere con questo account.',
+            noticeDescription:
+                'Contatta un amministratore e chiedi di riattivare il tuo account prima di riprovare.',
+            noticeTitle: 'È necessaria la riattivazione',
+            returnToLogin: 'Torna alla pagina di accesso',
+            title: 'Account disattivato',
+        },
         accountNotice: 'Avviso account',
         alreadyHaveAccount: 'Hai già un account?',
         codeSent: 'Codice inviato',
@@ -590,6 +598,14 @@ const en = {
         notifications: 'Notifications',
     },
     auth: {
+        accountDeactivated: {
+            description: 'You cannot sign in with this account.',
+            noticeDescription:
+                'Contact an administrator and ask them to reactivate your account before trying again.',
+            noticeTitle: 'Reactivation required',
+            returnToLogin: 'Back to sign in',
+            title: 'Account deactivated',
+        },
         accountNotice: 'Account notice',
         alreadyHaveAccount: 'Already have an account?',
         codeSent: 'Code sent',

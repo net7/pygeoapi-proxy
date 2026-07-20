@@ -6,22 +6,50 @@ use App\Data\SocialLoginResult;
 use App\Models\EmailOtpChallenge;
 use App\Models\User;
 use App\Support\AuthFeatures;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Passkeys\Passkey;
 use Laravel\Passkeys\Passkeys;
 use Laravel\Socialite\Contracts\Factory as SocialiteFactory;
 use Laravel\Socialite\Two\User as SocialiteUser;
 use Mockery\MockInterface;
 
-test('deactivated users cannot authenticate with password', function () {
+test('deactivated account page can be rendered', function () {
+    $this->get('/account/deactivated')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('auth/account-deactivated'));
+});
+
+test('deactivated users with valid credentials are redirected to the deactivated account page', function () {
     config(['fortify.features' => [AuthFeatures::passwordLogin()]]);
 
     $user = User::factory()->deactivated()->create();
 
-    $this->post(route('login.store'), [
+    $response = $this->post(route('login.store'), [
         'email' => $user->email,
         'password' => 'password',
-    ])->assertSessionHasErrors('email');
+    ]);
+
+    expect($response->headers->get('Location'))->toBe(url('/account/deactivated'));
+    $response->assertSessionMissing('errors');
+
+    $this->assertGuest();
+});
+
+test('deactivated users with invalid credentials receive the standard login error', function () {
+    config(['fortify.features' => [AuthFeatures::passwordLogin()]]);
+
+    $user = User::factory()->deactivated()->create();
+
+    $this->from(route('login'))
+        ->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'invalid-password',
+        ])->assertRedirect(route('login'))
+        ->assertSessionHasErrors('email');
 
     $this->assertGuest();
 });
@@ -29,10 +57,10 @@ test('deactivated users cannot authenticate with password', function () {
 test('deactivated authenticated users are logged out', function () {
     $user = User::factory()->deactivated()->create();
 
-    $this->actingAs($user)
-        ->get(route('jobs.index'))
-        ->assertRedirect(route('login'))
-        ->assertSessionHasErrors('email');
+    $response = $this->actingAs($user)->get(route('jobs.index'));
+
+    expect($response->headers->get('Location'))->toBe(url('/account/deactivated'));
+    $response->assertSessionMissing('errors');
 
     $this->assertGuest();
 });
@@ -61,9 +89,10 @@ test('deactivated users cannot authenticate through a social callback', function
             ->andReturn(SocialLoginResult::authenticated($user));
     });
 
-    $this->get(route('auth.social.callback', ['provider' => 'google']))
-        ->assertRedirect(route('login'))
-        ->assertSessionHasErrors('email');
+    $response = $this->get(route('auth.social.callback', ['provider' => 'google']));
+
+    expect($response->headers->get('Location'))->toBe(url('/account/deactivated'));
+    $response->assertSessionMissing('errors');
 
     $this->assertGuest();
 });
@@ -94,15 +123,17 @@ test('deactivated users cannot authenticate after social email verification', fu
             ->andReturn($user);
     });
 
-    $this->post(route('auth.otp.verify', ['challenge' => $challenge]), [
+    $response = $this->post(route('auth.otp.verify', ['challenge' => $challenge]), [
         'code' => '123456',
-    ])->assertRedirect(route('login'))
-        ->assertSessionHasErrors('email');
+    ]);
+
+    expect($response->headers->get('Location'))->toBe(url('/account/deactivated'));
+    $response->assertSessionMissing('errors');
 
     $this->assertGuest();
 });
 
-test('deactivated users cannot authenticate with passkeys', function () {
+test('deactivated users with a valid passkey are redirected to the deactivated account page', function () {
     $activeUser = User::factory()->create();
     $activePasskey = new Passkey;
     $activePasskey->setRelation('user', $activeUser);
@@ -111,6 +142,24 @@ test('deactivated users cannot authenticate with passkeys', function () {
     $deactivatedPasskey = new Passkey;
     $deactivatedPasskey->setRelation('user', $deactivatedUser);
 
-    expect(Passkeys::allowsLogin(request(), $activePasskey))->toBeTrue()
-        ->and(Passkeys::allowsLogin(request(), $deactivatedPasskey))->toBeFalse();
+    expect(Passkeys::allowsLogin(request(), $activePasskey))->toBeTrue();
+
+    $request = Request::create('/passkeys/login', 'POST', server: [
+        'HTTP_ACCEPT' => 'application/json',
+    ]);
+
+    try {
+        Passkeys::allowsLogin($request, $deactivatedPasskey);
+    } catch (HttpResponseException $exception) {
+        $response = $exception->getResponse();
+
+        expect($response->getStatusCode())->toBe(200)
+            ->and(json_decode((string) $response->getContent(), true))->toBe([
+                'redirect' => url('/account/deactivated'),
+            ]);
+
+        return;
+    }
+
+    $this->fail('The deactivated passkey login was not interrupted.');
 });
