@@ -24,10 +24,14 @@ test('it extracts direct output format qualifiers', function () {
     ]);
 });
 
-test('it preserves the solwcad advertised format and label', function () {
+test('it defaults the solwcad json alternative media type', function () {
     $schema = ogcFixture('process-solwcad')['outputs']['solwcad_out']['schema'];
 
     expect(app(ProcessOutputFormatExtractor::class)->formats($schema))->toBe([
+        [
+            'label' => 'JSON Array',
+            'mediaType' => 'application/json',
+        ],
         [
             'label' => 'Plain text Array',
             'mediaType' => 'text/plain',
@@ -76,7 +80,7 @@ test('it merges all of qualifiers and deduplicates equivalent any of choices', f
     ]);
 });
 
-test('it ignores schema variants without a media type', function () {
+test('it defaults schema variants without a media type to application json', function () {
     $formats = app(ProcessOutputFormatExtractor::class)->formats([
         'oneOf' => [
             ['title' => 'No format', 'type' => 'object'],
@@ -86,8 +90,25 @@ test('it ignores schema variants without a media type', function () {
 
     expect($formats)->toBe([
         [
+            'label' => 'No format',
+            'mediaType' => 'application/json',
+        ],
+        [
             'label' => 'Text',
             'mediaType' => 'text/plain',
+        ],
+    ]);
+});
+
+test('it defaults a direct output without a media type to application json', function () {
+    $formats = app(ProcessOutputFormatExtractor::class)->formats([
+        'type' => 'object',
+    ]);
+
+    expect($formats)->toBe([
+        [
+            'label' => 'application/json',
+            'mediaType' => 'application/json',
         ],
     ]);
 });

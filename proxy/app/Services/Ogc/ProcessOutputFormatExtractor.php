@@ -14,7 +14,7 @@ class ProcessOutputFormatExtractor
         $seen = [];
 
         foreach ($this->candidates($schema) as $candidate) {
-            $mediaType = $candidate['mediaType'] ?? null;
+            $mediaType = $candidate['mediaType'] ?? 'application/json';
 
             if (! is_string($mediaType) || trim($mediaType) === '') {
                 continue;
