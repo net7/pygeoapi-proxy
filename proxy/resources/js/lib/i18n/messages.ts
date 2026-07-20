@@ -788,7 +788,7 @@ const en = {
         first: 'First',
         inputs: 'Inputs',
         inputsDescription: 'Inputs submitted to the process.',
-        adminOnlySection: 'VISIBILE SOLO AGLI ADMIN',
+        adminOnlySection: 'VISIBLE TO ADMINS ONLY',
         documentTitle: 'Job {jobId}',
         jobId: 'Job ID',
         jobIdCopied: 'Job ID copied',
