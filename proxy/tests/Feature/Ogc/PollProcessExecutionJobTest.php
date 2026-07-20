@@ -12,6 +12,7 @@ use App\Notifications\Ogc\ProcessExecutionCompleted;
 use App\Services\Ogc\CsvPreviewBuilder;
 use App\Services\Ogc\OgcProcessesClient;
 use App\Services\Ogc\OgcResultResponseParser;
+use App\Services\Ogc\OgcTextNormalizer;
 use GuzzleHttp\Psr7\Response as Psr7Response;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\Response;
@@ -28,7 +29,7 @@ test('it ignores direct response storage for an explicit empty requested output 
     $execution = ProcessExecution::factory()->create([
         'requested_outputs' => [],
     ]);
-    $parser = new class(app(OgcProcessesClient::class), app(CsvPreviewBuilder::class)) extends OgcResultResponseParser
+    $parser = new class(app(OgcProcessesClient::class), app(CsvPreviewBuilder::class), app(OgcTextNormalizer::class)) extends OgcResultResponseParser
     {
         public bool $wasCalled = false;
 

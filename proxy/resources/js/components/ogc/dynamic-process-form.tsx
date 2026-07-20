@@ -30,11 +30,7 @@ import { validateOgcInputs } from '@/lib/ogc-ajv-validation';
 import { fieldError } from '@/lib/ogc-form-errors';
 import type { OgcFormErrors } from '@/lib/ogc-form-errors';
 import { ogcConstraintMessage } from '@/lib/ogc-form-validation';
-import {
-    exampleInputsToFormValues,
-    initialInputValues,
-    normalizeInputs,
-} from '@/lib/ogc-form-values';
+import { initialInputValues, normalizeInputs } from '@/lib/ogc-form-values';
 import {
     buildRequestedOutputs,
     initialOutputSelections,
@@ -42,7 +38,12 @@ import {
 import type { ProcessOutputSelections } from '@/lib/process-output-selection';
 import { cn } from '@/lib/utils';
 import { store } from '@/routes/processes/jobs';
-import type { OgcFormSchema, OgcOutputFormat, TiptapDocument } from '@/types';
+import type {
+    OgcFormSchema,
+    OgcInputPrefill,
+    OgcOutputFormat,
+    TiptapDocument,
+} from '@/types';
 
 type FormOutputSelections = Record<
     string,
@@ -64,8 +65,10 @@ type FormData = {
 
 export default function DynamicProcessForm({
     schema,
+    inputPrefill,
 }: {
     schema: OgcFormSchema;
+    inputPrefill?: OgcInputPrefill | null;
 }) {
     const { t } = useTranslation();
     const formRef = useRef<HTMLFormElement>(null);
@@ -79,7 +82,7 @@ export default function DynamicProcessForm({
         clearErrors,
     } = useForm<FormData>({
         name: '',
-        inputs: initialInputValues(schema.fields),
+        inputs: initialInputValues(schema.fields, inputPrefill?.inputs),
         note: null,
         outputs: initialOutputSelections(schema.outputs),
     });
@@ -124,13 +127,10 @@ export default function DynamicProcessForm({
 
         setData((currentData) => ({
             ...currentData,
-            inputs: {
-                ...initialInputValues(schema.fields),
-                ...exampleInputsToFormValues(
-                    schema.fields,
-                    examplePayload.inputs ?? {},
-                ),
-            },
+            inputs: initialInputValues(
+                schema.fields,
+                examplePayload.inputs ?? {},
+            ),
         }));
         validation.valuesReplaced('inputs');
     }

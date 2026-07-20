@@ -319,6 +319,7 @@ const it = {
         resetFilters: 'Azzera filtri',
         results: 'Risultati',
         remoteJobId: 'ID remoto',
+        reuseInputs: 'Riutilizza input',
         rowsPerPage: 'Righe per pagina',
         saveProcessName: 'Salva nome',
         saveNote: 'Salva nota',
@@ -363,6 +364,11 @@ const it = {
         geotiffDownload: 'GeoTIFF',
         inline: 'Inline',
         inputs: 'Input',
+        inputPrefillDescription:
+            'Sono stati copiati solo gli input. Nome, nota e output mantengono i valori predefiniti di un nuovo processo.',
+        inputPrefillSkipped:
+            'Input non copiati perché oscurati o non più disponibili: {inputs}.',
+        inputPrefillTitle: 'Input copiati da “{source}”',
         jobControls: 'Controlli processo',
         mapLayerHillshadeWarning:
             'Lo stile SLD applicato usa solo una hillshade: il DEM può apparire come un raster scuro o rettangolare. La resa dipende dallo SLD fornito, non dalla mappa.',
@@ -432,6 +438,9 @@ const it = {
         validationMinimumLength: 'Inserisci almeno {count} caratteri.',
         validationOption: 'Seleziona una delle opzioni disponibili.',
         validationPattern: 'Usa il formato richiesto.',
+        validationPatternExamples:
+            'Usa il formato richiesto, ad esempio 1273., .0400 o 1.00D8.',
+        validationPatternExpression: 'Usa il formato richiesto: {pattern}',
         validationRequired: 'Compila questo campo.',
         validationUndeclaredInput:
             'Questo input non è dichiarato dal processo.',
@@ -820,6 +829,7 @@ const en = {
         resetFilters: 'Reset filters',
         results: 'Results',
         remoteJobId: 'Remote ID',
+        reuseInputs: 'Reuse inputs',
         rowsPerPage: 'Rows per page',
         saveProcessName: 'Save name',
         saveNote: 'Save note',
@@ -863,6 +873,11 @@ const en = {
         geotiffDownload: 'GeoTIFF',
         inline: 'Inline',
         inputs: 'Inputs',
+        inputPrefillDescription:
+            'Only inputs were copied. Name, note, and outputs keep the defaults for a new job.',
+        inputPrefillSkipped:
+            'Inputs not copied because they were redacted or are no longer available: {inputs}.',
+        inputPrefillTitle: 'Inputs copied from “{source}”',
         jobControls: 'Job controls',
         mapLayerHillshadeWarning:
             'The applied SLD style only defines hillshade: the DEM may appear as a dark or rectangular raster. The rendering depends on the supplied SLD, not the map.',
@@ -931,6 +946,9 @@ const en = {
         validationMinimumLength: 'Enter at least {count} characters.',
         validationOption: 'Select one of the available options.',
         validationPattern: 'Use the requested format.',
+        validationPatternExamples:
+            'Use the requested format, for example 1273., .0400, or 1.00D8.',
+        validationPatternExpression: 'Use the requested format: {pattern}',
         validationRequired: 'Please fill out this field.',
         validationUndeclaredInput: 'This input is not declared by the process.',
         value: 'Value',

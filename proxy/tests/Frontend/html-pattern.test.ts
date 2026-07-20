@@ -24,13 +24,13 @@ describe('htmlPatternForInput', () => {
         ).toBeUndefined();
     });
 
-    test('omits patterns that the browser cannot compile for the pattern attribute', () => {
+    test('normalizes legacy sign classes and omits unsupported posix classes', () => {
         expect(
             htmlPatternForInput({
                 type: 'string',
                 pattern: solwcadDecimalPattern,
             }),
-        ).toBeUndefined();
+        ).toBe('^([+\\-]?([\\d]+\\.|[\\d]*\\.[\\d]+))([Dd][+\\-]?[\\d]+)?$');
 
         expect(
             htmlPatternForInput({
@@ -56,7 +56,7 @@ describe('htmlPatternForInput', () => {
                 pattern:
                     '^[+-]?(?:[0-9]+\\.|[0-9]*\\.[0-9]+)(?:[Dd][+-]?[0-9]+)?$',
             }),
-        ).toBeUndefined();
+        ).toBe('^[+\\-]?(?:[0-9]+\\.|[0-9]*\\.[0-9]+)(?:[Dd][+\\-]?[0-9]+)?$');
 
         expect(
             htmlPatternForInput({

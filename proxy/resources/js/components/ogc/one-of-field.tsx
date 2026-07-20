@@ -131,7 +131,7 @@ export default function OneOfField({
                 </FieldDescription>
             ) : null}
 
-            <FieldGroup className="min-w-0">
+            <FieldGroup key={selected.id} className="min-w-0">
                 {Object.entries(selected.fields).map(([key, child]) => (
                     <SchemaFieldRenderer
                         key={key}

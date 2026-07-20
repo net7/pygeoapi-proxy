@@ -5,6 +5,7 @@ import {
     ChevronDownIcon,
     CircleAlertIcon,
     Clock3Icon,
+    CopyPlusIcon,
     FileInputIcon,
     ListChecksIcon,
     PackageCheckIcon,
@@ -52,6 +53,7 @@ import { hasPendingMapLayers } from '@/lib/ogc-map-layers';
 import { groupProcessResults } from '@/lib/ogc-result-groups';
 import { cn } from '@/lib/utils';
 import { index } from '@/routes/jobs';
+import { show as processShow } from '@/routes/processes';
 import type { ProcessExecutionDetail } from '@/types';
 
 const GeoTiffMapResultPreview = lazy(
@@ -163,10 +165,27 @@ export default function ProcessExecutionShow({
                     </div>
 
                     <div className="flex justify-end lg:pt-9">
-                        <DeleteJobButton
-                            execution={execution}
-                            className="w-full sm:w-auto"
-                        />
+                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                            <Button
+                                asChild
+                                variant="outline"
+                                size="sm"
+                                className="w-full sm:w-auto"
+                            >
+                                <Link
+                                    href={processShow(execution.processId, {
+                                        query: { sourceJob: execution.id },
+                                    })}
+                                >
+                                    <CopyPlusIcon data-icon="inline-start" />
+                                    {t('jobs.reuseInputs')}
+                                </Link>
+                            </Button>
+                            <DeleteJobButton
+                                execution={execution}
+                                className="w-full sm:w-auto"
+                            />
+                        </div>
                     </div>
                 </div>
 

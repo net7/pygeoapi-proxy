@@ -112,6 +112,13 @@ export type OgcFormSchema = {
     examplePayload?: OgcExamplePayload | null;
 };
 
+export type OgcInputPrefill = {
+    sourceJobId: number;
+    sourceJobName: string;
+    inputs: Record<string, unknown>;
+    skippedInputs: string[];
+};
+
 export type TiptapDocument = {
     type: 'doc';
     content?: Array<Record<string, any>>;

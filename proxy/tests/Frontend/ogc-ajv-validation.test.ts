@@ -155,7 +155,7 @@ describe('OGC Ajv validation', () => {
         });
     });
 
-    test('validates optional properties when blank values are explicitly submitted', () => {
+    test('omits optional properties when blank values are explicitly submitted', () => {
         const fields: Record<string, OgcNormalizedField> = {
             optionalNumber: {
                 name: 'optionalNumber',
@@ -185,10 +185,7 @@ describe('OGC Ajv validation', () => {
                 inputs: { optionalNumber: null, optionalPattern: '' },
                 translate: t,
             }),
-        ).toEqual({
-            'inputs.optionalNumber': 'Inserisci un numero valido.',
-            'inputs.optionalPattern': 'Usa il formato richiesto.',
-        });
+        ).toEqual({});
     });
 
     test('enforces solwcad row length and its advertised numeric string pattern', () => {
@@ -233,7 +230,35 @@ describe('OGC Ajv validation', () => {
         expect(errors['inputs.sw.data.0']).toBe(
             'Inserisci al massimo 14 elementi.',
         );
-        expect(errors['inputs.sw.data.0.0']).toBe('Usa il formato richiesto.');
+        expect(errors['inputs.sw.data.0.0']).toBe(
+            'Usa il formato richiesto, ad esempio 1273., .0400 o 1.00D8.',
+        );
+    });
+
+    test('shows the schema expression when no friendlier pattern hint is available', () => {
+        const fields: Record<string, OgcNormalizedField> = {
+            code: {
+                name: 'code',
+                title: 'Code',
+                kind: 'scalar',
+                type: 'string',
+                minOccurs: 1,
+            },
+        };
+
+        expect(
+            validateOgcInputs({
+                schema: schemaRoot(
+                    { code: { type: 'string', pattern: '^value$' } },
+                    ['code'],
+                ),
+                fields,
+                inputs: { code: 'other' },
+                translate: t,
+            }),
+        ).toEqual({
+            'inputs.code': 'Usa il formato richiesto: ^value$',
+        });
     });
 
     test('validates only the oneOf variant selected by the form', () => {

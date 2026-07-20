@@ -161,6 +161,38 @@ test('execution detail exposes logical process output metadata', function () {
         )->toBe($process['outputs']['invasion_map']['description']);
 });
 
+test('execution detail normalizes encoded descriptions from historical jobs', function () {
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create([
+        'process_outputs' => [
+            'solwcad_out' => [
+                'title' => 'Output &gt; 0',
+                'description' => 'Total ( kl &gt0)',
+            ],
+        ],
+    ]);
+
+    ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'solwcad_out',
+        'title' => 'Result &gt; 0',
+        'description' => 'Total ( kl &gt0)',
+    ]);
+
+    $response = $this->actingAs($user)
+        ->get("/jobs/{$execution->id}")
+        ->assertOk();
+
+    expect($response->inertiaProps('execution.outputMetadata.solwcad_out'))
+        ->toBe([
+            'title' => 'Output > 0',
+            'description' => 'Total ( kl >0)',
+        ])
+        ->and($response->inertiaProps('execution.results.0.title'))
+        ->toBe('Result > 0')
+        ->and($response->inertiaProps('execution.results.0.description'))
+        ->toBe('Total ( kl >0)');
+});
+
 test('map layer warnings are disabled by default without running inspection', function () {
     Storage::fake('local');
 

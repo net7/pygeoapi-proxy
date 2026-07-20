@@ -209,6 +209,7 @@ export default function SchemaFieldRenderer({
             type: field.type,
             pattern: field.pattern,
         }),
+        'data-ogc-pattern': field.pattern ?? undefined,
     };
 
     return (

@@ -214,22 +214,6 @@ test('starting a process rejects inputs outside the advertised service contract'
         },
         'inputs.geometry.value.l',
     ],
-    'blank optional numeric property' => [
-        'conduit',
-        function (): array {
-            $inputs = conduitExampleInputs();
-            $inputs['searching_mode'] = [
-                'variant' => '1',
-                'value' => [
-                    ...$inputs['searching_mode']['value'],
-                    'dg' => null,
-                ],
-            ];
-
-            return $inputs;
-        },
-        'inputs.searching_mode.value.dg',
-    ],
     'extra solwcad table cell' => [
         'solwcad',
         function (): array {
@@ -255,6 +239,44 @@ test('starting a process rejects inputs outside the advertised service contract'
         'inputs.multiple_values',
     ],
 ]);
+
+test('starting a process omits a cleared optional nested input before validation and dispatch', function () {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    app(OgcProcessCache::class)->putProcess('conduit', ogcFixture('process-conduit'));
+
+    $inputs = conduitExampleInputs();
+    $inputs['searching_mode'] = [
+        'variant' => '1',
+        'value' => [
+            ...$inputs['searching_mode']['value'],
+            'dg' => null,
+        ],
+    ];
+
+    $this->actingAs($user)
+        ->post(route('processes.jobs.store', 'conduit'), [
+            'inputs' => $inputs,
+            'outputs' => [],
+        ])
+        ->assertRedirect();
+
+    $execution = ProcessExecution::query()->sole();
+
+    expect($execution->request_payload['inputs']['searching_mode']['value'])
+        ->not->toHaveKey('dg');
+
+    Bus::assertDispatched(
+        SubmitProcessExecutionJob::class,
+        fn (SubmitProcessExecutionJob $job): bool => ! array_key_exists(
+            'dg',
+            $job->payload['inputs']['searching_mode']['value'],
+        ),
+    );
+    Http::assertNothingSent();
+});
 
 test('starting a process does not fall back to pygeoapi when process cache is missing', function () {
     Bus::fake();
