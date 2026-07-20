@@ -6,7 +6,6 @@ import {
     ogcValidationContainerClassName,
     ogcValidationControlClassName,
     ogcValidationDataState,
-    ogcValidationFieldClassName,
 } from '@/components/ogc/field-validation-feedback';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -17,21 +16,15 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Field, FieldLabel } from '@/components/ui/field';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useTranslation } from '@/hooks/use-translation';
 import { errorIdForPath, fieldError } from '@/lib/ogc-form-errors';
 import type { OgcFieldValidationController } from '@/lib/ogc-form-validation';
 import {
     firstOutputError,
+    outputFormatAccessibleLabel,
+    outputFormatCompactLabel,
     outputFormatKey,
     outputFormatLabel,
     setOutputFormat,
@@ -185,14 +178,11 @@ function OutputSelectionRow({
         : undefined;
 
     return (
-        <div className="flex min-w-0 flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex min-w-0 flex-1 items-start gap-3">
+        <div className="min-w-0 rounded-lg border p-4">
+            <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
                 <Checkbox
                     id={controlId}
-                    className={cn(
-                        'mt-1',
-                        ogcValidationControlClassName(outputState),
-                    )}
+                    className={ogcValidationControlClassName(outputState)}
                     checked={selection.selected}
                     data-field-path={outputPath}
                     data-validation-state={ogcValidationDataState(outputState)}
@@ -213,68 +203,38 @@ function OutputSelectionRow({
                             .join(' ') || undefined
                     }
                 />
-                <div className="min-w-0">
-                    <Label
-                        htmlFor={controlId}
-                        className={cn(
-                            'cursor-pointer break-words',
-                            outputState === 'invalid' &&
-                                'text-destructive-emphasis',
-                        )}
-                    >
-                        {output.title}
-                    </Label>
-                    {output.description ? (
-                        <p
-                            id={controlId + '-description'}
-                            className="mt-1 text-sm break-words text-muted-foreground"
-                        >
-                            {output.description}
-                        </p>
-                    ) : null}
-                    <OgcFieldError id={outputErrorId} message={outputError} />
-                </div>
-            </div>
-
-            {output.formats.length > 1 ? (
-                <Field
+                <Label
+                    htmlFor={controlId}
                     className={cn(
-                        'min-w-0 sm:w-72',
-                        ogcValidationFieldClassName(formatState),
+                        'min-w-0 cursor-pointer break-words',
+                        outputState === 'invalid' &&
+                            'text-destructive-emphasis',
                     )}
-                    data-invalid={formatState === 'invalid' ? true : undefined}
                 >
-                    <FieldLabel htmlFor={formatControlId}>
-                        {t('ogc.outputFormat')}
-                    </FieldLabel>
-                    <OgcValidationControl
-                        state={formatState}
-                        validLabel={validation.validLabel}
-                        hasBuiltInEndIcon
-                    >
-                        <Select
-                            value={selectedFormatKey}
-                            disabled={!selection.selected}
-                            onValueChange={(key) => {
-                                const format = output.formats.find(
-                                    (candidate) =>
-                                        outputFormatKey(candidate) === key,
-                                );
+                    {output.title}
+                </Label>
 
-                                if (format) {
-                                    validation.resetPathPrefix(formatPath);
-                                    onFormatChange(format);
-                                }
-                            }}
+                {output.formats.length > 1 ? (
+                    <div
+                        className="col-start-2 row-start-2 ml-auto max-w-full min-w-0 sm:col-start-3 sm:row-start-1"
+                        data-invalid={
+                            formatState === 'invalid' ? true : undefined
+                        }
+                        data-disabled={!selection.selected ? true : undefined}
+                    >
+                        <OgcValidationControl
+                            state={formatState}
+                            validLabel={validation.validLabel}
                         >
-                            <SelectTrigger
+                            <ToggleGroup
                                 id={formatControlId}
+                                type="single"
+                                variant="outline"
+                                size="sm"
+                                value={selectedFormatKey ?? ''}
                                 className={cn(
-                                    'w-full min-w-0',
-                                    ogcValidationControlClassName(
-                                        formatState,
-                                        true,
-                                    ),
+                                    'w-fit max-w-full justify-start overflow-x-auto',
+                                    ogcValidationControlClassName(formatState),
                                 )}
                                 data-field-path={formatPath}
                                 data-validation-state={ogcValidationDataState(
@@ -283,68 +243,120 @@ function OutputSelectionRow({
                                 aria-invalid={
                                     formatState === 'invalid' ? true : undefined
                                 }
+                                aria-label={t('ogc.outputFormat')}
                                 aria-describedby={
                                     formatError ? formatErrorId : undefined
                                 }
+                                disabled={!selection.selected}
+                                onValueChange={(key) => {
+                                    if (!key) {
+                                        return;
+                                    }
+
+                                    const format = output.formats.find(
+                                        (candidate) =>
+                                            outputFormatKey(candidate) === key,
+                                    );
+
+                                    if (format) {
+                                        validation.resetPathPrefix(formatPath);
+                                        onFormatChange(format);
+                                    }
+                                }}
                             >
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    {output.formats.map((format) => (
-                                        <SelectItem
-                                            key={outputFormatKey(format)}
-                                            value={outputFormatKey(format)}
-                                        >
+                                {output.formats.map((format) => (
+                                    <ToggleGroupItem
+                                        key={outputFormatKey(format)}
+                                        value={outputFormatKey(format)}
+                                        aria-label={outputFormatAccessibleLabel(
+                                            format,
+                                            output.formats,
+                                        )}
+                                        className="px-2 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm data-[state=on]:hover:bg-primary/90 data-[state=on]:hover:text-primary-foreground sm:px-3 sm:text-sm"
+                                    >
+                                        <span className="sm:hidden">
+                                            {outputFormatCompactLabel(
+                                                format,
+                                                output.formats,
+                                            )}
+                                        </span>
+                                        <span className="hidden sm:inline">
                                             {outputFormatLabel(format)}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                    </OgcValidationControl>
-                    <OgcFieldError id={formatErrorId} message={formatError} />
-                </Field>
-            ) : null}
+                                        </span>
+                                    </ToggleGroupItem>
+                                ))}
+                            </ToggleGroup>
+                        </OgcValidationControl>
+                    </div>
+                ) : null}
 
-            {output.formats.length === 1 ? (
-                <div
-                    className={cn(
-                        'min-w-0 rounded-md sm:w-72',
-                        ogcValidationContainerClassName(formatState),
-                    )}
-                    data-field-path={formatPath}
-                    data-invalid={formatState === 'invalid' ? true : undefined}
-                    data-validation-state={ogcValidationDataState(formatState)}
-                    tabIndex={-1}
-                    aria-invalid={formatState === 'invalid' ? true : undefined}
-                    aria-describedby={formatError ? formatErrorId : undefined}
-                >
-                    <p className="text-xs font-medium text-muted-foreground">
-                        {t('ogc.outputFormat')}
-                    </p>
-                    <p className="mt-1 text-sm break-words">
-                        {outputFormatLabel(output.formats[0])}
-                    </p>
-                    <OgcFieldError id={formatErrorId} message={formatError} />
-                </div>
-            ) : null}
+                {output.formats.length === 1 ? (
+                    <span
+                        className={cn(
+                            'col-start-2 row-start-2 ml-auto max-w-full text-right text-sm font-medium break-all text-muted-foreground sm:col-start-3 sm:row-start-1',
+                            ogcValidationContainerClassName(formatState),
+                        )}
+                        data-field-path={formatPath}
+                        data-invalid={
+                            formatState === 'invalid' ? true : undefined
+                        }
+                        data-validation-state={ogcValidationDataState(
+                            formatState,
+                        )}
+                        tabIndex={-1}
+                        aria-invalid={
+                            formatState === 'invalid' ? true : undefined
+                        }
+                        aria-label={
+                            t('ogc.outputFormat') +
+                            ': ' +
+                            output.formats[0].mediaType
+                        }
+                        aria-describedby={
+                            formatError ? formatErrorId : undefined
+                        }
+                    >
+                        {output.formats[0].mediaType}
+                    </span>
+                ) : null}
+            </div>
 
-            {output.formats.length === 0 && formatError ? (
-                <div
-                    className={cn(
-                        'min-w-0 rounded-md sm:w-72',
-                        ogcValidationContainerClassName(formatState),
-                    )}
-                    data-field-path={formatPath}
-                    data-invalid
-                    tabIndex={-1}
-                    aria-invalid
-                    aria-describedby={formatErrorId}
-                >
-                    <OgcFieldError id={formatErrorId} message={formatError} />
-                </div>
-            ) : null}
+            <div className="mt-3 ml-7 flex min-w-0 flex-col gap-1">
+                {output.description ? (
+                    <p
+                        id={controlId + '-description'}
+                        className="text-sm break-words text-muted-foreground"
+                    >
+                        {output.description}
+                    </p>
+                ) : null}
+                <OgcFieldError id={outputErrorId} message={outputError} />
+                {output.formats.length === 0 && formatError ? (
+                    <div
+                        className={ogcValidationContainerClassName(formatState)}
+                        data-field-path={formatPath}
+                        data-invalid
+                        data-validation-state={ogcValidationDataState(
+                            formatState,
+                        )}
+                        tabIndex={-1}
+                        aria-invalid
+                        aria-describedby={formatErrorId}
+                    >
+                        <OgcFieldError
+                            id={formatErrorId}
+                            message={formatError}
+                            variant="compact"
+                        />
+                    </div>
+                ) : (
+                    <OgcFieldError
+                        id={formatErrorId}
+                        message={formatError}
+                        variant="compact"
+                    />
+                )}
+            </div>
         </div>
     );
 }

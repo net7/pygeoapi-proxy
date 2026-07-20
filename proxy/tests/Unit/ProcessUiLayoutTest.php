@@ -959,32 +959,72 @@ test('csv result previews use structured normalization instead of comma splittin
         ->not->toContain("row.split(',')");
 });
 
-test('process output selector renders checkboxes formats and empty selection feedback', function () {
+test('process output selector renders formats beside the title', function () {
     $source = file_get_contents(
         getcwd().'/resources/js/components/ogc/process-output-selector.tsx',
     );
+    $titlePosition = strpos($source, '{output.title}');
+    $descriptionPosition = strpos($source, '{output.description ? (');
+    $multipleFormatsPosition = strpos($source, '{output.formats.length > 1 ? (');
+
+    expect($titlePosition)->not->toBeFalse();
+    expect($descriptionPosition)->not->toBeFalse();
+    expect($multipleFormatsPosition)->not->toBeFalse();
+    expect($titlePosition)->toBeLessThan($multipleFormatsPosition);
+    expect($multipleFormatsPosition)->toBeLessThan($descriptionPosition);
 
     expect($source)
         ->toContain('<Checkbox')
         ->toContain('checked={selection.selected}')
         ->toContain('setOutputSelected')
-        ->toContain('<Select')
+        ->toContain("from '@/components/ui/toggle-group'")
+        ->toContain('<ToggleGroup')
+        ->toContain('type="single"')
+        ->toContain('variant="outline"')
+        ->toContain('data-[state=on]:bg-primary')
+        ->toContain('data-[state=on]:text-primary-foreground')
+        ->toContain('px-2 text-xs')
+        ->toContain('sm:px-3 sm:text-sm')
+        ->toContain('<span className="sm:hidden">')
+        ->toContain('outputFormatCompactLabel(')
+        ->toContain('className="hidden sm:inline"')
+        ->toContain('outputFormatAccessibleLabel(')
+        ->toContain("aria-label={t('ogc.outputFormat')}")
+        ->toContain('if (!key)')
+        ->toContain('output.formats[0].mediaType')
+        ->toContain('grid-cols-[auto_minmax(0,1fr)]')
+        ->toContain('sm:grid-cols-[auto_minmax(0,1fr)_auto]')
+        ->toContain('row-start-2')
+        ->toContain('sm:row-start-1')
+        ->toContain('mt-3 ml-7 flex min-w-0 flex-col gap-1')
+        ->toContain('ml-auto')
         ->toContain('output.formats.length > 1')
         ->toContain('output.formats.length === 1')
+        ->toContain('output.formats.length === 0 && formatError')
+        ->toContain('data-field-path={formatPath}')
+        ->toContain('aria-describedby={formatErrorId}')
         ->toContain('disabled={!selection.selected}')
         ->toContain("t('ogc.outputFormat')")
         ->toContain("t('ogc.noOutputsSelected')")
+        ->not->toContain("from '@/components/ui/select'")
+        ->not->toContain('<Select')
+        ->not->toContain("from '@/components/ui/badge'")
+        ->not->toContain('<Badge')
+        ->not->toContain('<FieldLabel')
+        ->not->toContain('sm:flex-row sm:items-start sm:justify-between')
         ->toContain('<OgcFieldError id={sectionErrorId} message={sectionError} />');
 });
 
-test('process output checkbox aligns with its title', function () {
+test('process output checkbox shares the centered header row', function () {
     $source = file_get_contents(
         getcwd().'/resources/js/components/ogc/process-output-selector.tsx',
     );
 
-    expect($source)->toMatch(
-        "/<Checkbox\\s+id=\\{controlId\\}\\s+className=\\{cn\\(\\s*'mt-1',\\s*ogcValidationControlClassName\\(outputState\\),\\s*\\)\\}/",
-    );
+    expect($source)
+        ->toContain('grid-cols-[auto_minmax(0,1fr)] items-center')
+        ->toMatch(
+            '/<Checkbox\\s+id=\\{controlId\\}\\s+className=\\{ogcValidationControlClassName\\(outputState\\)\\}/',
+        );
 });
 
 test('one of field description precedes the selector and the selected description follows it', function () {

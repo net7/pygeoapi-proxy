@@ -105,6 +105,55 @@ export function outputFormatLabel(format: OgcOutputFormat): string {
         : format.label + ' — ' + format.mediaType;
 }
 
+export function outputFormatCompactLabel(
+    format: OgcOutputFormat,
+    formats: OgcOutputFormat[],
+): string {
+    const matchingMediaTypes = formats.filter(
+        (candidate) => candidate.mediaType === format.mediaType,
+    );
+
+    if (matchingMediaTypes.length <= 1) {
+        return format.mediaType;
+    }
+
+    const matchingLabels = matchingMediaTypes.filter(
+        (candidate) => candidate.label === format.label,
+    );
+
+    if (matchingLabels.length <= 1) {
+        return format.label;
+    }
+
+    const position = matchingLabels.findIndex(
+        (candidate) => outputFormatKey(candidate) === outputFormatKey(format),
+    );
+
+    return position === -1 ? format.label : `${format.label} ${position + 1}`;
+}
+
+export function outputFormatAccessibleLabel(
+    format: OgcOutputFormat,
+    formats: OgcOutputFormat[],
+): string {
+    const label = outputFormatLabel(format);
+    const matchingLabels = formats.filter(
+        (candidate) => outputFormatLabel(candidate) === label,
+    );
+
+    if (matchingLabels.length <= 1) {
+        return label;
+    }
+
+    const position = matchingLabels.findIndex(
+        (candidate) => outputFormatKey(candidate) === outputFormatKey(format),
+    );
+
+    return position === -1
+        ? label
+        : `${label} (${position + 1}/${matchingLabels.length})`;
+}
+
 export function firstOutputError(
     errors: Record<string, string | undefined>,
 ): string | undefined {
