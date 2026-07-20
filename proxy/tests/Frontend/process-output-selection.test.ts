@@ -4,6 +4,8 @@ import {
     buildRequestedOutputs,
     firstOutputError,
     initialOutputSelections,
+    outputFormatAccessibleLabel,
+    outputFormatCompactLabel,
     outputFormatKey,
     outputFormatLabel,
     setOutputFormat,
@@ -239,6 +241,36 @@ describe('process output selection', () => {
             'JSON Array — application/json',
         );
         expect(outputFormatLabel(chartFormat)).toBe('application/json');
+    });
+
+    test('keeps compact and accessible labels distinct for repeated media types', () => {
+        const gzipFormat: OgcOutputFormat = {
+            label: 'JSON Array',
+            mediaType: 'application/json',
+            encoding: 'gzip',
+        };
+        const brotliFormat: OgcOutputFormat = {
+            label: 'JSON Array',
+            mediaType: 'application/json',
+            encoding: 'br',
+        };
+        const formats = [gzipFormat, brotliFormat];
+
+        expect(outputFormatCompactLabel(gzipFormat, formats)).toBe(
+            'JSON Array 1',
+        );
+        expect(outputFormatCompactLabel(brotliFormat, formats)).toBe(
+            'JSON Array 2',
+        );
+        expect(outputFormatAccessibleLabel(gzipFormat, formats)).toBe(
+            'JSON Array — application/json (1/2)',
+        );
+        expect(outputFormatAccessibleLabel(brotliFormat, formats)).toBe(
+            'JSON Array — application/json (2/2)',
+        );
+        expect(
+            outputFormatCompactLabel(jsonFormat, [jsonFormat, textFormat]),
+        ).toBe('application/json');
     });
 
     test('canonicalizes nested schema key order for stable select keys', () => {
