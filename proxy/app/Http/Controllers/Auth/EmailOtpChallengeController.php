@@ -6,6 +6,7 @@ use App\Actions\Auth\SocialUserResolver;
 use App\Data\ProviderProfile;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\EmailOtpVerifyRequest;
+use App\Http\Responses\DeactivatedAccountResponse;
 use App\Models\EmailOtpChallenge;
 use App\Services\Auth\EmailOtpService;
 use Illuminate\Http\RedirectResponse;
@@ -15,6 +16,8 @@ use Inertia\Response;
 
 class EmailOtpChallengeController extends Controller
 {
+    public function __construct(private DeactivatedAccountResponse $deactivatedAccountResponse) {}
+
     public function show(EmailOtpChallenge $challenge): Response
     {
         abort_unless($challenge->canAttempt(), 403);
@@ -38,7 +41,7 @@ class EmailOtpChallengeController extends Controller
         }
 
         if ($challenge->purpose === EmailOtpChallenge::PurposeSocialLogin) {
-            return $this->completeSocialLogin($challenge, $resolver);
+            return $this->completeSocialLogin($request, $challenge, $resolver);
         }
 
         $request->session()->put('auth.email_otp_confirmed_at', now()->timestamp);
@@ -55,8 +58,11 @@ class EmailOtpChallengeController extends Controller
         return back()->with('status', __('We sent a new verification code.'));
     }
 
-    private function completeSocialLogin(EmailOtpChallenge $challenge, SocialUserResolver $resolver): RedirectResponse
-    {
+    private function completeSocialLogin(
+        EmailOtpVerifyRequest $request,
+        EmailOtpChallenge $challenge,
+        SocialUserResolver $resolver,
+    ): RedirectResponse {
         $payload = $challenge->payload;
 
         abort_unless(is_array($payload), 422);
@@ -69,8 +75,7 @@ class EmailOtpChallengeController extends Controller
         if ($user->isDeactivated()) {
             session()->forget('social_auth.pending_profile');
 
-            return to_route('login')
-                ->withErrors(['email' => __('Your account has been deactivated.')]);
+            return $this->deactivatedAccountResponse->redirect($request);
         }
 
         Auth::login($user, remember: true);

@@ -48,6 +48,31 @@ describe('i18n', () => {
         );
     });
 
+    test('translates the deactivated account page', () => {
+        expect(translate('it', 'auth.accountDeactivated.title')).toBe(
+            'Account disattivato',
+        );
+        expect(translate('en', 'auth.accountDeactivated.title')).toBe(
+            'Account deactivated',
+        );
+        expect(
+            translate('it', 'auth.accountDeactivated.noticeDescription'),
+        ).toBe(
+            'Contatta un amministratore e chiedi di riattivare il tuo account prima di riprovare.',
+        );
+        expect(
+            translate('en', 'auth.accountDeactivated.noticeDescription'),
+        ).toBe(
+            'Contact an administrator and ask them to reactivate your account before trying again.',
+        );
+        expect(translate('it', 'auth.accountDeactivated.returnToLogin')).toBe(
+            'Torna alla pagina di accesso',
+        );
+        expect(translate('en', 'auth.accountDeactivated.returnToLogin')).toBe(
+            'Back to sign in',
+        );
+    });
+
     test('translates process output selection controls', () => {
         expect(translate('it', 'ogc.outputFormat')).toBe('Formato output');
         expect(translate('en', 'ogc.outputFormat')).toBe('Output format');

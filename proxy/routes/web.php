@@ -15,8 +15,12 @@ use App\Models\ProcessExecution;
 use App\Models\ProcessExecutionResult;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::middleware('guest')->group(function () {
+    Route::get('account/deactivated', fn () => Inertia::render('auth/account-deactivated'))
+        ->name('account.deactivated');
+
     Route::get('auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
         ->whereIn('provider', ['google', 'orcid'])
         ->name('auth.social.redirect');
