@@ -150,6 +150,22 @@ describe('OGC form validation', () => {
         });
     });
 
+    test('explains the advertised solwcad numeric pattern with examples', () => {
+        const pattern =
+            '^[+-]?(?:[0-9]+\\.|[0-9]*\\.[0-9]+)(?:[Dd][+-]?[0-9]+)?$';
+
+        expect(
+            ogcConstraintMessage(
+                control('inputs.fopen', {
+                    validity: { patternMismatch: true },
+                    getAttribute: (name) =>
+                        name === 'data-ogc-pattern' ? pattern : null,
+                }),
+                (key, values) => translate('it', key, values),
+            ),
+        ).toBe('Usa il formato richiesto, ad esempio 1273., .0400 o 1.00D8.');
+    });
+
     test('ignores valid, hidden, disabled, disconnected, and aria-hidden controls', () => {
         expect(
             collectConstraintErrors([

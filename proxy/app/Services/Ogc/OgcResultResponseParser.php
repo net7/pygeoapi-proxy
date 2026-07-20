@@ -12,6 +12,7 @@ class OgcResultResponseParser
     public function __construct(
         private OgcProcessesClient $client,
         private CsvPreviewBuilder $csvPreviewBuilder,
+        private OgcTextNormalizer $textNormalizer,
     ) {}
 
     /**
@@ -258,8 +259,8 @@ class OgcResultResponseParser
 
         return [
             'output_id' => $outputId,
-            'title' => $outputSpec['title'] ?? $outputId,
-            'description' => $outputSpec['description'] ?? null,
+            'title' => $this->normalizedText($outputSpec['title'] ?? null) ?? $outputId,
+            'description' => $this->normalizedText($outputSpec['description'] ?? null),
             'media_type' => $mediaType,
             'transmission_mode' => data_get($execution->requested_outputs, "{$outputId}.transmissionMode", 'value'),
             'remote_href' => null,
@@ -466,15 +467,17 @@ class OgcResultResponseParser
      */
     private function linkTitle(ProcessExecution $execution, string $outputId, array $link, ?string $componentId): string
     {
-        $outputTitle = (string) (data_get($execution->process_outputs, "{$outputId}.title") ?? $outputId);
+        $outputTitle = $this->normalizedText(
+            data_get($execution->process_outputs, "{$outputId}.title"),
+        ) ?? $outputId;
 
         if ($componentId === null) {
             return $outputTitle;
         }
 
-        $componentTitle = (string) ($link['title']
+        $componentTitle = $this->normalizedText($link['title']
             ?? data_get($execution->process_outputs, "{$outputId}.schema.properties.{$componentId}.title")
-            ?? Str::headline($componentId));
+            ?? Str::headline($componentId)) ?? Str::headline($componentId);
 
         return "{$outputTitle} - {$componentTitle}";
     }
@@ -485,20 +488,29 @@ class OgcResultResponseParser
     private function linkDescription(ProcessExecution $execution, string $outputId, array $link, ?string $componentId): ?string
     {
         if (isset($link['title']) && is_string($link['title']) && $link['title'] !== '') {
-            return $link['title'];
+            return $this->textNormalizer->normalize($link['title']);
         }
 
         if ($componentId !== null) {
             $componentDescription = data_get($execution->process_outputs, "{$outputId}.schema.properties.{$componentId}.description");
 
             if (is_string($componentDescription) && $componentDescription !== '') {
-                return $componentDescription;
+                return $this->textNormalizer->normalize($componentDescription);
             }
         }
 
         $description = data_get($execution->process_outputs, "{$outputId}.description");
 
-        return is_string($description) && $description !== '' ? $description : null;
+        return is_string($description) && $description !== ''
+            ? $this->textNormalizer->normalize($description)
+            : null;
+    }
+
+    private function normalizedText(mixed $value): ?string
+    {
+        return is_string($value) && $value !== ''
+            ? $this->textNormalizer->normalize($value)
+            : null;
     }
 
     /**

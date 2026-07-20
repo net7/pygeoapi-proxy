@@ -279,6 +279,10 @@ export default function ArrayTableField({
                                                                     column.pattern,
                                                             },
                                                         )}
+                                                        data-ogc-pattern={
+                                                            column.pattern ??
+                                                            undefined
+                                                        }
                                                         onChange={(event) =>
                                                             updateCell(
                                                                 rowIndex,

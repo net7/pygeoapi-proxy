@@ -1,6 +1,7 @@
 <?php
 
 use App\Jobs\Ogc\WarmOgcProcessCacheJob;
+use App\Models\ProcessExecution;
 use App\Models\User;
 use App\Services\Ogc\OgcProcessCache;
 use Carbon\Carbon;
@@ -87,7 +88,114 @@ test('authenticated users can view cached process detail with normalized schema'
             ->component('processes/show')
             ->where('processStatus', 'ready')
             ->where('process.id', 'conduit')
+            ->where('inputPrefill', null)
             ->has('formSchema.fields.melt_composition'));
+});
+
+test('process detail exposes only reusable inputs from an authorized source job', function () {
+    app(OgcProcessCache::class)->putProcess('conduit', ogcFixture('process-conduit'));
+
+    $user = User::factory()->create();
+    $sourceJob = ProcessExecution::factory()->for($user)->create([
+        'name' => 'Scenario sorgente',
+        'process_id' => 'conduit',
+        'request_payload' => [
+            'inputs' => [
+                'melt_composition' => [
+                    'value' => ['sio2' => 0.7669],
+                ],
+                'searching_mode' => [
+                    'value' => '[redacted inline value]',
+                    'sizeBytes' => 4096,
+                ],
+                'retired_input' => 12,
+            ],
+            'outputs' => ['gas' => ['transmissionMode' => 'value']],
+        ],
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('processes.show', [
+            'process' => 'conduit',
+            'sourceJob' => $sourceJob->id,
+        ]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('processes/show')
+            ->where('inputPrefill.sourceJobId', $sourceJob->id)
+            ->where('inputPrefill.sourceJobName', 'Scenario sorgente')
+            ->where('inputPrefill.inputs.melt_composition.value.sio2', 0.7669)
+            ->where('inputPrefill.skippedInputs', [
+                'searching_mode',
+                'retired_input',
+            ])
+            ->missing('inputPrefill.inputs.searching_mode')
+            ->missing('inputPrefill.inputs.retired_input')
+            ->missing('inputPrefill.outputs'));
+});
+
+test('process detail skips a whole input when its stored object contains removed fields', function () {
+    app(OgcProcessCache::class)->putProcess('conduit', ogcFixture('process-conduit'));
+
+    $user = User::factory()->create();
+    $sourceJob = ProcessExecution::factory()->for($user)->create([
+        'process_id' => 'conduit',
+        'request_payload' => [
+            'inputs' => [
+                'melt_composition' => [
+                    'value' => [
+                        'sio2' => 0.7669,
+                        'retired_component' => 0.1,
+                    ],
+                ],
+                'geometry' => [
+                    'value' => ['g' => 'conduit', 'l' => 1000],
+                ],
+            ],
+        ],
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('processes.show', [
+            'process' => 'conduit',
+            'sourceJob' => $sourceJob->id,
+        ]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('inputPrefill.skippedInputs', ['melt_composition'])
+            ->where('inputPrefill.inputs.geometry.value.g', 'conduit')
+            ->missing('inputPrefill.inputs.melt_composition'));
+});
+
+test('users cannot reuse inputs from another users job', function () {
+    app(OgcProcessCache::class)->putProcess('conduit', ogcFixture('process-conduit'));
+
+    $sourceJob = ProcessExecution::factory()->create([
+        'process_id' => 'conduit',
+    ]);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('processes.show', [
+            'process' => 'conduit',
+            'sourceJob' => $sourceJob->id,
+        ]))
+        ->assertForbidden();
+});
+
+test('users cannot reuse inputs on a different process', function () {
+    app(OgcProcessCache::class)->putProcess('conduit', ogcFixture('process-conduit'));
+
+    $user = User::factory()->create();
+    $sourceJob = ProcessExecution::factory()->for($user)->create([
+        'process_id' => 'pybox',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('processes.show', [
+            'process' => 'conduit',
+            'sourceJob' => $sourceJob->id,
+        ]))
+        ->assertNotFound();
 });
 
 test('authenticated users see process warming state when detail cache is missing', function () {

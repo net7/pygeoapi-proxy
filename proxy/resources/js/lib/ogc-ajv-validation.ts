@@ -3,7 +3,8 @@ import Ajv2020 from 'ajv/dist/2020';
 
 import type { TranslationKey, TranslationValues } from '@/lib/i18n/translation';
 import type { OgcFormErrors } from '@/lib/ogc-form-errors';
-import { isOneOfValue } from '@/lib/ogc-form-values';
+import { isOneOfValue, pruneOptionalInputValues } from '@/lib/ogc-form-values';
+import { ogcPatternValidationMessage } from '@/lib/ogc-pattern-validation';
 import type { OgcNormalizedField } from '@/types';
 
 type OgcAjvTranslator = (
@@ -53,13 +54,14 @@ export function validateOgcInputs({
     inputs,
     translate,
 }: OgcAjvValidationOptions): OgcFormErrors {
+    const prunedInputs = pruneOptionalInputValues(fields, inputs);
     const { activeSchema, cacheKey } = schemaForSelectedVariants(
         schema,
         fields,
-        inputs,
+        prunedInputs,
     );
     const validate = validatorFor(schema, activeSchema, cacheKey);
-    const validationInputs = inputsForValidation(fields, inputs);
+    const validationInputs = inputsForValidation(fields, prunedInputs);
 
     if (validate(validationInputs)) {
         return {};
@@ -242,7 +244,12 @@ function errorMessage(error: ErrorObject, translate: OgcAjvTranslator): string {
     }
 
     if (error.keyword === 'pattern') {
-        return translate('ogc.validationPattern');
+        const pattern = (error as ErrorObject & { schema?: unknown }).schema;
+
+        return ogcPatternValidationMessage(
+            typeof pattern === 'string' ? pattern : null,
+            translate,
+        );
     }
 
     if (error.keyword === 'minimum') {

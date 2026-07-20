@@ -45,3 +45,31 @@ test('it retains the historical result fallback when requested outputs are null'
     expect($results)->toHaveCount(1)
         ->and($results[0]['output_id'])->toBe('result');
 });
+
+test('it normalizes encoded output metadata before persisting a parsed result', function () {
+    $execution = ProcessExecution::factory()->make([
+        'requested_outputs' => [
+            'solwcad_out' => ['transmissionMode' => 'value'],
+        ],
+        'process_outputs' => [
+            'solwcad_out' => [
+                'title' => 'Output &gt; 0',
+                'description' => 'Total ( kl &gt0)',
+            ],
+        ],
+    ]);
+    $response = new Response(new Psr7Response(
+        200,
+        ['Content-Type' => 'text/plain'],
+        'result body',
+    ));
+
+    $results = app(OgcResultResponseParser::class)->parse(
+        $execution,
+        $response,
+        'solwcad_out',
+    );
+
+    expect($results[0]['title'])->toBe('Output > 0')
+        ->and($results[0]['description'])->toBe('Total ( kl >0)');
+});

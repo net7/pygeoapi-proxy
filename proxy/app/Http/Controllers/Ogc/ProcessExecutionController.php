@@ -16,8 +16,10 @@ use App\Models\ProcessExecutionResult;
 use App\Models\User;
 use App\Services\Ogc\CsvPreviewBuilder;
 use App\Services\Ogc\OgcProcessCache;
+use App\Services\Ogc\OgcTextNormalizer;
 use App\Services\Ogc\ProcessInputPayloadBuilder;
 use App\Services\Ogc\ProcessInputValidator;
+use App\Services\Ogc\ProcessInputValueNormalizer;
 use App\Services\Ogc\ProcessOutputRequestBuilder;
 use App\Services\Ogc\ProcessSchemaNormalizer;
 use App\Support\Ogc\SldVisualizationInspector;
@@ -55,6 +57,7 @@ class ProcessExecutionController extends Controller
         OgcProcessCache $cache,
         ProcessSchemaNormalizer $schemaNormalizer,
         ProcessInputValidator $inputValidator,
+        ProcessInputValueNormalizer $inputValueNormalizer,
         ProcessInputPayloadBuilder $inputPayloadBuilder,
         ProcessOutputRequestBuilder $outputRequestBuilder,
         CreateProcessExecution $createProcessExecution,
@@ -67,7 +70,10 @@ class ProcessExecutionController extends Controller
         abort_if($processDescription === null, 409, 'Process description is still warming up.');
 
         $fields = $schemaNormalizer->normalize($processDescription)['fields'];
-        $submittedInputs = $request->executionInputs();
+        $submittedInputs = $inputValueNormalizer->normalize(
+            $fields,
+            $request->executionInputs(),
+        );
         $inputErrors = $inputValidator->errors($fields, $submittedInputs);
 
         if ($inputErrors !== []) {
@@ -115,6 +121,7 @@ class ProcessExecutionController extends Controller
         FindGeoTiffSldResultPairs $findGeoTiffSldResultPairs,
         SldVisualizationInspector $sldVisualizationInspector,
         CsvPreviewBuilder $csvPreviewBuilder,
+        OgcTextNormalizer $textNormalizer,
     ): Response {
         Gate::authorize('view', $processExecution);
 
@@ -142,12 +149,12 @@ class ProcessExecutionController extends Controller
             'note' => $processExecution->note,
             'noteUpdatedAt' => $processExecution->note_updated_at?->toIso8601String(),
             'requestedOutputs' => $processExecution->requested_outputs,
-            'outputMetadata' => (object) $this->outputMetadata($processExecution),
+            'outputMetadata' => (object) $this->outputMetadata($processExecution, $textNormalizer),
             'results' => $processExecution->results->map(fn (ProcessExecutionResult $result): array => [
                 'id' => $result->id,
                 'outputId' => $result->output_id,
-                'title' => $result->title,
-                'description' => $result->description,
+                'title' => $textNormalizer->normalize($result->title),
+                'description' => $textNormalizer->normalize($result->description),
                 'mediaType' => $result->media_type,
                 'cacheStatus' => $result->cache_status->value,
                 'preview' => $this->previewForResult($result, $csvPreviewBuilder),
@@ -180,8 +187,10 @@ class ProcessExecutionController extends Controller
      *     description: string|null
      * }>
      */
-    private function outputMetadata(ProcessExecution $processExecution): array
-    {
+    private function outputMetadata(
+        ProcessExecution $processExecution,
+        OgcTextNormalizer $textNormalizer,
+    ): array {
         $metadata = [];
 
         foreach ($processExecution->process_outputs ?? [] as $outputId => $output) {
@@ -189,8 +198,12 @@ class ProcessExecutionController extends Controller
                 continue;
             }
 
-            $title = $output['title'] ?? null;
-            $description = $output['description'] ?? null;
+            $title = is_string($output['title'] ?? null)
+                ? $textNormalizer->normalize($output['title'])
+                : null;
+            $description = is_string($output['description'] ?? null)
+                ? $textNormalizer->normalize($output['description'])
+                : null;
 
             $metadata[(string) $outputId] = [
                 'title' => is_string($title) && trim($title) !== ''

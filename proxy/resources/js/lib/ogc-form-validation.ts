@@ -1,6 +1,7 @@
 import type { TranslationKey, TranslationValues } from '@/lib/i18n/translation';
 import { fieldError } from '@/lib/ogc-form-errors';
 import type { OgcFormErrors } from '@/lib/ogc-form-errors';
+import { ogcPatternValidationMessage } from '@/lib/ogc-pattern-validation';
 
 export type OgcFieldValidationState = 'neutral' | 'invalid' | 'corrected';
 
@@ -134,7 +135,10 @@ export function ogcConstraintMessage(
     }
 
     if (validity.patternMismatch) {
-        return translate('ogc.validationPattern');
+        return ogcPatternValidationMessage(
+            control.getAttribute('data-ogc-pattern'),
+            translate,
+        );
     }
 
     if (validity.tooShort) {

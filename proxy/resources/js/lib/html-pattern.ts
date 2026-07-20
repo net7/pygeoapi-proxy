@@ -9,11 +9,17 @@ export function htmlPatternForInput({
         return undefined;
     }
 
+    if (/\[\[:[a-z]+:\]\]/i.test(pattern)) {
+        return undefined;
+    }
+
+    const browserPattern = pattern.replaceAll('[+-]', '[+\\-]');
+
     try {
-        new RegExp(pattern, 'v');
+        new RegExp(browserPattern, 'v');
     } catch {
         return undefined;
     }
 
-    return pattern;
+    return browserPattern;
 }

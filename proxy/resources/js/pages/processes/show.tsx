@@ -1,4 +1,5 @@
 import { Head } from '@inertiajs/react';
+import { CopyCheckIcon } from 'lucide-react';
 
 import CacheWarmupPoller from '@/components/ogc/cache-warmup-poller';
 import DynamicProcessForm from '@/components/ogc/dynamic-process-form';
@@ -7,16 +8,18 @@ import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatJobDate } from '@/lib/jobs';
 import { index } from '@/routes/processes';
-import type { OgcCacheStatus, OgcFormSchema } from '@/types';
+import type { OgcCacheStatus, OgcFormSchema, OgcInputPrefill } from '@/types';
 
 export default function ProcessShow({
     formSchema,
     processStatus = 'ready',
     processLastUpdatedAt = null,
+    inputPrefill = null,
 }: {
     formSchema: OgcFormSchema | null;
     processStatus?: OgcCacheStatus;
     processLastUpdatedAt?: string | null;
+    inputPrefill?: OgcInputPrefill | null;
 }) {
     const { t, locale } = useTranslation();
 
@@ -31,6 +34,7 @@ export default function ProcessShow({
                         'processStatus',
                         'processLastUpdatedAt',
                         'formSchema',
+                        'inputPrefill',
                     ]}
                 />
 
@@ -74,7 +78,33 @@ export default function ProcessShow({
                     ) : null}
                 </div>
 
-                <DynamicProcessForm schema={formSchema} />
+                {inputPrefill ? (
+                    <Alert className="border-info-emphasis bg-info/10 text-info-emphasis shadow-xs *:data-[slot=alert-description]:text-info-emphasis/80">
+                        <CopyCheckIcon aria-hidden="true" />
+                        <AlertTitle>
+                            {t('ogc.inputPrefillTitle', {
+                                source: inputPrefill.sourceJobName,
+                            })}
+                        </AlertTitle>
+                        <AlertDescription className="flex flex-col gap-1">
+                            <span>{t('ogc.inputPrefillDescription')}</span>
+                            {inputPrefill.skippedInputs.length > 0 ? (
+                                <span className="font-medium text-amber-700 dark:text-amber-300">
+                                    {t('ogc.inputPrefillSkipped', {
+                                        inputs: inputPrefill.skippedInputs.join(
+                                            ', ',
+                                        ),
+                                    })}
+                                </span>
+                            ) : null}
+                        </AlertDescription>
+                    </Alert>
+                ) : null}
+
+                <DynamicProcessForm
+                    schema={formSchema}
+                    inputPrefill={inputPrefill}
+                />
             </div>
         </>
     );

@@ -171,7 +171,10 @@ test('it normalizes ordered selectable output formats from solwcad', function ()
             'mediaType' => 'text/plain',
         ],
     ])->and($normalized['outputs']['solwcad_out']['mediaType'])
-        ->toBe('text/plain');
+        ->toBe('text/plain')
+        ->and($normalized['outputs']['solwcad_out']['description'])
+        ->toContain('kl >0')
+        ->not->toContain('&gt');
 });
 
 test('it normalizes repeatable object arrays', function () {

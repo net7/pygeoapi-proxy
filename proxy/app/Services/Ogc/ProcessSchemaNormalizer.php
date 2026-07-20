@@ -8,6 +8,7 @@ class ProcessSchemaNormalizer
 {
     public function __construct(
         private ProcessOutputFormatExtractor $outputFormatExtractor,
+        private OgcTextNormalizer $textNormalizer,
     ) {}
 
     /**
@@ -21,8 +22,8 @@ class ProcessSchemaNormalizer
 
         return [
             'id' => $processId,
-            'title' => $process['title'] ?? $process['id'],
-            'description' => $process['description'] ?? null,
+            'title' => $this->normalizeText($process['title'] ?? $process['id']),
+            'description' => $this->normalizeText($process['description'] ?? null),
             'version' => $process['version'] ?? null,
             'jobControlOptions' => $process['jobControlOptions'] ?? [],
             'outputTransmission' => $process['outputTransmission'] ?? [],
@@ -100,7 +101,7 @@ class ProcessSchemaNormalizer
                     ->map(fn (array $variant, int $index): array => [
                         'id' => (string) $index,
                         'label' => $this->variantLabel($variant),
-                        'description' => $variant['description'] ?? null,
+                        'description' => $this->normalizeText($variant['description'] ?? null),
                         'required' => $variant['required'] ?? [],
                         'additionalProperties' => $variant['additionalProperties'] ?? null,
                         'fields' => $this->normalizeProperties($variant['properties'] ?? [], $variant['required'] ?? []),
@@ -199,13 +200,13 @@ class ProcessSchemaNormalizer
      */
     private function variantLabel(array $variant): string
     {
-        $title = $variant['title'] ?? null;
+        $title = $this->normalizeText($variant['title'] ?? null);
 
         if (is_string($title) && trim($title) !== '') {
             return trim($title);
         }
 
-        $description = $variant['description'] ?? null;
+        $description = $this->normalizeText($variant['description'] ?? null);
 
         if (
             is_string($description)
@@ -238,7 +239,7 @@ class ProcessSchemaNormalizer
 
         $requiredLabels = collect($variant['required'] ?? [])
             ->map(function (string $name) use ($variant): string {
-                $title = data_get($variant, "properties.{$name}.title");
+                $title = $this->normalizeText(data_get($variant, "properties.{$name}.title"));
 
                 return is_string($title) && trim($title) !== ''
                     ? trim($title)
@@ -288,8 +289,8 @@ class ProcessSchemaNormalizer
     {
         return [
             'name' => $name,
-            'title' => $metadata['title'] ?? $schema['title'] ?? $name,
-            'description' => $metadata['description'] ?? $schema['description'] ?? null,
+            'title' => $this->normalizeText($metadata['title'] ?? $schema['title'] ?? $name),
+            'description' => $this->normalizeText($metadata['description'] ?? $schema['description'] ?? null),
             'minOccurs' => $metadata['minOccurs'] ?? null,
             'maxOccurs' => $metadata['maxOccurs'] ?? null,
             'minimum' => $schema['minimum'] ?? null,
@@ -342,8 +343,8 @@ class ProcessSchemaNormalizer
 
             $normalized[$name] = [
                 'name' => $name,
-                'title' => $output['title'] ?? $name,
-                'description' => $output['description'] ?? null,
+                'title' => $this->normalizeText($output['title'] ?? $name),
+                'description' => $this->normalizeText($output['description'] ?? null),
                 'mediaType' => $this->mediaTypeFromSchema($schema) ?? $this->firstComponentMediaType($components),
                 'contentEncoding' => $schema['contentEncoding'] ?? null,
                 'schemaRef' => $schema['$ref'] ?? null,
@@ -375,7 +376,7 @@ class ProcessSchemaNormalizer
 
             $components[$name] = [
                 'name' => (string) $name,
-                'description' => $componentSchema['description'] ?? null,
+                'description' => $this->normalizeText($componentSchema['description'] ?? null),
                 'mediaType' => $this->mediaTypeFromSchema($componentSchema),
                 'schemaRef' => $this->schemaRefFromSchema($componentSchema),
             ];
@@ -398,6 +399,13 @@ class ProcessSchemaNormalizer
         }
 
         return null;
+    }
+
+    private function normalizeText(mixed $value): ?string
+    {
+        return $this->textNormalizer->normalize(
+            is_string($value) ? $value : null,
+        );
     }
 
     /**
