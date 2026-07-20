@@ -32,13 +32,13 @@ test('it defaults to formats only where pybox advertises a top level media type'
     ]);
 })->todo('Deferred point 4: honor the process outputTransmission contract.');
 
-test('it defaults solwcad to its advertised text format', function () {
+test('it defaults solwcad to its first available json format', function () {
     $builder = app(ProcessOutputRequestBuilder::class);
     $process = ogcFixture('process-solwcad');
 
     expect($builder->forProcess($process))->toBe([
         'solwcad_out' => [
-            'format' => ['mediaType' => 'text/plain'],
+            'format' => ['mediaType' => 'application/json'],
             'transmissionMode' => 'value',
         ],
     ]);

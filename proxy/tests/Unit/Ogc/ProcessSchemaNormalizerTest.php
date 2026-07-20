@@ -167,6 +167,10 @@ test('it normalizes ordered selectable output formats from solwcad', function ()
 
     expect($normalized['outputs']['solwcad_out']['formats'])->toBe([
         [
+            'label' => 'JSON Array',
+            'mediaType' => 'application/json',
+        ],
+        [
             'label' => 'Plain text Array',
             'mediaType' => 'text/plain',
         ],
