@@ -12,6 +12,7 @@ return [
     'any_of' => 'Il campo :attribute non è valido.',
     'array' => ':Attribute deve essere un array.',
     'ascii' => ':Attribute deve contenere solo caratteri alfanumerici single-byte e simboli.',
+    'base64' => ':Attribute deve essere una stringa Base64 valida.',
     'before' => ':Attribute deve essere una data precedente al :date.',
     'before_or_equal' => ':Attribute deve essere una data precedente o uguale al :date.',
     'between' => [
