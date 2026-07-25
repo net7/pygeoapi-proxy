@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Ogc\ExecutionMode;
 use App\Enums\Ogc\ExecutionStatus;
+use App\Enums\Ogc\ResultCollectionStatus;
 use Database\Factories\ProcessExecutionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,6 +21,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'execution_mode',
     'remote_job_id',
     'status',
+    'result_collection_status',
+    'result_collection_error',
     'progress',
     'message',
     'note',
@@ -78,6 +81,7 @@ class ProcessExecution extends Model
         return [
             'execution_mode' => ExecutionMode::class,
             'status' => ExecutionStatus::class,
+            'result_collection_status' => ResultCollectionStatus::class,
             'note' => 'array',
             'request_payload' => 'array',
             'requested_outputs' => 'array',

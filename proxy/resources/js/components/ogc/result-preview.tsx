@@ -1,6 +1,7 @@
 import { ChevronDownIcon, Download, FileTextIcon } from 'lucide-react';
 import { lazy, Suspense } from 'react';
 
+import ImageResultPreview from '@/components/ogc/image-result-preview';
 import RawPayloadBlock from '@/components/ogc/raw-payload-block';
 import ResultPreviewLoading from '@/components/ogc/result-preview-loading';
 import { Button } from '@/components/ui/button';
@@ -26,8 +27,11 @@ import {
 } from '@/components/ui/table';
 import { useTranslation } from '@/hooks/use-translation';
 import { normalizeCsvPreview } from '@/lib/csv-preview';
-import { downloadLabelForMediaType } from '@/lib/ogc-outputs';
-import { download } from '@/routes/jobs/results';
+import {
+    downloadLabelForMediaType,
+    isPreviewableImageMediaType,
+} from '@/lib/ogc-outputs';
+import { download, preview as previewResult } from '@/routes/jobs/results';
 import type { ProcessExecutionResult } from '@/types';
 
 const ChartResultPreview = lazy(
@@ -46,6 +50,8 @@ export default function ResultPreview({
     const canDownload =
         result.cacheStatus === 'cached' ||
         result.cacheStatus === 'metadata_only';
+    const isImage =
+        canDownload && isPreviewableImageMediaType(result.mediaType);
     const copyLabel = result.title ?? result.outputId;
 
     return (
@@ -94,7 +100,16 @@ export default function ResultPreview({
                 </CardHeader>
                 <CollapsibleContent>
                     <CardContent className="min-h-96">
-                        {preview?.kind === 'chart' ? (
+                        {isImage ? (
+                            <ImageResultPreview
+                                src={previewResult.url([
+                                    executionId,
+                                    result.id,
+                                ])}
+                                alt={copyLabel}
+                            />
+                        ) : null}
+                        {!isImage && preview?.kind === 'chart' ? (
                             <Suspense
                                 fallback={
                                     <ResultPreviewLoading className="min-h-96" />
@@ -106,30 +121,30 @@ export default function ResultPreview({
                                 />
                             </Suspense>
                         ) : null}
-                        {preview?.kind === 'csv' ? (
+                        {!isImage && preview?.kind === 'csv' ? (
                             <CsvPreview
                                 data={preview.data}
                                 copyLabel={copyLabel}
                             />
                         ) : null}
-                        {preview?.kind === 'text' ? (
+                        {!isImage && preview?.kind === 'text' ? (
                             <TextPreview
                                 data={preview.data}
                                 copyLabel={copyLabel}
                             />
                         ) : null}
-                        {preview?.kind === 'json' ? (
+                        {!isImage && preview?.kind === 'json' ? (
                             <JsonPreview
                                 data={preview.data}
                                 copyLabel={copyLabel}
                             />
                         ) : null}
-                        {preview?.kind === 'binary' ? (
+                        {!isImage && preview?.kind === 'binary' ? (
                             <p className="text-sm text-muted-foreground">
                                 {t('ogc.previewUnavailableMedia')}
                             </p>
                         ) : null}
-                        {!preview ? (
+                        {!isImage && !preview ? (
                             <p className="text-sm text-muted-foreground">
                                 {t('ogc.previewUnavailable')}
                             </p>

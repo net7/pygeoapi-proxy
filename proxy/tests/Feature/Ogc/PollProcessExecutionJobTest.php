@@ -1,10 +1,13 @@
 <?php
 
+use App\Actions\Ogc\CollectProcessExecutionResults;
 use App\Actions\Ogc\PollProcessExecution;
 use App\Actions\Ogc\StoreProcessResult;
 use App\Enums\Ogc\ExecutionStatus;
 use App\Enums\Ogc\MapLayerStatus;
 use App\Enums\Ogc\ResultCacheStatus;
+use App\Enums\Ogc\ResultCollectionStatus;
+use App\Jobs\Ogc\CollectProcessExecutionResultsJob;
 use App\Jobs\Ogc\PollProcessExecutionJob;
 use App\Jobs\Ogc\PublishGeoTiffMapLayerJob;
 use App\Models\ProcessExecution;
@@ -75,7 +78,11 @@ test('it ignores direct link storage for an explicit empty requested output map'
     expect($execution->refresh()->results)->toHaveCount(0);
 });
 
-test('it marks successful jobs and stores results', function () {
+test('it marks remote jobs successful and queues result collection', function () {
+    Bus::fake([
+        'App\Jobs\Ogc\CollectProcessExecutionResultsJob',
+        PublishGeoTiffMapLayerJob::class,
+    ]);
     Notification::fake();
 
     $execution = ProcessExecution::factory()->create([
@@ -97,6 +104,42 @@ test('it marks successful jobs and stores results', function () {
 
     expect($execution->status)->toBe(ExecutionStatus::Successful)
         ->and($execution->progress)->toBe(100)
+        ->and($execution->result_collection_status?->value)->toBe('pending')
+        ->and($execution->results)->toHaveCount(0);
+
+    Http::assertSentCount(1);
+    Bus::assertDispatched(
+        'App\Jobs\Ogc\CollectProcessExecutionResultsJob',
+        fn (object $job): bool => $job->processExecutionId === $execution->id,
+    );
+    Notification::assertNothingSent();
+});
+
+test('it collects results for successful remote jobs', function () {
+    Notification::fake();
+
+    $execution = ProcessExecution::factory()->create([
+        'remote_job_id' => 'job-123',
+        'status' => ExecutionStatus::Successful,
+        'result_collection_status' => ResultCollectionStatus::Pending,
+        'requested_outputs' => ['gas' => ['transmissionMode' => 'value']],
+    ]);
+
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123?f=json' => Http::response(ogcFixture('job-successful')),
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results?f=json' => Http::response(ogcFixture('chart-result')),
+    ]);
+
+    app()->call([
+        new CollectProcessExecutionResultsJob($execution->id),
+        'handle',
+    ]);
+
+    $execution->refresh();
+
+    expect($execution->status)->toBe(ExecutionStatus::Successful)
+        ->and($execution->result_collection_status)->toBe(ResultCollectionStatus::Successful)
+        ->and($execution->result_collection_error)->toBeNull()
         ->and($execution->results)->toHaveCount(1);
 
     Notification::assertSentTo(
@@ -110,6 +153,37 @@ test('it marks successful jobs and stores results', function () {
                 && $data['icon'] === 'check-circle'
                 && $data['tone'] === 'success'
                 && $data['action_url'] === route('jobs.show', $execution);
+        },
+    );
+});
+
+test('it records a collection failure without changing remote success', function () {
+    Notification::fake();
+
+    $execution = ProcessExecution::factory()->create([
+        'status' => ExecutionStatus::Successful,
+        'result_collection_status' => ResultCollectionStatus::Collecting,
+    ]);
+
+    (new CollectProcessExecutionResultsJob($execution->id))
+        ->failed(new RuntimeException('The remote result download timed out.'));
+
+    $execution->refresh();
+
+    expect($execution->status)->toBe(ExecutionStatus::Successful)
+        ->and($execution->result_collection_status)->toBe(ResultCollectionStatus::Failed)
+        ->and($execution->result_collection_error)->toBe('The remote result download timed out.');
+
+    Notification::assertSentTo(
+        $execution->user,
+        ProcessExecutionCompleted::class,
+        function (ProcessExecutionCompleted $notification) use ($execution) {
+            $data = $notification->toDatabase($execution->user)->data;
+
+            return $data['title'] === 'Process completed'
+                && $data['body'] === 'The process finished successfully, but the results could not be collected. You can retry from the job page.'
+                && $data['icon'] === 'circle-alert'
+                && $data['tone'] === 'warning';
         },
     );
 });
@@ -148,23 +222,28 @@ test('it completes a successful zero output job without requesting results', fun
     );
 });
 
-test('it does not expose successful status before result storage completes', function () {
+test('it keeps remote success visible while result storage completes', function () {
     Notification::fake();
 
     $execution = ProcessExecution::factory()->create([
         'remote_job_id' => 'job-123',
-        'status' => ExecutionStatus::Running,
+        'status' => ExecutionStatus::Successful,
+        'result_collection_status' => ResultCollectionStatus::Pending,
         'requested_outputs' => ['gas' => ['transmissionMode' => 'value']],
     ]);
     $storeProcessResult = new class extends StoreProcessResult
     {
         public ?ExecutionStatus $statusWhenStoring = null;
 
+        public ?ResultCollectionStatus $resultCollectionStatusWhenStoring = null;
+
         public function __construct() {}
 
         public function fromResponse(ProcessExecution $execution, Response $response, ?string $outputId = null): void
         {
-            $this->statusWhenStoring = $execution->refresh()->status;
+            $execution->refresh();
+            $this->statusWhenStoring = $execution->status;
+            $this->resultCollectionStatusWhenStoring = $execution->result_collection_status;
         }
     };
 
@@ -173,13 +252,14 @@ test('it does not expose successful status before result storage completes', fun
         'https://voice.pi.ingv.it/geoinquire/jobs/job-123/results?f=json' => Http::response(ogcFixture('chart-result')),
     ]);
 
-    (new PollProcessExecution(
+    (new CollectProcessExecutionResults(
         app(OgcProcessesClient::class),
         $storeProcessResult,
     ))->handle($execution);
 
-    expect($storeProcessResult->statusWhenStoring)->toBe(ExecutionStatus::Running)
-        ->and($execution->refresh()->status)->toBe(ExecutionStatus::Successful);
+    expect($storeProcessResult->statusWhenStoring)->toBe(ExecutionStatus::Successful)
+        ->and($storeProcessResult->resultCollectionStatusWhenStoring)->toBe(ResultCollectionStatus::Collecting)
+        ->and($execution->refresh()->result_collection_status)->toBe(ResultCollectionStatus::Successful);
 });
 
 test('it stores each multipart result using process output definitions', function () {

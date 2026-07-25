@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 
-import { formatJobDate, isJobFailure } from '../../resources/js/lib/jobs';
+import {
+    formatJobDate,
+    isJobFailure,
+    isResultCollectionActive,
+} from '../../resources/js/lib/jobs';
 
 describe('isJobFailure', () => {
     test('classifies terminal failure statuses', () => {
@@ -12,6 +16,16 @@ describe('isJobFailure', () => {
                 isJobFailure,
             ),
         ).toEqual([false, false, false, false]);
+    });
+});
+
+describe('isResultCollectionActive', () => {
+    test('keeps refreshing only while results are pending or collecting', () => {
+        expect(
+            ['pending', 'collecting', 'successful', 'failed', null].map(
+                isResultCollectionActive,
+            ),
+        ).toEqual([true, true, false, false, false]);
     });
 });
 
