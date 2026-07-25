@@ -1,5 +1,11 @@
 # pygeoapi API reference
 
+Questo documento descrive il servizio pygeoapi esterno consumato da
+proxygeoapi tramite `OGC_PROCESSES_BASE_URL`. Il deploy, la configurazione
+runtime e la versione effettiva del servizio remoto sono gestiti fuori da
+questo repository. Il valore predefinito dell'applicazione è
+`https://voice.pi.ingv.it/geoinquire/`.
+
 Analisi basata su:
 
 - Documentazione stabile: https://docs.pygeoapi.io/en/stable/ (release 0.23.4, 2026-04-27)
@@ -92,7 +98,8 @@ Nota: pygeoapi genera anche il documento OpenAPI runtime da configurazione. Quin
 Gli esempi assumono:
 
 ```bash
-BASE_URL=http://localhost:5000
+BASE_URL=${OGC_PROCESSES_BASE_URL:-https://voice.pi.ingv.it/geoinquire/}
+BASE_URL=${BASE_URL%/}
 COLLECTION=obs
 ITEM_ID=371
 PROCESS_ID=hello-world
@@ -525,10 +532,10 @@ curl -i -X PUT "$BASE_URL/admin/config" \
   -H "Content-Type: application/json" \
   -d '{
     "server": {
-      "url": "http://localhost:5000",
+      "url": "https://pygeoapi.example.org/",
       "bind": {
         "host": "0.0.0.0",
-        "port": 5000
+        "port": 80
       },
       "mimetype": "application/json",
       "encoding": "utf-8",

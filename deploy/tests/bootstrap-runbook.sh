@@ -8,6 +8,7 @@ repository_root=$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd)
 english_runbook="$repository_root/DEPLOY.md"
 italian_runbook="$repository_root/DEPLOY.it.md"
 deployment_index="$repository_root/deploy/README.md"
+api_reference="$repository_root/PYGEOAPI.md"
 
 require_file() {
     file=$1
@@ -27,9 +28,20 @@ require_text() {
     fi
 }
 
+require_absent_text() {
+    file=$1
+    text=$2
+    if grep -F -- "$text" "$file" > /dev/null; then
+        printf 'Obsolete deployment documentation in %s: %s\n' \
+            "$file" "$text" >&2
+        exit 1
+    fi
+}
+
 require_file "$english_runbook"
 require_file "$italian_runbook"
 require_file "$deployment_index"
+require_file "$api_reference"
 
 require_text "$english_runbook" '## First automatic deployment bootstrap'
 require_text "$english_runbook" '## Verify the first automatic deployment'
@@ -47,6 +59,23 @@ for runbook in "$english_runbook" "$italian_runbook"; do
     require_text "$runbook" "read -r -s -p 'Staging Basic Auth (user:password): ' STAGING_BASIC_AUTH"
     require_text "$runbook" '--user "$STAGING_BASIC_AUTH"'
     require_text "$runbook" 'unset STAGING_BASIC_AUTH'
+done
+
+for document in "$english_runbook" "$italian_runbook" "$api_reference"; do
+    require_text "$document" 'https://voice.pi.ingv.it/geoinquire/'
+    require_text "$document" 'OGC_PROCESSES_BASE_URL'
+
+    for obsolete_text in \
+        'http://pygeoapi' \
+        'localhost:5000' \
+        'PYGEOAPI_BASE_URL' \
+        'PYGEOAPI_SERVER_URL' \
+        'PYGEOAPI_PORT' \
+        'make pygeoapi-validate' \
+        'geopython/pygeoapi:latest'
+    do
+        require_absent_text "$document" "$obsolete_text"
+    done
 done
 
 require_text "$deployment_index" '../DEPLOY.md'

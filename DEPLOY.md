@@ -4,9 +4,10 @@
 
 ## Overview
 
-ProxyGeoAPI ships as one Docker Compose stack for the Laravel application,
-pygeoapi, GeoServer, MariaDB, Redis, Horizon, Scheduler, and Reverb. Development
-adds Vite, phpMyAdmin, and Mailpit.
+proxygeoapi ships as one Docker Compose stack for Laravel, GeoServer, MariaDB,
+Redis, Horizon, Scheduler, and Reverb. Development adds Vite, phpMyAdmin, and
+Mailpit. The OGC API - Processes backend is a separately operated remote
+pygeoapi service, not a container managed by this repository.
 
 This guide is the deployment source of truth for all supported environments.
 The repository automates **staging** deployments through GitLab CI/CD.
@@ -19,7 +20,7 @@ The Makefile supports three isolated environments. `develop` is the default.
 
 | Environment | Compose project | Published endpoints | Intended use |
 | --- | --- | --- | --- |
-| `develop` | `pygeoapi-proxy-develop` | App `8088`, Reverb `8089`, Vite `5174`, pygeoapi `5000`, GeoServer `8091`, phpMyAdmin `8090`, Mailpit `8026` | Local development |
+| `develop` | `pygeoapi-proxy-develop` | App `8088`, Reverb `8089`, Vite `5174`, GeoServer `8091`, phpMyAdmin `8090`, Mailpit `8026` | Local development |
 | `staging` | `pygeoapi-proxy-staging` | App `127.0.0.1:7070`, Reverb `127.0.0.1:7071` | GitLab-managed staging behind host Nginx |
 | `production` | `pygeoapi-proxy-production` | App `8080`, Reverb `8081` by default | Manually operated production |
 
@@ -59,8 +60,10 @@ Host Nginx (staging)
 
 Docker network
   Laravel / Horizon / Scheduler / Reverb
-        |          |          |          |
-     MariaDB     Redis     pygeoapi   GeoServer
+        |          |          |
+     MariaDB     Redis    GeoServer
+        |
+        +---- HTTPS ----> remote pygeoapi / OGC Processes API
 ```
 
 | Service | Responsibility | Exposure |
@@ -71,14 +74,15 @@ Docker network
 | `reverb` | Laravel WebSocket server | Published in every environment |
 | `mariadb` | Application database | Internal |
 | `redis` | Cache, sessions, queues, and Reverb scaling | Internal |
-| `pygeoapi` | OGC API - Processes backend | Host port `5000` only in development |
 | `geoserver` | Publishes GeoTIFF/SLD outputs as map layers | Host port `8091` only in development |
 | `vite` | Frontend development server built with Bun | Development only, host port `5174` |
 | `phpmyadmin` | MariaDB administration UI | Development only, host port `8090` |
 | `mailpit` | Local SMTP sink and email UI | Development only, host port `8026` |
 
-In staging and production, Laravel reaches pygeoapi at
-`http://pygeoapi` and GeoServer at
+Every environment reaches the remote OGC Processes API through
+`OGC_PROCESSES_BASE_URL`. Its default is
+`https://voice.pi.ingv.it/geoinquire/`, and its deployment and version are
+managed outside this repository. Laravel reaches GeoServer at
 `http://geoserver:8080/geoserver` through the private Compose network.
 
 ## Prerequisites
@@ -88,7 +92,6 @@ For local or manual Compose operation:
 - Git;
 - Docker Engine with the Docker Compose plugin;
 - GNU Make;
-- a readable `my.config.yml` pygeoapi configuration at the repository root;
 - an environment file created from the matching versioned template.
 
 The staging deployment account also needs Bash, Curl, `flock`, and SSH access
@@ -148,15 +151,28 @@ settings:
 - `ORCID_CLIENT_SECRET`
 - `ORCID_REDIRECT_URI`
 
-The templates already keep internal service addresses such as
-`PYGEOAPI_BASE_URL=http://pygeoapi`. Do not expose database, Redis, pygeoapi,
-or GeoServer ports in staging or production unless the infrastructure design
-explicitly requires it.
+The templates configure the external OGC Processes dependency with:
+
+```dotenv
+OGC_PROCESSES_BASE_URL=https://voice.pi.ingv.it/geoinquire/
+```
+
+Override this value when an environment uses a different remote deployment.
+Do not expose database, Redis, or GeoServer ports in staging or production
+unless the infrastructure design explicitly requires it.
 
 For server-managed environments, restrict the environment file:
 
 ```bash
 chmod 600 .env.staging
+```
+
+Verify remote connectivity from the deployment host:
+
+```bash
+OGC_PROCESSES_BASE_URL=https://voice.pi.ingv.it/geoinquire/
+curl --fail --silent --show-error \
+  "${OGC_PROCESSES_BASE_URL%/}/processes?f=json" > /dev/null
 ```
 
 ## Start the stack
@@ -199,7 +215,7 @@ The Laravel image uses a multi-stage build:
 Bun remains the package manager and build runner. Node is copied into the final
 image so Vite can execute its expected runtime.
 
-The root Dockerfile extends `geopython/pygeoapi:latest`. Compose also uses:
+Compose also uses:
 
 - `docker.osgeo.org/geoserver:2.27.1`;
 - `mariadb:latest`;
@@ -222,8 +238,8 @@ make staging build
 make production build
 ```
 
-The staging deploy path uses plain build logs and builds only application
-images:
+The staging deploy path uses plain build logs and builds only the Laravel
+application image:
 
 ```bash
 make staging deploy-build
@@ -243,7 +259,6 @@ Default local URLs:
 - application: `http://localhost:8088`
 - Reverb: `http://localhost:8089`
 - Vite: `http://localhost:5174`
-- pygeoapi: `http://localhost:5000`
 - GeoServer: `http://localhost:8091/geoserver`
 - phpMyAdmin: `http://localhost:8090`
 - Mailpit: `http://localhost:8026`
@@ -261,7 +276,6 @@ Useful development commands:
 ```bash
 make test
 make pint
-make pygeoapi-validate
 make logs SERVICE=laravel
 ```
 
@@ -644,7 +658,7 @@ On the server, `deploy.sh`:
 3. checks out that exact SHA in detached mode and re-executes the versioned
    script;
 4. validates Compose;
-5. builds Laravel and pygeoapi images;
+5. builds the Laravel image;
 6. stops workers, updates Laravel with migration-safe automation, updates the
    remaining services, and checks health.
 
@@ -723,7 +737,6 @@ make fresh
 make optimize
 make clear
 make horizon-status
-make pygeoapi-validate
 ```
 
 `make fresh` runs `migrate:fresh --seed` and destroys existing application
@@ -821,7 +834,7 @@ sudo systemctl reload nginx
 | Migration fails | Inspect Laravel logs with `LOG_FOLLOW=` | Fix the migration or database connectivity; verify schema compatibility before rollback. |
 | Laravel unhealthy | `make staging deploy-status` and `curl http://127.0.0.1:7070/up` | Inspect bounded Laravel logs, correct the cause, and redeploy. |
 | Reverb unhealthy | Check Reverb logs and status | Verify Redis, Reverb keys, loopback port `7071`, and the Nginx WebSocket location. |
-| pygeoapi unhealthy | `make staging logs SERVICE=pygeoapi LOG_FOLLOW= LOG_TAIL=200` | Validate `my.config.yml`, internal URLs, and process provider startup. |
+| Remote OGC API unavailable | Run the documented Curl check from the deployment host and inspect `make staging logs SERVICE='laravel horizon' LOG_FOLLOW= LOG_TAIL=200` | Verify `OGC_PROCESSES_BASE_URL`, DNS, TLS, upstream authentication, timeouts, and remote service availability. |
 | GeoServer publication fails | Inspect Laravel and GeoServer logs | Verify GeoServer credentials, workspace, storage, and internal REST URL. |
 
 Do not run a global `docker image prune` or `docker compose down -v` on the
@@ -833,7 +846,9 @@ shared server during diagnosis.
 - Use dedicated SSH keys and protected GitLab variables.
 - Verify SSH host keys out of band; never use `StrictHostKeyChecking=no`.
 - Block direct pushes to `staging` and require successful pipelines.
-- Keep MariaDB, Redis, pygeoapi, and GeoServer on the private Compose network.
+- Keep MariaDB, Redis, and GeoServer on the private Compose network.
+- Treat the remote OGC Processes API as an external dependency and restrict its
+  credentials outside Git when authentication is required.
 - Replace all development defaults before staging or production use.
 - Treat database dumps as secrets and copy them to encrypted, access-controlled
   off-host storage.
@@ -852,7 +867,6 @@ shared server during diagnosis.
 | `.env.*.example` | Versioned environment templates |
 | `Makefile` | Environment-aware operational commands |
 | `proxy/Dockerfile` | Laravel runtime and frontend multi-stage build |
-| `Dockerfile` | pygeoapi image |
 | `.gitlab-ci.yml` | Quality gates and automatic staging deployment |
 | `deploy.sh` | Versioned, locked staging deployment orchestrator |
 | `deploy/README.md` | Deployment documentation index |
