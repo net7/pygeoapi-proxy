@@ -402,8 +402,8 @@ The content must state:
 - inputs are validated in the browser and again by Laravel;
 - execution requests are persisted, queued, submitted asynchronously, and
   polled by Horizon workers;
-- status updates reach the UI through Reverb and the execution remains
-  available in job history;
+- the UI polls Laravel for status updates and the execution remains available
+  in job history;
 - results can be displayed as structured data, CSV previews, charts, or
   GeoTIFF/SLD map layers published through GeoServer;
 - authentication supports configured social providers and email OTP, while
@@ -449,11 +449,11 @@ The content must state:
 Use one compact text flow:
 
 ```text
-User -> Laravel/React -> Redis queue -> pygeoapi
-                  |             |
-               MariaDB       GeoServer
-                  |
-              Reverb/UI
+Browser -> Laravel/Inertia -> Redis/Horizon -> pygeoapi
+   ^             |                              |
+   |          MariaDB <------ results ----------+
+   |                                            |
+   +------ status polling / previews <- GeoServer
 ```
 
 - [ ] **Step 4: Write the Italian README**
