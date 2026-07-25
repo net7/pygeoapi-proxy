@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 130"
+     role="img" aria-labelledby="title description">
+  <title id="title">proxygeoapi</title>
+  <desc id="description">
+    The proxygeoapi wordmark in the Figlet slant style.
+  </desc>
+  <g fill="#2563EB" font-family="'Courier New', Courier, monospace"
+     font-size="16" font-weight="700" xml:space="preserve">
+    <text x="0" y="20">                                                              _</text>
+    <text x="0" y="40">    ____  _________  _  ____  ______ ____  ____  ____ _____  (_)</text>
+    <text x="0" y="60">   / __ \/ ___/ __ \| |/_/ / / / __ `/ _ \/ __ \/ __ `/ __ \/ /</text>
+    <text x="0" y="80">  / /_/ / /  / /_/ />  &lt;/ /_/ / /_/ /  __/ /_/ / /_/ / /_/ / /</text>
+    <text x="0" y="100"> / .___/_/   \____/_/|_|\__, /\__, /\___/\____/\__,_/ .___/_/</text>
+    <text x="0" y="120">/_/                    /____//____/                /_/</text>
+  </g>
+</svg>

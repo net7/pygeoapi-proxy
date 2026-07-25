@@ -11,6 +11,7 @@ for test_script in \
     compose-staging-automation.sh \
     deploy-script.sh \
     bootstrap-runbook.sh \
+    readme.sh \
     gitlab-ci.sh
 do
     printf '\n==> %s\n' "$test_script"
