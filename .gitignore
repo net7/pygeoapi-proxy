@@ -2,3 +2,5 @@
 .env.staging
 .env.production
 !.env.*.example
+
+deploy/production

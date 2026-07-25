@@ -41,6 +41,10 @@ FROM serversideup/php:${PHP_IMAGE_TAG} AS runtime
 USER root
 WORKDIR /var/www/html
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends mariadb-client \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=composer_deps --chown=www-data:www-data /var/www/html /var/www/html
 COPY --from=assets --chown=www-data:www-data /var/www/html/public/build /var/www/html/public/build
 COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
