@@ -37,12 +37,18 @@ export function outputComponents(
     );
 }
 
-export function downloadLabelForMediaType(mediaType?: string | null): string {
+export function downloadLabelForMediaType(
+    mediaType: string | null | undefined,
+    labels: {
+        file: string;
+        image: string;
+    },
+): string {
     const normalizedMediaType = mediaType?.toLowerCase() ?? '';
     const mediaTypeBase = baseMediaType(mediaType);
 
     if (!mediaTypeBase) {
-        return 'File';
+        return labels.file;
     }
 
     if (normalizedMediaType.includes('geotiff')) {
@@ -51,6 +57,14 @@ export function downloadLabelForMediaType(mediaType?: string | null): string {
 
     if (mediaTypeBase === 'application/vnd.ogc.sld+xml') {
         return 'SLD';
+    }
+
+    if (
+        ['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(
+            mediaTypeBase,
+        )
+    ) {
+        return labels.image;
     }
 
     if (
@@ -68,7 +82,7 @@ export function downloadLabelForMediaType(mediaType?: string | null): string {
         return 'TXT';
     }
 
-    return 'File';
+    return labels.file;
 }
 
 export function isPreviewableImageMediaType(

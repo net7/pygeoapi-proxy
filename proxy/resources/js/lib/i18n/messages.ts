@@ -376,6 +376,7 @@ const it = {
         fieldValid: 'Campo valido',
         file: 'File',
         geotiffDownload: 'GeoTIFF',
+        image: 'Immagine',
         inline: 'Inline',
         inputs: 'Input',
         inputPrefillDescription:
@@ -899,6 +900,7 @@ const en = {
         fieldValid: 'Field is valid',
         file: 'File',
         geotiffDownload: 'GeoTIFF',
+        image: 'Image',
         inline: 'Inline',
         inputs: 'Inputs',
         inputPrefillDescription:

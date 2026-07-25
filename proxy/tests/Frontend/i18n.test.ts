@@ -76,6 +76,8 @@ describe('i18n', () => {
     test('translates process output selection controls', () => {
         expect(translate('it', 'ogc.outputFormat')).toBe('Formato output');
         expect(translate('en', 'ogc.outputFormat')).toBe('Output format');
+        expect(translate('it', 'ogc.image')).toBe('Immagine');
+        expect(translate('en', 'ogc.image')).toBe('Image');
         expect(translate('it', 'ogc.noOutputsSelected')).toBe(
             'Nessun output verrà richiesto',
         );
