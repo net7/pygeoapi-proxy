@@ -11,7 +11,7 @@ DEPLOY_BUILD_PROGRESS ?= plain
 LOG_FOLLOW ?= -f
 LOG_TAIL ?= 100
 
-.PHONY: help develop staging production env require-env config config-check build deploy-build pull up start deploy-up stop down restart ps deploy-status logs shell artisan migrate fresh seed test pint composer bun-install bun-build optimize clear horizon-status pygeoapi-validate destroy
+.PHONY: help develop staging production env require-env config config-check build deploy-build pull up start deploy-up stop down restart ps deploy-status logs shell artisan migrate fresh seed test pint composer bun-install bun-build optimize clear horizon-status destroy
 
 help:
 	@printf '%s\n' 'Usage: make [develop|staging|production] <target>'
@@ -51,7 +51,6 @@ help:
 	@printf '%s\n' '  optimize          Cache Laravel config/routes/views/events'
 	@printf '%s\n' '  clear             Clear Laravel caches'
 	@printf '%s\n' '  horizon-status    Show Horizon status'
-	@printf '%s\n' '  pygeoapi-validate Validate pygeoapi config in the container'
 	@printf '%s\n' '  destroy           Remove containers and named volumes for this env'
 
 develop staging production:
@@ -73,7 +72,7 @@ build: env
 	$(COMPOSE) build --pull
 
 deploy-build: require-env
-	BUILDKIT_PROGRESS=$(DEPLOY_BUILD_PROGRESS) $(COMPOSE) build --pull laravel pygeoapi
+	BUILDKIT_PROGRESS=$(DEPLOY_BUILD_PROGRESS) $(COMPOSE) build --pull laravel
 
 pull: env
 	$(COMPOSE) pull
@@ -145,9 +144,6 @@ clear: env
 
 horizon-status: env
 	$(COMPOSE) exec laravel php artisan horizon:status
-
-pygeoapi-validate: env
-	$(COMPOSE) exec pygeoapi /venv/bin/pygeoapi config validate -c /pygeoapi/local.config.yml
 
 destroy: env
 	$(COMPOSE) down -v --remove-orphans

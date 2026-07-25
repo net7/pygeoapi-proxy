@@ -80,10 +80,6 @@ services:
       - pygeoapi-proxy
     restart: unless-stopped
 
-  pygeoapi:
-    ports:
-      - "${PYGEOAPI_PORT:-5000}:80"
-
   geoserver:
     ports:
       - "${GEOSERVER_PORT:-8091}:8080"

@@ -6,6 +6,7 @@ tests_directory=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 
 for test_script in \
     compose-oauth-env.sh \
+    compose-external-ogc.sh \
     makefile-deploy.sh \
     compose-staging-automation.sh \
     deploy-script.sh \

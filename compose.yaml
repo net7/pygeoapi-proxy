@@ -59,7 +59,7 @@ x-laravel-environment: &laravel-environment
   MAIL_PASSWORD: ${MAIL_PASSWORD:-null}
   MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-hello@example.com}
   MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Pygeoapi Proxy}
-  PYGEOAPI_BASE_URL: ${PYGEOAPI_BASE_URL:-http://pygeoapi}
+  OGC_PROCESSES_BASE_URL: ${OGC_PROCESSES_BASE_URL:-https://voice.pi.ingv.it/geoinquire/}
   GEOSERVER_ENABLED: ${GEOSERVER_ENABLED:-true}
   GEOSERVER_INTERNAL_URL: ${GEOSERVER_INTERNAL_URL:-http://geoserver:8080/geoserver}
   GEOSERVER_PUBLIC_URL: ${GEOSERVER_PUBLIC_URL:-http://localhost:8091/geoserver}
@@ -92,8 +92,6 @@ x-laravel-service: &laravel-service
     mariadb:
       condition: service_healthy
     redis:
-      condition: service_healthy
-    pygeoapi:
       condition: service_healthy
     geoserver:
       condition: service_started
@@ -174,30 +172,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - pygeoapi-proxy
-    restart: unless-stopped
-
-  pygeoapi:
-    build:
-      context: .
-      pull: true
-      args:
-        PYGEOAPI_IMAGE_TAG: ${PYGEOAPI_IMAGE_TAG:-latest}
-    image: ${PYGEOAPI_IMAGE:-pygeoapi-local:latest}
-    environment:
-      PYGEOAPI_CONFIG: /pygeoapi/local.config.yml
-      PYGEOAPI_OPENAPI: /pygeoapi/local.openapi.yml
-      PYGEOAPI_SERVER_URL: ${PYGEOAPI_SERVER_URL:-http://pygeoapi}
-      WSGI_WORKERS: ${PYGEOAPI_WSGI_WORKERS:-4}
-    volumes:
-      - ./my.config.yml:/pygeoapi/local.config.yml:ro
-    healthcheck:
-      test: ["CMD-SHELL", "/venv/bin/python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1/', timeout=5).read()\""]
-      start_period: 20s
-      interval: 30s
-      timeout: 10s
-      retries: 3
     networks:
       - pygeoapi-proxy
     restart: unless-stopped
