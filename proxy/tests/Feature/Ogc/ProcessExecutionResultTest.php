@@ -1,12 +1,16 @@
 <?php
 
+use App\Enums\Ogc\ExecutionStatus;
 use App\Enums\Ogc\ResultCacheStatus;
+use App\Enums\Ogc\ResultCollectionStatus;
+use App\Jobs\Ogc\CollectProcessExecutionResultsJob;
 use App\Models\ProcessExecution;
 use App\Models\ProcessExecutionResult;
 use App\Models\User;
 use App\Support\Ogc\SldVisualizationInspector;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
@@ -35,6 +39,34 @@ test('users can view their execution detail', function () {
             ->missing('execution.remoteJobId')
             ->where('pollingInterval', 2500)
             ->has('execution.results', 1));
+});
+
+test('execution detail exposes result collection state and restricts technical errors to admins', function () {
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create([
+        'status' => ExecutionStatus::Successful,
+        'result_collection_status' => ResultCollectionStatus::Failed,
+        'result_collection_error' => 'Connection to result storage timed out.',
+    ]);
+
+    $userResponse = $this->actingAs($user)
+        ->get("/jobs/{$execution->id}")
+        ->assertOk();
+
+    expect($userResponse->inertiaProps('execution.resultCollection'))->toBe([
+        'status' => 'failed',
+        'error' => null,
+    ]);
+
+    $admin = User::factory()->admin()->create();
+    $adminResponse = $this->actingAs($admin)
+        ->get("/jobs/{$execution->id}")
+        ->assertOk();
+
+    expect($adminResponse->inertiaProps('execution.resultCollection'))->toBe([
+        'status' => 'failed',
+        'error' => 'Connection to result storage timed out.',
+    ]);
 });
 
 test('users can view table previews for existing cached csv results', function () {
@@ -385,6 +417,50 @@ test('users cannot view another users execution detail', function () {
         ->assertForbidden();
 });
 
+test('users can retry failed result collection for their successful jobs', function () {
+    Bus::fake([CollectProcessExecutionResultsJob::class]);
+
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create([
+        'status' => ExecutionStatus::Successful,
+        'result_collection_status' => ResultCollectionStatus::Failed,
+        'result_collection_error' => 'The remote result download timed out.',
+    ]);
+
+    $this->actingAs($user)
+        ->post("/jobs/{$execution->id}/results/retry")
+        ->assertRedirectToRoute('jobs.show', $execution);
+
+    $execution->refresh();
+
+    expect($execution->result_collection_status)->toBe(ResultCollectionStatus::Pending)
+        ->and($execution->result_collection_error)->toBeNull();
+
+    Bus::assertDispatched(
+        CollectProcessExecutionResultsJob::class,
+        fn (CollectProcessExecutionResultsJob $job): bool => $job->processExecutionId === $execution->id,
+    );
+});
+
+test('users cannot retry result collection for another users job', function () {
+    Bus::fake([CollectProcessExecutionResultsJob::class]);
+
+    $execution = ProcessExecution::factory()->create([
+        'status' => ExecutionStatus::Successful,
+        'result_collection_status' => ResultCollectionStatus::Failed,
+        'result_collection_error' => 'The remote result download timed out.',
+    ]);
+
+    $this->actingAs(User::factory()->create())
+        ->post("/jobs/{$execution->id}/results/retry")
+        ->assertForbidden();
+
+    expect($execution->refresh()->result_collection_status)->toBe(ResultCollectionStatus::Failed)
+        ->and($execution->result_collection_error)->toBe('The remote result download timed out.');
+
+    Bus::assertNotDispatched(CollectProcessExecutionResultsJob::class);
+});
+
 test('legacy execution routes redirect to canonical job routes', function () {
     $user = User::factory()->create();
     $execution = ProcessExecution::factory()->for($user)->create();
@@ -401,6 +477,56 @@ test('legacy execution routes redirect to canonical job routes', function () {
     $this->actingAs($user)
         ->get("/process-executions/{$execution->id}/results/{$result->id}/download")
         ->assertRedirectToRoute('jobs.results.download', [$execution, $result]);
+});
+
+test('users can preview cached png results inline', function () {
+    Storage::fake('local');
+
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create([
+        'remote_job_id' => '4066039d-793d-11f1-9692-3b828b09e202',
+    ]);
+    $result = ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'overlay_image',
+        'media_type' => 'image/png',
+        'storage_path' => 'ogc-results/overlay-image.png',
+        'cache_status' => ResultCacheStatus::Cached,
+    ]);
+
+    Storage::disk('local')->put(
+        'ogc-results/overlay-image.png',
+        'PNG-BINARY-CONTENT',
+    );
+
+    $this->actingAs($user)
+        ->get("/jobs/{$execution->id}/results/{$result->id}/preview")
+        ->assertOk()
+        ->assertHeader('content-type', 'image/png')
+        ->assertHeader('x-content-type-options', 'nosniff')
+        ->assertHeader('content-disposition', 'inline; filename="4066039d-793d-11f1-9692-3b828b09e202_overlay_image.png"')
+        ->assertContent('PNG-BINARY-CONTENT');
+});
+
+test('svg results cannot be rendered inline', function () {
+    Storage::fake('local');
+
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create();
+    $result = ProcessExecutionResult::factory()->for($execution)->create([
+        'output_id' => 'unsafe_image',
+        'media_type' => 'image/svg+xml',
+        'storage_path' => 'ogc-results/unsafe-image.svg',
+        'cache_status' => ResultCacheStatus::Cached,
+    ]);
+
+    Storage::disk('local')->put(
+        'ogc-results/unsafe-image.svg',
+        '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+    );
+
+    $this->actingAs($user)
+        ->get("/jobs/{$execution->id}/results/{$result->id}/preview")
+        ->assertNotFound();
 });
 
 test('users can download cached result files', function () {

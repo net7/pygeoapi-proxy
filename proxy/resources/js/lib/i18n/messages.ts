@@ -293,6 +293,12 @@ const it = {
         outputPendingDescription:
             'Gli output saranno disponibili al completamento con esito positivo.',
         outputPendingTitle: 'Processo in corso',
+        resultCollectionFailedDescription:
+            'Il processo è terminato correttamente, ma non è stato possibile acquisire tutti gli output.',
+        resultCollectionFailedTitle: 'Risultati non acquisiti',
+        resultCollectionPendingDescription:
+            "Il processo è terminato correttamente. L'applicazione sta acquisendo gli output.",
+        resultCollectionPendingTitle: 'Acquisizione risultati',
         noteDescription: 'Nota utente opzionale per questo processo.',
         noteLinkPrompt: 'URL del link',
         noteSaved: 'Nota salvata',
@@ -812,6 +818,12 @@ const en = {
         outputPendingDescription:
             'Outputs will be available when the job completes successfully.',
         outputPendingTitle: 'Job in progress',
+        resultCollectionFailedDescription:
+            'The job completed successfully, but not all outputs could be collected.',
+        resultCollectionFailedTitle: 'Results unavailable',
+        resultCollectionPendingDescription:
+            'The job completed successfully. The application is collecting its outputs.',
+        resultCollectionPendingTitle: 'Collecting results',
         noteDescription: 'Optional user note for this job.',
         noteLinkPrompt: 'Link URL',
         noteSaved: 'Note saved',

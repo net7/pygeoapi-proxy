@@ -19,6 +19,20 @@ afterEach(function () {
     Carbon::setTestNow();
 });
 
+test('process executions persist the result collection lifecycle', function () {
+    $execution = ProcessExecution::factory()->create();
+
+    $execution->update([
+        'result_collection_status' => 'failed',
+        'result_collection_error' => 'The remote result could not be downloaded.',
+    ]);
+
+    $execution->refresh();
+
+    expect($execution->result_collection_status?->value)->toBe('failed')
+        ->and($execution->result_collection_error)->toBe('The remote result could not be downloaded.');
+});
+
 test('starting a process creates an async local execution and redirects without remote submission', function () {
     Bus::fake();
     Http::preventStrayRequests();

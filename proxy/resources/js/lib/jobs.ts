@@ -36,6 +36,7 @@ const terminalStatuses = [
 ];
 
 const failureStatuses = ['failed', 'submission_failed', 'remote_missing'];
+const activeResultCollectionStatuses = ['pending', 'collecting'];
 
 export function isJobTerminal(status: string): boolean {
     return terminalStatuses.includes(status);
@@ -43,6 +44,12 @@ export function isJobTerminal(status: string): boolean {
 
 export function isJobFailure(status: string): boolean {
     return failureStatuses.includes(status);
+}
+
+export function isResultCollectionActive(
+    status: string | null | undefined,
+): boolean {
+    return activeResultCollectionStatuses.includes(status ?? '');
 }
 
 export function jobStatusStyles(status: string): JobStatusStyles {
