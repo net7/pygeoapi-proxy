@@ -86,6 +86,10 @@ export default function ResultPreview({
                                     <Download data-icon="inline-start" />
                                     {downloadLabelForMediaType(
                                         result.mediaType,
+                                        {
+                                            file: t('ogc.file'),
+                                            image: t('ogc.image'),
+                                        },
                                     )}
                                 </a>
                             </Button>

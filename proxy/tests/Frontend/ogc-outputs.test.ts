@@ -10,6 +10,11 @@ import { groupProcessResults } from '../../resources/js/lib/ogc-result-groups';
 import type { ProcessExecutionResult } from '../../resources/js/types';
 import type { OgcNormalizedOutput } from '../../resources/js/types';
 
+const downloadLabels = {
+    file: 'File',
+    image: 'Image',
+};
+
 describe('automaticOutputTransmissionMode', () => {
     test('requests plain text and json outputs by value', () => {
         expect(
@@ -43,18 +48,49 @@ describe('automaticOutputTransmissionMode', () => {
 
 describe('downloadLabelForMediaType', () => {
     test('uses compact file format labels for download buttons', () => {
-        expect(downloadLabelForMediaType('application/json')).toBe('JSON');
-        expect(downloadLabelForMediaType('application/vnd.example+json')).toBe(
-            'JSON',
-        );
-        expect(downloadLabelForMediaType('text/csv')).toBe('CSV');
         expect(
-            downloadLabelForMediaType('image/tiff; application=geotiff'),
-        ).toBe('GeoTIFF');
-        expect(downloadLabelForMediaType('application/vnd.ogc.sld+xml')).toBe(
-            'SLD',
+            downloadLabelForMediaType('application/json', downloadLabels),
+        ).toBe('JSON');
+        expect(
+            downloadLabelForMediaType(
+                'application/vnd.example+json',
+                downloadLabels,
+            ),
+        ).toBe('JSON');
+        expect(downloadLabelForMediaType('text/csv', downloadLabels)).toBe(
+            'CSV',
         );
-        expect(downloadLabelForMediaType(null)).toBe('File');
+        expect(
+            downloadLabelForMediaType(
+                'image/tiff; application=geotiff',
+                downloadLabels,
+            ),
+        ).toBe('GeoTIFF');
+        expect(
+            downloadLabelForMediaType(
+                'application/vnd.ogc.sld+xml',
+                downloadLabels,
+            ),
+        ).toBe('SLD');
+        expect(downloadLabelForMediaType(null, downloadLabels)).toBe('File');
+    });
+
+    test('labels browser-safe raster downloads as images', () => {
+        expect(downloadLabelForMediaType('image/png', downloadLabels)).toBe(
+            'Image',
+        );
+        expect(downloadLabelForMediaType('image/jpeg', downloadLabels)).toBe(
+            'Image',
+        );
+        expect(downloadLabelForMediaType('image/webp', downloadLabels)).toBe(
+            'Image',
+        );
+        expect(
+            downloadLabelForMediaType(
+                'image/gif; charset=binary',
+                downloadLabels,
+            ),
+        ).toBe('Image');
     });
 });
 
