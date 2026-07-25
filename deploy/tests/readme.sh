@@ -38,6 +38,10 @@ test "$(sed -n '1p' "$italian_readme")" = "$first_line"
 
 require_text "$wordmark" 'fill="#2563EB"'
 require_text "$wordmark" 'Figlet slant'
+require_text "$wordmark" 'width="720" height="160"'
+require_text "$wordmark" 'viewBox="0 0 720 160"'
+require_text "$wordmark" 'fill="#F8FAFC"'
+require_text "$wordmark" 'stroke="#BFDBFE"'
 
 require_text "$english_readme" '[Italiano](README.it.md)'
 require_text "$italian_readme" '[English](README.md)'
