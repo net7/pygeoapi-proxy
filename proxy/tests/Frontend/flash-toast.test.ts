@@ -22,4 +22,17 @@ describe('flash toast localization', () => {
         expect(source).toContain("t('toast.defaultSuccess')");
         expect(source).not.toContain('The request could not be completed.');
     });
+
+    test('keeps every toast type on the same icon-free layout', () => {
+        const toaster = readFileSync(
+            'resources/js/components/ui/sonner.tsx',
+            'utf8',
+        );
+
+        for (const type of ['success', 'info', 'warning', 'error', 'loading']) {
+            expect(toaster).toContain(`${type}: null`);
+        }
+
+        expect(toaster).toContain("icon: 'hidden!'");
+    });
 });

@@ -1082,15 +1082,16 @@ test('sidebar labels process executions as jobs', function () {
         ->not->toContain("title: 'Executions'");
 });
 
-test('flash toasts support rich descriptions and optional icons', function () {
+test('flash toasts support rich descriptions without rendering icons', function () {
     $source = file_get_contents(getcwd().'/resources/js/hooks/use-flash-toast.ts');
     $types = file_get_contents(getcwd().'/resources/js/types/ui.ts');
 
     expect($source)
         ->toContain('renderToastDescription(data, t)')
-        ->toContain('data.icon === false ? null : getToastIcon(data.type)')
         ->toContain("'strong'")
-        ->toContain("'em'");
+        ->toContain("'em'")
+        ->not->toContain('getToastIcon')
+        ->not->toContain("from 'lucide-react'");
 
     expect($types)
         ->toContain('details?: FlashToastDetail[]')

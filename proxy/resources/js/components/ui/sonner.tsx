@@ -17,9 +17,20 @@ function Toaster({ toastOptions, ...props }: ToasterProps) {
             richColors
             closeButton
             containerAriaLabel={t('toast.notifications')}
+            icons={{
+                success: null,
+                info: null,
+                warning: null,
+                error: null,
+                loading: null,
+            }}
             toastOptions={{
                 closeButtonAriaLabel: t('toast.close'),
                 ...toastOptions,
+                classNames: {
+                    ...toastOptions?.classNames,
+                    icon: 'hidden!',
+                },
             }}
             style={
                 {
