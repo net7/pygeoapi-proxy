@@ -1,10 +1,4 @@
 import { router } from '@inertiajs/react';
-import {
-    AlertTriangleIcon,
-    CheckCircle2Icon,
-    CircleAlertIcon,
-    InfoIcon,
-} from 'lucide-react';
 import { createElement, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
@@ -25,7 +19,6 @@ export function useFlashToast(): void {
 
             toast[data.type](data.title ?? data.message, {
                 description: renderToastDescription(data, t),
-                icon: data.icon === false ? null : getToastIcon(data.type),
             });
         });
     }, [t]);
@@ -107,26 +100,4 @@ function getToastDescription(
         warning: t('toast.defaultWarning'),
         error: t('toast.defaultError'),
     }[type];
-}
-
-function getToastIcon(type: FlashToast['type']): ReactNode {
-    const props = {
-        'aria-hidden': true,
-        className:
-            type === 'error'
-                ? 'text-destructive'
-                : type === 'info'
-                  ? 'text-muted-foreground'
-                  : 'text-primary',
-    };
-
-    return createElement(
-        {
-            success: CheckCircle2Icon,
-            info: InfoIcon,
-            warning: AlertTriangleIcon,
-            error: CircleAlertIcon,
-        }[type],
-        props,
-    );
 }
