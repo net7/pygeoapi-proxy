@@ -23,11 +23,13 @@ function flattenMessages(
 }
 
 describe('i18n', () => {
-    test('defaults invalid languages to italian', () => {
-        expect(defaultLanguage).toBe('it');
+    test('defaults missing and invalid languages to english', () => {
+        expect(defaultLanguage).toBe('en');
         expect(normalizeLanguage('en')).toBe('en');
-        expect(normalizeLanguage('fr')).toBe('it');
-        expect(normalizeLanguage(null)).toBe('it');
+        expect(normalizeLanguage('it')).toBe('it');
+        expect(normalizeLanguage('fr')).toBe('en');
+        expect(normalizeLanguage(null)).toBe('en');
+        expect(normalizeLanguage(undefined)).toBe('en');
     });
 
     test('maps language to intl locale', () => {

@@ -1,6 +1,6 @@
 export type Language = 'it' | 'en';
 
-export const defaultLanguage: Language = 'it';
+export const defaultLanguage: Language = 'en';
 export const supportedLanguages = ['it', 'en'] as const;
 
 export type LanguageMetadata = {

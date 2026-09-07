@@ -85,8 +85,8 @@ describe('ArrayTableField', () => {
             'aria-describedby="error-inputs-sw-data-scroll-hint"',
         );
         expect(html).toContain('id="error-inputs-sw-data-scroll-hint"');
-        expect(html).toContain('Scorri orizzontalmente');
-        expect(html).toContain('Riga 1');
+        expect(html).toContain('Scroll horizontally');
+        expect(html).toContain('Row 1');
         expect(html).toContain('for="error-inputs-sw-data-0-0-control"');
         expect(html).toContain('Pressure');
     });

@@ -11,6 +11,7 @@ return [
     'alpha_num' => ':Attribute può contenere solo lettere e numeri.',
     'any_of' => 'Il campo :attribute non è valido.',
     'array' => ':Attribute deve essere un array.',
+    'array_keys' => 'Il campo :attribute deve contenere solo le seguenti chiavi: :values.',
     'ascii' => ':Attribute deve contenere solo caratteri alfanumerici single-byte e simboli.',
     'base64' => ':Attribute deve essere una stringa Base64 valida.',
     'before' => ':Attribute deve essere una data precedente al :date.',
