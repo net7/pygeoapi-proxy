@@ -12,7 +12,7 @@
 
 - Il deploy automatico riguarda esclusivamente il branch e l'ambiente `staging`.
 - Non aggiungere job, regole, comandi o alias production.
-- Non modificare `.env.production.example` o `compose.production.yaml`.
+- La configurazione di produzione è gestita separatamente; vedere `DEPLOY.it.md`.
 - Non pubblicare immagini applicative nel GitLab Container Registry.
 - Non installare un GitLab Runner sul server staging.
 - `.env.staging` resta soltanto sul server e non deve comparire in Git, artefatti o log.
@@ -22,7 +22,7 @@
 - Migrazioni Laravel: una sola esecuzione, `--force --isolated`, sul servizio web.
 - Horizon, Scheduler e Reverb devono ottimizzare Laravel ma non eseguire migrazioni.
 - Non usare `StrictHostKeyChecking=no`, `docker compose down -v`, reset del database o prune Docker globale.
-- I target Make esistenti per develop e production devono mantenere il comportamento corrente.
+- I target Make esistenti per develop devono mantenere il comportamento corrente.
 - `Pipelines must succeed` verrà abilitato a livello progetto; le Merge Request verso `main` resteranno intenzionalmente bloccate fino alla futura pipeline production.
 - Seguire la spec approvata in `docs/superpowers/specs/2026-07-18-staging-gitlab-ci-cd-design.md`.
 
@@ -147,7 +147,7 @@ DEPLOY_BUILD_PROGRESS ?= plain
 LOG_FOLLOW ?= -f
 LOG_TAIL ?= 100
 
-.PHONY: help develop staging production env require-env config config-check build deploy-build pull up start deploy-up stop down restart ps deploy-status logs shell artisan migrate fresh seed test pint composer bun-install bun-build optimize clear horizon-status pygeoapi-validate destroy
+.PHONY: help develop staging env require-env config config-check build deploy-build pull up start deploy-up stop down restart ps deploy-status logs shell artisan migrate fresh seed test pint composer bun-install bun-build optimize clear horizon-status pygeoapi-validate destroy
 ```
 
 Aggiungere all'help, dopo `config` e `build`:

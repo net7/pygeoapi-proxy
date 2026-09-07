@@ -421,22 +421,10 @@ docker compose --env-file .env.staging -f compose.yaml -f compose.staging.yaml l
 
 - [ ] **Step 3: Update the root service-port documentation**
 
-Apply this exact patch to `README.md`:
-
-```diff
--- `laravel`: applicazione Laravel pubblica sulla porta host `${APP_PORT:-8088}`
--  in `develop` e `${APP_PORT:-8080}` negli altri ambienti.
-+- `laravel`: applicazione Laravel pubblica sulla porta host `${APP_PORT:-8088}`
-+  in `develop`, su `127.0.0.1:7070` in `staging` e su `${APP_PORT:-8080}` in
-+  `production`.
-@@
--- `reverb`: WebSocket server Laravel Reverb, pubblicato su
--  `${REVERB_HOST_PORT:-8089}` in `develop` e `${REVERB_HOST_PORT:-8081}`
--  negli altri ambienti.
-+- `reverb`: WebSocket server Laravel Reverb, pubblicato su
-+  `${REVERB_HOST_PORT:-8089}` in `develop`, su `127.0.0.1:7071` in `staging`
-+  e su `${REVERB_HOST_PORT:-8081}` in `production`.
-```
+Document Laravel on `${APP_PORT:-8088}` and Reverb on
+`${REVERB_HOST_PORT:-8089}` in development. Staging uses
+`127.0.0.1:7070` and `127.0.0.1:7071`, respectively. Production exposure is
+documented separately in `DEPLOY.md` and `DEPLOY.it.md`.
 
 - [ ] **Step 4: Document the staging variables that control the host proxy**
 
@@ -446,27 +434,15 @@ Insert this paragraph immediately after the existing environment-variable list:
 
 Il template `staging` preconfigura inoltre `HOST_BIND_ADDRESS=127.0.0.1`,
 `APP_PORT=7070`, `REVERB_HOST_PORT=7071` e `REVERB_PORT=443` per l'Nginx host.
-Questi valori non sono i default di `develop` o `production`.
+Questi valori sono specifici di `staging`.
 ```
 
 - [ ] **Step 5: Replace the generic staging exposure note and add the Nginx files**
 
-Apply this exact patch to `README.md`:
-
-```diff
--In `staging` e `production`, Laravel e Reverb restano esposti sulle porte
--configurate, mentre pygeoapi resta solo interno al network Docker.
-+In `staging`, Laravel e Reverb sono raggiungibili soltanto dall'host su
-+`127.0.0.1:7070` e `127.0.0.1:7071`; l'Nginx host pubblica applicazione e
-+WebSocket sul dominio `proxygeoapi.netseven.work`. In `production` le porte
-+restano configurabili normalmente. Pygeoapi resta interno al network Docker.
-+La procedura staging completa è in `deploy/nginx/README.md`.
-@@
- - `Makefile`: comandi rapidi.
- - `.env.*.example`: template env per ambiente.
-+- `deploy/nginx/proxygeoapi.netseven.work.conf`: vhost HTTP iniziale staging.
-+- `deploy/nginx/README.md`: installazione Nginx e bootstrap Certbot.
-```
+Document that the staging host Nginx publishes the loopback application and
+WebSocket endpoints through `proxygeoapi.netseven.work`. Link to
+`deploy/nginx/README.md` for staging setup and to
+`deploy/nginx/proxygeoapi.netseven.work.conf` for its initial HTTP virtual host.
 
 - [ ] **Step 6: Verify documentation contains the exact operational contract**
 

@@ -5,6 +5,8 @@ set -eu
 tests_directory=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 
 for test_script in \
+    voice-ui-compose.sh \
+    voice-ui-nginx.sh \
     compose-oauth-env.sh \
     compose-external-ogc.sh \
     makefile-deploy.sh \

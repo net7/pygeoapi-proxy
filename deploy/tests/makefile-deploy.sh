@@ -20,6 +20,24 @@ chmod +x "$fake_bin/docker"
 
 cd "$repository_root"
 
+for invocation in 'production up' 'up production' 'ENV=production up'; do
+    : > "$docker_log"
+    set -- $invocation
+    if PATH="$fake_bin:$PATH" DOCKER_LOG="$docker_log" \
+        make "$@" ENV_FILE="$environment_file" > "$temporary_directory/unsupported.log" 2>&1
+    then
+        printf 'Make accepted unsupported deployment invocation: %s\n' "$invocation" >&2
+        exit 1
+    fi
+
+    if [ -s "$docker_log" ] || [ -e "$environment_file" ]; then
+        printf 'Unsupported deployment invocation caused side effects: %s\n' "$invocation" >&2
+        exit 1
+    fi
+
+    grep -F 'compose.voice-ui.yaml' "$temporary_directory/unsupported.log" > /dev/null
+done
+
 if PATH="$fake_bin:$PATH" DOCKER_LOG="$docker_log" \
     make ENV=staging ENV_FILE="$environment_file" require-env \
     > "$temporary_directory/missing-env.log" 2>&1

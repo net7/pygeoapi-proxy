@@ -1,5 +1,15 @@
-ENV_TARGET := $(firstword $(filter develop staging production,$(MAKECMDGOALS)))
+ENV_TARGET := $(firstword $(filter develop staging,$(MAKECMDGOALS)))
 ENV ?= $(if $(ENV_TARGET),$(ENV_TARGET),develop)
+
+ifneq ($(filter production,$(MAKECMDGOALS)),)
+$(error Production uses docker compose --env-file .env -f compose.voice-ui.yaml; see DEPLOY.md)
+endif
+ifneq ($(ENV),develop)
+ifneq ($(ENV),staging)
+$(error Unsupported ENV "$(ENV)"; use develop or staging. Production uses compose.voice-ui.yaml; see DEPLOY.md)
+endif
+endif
+
 ENV_FILE := .env.$(ENV)
 COMPOSE_FILES := -f compose.yaml -f compose.$(ENV).yaml
 COMPOSE := docker compose --env-file $(ENV_FILE) $(COMPOSE_FILES)
@@ -11,17 +21,18 @@ DEPLOY_BUILD_PROGRESS ?= plain
 LOG_FOLLOW ?= -f
 LOG_TAIL ?= 100
 
-.PHONY: help develop staging production env require-env config config-check build deploy-build pull up start deploy-up stop down restart ps deploy-status logs shell artisan migrate fresh seed test pint composer bun-install bun-build optimize clear horizon-status destroy
+.PHONY: help develop staging env require-env config config-check build deploy-build pull up start deploy-up stop down restart ps deploy-status logs shell artisan migrate fresh seed test pint composer bun-install bun-build optimize clear horizon-status destroy
 
 help:
-	@printf '%s\n' 'Usage: make [develop|staging|production] <target>'
+	@printf '%s\n' 'Usage: make [develop|staging] <target>'
 	@printf '%s\n' ''
 	@printf '%s\n' 'Default environment: develop'
 	@printf '%s\n' 'Examples:'
 	@printf '%s\n' '  make up'
 	@printf '%s\n' '  make staging up'
-	@printf '%s\n' '  make production logs SERVICE=laravel'
+	@printf '%s\n' '  make staging logs SERVICE=laravel'
 	@printf '%s\n' '  make artisan CMD="route:list"'
+	@printf '%s\n' 'Production: docker compose --env-file .env -f compose.voice-ui.yaml (see DEPLOY.md)'
 	@printf '%s\n' ''
 	@printf '%s\n' 'Targets:'
 	@printf '%s\n' '  env               Create .env.<env> from .env.<env>.example if missing'
@@ -53,7 +64,7 @@ help:
 	@printf '%s\n' '  horizon-status    Show Horizon status'
 	@printf '%s\n' '  destroy           Remove containers and named volumes for this env'
 
-develop staging production:
+develop staging:
 	@:
 
 env:

@@ -79,7 +79,7 @@ nello script o nelle nuove procedure operative.
 ### Escluso
 
 - qualsiasi job o comportamento production;
-- modifica di `.env.production.example` o `compose.production.yaml`;
+- modifica della configurazione di produzione, gestita separatamente;
 - pubblicazione di immagini applicative nel Container Registry;
 - installazione di un GitLab Runner sul server;
 - esecuzione dei comandi di bootstrap sul server durante l'implementazione;

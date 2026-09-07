@@ -49,8 +49,8 @@ Inertia 3, Redis/Horizon, MariaDB, GeoServer, GitLab CI, Markdown, SVG.
 - Modify `compose.yaml`: propagate `OGC_PROCESSES_BASE_URL`, remove the local
   service and Laravel dependency.
 - Modify `compose.develop.yaml`: remove the development pygeoapi port override.
-- Modify `.env.develop.example`, `.env.staging.example`, and
-  `.env.production.example`: expose the remote endpoint variable and remove
+- Modify `.env.develop.example` and `.env.staging.example`:
+  expose the remote endpoint variable and remove
   legacy local-container variables.
 - Modify `Makefile`: remove local pygeoapi build and validation behavior.
 - Delete `Dockerfile`, `entrypoint.sh`, and `my.config.yml`: remove the bundled
@@ -81,7 +81,6 @@ Inertia 3, Redis/Horizon, MariaDB, GeoServer, GitLab CI, Markdown, SVG.
 - Modify: `compose.develop.yaml`
 - Modify: `.env.develop.example`
 - Modify: `.env.staging.example`
-- Modify: `.env.production.example`
 - Modify: `Makefile`
 - Delete: `Dockerfile`
 - Delete: `entrypoint.sh`
@@ -112,7 +111,7 @@ cd "$repository_root"
 
 expected_endpoint=https://voice.pi.ingv.it/geoinquire/
 
-for environment in develop staging production; do
+for environment in develop staging; do
     environment_file=".env.${environment}.example"
 
     if ! grep -Fx "OGC_PROCESSES_BASE_URL=$expected_endpoint" \
@@ -242,8 +241,6 @@ docker compose --env-file .env.develop.example \
   -f compose.yaml -f compose.develop.yaml config --quiet
 docker compose --env-file .env.staging.example \
   -f compose.yaml -f compose.staging.yaml config --quiet
-docker compose --env-file .env.production.example \
-  -f compose.yaml -f compose.production.yaml config --quiet
 ```
 
 Expected: every command exits `0`.
@@ -256,7 +253,7 @@ Run:
 git diff --check
 git status --short
 git diff -- compose.yaml compose.develop.yaml \
-  .env.develop.example .env.staging.example .env.production.example \
+  .env.develop.example .env.staging.example \
   Makefile deploy/tests/run.sh deploy/tests/compose-external-ogc.sh \
   deploy/tests/makefile-deploy.sh Dockerfile entrypoint.sh my.config.yml
 ```
@@ -266,7 +263,7 @@ remains, then commit:
 
 ```bash
 git add compose.yaml compose.develop.yaml \
-  .env.develop.example .env.staging.example .env.production.example \
+  .env.develop.example .env.staging.example \
   Makefile deploy/tests/run.sh deploy/tests/compose-external-ogc.sh \
   deploy/tests/makefile-deploy.sh Dockerfile entrypoint.sh my.config.yml
 git commit -m "fix: use external OGC processes service"
@@ -828,8 +825,6 @@ docker compose --env-file .env.develop.example \
   -f compose.yaml -f compose.develop.yaml config --quiet
 docker compose --env-file .env.staging.example \
   -f compose.yaml -f compose.staging.yaml config --quiet
-docker compose --env-file .env.production.example \
-  -f compose.yaml -f compose.production.yaml config --quiet
 deploy/tests/run.sh
 git diff --check
 git status --short

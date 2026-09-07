@@ -49,10 +49,10 @@
 - Reference: `compose.yaml`
 - Reference: `compose.develop.yaml`
 - Reference: `compose.staging.yaml`
-- Reference: `compose.production.yaml`
+- Reference: `compose.voice-ui.yaml`
 - Reference: `.env.develop.example`
 - Reference: `.env.staging.example`
-- Reference: `.env.production.example`
+- Reference: `.env.voice-ui.example`
 - Reference: `.gitlab-ci.yml`
 - Reference: `deploy.sh`
 - Reference: `deploy/nginx/README.md`
@@ -174,17 +174,21 @@ Create `DEPLOY.md` with this heading order:
 
 Populate those sections using these exact source-of-truth rules:
 
-- environment commands use `make [develop|staging|production] <target>` and
-  state that `develop` is the default;
+- development/staging commands use `make [develop|staging] <target>` and
+  state that `develop` is the default; production uses the independent
+  `compose.voice-ui.yaml` with the root `.env`;
 - the environment table lists development ports `8088`, `8089`, `5174`,
   `5000`, `8091`, `8090`, and `8026`; staging loopback ports `7070` and `7071`;
-  and production defaults `8080` and `8081`;
+  production publishes no host ports and uses the existing Nginx service;
 - the service table includes `laravel`, `horizon`, `scheduler`, `reverb`,
   `mariadb`, `redis`, `pygeoapi`, and `geoserver`, plus development-only
   `vite`, `phpmyadmin`, and `mailpit`;
-- required staging and production values include `APP_KEY`, `APP_URL`,
+- required staging values include `APP_KEY`, `APP_URL`,
   `MARIADB_ROOT_PASSWORD`, `MARIADB_PASSWORD`, `REVERB_APP_KEY`,
   `REVERB_APP_SECRET`, `REVERB_HOST`, and `REVERB_SCHEME`;
+- production values come from `.env.voice-ui.example`, including the dedicated
+  PostgreSQL credentials, `POSTGRES_CLIENT_VERSION`, `PRODUCTION_NETWORK`, and
+  `VOICE_UI_HOST`;
 - optional Google and ORCID settings are documented from
   `.env.staging.example` without suggesting fake credentials;
 - staging CI/CD describes quality gates for merge requests targeting

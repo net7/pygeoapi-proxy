@@ -8,10 +8,15 @@ import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { formatPageTitle } from './lib/page-title';
+import { reverbOptions } from './lib/reverb-configuration';
 
-configureEcho({
-    broadcaster: 'reverb',
-});
+const reverbConfiguration =
+    typeof document === 'undefined'
+        ? null
+        : (document.querySelector<HTMLMetaElement>('meta[name="reverb-config"]')
+              ?.content ?? null);
+
+configureEcho(reverbOptions(reverbConfiguration));
 
 initializeLanguage();
 

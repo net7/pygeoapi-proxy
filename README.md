@@ -15,8 +15,9 @@ cached process definitions, fill in forms generated from their schemas, submit
 executions, follow their status, and inspect the resulting data.
 
 The upstream service is configured with `OGC_PROCESSES_BASE_URL`. Its default
-is `https://voice.pi.ingv.it/geoinquire/`; its deployment and version are
-managed outside this repository.
+is `https://voice.pi.ingv.it/geoinquire/` in development and staging. Production
+uses `http://pygeoapi_service/` on the existing Docker network; the upstream
+deployment and version are managed outside this repository.
 
 ## Highlights
 
@@ -49,14 +50,17 @@ status updates use HTTP polling.
 ```text
 Browser -> Laravel/Inertia -> Redis/Horizon -> external pygeoapi
    ^             |                                  |
-   |          MariaDB <---- execution status/results+
+   |          Database <--- execution status/results+
    |
    +---------- HTTP status polling and previews via Laravel/GeoServer
 ```
 
-The repository's Docker stack owns Laravel, Horizon, Scheduler, Reverb,
-MariaDB, Redis, and GeoServer. Development also adds Vite, phpMyAdmin, and
-Mailpit. It does not contain or deploy a pygeoapi container.
+Development and staging own Laravel, Horizon, Scheduler, Reverb, MariaDB,
+Redis, and GeoServer. Development also adds Vite, phpMyAdmin, and Mailpit.
+Production uses the independent `compose.voice-ui.yaml`. Web, Horizon, and
+Reverb join an external network to reuse the existing PostgreSQL, pygeoapi, and
+Nginx services. It publishes no host ports; Redis and GeoServer remain on the
+UI's private network.
 
 ## Technology stack
 
@@ -65,7 +69,7 @@ Floating image tags are identified explicitly.
 
 | Area | Technologies and current versions |
 | --- | --- |
-| Runtime | PHP `8.5` on `serversideup/php:8.5-fpm-nginx`; bundled Nginx |
+| Runtime | PHP `8.5` in development/staging; production defaults to `serversideup/php:8.4-fpm-nginx`; bundled Nginx |
 | Backend | Laravel `13.22.0`; Inertia Laravel `3.1.1` |
 | Authentication | Fortify `1.37.3`; Socialite `5.29.0`; Google provider `4.1.0`; custom ORCID OAuth and email OTP; Laravel Passkeys JS `0.2.0` |
 | Async and realtime | Horizon `5.48.1`; Reverb `1.11.0`; Redis `alpine` (floating tag) |
@@ -74,8 +78,8 @@ Floating image tags are identified explicitly.
 | Validation and data | AJV `8.17.1`; TanStack React Table `8.21.3`; JSON View `2.0.0-alpha.43`; Tiptap `3.29.0` |
 | Maps and charts | MapLibre GL `5.24.0`; Chart.js `4.5.1`; GeoServer `2.27.1` |
 | OGC processing | Remote pygeoapi / OGC API - Processes; endpoint configured with `OGC_PROCESSES_BASE_URL`; upstream version managed externally |
-| Persistence | MariaDB `latest` (floating tag); Redis `alpine` (floating tag) |
-| Build | Vite `8.1.5`; Bun `latest` in the application image and `1.3.14` in CI; Node `latest` in the application image |
+| Persistence | Development/staging: MariaDB `latest`, Redis `alpine` (floating tags); production: existing PostgreSQL and private Redis `7-alpine` |
+| Build | Vite `8.1.5`; Bun `latest` and Node `latest` in development/staging images; production: Bun `1.3.14` and Node `24-bookworm-slim`; CI: Bun `1.3.14` |
 | Containers and CI | Docker Compose; GitLab CI; Docker CLI `29`; Composer `2`; Alpine `3.24` deploy image |
 | Development only | Vite dev server; phpMyAdmin `latest`; Mailpit `latest` |
 
@@ -101,8 +105,12 @@ Default development endpoints:
 
 ## Deployment
 
-See **[DEPLOY.md](DEPLOY.md)** for the complete environment, staging pipeline,
-server bootstrap, rollback, security, and troubleshooting guide.
+Production uses `compose.voice-ui.yaml` and a root `.env` copied from
+`.env.voice-ui.example`. Set `VOICE_UI_HOST` there; its initial value is
+`voice_ui.pi.ingv.it`.
+
+See **[DEPLOY.md](DEPLOY.md)** for production deployment and customer smoke
+tests, development/staging operations, server bootstrap, and troubleshooting.
 
 ## Documentation map
 

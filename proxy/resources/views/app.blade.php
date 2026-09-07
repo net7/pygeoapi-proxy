@@ -4,6 +4,10 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
+        @if (filled(config('broadcasting.client.host')))
+            <meta name="reverb-config" content="{{ json_encode(config('broadcasting.client'), JSON_THROW_ON_ERROR) }}">
+        @endif
+
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>
             (function() {

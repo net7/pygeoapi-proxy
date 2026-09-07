@@ -10,7 +10,7 @@ cd "$repository_root"
 
 expected_endpoint=https://voice.pi.ingv.it/geoinquire/
 
-for environment in develop staging production; do
+for environment in develop staging; do
     environment_file=".env.${environment}.example"
 
     if ! grep -Fx "OGC_PROCESSES_BASE_URL=$expected_endpoint" \

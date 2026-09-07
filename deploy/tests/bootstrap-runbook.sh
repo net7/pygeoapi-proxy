@@ -66,7 +66,8 @@ for document in "$english_runbook" "$italian_runbook" "$api_reference"; do
     require_text "$document" 'OGC_PROCESSES_BASE_URL'
 
     for obsolete_text in \
-        'http://pygeoapi' \
+        'http://pygeoapi/' \
+        'http://pygeoapi:' \
         'localhost:5000' \
         'PYGEOAPI_BASE_URL' \
         'PYGEOAPI_SERVER_URL' \

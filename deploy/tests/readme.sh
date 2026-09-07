@@ -81,7 +81,8 @@ for document in "$english_readme" "$italian_readme"; do
     done
 
     for obsolete_text in \
-        'http://pygeoapi' \
+        'http://pygeoapi/' \
+        'http://pygeoapi:' \
         'localhost:5000' \
         'PYGEOAPI_BASE_URL' \
         'PYGEOAPI_SERVER_URL' \
