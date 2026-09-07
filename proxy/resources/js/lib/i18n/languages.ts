@@ -1,16 +1,17 @@
 export type Language = 'it' | 'en';
 
 export const defaultLanguage: Language = 'en';
-export const supportedLanguages = ['it', 'en'] as const;
+export const supportedLanguages = ['en', 'it'] as const;
 
 export type LanguageMetadata = {
     readonly label: string;
     readonly locale: string;
+    readonly flag: string;
 };
 
 export const languageMetadata = {
-    it: { label: 'Italiano', locale: 'it-IT' },
-    en: { label: 'English', locale: 'en-US' },
+    it: { label: 'Italiano', locale: 'it-IT', flag: '🇮🇹' },
+    en: { label: 'English', locale: 'en-US', flag: '🇬🇧' },
 } satisfies Record<Language, LanguageMetadata>;
 
 export function isLanguage(value: unknown): value is Language {

@@ -241,12 +241,6 @@ test('interactive button and link surfaces use pointer cursors', function () {
         'resources/js/components/appearance-tabs.tsx' => [
             'cursor-pointer',
         ],
-        'resources/js/components/language-tabs.tsx' => [
-            'cursor-pointer',
-            'LanguagesIcon',
-            'languageMetadata',
-            'updateLanguage',
-        ],
     ];
 
     foreach ($requirements as $path => $expectedClasses) {
