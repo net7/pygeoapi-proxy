@@ -4,11 +4,15 @@ namespace App\Actions\Ogc;
 
 use App\Models\ProcessExecution;
 use App\Services\Ogc\OgcProcessesClient;
+use App\Services\Ogc\ProcessExecutionInputSnapshot;
 use Illuminate\Http\Client\RequestException;
 
 class DeleteProcessExecution
 {
-    public function __construct(private OgcProcessesClient $client) {}
+    public function __construct(
+        private OgcProcessesClient $client,
+        private ProcessExecutionInputSnapshot $snapshots,
+    ) {}
 
     public function handle(ProcessExecution $execution): void
     {
@@ -23,5 +27,6 @@ class DeleteProcessExecution
         }
 
         $execution->delete();
+        $this->snapshots->delete($execution->input_snapshot);
     }
 }

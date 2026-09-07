@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Services\Ogc\CsvPreviewBuilder;
 use App\Services\Ogc\OgcProcessCache;
 use App\Services\Ogc\OgcTextNormalizer;
+use App\Services\Ogc\ProcessExecutionInputReview;
 use App\Services\Ogc\ProcessInputPayloadBuilder;
 use App\Services\Ogc\ProcessInputValidator;
 use App\Services\Ogc\ProcessInputValueNormalizer;
@@ -101,6 +102,8 @@ class ProcessExecutionController extends Controller
             mode: $mode,
             note: $request->note(),
             name: $request->processName(),
+            submittedInputs: $submittedInputs,
+            inputFiles: $request->inputFiles(),
         );
 
         SubmitProcessExecutionJob::dispatch($execution->id, $payload);
@@ -122,6 +125,7 @@ class ProcessExecutionController extends Controller
         SldVisualizationInspector $sldVisualizationInspector,
         CsvPreviewBuilder $csvPreviewBuilder,
         OgcTextNormalizer $textNormalizer,
+        ProcessExecutionInputReview $inputReview,
     ): Response {
         Gate::authorize('view', $processExecution);
 
@@ -178,6 +182,7 @@ class ProcessExecutionController extends Controller
         return Inertia::render('process-executions/show', [
             'pollingInterval' => $this->pollingInterval(),
             'execution' => $execution,
+            'inputReview' => fn (): array => $inputReview->forExecution($processExecution),
         ]);
     }
 

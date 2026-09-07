@@ -30,7 +30,10 @@ import { validateOgcInputs } from '@/lib/ogc-ajv-validation';
 import { fieldError } from '@/lib/ogc-form-errors';
 import type { OgcFormErrors } from '@/lib/ogc-form-errors';
 import { ogcConstraintMessage } from '@/lib/ogc-form-validation';
-import { initialInputValues, normalizeInputs } from '@/lib/ogc-form-values';
+import {
+    initialInputValues,
+    prepareInputSubmission,
+} from '@/lib/ogc-form-values';
 import {
     buildRequestedOutputs,
     initialOutputSelections,
@@ -152,7 +155,7 @@ export default function DynamicProcessForm({
 
                 transform((formData) => ({
                     ...formData,
-                    inputs: normalizeInputs(schema.fields, formData.inputs),
+                    ...prepareInputSubmission(schema.fields, formData.inputs),
                     outputs: buildRequestedOutputs(formData.outputs),
                 }));
                 submit(store(schema.id), {

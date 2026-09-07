@@ -269,6 +269,21 @@ const it = {
         first: 'Prima',
         inputs: 'Input',
         inputsDescription: 'Input inviati al processo.',
+        submittedInputs: 'Dati inviati',
+        submittedInputsDescription:
+            'Dati utilizzati per questa elaborazione. Consultazione in sola lettura.',
+        readOnly: 'Sola lettura',
+        inputNotProvided: 'Non fornito',
+        inputEmpty: 'Nessun valore',
+        inputUnavailable: 'Dato non disponibile',
+        inputBinaryContent: 'Contenuto binario. Consulta il file allegato.',
+        inputReviewLegacy:
+            'Per questa richiesta precedente, il modulo è ricostruito dai dati ancora disponibili. Le etichette e la struttura originali potrebbero non essere recuperabili.',
+        inputReviewIncomplete:
+            'Alcuni dati della richiesta non sono più disponibili: {inputs}.',
+        inputReviewEmpty:
+            'Non sono disponibili dati di input per questa richiesta.',
+        submittedFiles: 'File inviati',
         adminOnlySection: 'VISIBILE SOLO AGLI ADMIN',
         documentTitle: 'Processo {jobId}',
         jobId: 'ID processo',
@@ -789,6 +804,20 @@ const en = {
         first: 'First',
         inputs: 'Inputs',
         inputsDescription: 'Inputs submitted to the process.',
+        submittedInputs: 'Submitted data',
+        submittedInputsDescription:
+            'Data used for this execution. Read-only view.',
+        readOnly: 'Read only',
+        inputNotProvided: 'Not provided',
+        inputEmpty: 'No values',
+        inputUnavailable: 'Data unavailable',
+        inputBinaryContent: 'Binary content. See the attached file.',
+        inputReviewLegacy:
+            'For this earlier request, the form is reconstructed from the data still available. The original labels and structure may no longer be recoverable.',
+        inputReviewIncomplete:
+            'Some submitted data is no longer available: {inputs}.',
+        inputReviewEmpty: 'No input data is available for this request.',
+        submittedFiles: 'Submitted files',
         adminOnlySection: 'VISIBLE TO ADMINS ONLY',
         documentTitle: 'Job {jobId}',
         jobId: 'Job ID',

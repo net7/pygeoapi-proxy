@@ -9,6 +9,93 @@ import {
     pruneOptionalInputValues,
 } from '../../resources/js/lib/ogc-form-values';
 import type { OgcNormalizedField } from '../../resources/js/types';
+import * as formValues from '../../resources/js/lib/ogc-form-values';
+
+test('reviewing submitted inputs never adds defaults or selects an ambiguous variant', () => {
+    const fields: Record<string, OgcNormalizedField> = {
+        missing: {
+            name: 'missing',
+            title: 'Missing',
+            kind: 'enum',
+            options: [99],
+        },
+        mode: {
+            name: 'mode',
+            title: 'Mode',
+            kind: 'oneOf',
+            variants: [
+                {
+                    id: '0',
+                    label: 'First',
+                    required: [],
+                    fields: {
+                        x: {
+                            name: 'x',
+                            title: 'X',
+                            kind: 'enum',
+                            options: [1],
+                        },
+                    },
+                },
+                {
+                    id: '1',
+                    label: 'Second',
+                    required: [],
+                    fields: {
+                        x: {
+                            name: 'x',
+                            title: 'X',
+                            kind: 'enum',
+                            options: [1],
+                        },
+                    },
+                },
+            ],
+        },
+    };
+
+    expect(
+        formValues.reviewInputValues(fields, {
+            mode: { variant: '1', value: {} },
+        }),
+    ).toEqual({ mode: { variant: '1', value: {} } });
+    expect(
+        formValues.reviewInputValues(fields, { mode: { value: { x: 1 } } }),
+    ).toEqual({ mode: { variant: '', value: { x: 1 } } });
+});
+
+test('uploaded filenames are kept separate from the processing payload including dotted input names', () => {
+    const fields: Record<string, OgcNormalizedField> = {
+        'input.data': {
+            name: 'input.data',
+            title: 'Data',
+            kind: 'scalar',
+            mediaType: 'text/csv',
+        },
+    };
+
+    expect(
+        formValues.prepareInputSubmission(fields, {
+            'input.data': {
+                value: 'a,b',
+                mediaType: 'text/csv',
+                __inputFileName: 'measurements.csv',
+                __inputFileContent: 'YSxiCg==',
+                __inputFileEncoding: 'base64',
+            },
+        }),
+    ).toEqual({
+        inputs: { 'input.data': { value: 'a,b', mediaType: 'text/csv' } },
+        inputFiles: [
+            {
+                path: ['input.data'],
+                name: 'measurements.csv',
+                content: 'YSxiCg==',
+                encoding: 'base64',
+            },
+        ],
+    });
+});
 
 const singletonVariant: OgcNormalizedField = {
     name: 'swinput.data',

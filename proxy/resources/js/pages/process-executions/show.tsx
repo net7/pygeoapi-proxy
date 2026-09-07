@@ -8,6 +8,7 @@ import {
     CopyPlusIcon,
     FileInputIcon,
     ListChecksIcon,
+    LockKeyholeIcon,
     PackageCheckIcon,
     ShieldCheckIcon,
     TimerIcon,
@@ -21,6 +22,7 @@ import JobIdentifiers from '@/components/ogc/job-identifiers';
 import { JobNameEditDialog } from '@/components/ogc/job-name-edit-dialog';
 import { JobNoteCard } from '@/components/ogc/job-note-card';
 import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
+import ProcessInputReview from '@/components/ogc/process-input-review';
 import RawPayloadBlock from '@/components/ogc/raw-payload-block';
 import ResultPreview from '@/components/ogc/result-preview';
 import ResultPreviewLoading from '@/components/ogc/result-preview-loading';
@@ -54,7 +56,7 @@ import { groupProcessResults } from '@/lib/ogc-result-groups';
 import { cn } from '@/lib/utils';
 import { index } from '@/routes/jobs';
 import { show as processShow } from '@/routes/processes';
-import type { ProcessExecutionDetail } from '@/types';
+import type { OgcInputReview, ProcessExecutionDetail } from '@/types';
 
 const GeoTiffMapResultPreview = lazy(
     () => import('@/components/ogc/geotiff-map-result-preview'),
@@ -65,9 +67,11 @@ type Translate = ReturnType<typeof useTranslation>['t'];
 export default function ProcessExecutionShow({
     execution,
     pollingInterval,
+    inputReview = null,
 }: {
     execution: ProcessExecutionDetail;
     pollingInterval: number;
+    inputReview?: OgcInputReview | null;
 }) {
     const { locale, t } = useTranslation();
     const styles = jobStatusStyles(execution.status);
@@ -191,27 +195,39 @@ export default function ProcessExecutionShow({
 
                 <JobNoteCard execution={execution} />
 
-                {execution.requestPayload !== undefined ? (
+                {inputReview ? (
                     <DetailSection
                         icon={FileInputIcon}
-                        title={t('jobs.inputs')}
-                        description={t('jobs.inputsDescription')}
+                        title={t('jobs.submittedInputs')}
+                        description={t('jobs.submittedInputsDescription')}
                         defaultOpen={false}
                         badge={
-                            <Badge
-                                variant="destructive"
-                                className="h-5 shrink-0 px-1.5 text-[10px] uppercase"
-                            >
-                                <ShieldCheckIcon data-icon="inline-start" />
-                                {t('jobs.adminOnlySection')}
+                            <Badge variant="secondary">
+                                <LockKeyholeIcon data-icon="inline-start" />
+                                {t('jobs.readOnly')}
                             </Badge>
                         }
                     >
-                        <RawPayloadBlock
-                            title={t('jobs.inputs')}
-                            data={execution.requestPayload}
-                            kind="json"
+                        <ProcessInputReview
+                            review={inputReview}
+                            executionId={execution.id}
                         />
+                        {execution.requestPayload !== undefined ? (
+                            <div className="mt-6 flex min-w-0 flex-col gap-3 border-t pt-6">
+                                <Badge
+                                    variant="destructive"
+                                    className="h-5 w-fit px-1.5 text-[10px] uppercase"
+                                >
+                                    <ShieldCheckIcon data-icon="inline-start" />
+                                    {t('jobs.adminOnlySection')}
+                                </Badge>
+                                <RawPayloadBlock
+                                    title={t('ogc.rawJson')}
+                                    data={execution.requestPayload}
+                                    kind="json"
+                                />
+                            </div>
+                        ) : null}
                     </DetailSection>
                 ) : null}
 

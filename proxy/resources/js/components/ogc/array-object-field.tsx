@@ -8,6 +8,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import { fieldDisplayLabel } from '@/lib/ogc-fields';
 import { fieldError } from '@/lib/ogc-form-errors';
 import type { OgcFieldValidationController } from '@/lib/ogc-form-validation';
+import { fieldsWithSubmittedValues } from '@/lib/ogc-form-values';
 import type { OgcNormalizedField } from '@/types';
 
 export default function ArrayObjectField({
@@ -16,12 +17,14 @@ export default function ArrayObjectField({
     onChange,
     path,
     validation,
+    readOnly = false,
 }: {
     field: OgcNormalizedField;
     value: unknown;
     onChange: (value: unknown) => void;
     path: string;
     validation: OgcFieldValidationController;
+    readOnly?: boolean;
 }) {
     const { t } = useTranslation();
     const errors = validation.errors;
@@ -52,67 +55,77 @@ export default function ArrayObjectField({
                             key={index}
                             className="flex min-w-0 flex-col gap-3 rounded-md border bg-background p-3 dark:bg-background/60"
                         >
-                            <div className="flex justify-end">
-                                <Button
-                                    type="button"
-                                    variant="destructive"
-                                    size="icon"
-                                    aria-label={t('ogc.removeRow')}
-                                    disabled={
-                                        field.minItems !== null &&
-                                        field.minItems !== undefined &&
-                                        rows.length <= field.minItems
-                                    }
-                                    onClick={() => {
-                                        validation.resetPathPrefix(path);
-                                        onChange(
-                                            rows.filter(
-                                                (_, rowIndex) =>
-                                                    rowIndex !== index,
-                                            ),
-                                        );
-                                    }}
-                                >
-                                    <Trash2 data-icon="icon" />
-                                </Button>
-                            </div>
-                            {Object.entries(field.fields ?? {}).map(
-                                ([key, child]) => (
-                                    <SchemaFieldRenderer
-                                        key={key}
-                                        field={child}
-                                        value={rowValue[key]}
-                                        onChange={(nextValue) =>
-                                            updateRow(index, {
-                                                ...rowValue,
-                                                [key]: nextValue,
-                                            })
+                            {!readOnly ? (
+                                <div className="flex justify-end">
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="icon"
+                                        aria-label={t('ogc.removeRow')}
+                                        disabled={
+                                            field.minItems !== null &&
+                                            field.minItems !== undefined &&
+                                            rows.length <= field.minItems
                                         }
-                                        path={path + '.' + index + '.' + key}
-                                        validation={validation}
-                                    />
-                                ),
-                            )}
+                                        onClick={() => {
+                                            validation.resetPathPrefix(path);
+                                            onChange(
+                                                rows.filter(
+                                                    (_, rowIndex) =>
+                                                        rowIndex !== index,
+                                                ),
+                                            );
+                                        }}
+                                    >
+                                        <Trash2 data-icon="icon" />
+                                    </Button>
+                                </div>
+                            ) : null}
+                            {Object.entries(
+                                readOnly
+                                    ? fieldsWithSubmittedValues(
+                                          field.fields ?? {},
+                                          rowValue,
+                                      )
+                                    : (field.fields ?? {}),
+                            ).map(([key, child]) => (
+                                <SchemaFieldRenderer
+                                    key={key}
+                                    field={child}
+                                    value={rowValue[key]}
+                                    onChange={(nextValue) =>
+                                        updateRow(index, {
+                                            ...rowValue,
+                                            [key]: nextValue,
+                                        })
+                                    }
+                                    path={path + '.' + index + '.' + key}
+                                    validation={validation}
+                                    readOnly={readOnly}
+                                />
+                            ))}
                         </div>
                     );
                 })}
             </FieldGroup>
-            <Button
-                type="button"
-                variant="outline"
-                disabled={
-                    field.maxItems !== null &&
-                    field.maxItems !== undefined &&
-                    rows.length >= field.maxItems
-                }
-                onClick={() => {
-                    validation.fieldChanged(path);
-                    onChange([...rows, {}]);
-                }}
-            >
-                <Plus data-icon="inline-start" />
-                {t('ogc.addRow')}
-            </Button>
+            {!readOnly ? (
+                <Button
+                    type="button"
+                    variant="outline"
+                    disabled={
+                        field.maxItems !== null &&
+                        field.maxItems !== undefined &&
+                        rows.length >= field.maxItems
+                    }
+                    onClick={() => {
+                        validation.fieldChanged(path);
+                        onChange([...rows, {}]);
+                    }}
+                >
+                    <Plus data-icon="inline-start" />
+                    {t('ogc.addRow')}
+                </Button>
+            ) : null}
         </SectionFieldSet>
     );
 }

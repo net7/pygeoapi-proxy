@@ -23,6 +23,13 @@ class StoreProcessExecutionRequest extends FormRequest
         return [
             'name' => ['nullable', 'string', 'max:255'],
             'inputs' => ['required', 'array'],
+            'inputFiles' => ['sometimes', 'array', 'max:100'],
+            'inputFiles.*' => ['array:path,name,content,encoding'],
+            'inputFiles.*.path' => ['required', 'array', 'min:1', 'max:32'],
+            'inputFiles.*.path.*' => ['required', 'string', 'max:255'],
+            'inputFiles.*.name' => ['required', 'string', 'max:255'],
+            'inputFiles.*.content' => ['sometimes', 'nullable', 'string'],
+            'inputFiles.*.encoding' => ['sometimes', 'in:base64'],
             'outputs' => ['sometimes', 'array'],
             'outputs.*' => ['array:format'],
             'outputs.*.format' => ['sometimes', 'array:mediaType,encoding,schema'],
@@ -108,6 +115,14 @@ class StoreProcessExecutionRequest extends FormRequest
     public function executionInputs(): array
     {
         return $this->validated('inputs');
+    }
+
+    /**
+     * @return array<int, array{path: array<int, string>, name: string, content?: string|null, encoding?: string}>
+     */
+    public function inputFiles(): array
+    {
+        return $this->validated('inputFiles', []);
     }
 
     /**

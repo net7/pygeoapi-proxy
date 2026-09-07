@@ -119,6 +119,21 @@ export type OgcInputPrefill = {
     skippedInputs: string[];
 };
 
+export type OgcInputReview = {
+    fields: Record<string, OgcNormalizedField>;
+    inputs: Record<string, unknown>;
+    legacy: boolean;
+    unavailableInputs: string[];
+    files: {
+        id: number;
+        path: string[];
+        name: string;
+        sizeBytes: number;
+        mediaType: string | null;
+        available: boolean;
+    }[];
+};
+
 export type TiptapDocument = {
     type: 'doc';
     content?: Array<Record<string, any>>;
