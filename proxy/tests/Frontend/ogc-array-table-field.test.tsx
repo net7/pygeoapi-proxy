@@ -79,7 +79,7 @@ describe('ArrayTableField', () => {
             html.match(/data-field-path="inputs\.sw\.data\.0\.1"/g),
         ).toHaveLength(1);
         expect(html).toContain('role="region"');
-        expect(html).toContain('aria-label="User data (sw.data)"');
+        expect(html).toContain('aria-label="User data"');
         expect(html).toContain('tabindex="0"');
         expect(html).toContain(
             'aria-describedby="error-inputs-sw-data-scroll-hint"',

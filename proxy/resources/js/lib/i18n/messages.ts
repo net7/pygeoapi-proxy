@@ -284,6 +284,10 @@ const it = {
         inputReviewEmpty:
             'Non sono disponibili dati di input per questa richiesta.',
         submittedFiles: 'File inviati',
+        copySupportSummary: 'Copia riepilogo per l’assistenza',
+        supportSummaryCopied: 'Riepilogo per l’assistenza copiato',
+        supportSummaryCopyError:
+            'Impossibile copiare il riepilogo per l’assistenza',
         adminOnlySection: 'VISIBILE SOLO AGLI ADMIN',
         documentTitle: 'Processo {jobId}',
         jobId: 'ID processo',
@@ -393,6 +397,13 @@ const it = {
         inputPrefillSkipped:
             'Input non copiati perché oscurati o non più disponibili: {inputs}.',
         inputPrefillTitle: 'Input copiati da “{source}”',
+        showSupportReferences: 'Mostra riferimenti per l’assistenza',
+        showSupportReferencesTooltip:
+            'Mostra i nomi tecnici dei campi da comunicare all’assistenza. Clicca su un nome tra parentesi per copiarlo negli appunti.',
+        copySupportReference: 'Copia riferimento per l’assistenza {name}',
+        supportReferenceCopied: 'Riferimento per l’assistenza copiato',
+        supportReferenceCopyError:
+            'Impossibile copiare il riferimento per l’assistenza',
         jobControls: 'Controlli processo',
         mapLayerHillshadeWarning:
             'Lo stile SLD applicato usa solo una hillshade: il DEM può apparire come un raster scuro o rettangolare. La resa dipende dallo SLD fornito, non dalla mappa.',
@@ -818,6 +829,9 @@ const en = {
             'Some submitted data is no longer available: {inputs}.',
         inputReviewEmpty: 'No input data is available for this request.',
         submittedFiles: 'Submitted files',
+        copySupportSummary: 'Copy summary for support',
+        supportSummaryCopied: 'Support summary copied',
+        supportSummaryCopyError: 'Unable to copy the support summary',
         adminOnlySection: 'VISIBLE TO ADMINS ONLY',
         documentTitle: 'Job {jobId}',
         jobId: 'Job ID',
@@ -925,6 +939,12 @@ const en = {
         inputPrefillSkipped:
             'Inputs not copied because they were redacted or are no longer available: {inputs}.',
         inputPrefillTitle: 'Inputs copied from “{source}”',
+        showSupportReferences: 'Show support references',
+        showSupportReferencesTooltip:
+            'Shows the technical field names to share with support. Click a name in parentheses to copy it to the clipboard.',
+        copySupportReference: 'Copy support reference {name}',
+        supportReferenceCopied: 'Support reference copied',
+        supportReferenceCopyError: 'Unable to copy the support reference',
         jobControls: 'Job controls',
         mapLayerHillshadeWarning:
             'The applied SLD style only defines hillshade: the DEM may appear as a dark or rectangular raster. The rendering depends on the supplied SLD, not the map.',

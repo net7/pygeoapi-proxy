@@ -3,13 +3,7 @@ import type { OgcNormalizedField } from '@/types';
 export function fieldDisplayLabel(
     field: Pick<OgcNormalizedField, 'name' | 'title'>,
 ): string {
-    const title = field.title?.trim();
-
-    if (!title || title === field.name) {
-        return `(${field.name})`;
-    }
-
-    return `${title} (${field.name})`;
+    return field.title?.trim() || field.name;
 }
 
 export function optionDisplayLabel(option: string | number | boolean): string {

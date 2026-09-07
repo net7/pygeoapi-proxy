@@ -8,16 +8,12 @@ import {
     ogcValidationDataState,
     ogcValidationFieldClassName,
 } from '@/components/ogc/field-validation-feedback';
+import { FieldLabelWithSupport } from '@/components/ogc/input-support';
 import NumericInput from '@/components/ogc/numeric-input';
 import OneOfField from '@/components/ogc/one-of-field';
 import ReadOnlyFieldValue from '@/components/ogc/read-only-field-value';
 import SectionFieldSet from '@/components/ogc/section-field-set';
-import {
-    Field,
-    FieldDescription,
-    FieldGroup,
-    FieldLabel,
-} from '@/components/ui/field';
+import { Field, FieldDescription, FieldGroup } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -69,6 +65,7 @@ export default function SchemaFieldRenderer({
         return (
             <SectionFieldSet
                 label={fieldDisplayLabel(field)}
+                supportReference={field.name}
                 description={field.description}
                 fieldPath={path}
                 error={error}
@@ -159,7 +156,7 @@ export default function SchemaFieldRenderer({
                 className={cn('min-w-0', ogcValidationFieldClassName(state))}
                 data-invalid={state === 'invalid' ? true : undefined}
             >
-                <FieldLabel>{fieldDisplayLabel(field)}</FieldLabel>
+                <FieldLabelWithSupport field={field} />
                 {field.description ? (
                     <FieldDescription className="break-words">
                         {field.description}
@@ -237,7 +234,7 @@ export default function SchemaFieldRenderer({
             className={cn('min-w-0', ogcValidationFieldClassName(state))}
             data-invalid={state === 'invalid' ? true : undefined}
         >
-            <FieldLabel>{fieldDisplayLabel(field)}</FieldLabel>
+            <FieldLabelWithSupport field={field} />
             {field.description ? (
                 <FieldDescription className="break-words">
                     {field.description}

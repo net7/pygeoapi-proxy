@@ -149,6 +149,7 @@ export default function DataInputField({
     return (
         <SectionFieldSet
             label={fieldDisplayLabel(field)}
+            supportReference={field.name}
             description={field.description}
             validationState={state}
         >

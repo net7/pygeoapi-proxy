@@ -1,10 +1,6 @@
+import { FieldLabelWithSupport } from '@/components/ogc/input-support';
 import SectionFieldSet from '@/components/ogc/section-field-set';
-import {
-    Field,
-    FieldDescription,
-    FieldGroup,
-    FieldLabel,
-} from '@/components/ui/field';
+import { Field, FieldDescription, FieldGroup } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/hooks/use-translation';
@@ -27,6 +23,7 @@ export default function ReadOnlyFieldValue({
         return (
             <SectionFieldSet
                 label={fieldDisplayLabel(field)}
+                supportReference={field.name}
                 description={field.description}
             >
                 <FieldGroup>
@@ -65,7 +62,7 @@ export default function ReadOnlyFieldValue({
 
     return (
         <Field className="min-w-0">
-            <FieldLabel htmlFor={id}>{fieldDisplayLabel(field)}</FieldLabel>
+            <FieldLabelWithSupport field={field} htmlFor={id} />
             {field.description ? (
                 <FieldDescription>{field.description}</FieldDescription>
             ) : null}

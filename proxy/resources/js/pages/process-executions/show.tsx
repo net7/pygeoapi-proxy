@@ -14,10 +14,14 @@ import {
     TimerIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import { DeleteJobButton } from '@/components/ogc/delete-job-dialog';
+import {
+    InputSupport,
+    InputSupportToggle,
+} from '@/components/ogc/input-support';
 import JobIdentifiers from '@/components/ogc/job-identifiers';
 import { JobNameEditDialog } from '@/components/ogc/job-name-edit-dialog';
 import { JobNoteCard } from '@/components/ogc/job-note-card';
@@ -74,6 +78,7 @@ export default function ProcessExecutionShow({
     inputReview?: OgcInputReview | null;
 }) {
     const { locale, t } = useTranslation();
+    const [inputReviewOpen, setInputReviewOpen] = useState(false);
     const styles = jobStatusStyles(execution.status);
     const StatusIcon = styles.icon;
     const terminalTimestamp = execution.completedAt ?? execution.failedAt;
@@ -196,39 +201,50 @@ export default function ProcessExecutionShow({
                 <JobNoteCard execution={execution} />
 
                 {inputReview ? (
-                    <DetailSection
-                        icon={FileInputIcon}
-                        title={t('jobs.submittedInputs')}
-                        description={t('jobs.submittedInputsDescription')}
-                        defaultOpen={false}
-                        badge={
-                            <Badge variant="secondary">
-                                <LockKeyholeIcon data-icon="inline-start" />
-                                {t('jobs.readOnly')}
-                            </Badge>
-                        }
-                    >
-                        <ProcessInputReview
-                            review={inputReview}
-                            executionId={execution.id}
-                        />
-                        {execution.requestPayload !== undefined ? (
-                            <div className="mt-6 flex min-w-0 flex-col gap-3 border-t pt-6">
-                                <Badge
-                                    variant="destructive"
-                                    className="h-5 w-fit px-1.5 text-[10px] uppercase"
-                                >
-                                    <ShieldCheckIcon data-icon="inline-start" />
-                                    {t('jobs.adminOnlySection')}
-                                </Badge>
-                                <RawPayloadBlock
-                                    title={t('ogc.rawJson')}
-                                    data={execution.requestPayload}
-                                    kind="json"
+                    <InputSupport>
+                        <DetailSection
+                            icon={FileInputIcon}
+                            title={t('jobs.submittedInputs')}
+                            description={t('jobs.submittedInputsDescription')}
+                            defaultOpen={false}
+                            open={inputReviewOpen}
+                            onOpenChange={setInputReviewOpen}
+                            actions={
+                                <InputSupportToggle
+                                    onShowReferences={() =>
+                                        setInputReviewOpen(true)
+                                    }
                                 />
-                            </div>
-                        ) : null}
-                    </DetailSection>
+                            }
+                            badge={
+                                <Badge variant="secondary">
+                                    <LockKeyholeIcon data-icon="inline-start" />
+                                    {t('jobs.readOnly')}
+                                </Badge>
+                            }
+                        >
+                            <ProcessInputReview
+                                review={inputReview}
+                                execution={execution}
+                            />
+                            {execution.requestPayload !== undefined ? (
+                                <div className="mt-6 flex min-w-0 flex-col gap-3 border-t pt-6">
+                                    <Badge
+                                        variant="destructive"
+                                        className="h-5 w-fit px-1.5 text-[10px] uppercase"
+                                    >
+                                        <ShieldCheckIcon data-icon="inline-start" />
+                                        {t('jobs.adminOnlySection')}
+                                    </Badge>
+                                    <RawPayloadBlock
+                                        title={t('ogc.rawJson')}
+                                        data={execution.requestPayload}
+                                        kind="json"
+                                    />
+                                </div>
+                            ) : null}
+                        </DetailSection>
+                    </InputSupport>
                 ) : null}
 
                 <DetailSection
@@ -356,6 +372,9 @@ function DetailSection({
     description,
     badge,
     defaultOpen,
+    open,
+    onOpenChange,
+    actions,
     children,
 }: {
     icon: LucideIcon;
@@ -363,6 +382,9 @@ function DetailSection({
     description: string;
     badge?: ReactNode;
     defaultOpen?: boolean;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+    actions?: ReactNode;
     children: ReactNode;
 }) {
     const header = (
@@ -376,13 +398,21 @@ function DetailSection({
                 </CardTitleWithIcon>
                 <CardDescription>{description}</CardDescription>
             </div>
-            {badge}
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 self-end sm:self-start">
+                {badge}
+                {actions}
+            </div>
         </CardHeader>
     );
 
     if (defaultOpen !== undefined) {
         return (
-            <Collapsible defaultOpen={defaultOpen} asChild>
+            <Collapsible
+                defaultOpen={defaultOpen}
+                open={open}
+                onOpenChange={onOpenChange}
+                asChild
+            >
                 <Card className="min-w-0 shadow-sm dark:border-border/70 dark:bg-card/95">
                     {header}
                     <CollapsibleContent>

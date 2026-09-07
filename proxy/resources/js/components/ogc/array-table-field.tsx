@@ -1,4 +1,5 @@
 import { MoveHorizontal, Plus, Trash2 } from 'lucide-react';
+import { useContext } from 'react';
 import type { CSSProperties } from 'react';
 
 import {
@@ -7,6 +8,10 @@ import {
     ogcValidationControlClassName,
     ogcValidationDataState,
 } from '@/components/ogc/field-validation-feedback';
+import {
+    FieldSupportReference,
+    InputSupportContext,
+} from '@/components/ogc/input-support';
 import SectionFieldSet from '@/components/ogc/section-field-set';
 import { Button } from '@/components/ui/button';
 import { Field, FieldLabel } from '@/components/ui/field';
@@ -44,6 +49,8 @@ export default function ArrayTableField({
     readOnly?: boolean;
 }) {
     const { t } = useTranslation();
+    const showReferences =
+        useContext(InputSupportContext)?.showReferences ?? false;
     const isMobile = useIsMobile();
     const errors = validation.errors;
     const rows = Array.isArray(value) ? value : [];
@@ -90,6 +97,7 @@ export default function ArrayTableField({
     return (
         <SectionFieldSet
             label={label}
+            supportReference={field.name}
             description={field.description}
             fieldPath={path}
             error={structuralError}
@@ -129,7 +137,10 @@ export default function ArrayTableField({
                                 key={column.key}
                                 className="w-32 break-words whitespace-normal"
                             >
-                                {column.label}
+                                {!showReferences || column.label !== column.key
+                                    ? column.label
+                                    : null}{' '}
+                                <FieldSupportReference name={column.key} />
                             </TableHead>
                         ))}
                         {!readOnly ? (
@@ -204,12 +215,24 @@ export default function ArrayTableField({
                                                         : undefined
                                                 }
                                             >
-                                                <FieldLabel
-                                                    htmlFor={controlId}
-                                                    className="text-xs font-medium break-words text-muted-foreground md:sr-only md:max-w-px"
-                                                >
-                                                    {column.label}
-                                                </FieldLabel>
+                                                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 md:contents">
+                                                    <FieldLabel
+                                                        htmlFor={controlId}
+                                                        className={cn(
+                                                            'text-xs font-medium break-words text-muted-foreground md:sr-only md:max-w-px',
+                                                            showReferences &&
+                                                                column.label ===
+                                                                    column.key &&
+                                                                'sr-only',
+                                                        )}
+                                                    >
+                                                        {column.label}
+                                                    </FieldLabel>
+                                                    <FieldSupportReference
+                                                        name={column.key}
+                                                        className="md:hidden"
+                                                    />
+                                                </div>
                                                 <OgcValidationControl
                                                     state={state}
                                                     validLabel={

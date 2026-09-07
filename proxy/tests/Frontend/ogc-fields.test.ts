@@ -8,13 +8,13 @@ import {
 import type { OgcNormalizedField } from '../../resources/js/types';
 
 describe('OGC field display helpers', () => {
-    test('shows title and key when a field title is available', () => {
+    test('shows the descriptive title without the support reference', () => {
         expect(
             fieldDisplayLabel({
                 name: 'sw.data',
                 title: 'User data',
             } as OgcNormalizedField),
-        ).toBe('User data (sw.data)');
+        ).toBe('User data');
     });
 
     test('shows only the key when the title falls back to the field name', () => {
@@ -23,8 +23,20 @@ describe('OGC field display helpers', () => {
                 name: 'sw.data',
                 title: 'sw.data',
             } as OgcNormalizedField),
-        ).toBe('(sw.data)');
+        ).toBe('sw.data');
     });
+
+    test.each(['', '   ', undefined])(
+        'keeps a usable label when the descriptive title is missing',
+        (title) => {
+            expect(
+                fieldDisplayLabel({
+                    name: 'sw.data',
+                    title,
+                } as OgcNormalizedField),
+            ).toBe('sw.data');
+        },
+    );
 
     test('shows enum options once', () => {
         expect(optionDisplayLabel('conduit')).toBe('conduit');

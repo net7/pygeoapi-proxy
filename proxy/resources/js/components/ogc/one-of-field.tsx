@@ -81,6 +81,7 @@ export default function OneOfField({
     return (
         <SectionFieldSet
             label={fieldDisplayLabel(field)}
+            supportReference={field.name}
             description={field.description}
             className="overflow-hidden"
             fieldPath={path}

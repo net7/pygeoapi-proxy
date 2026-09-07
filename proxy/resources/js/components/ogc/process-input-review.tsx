@@ -1,17 +1,25 @@
-import { DownloadIcon, InfoIcon } from 'lucide-react';
+import { CopyIcon, DownloadIcon, InfoIcon } from 'lucide-react';
+import { useContext } from 'react';
+import { toast } from 'sonner';
 
+import {
+    FieldSupportReference,
+    InputSupportContext,
+} from '@/components/ogc/input-support';
 import ReadOnlyFieldValue from '@/components/ogc/read-only-field-value';
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
 import SectionFieldSet from '@/components/ogc/section-field-set';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
+import { useClipboard } from '@/hooks/use-clipboard';
 import { useTranslation } from '@/hooks/use-translation';
+import { inputSupportSummary } from '@/lib/input-support-summary';
 import { fieldDisplayLabel } from '@/lib/ogc-fields';
 import type { OgcFieldValidationController } from '@/lib/ogc-form-validation';
 import { reviewInputValues } from '@/lib/ogc-form-values';
 import { download } from '@/routes/jobs/inputs';
-import type { OgcInputReview } from '@/types';
+import type { OgcInputReview, ProcessExecutionDetail } from '@/types';
 
 const ignoreChange = () => undefined;
 const readOnlyValidation: OgcFieldValidationController = {
@@ -25,12 +33,15 @@ const readOnlyValidation: OgcFieldValidationController = {
 
 export default function ProcessInputReview({
     review,
-    executionId,
+    execution,
 }: {
     review: OgcInputReview;
-    executionId: number;
+    execution: ProcessExecutionDetail;
 }) {
     const { t, locale } = useTranslation();
+    const [, copy] = useClipboard();
+    const showReferences =
+        useContext(InputSupportContext)?.showReferences ?? false;
     const values = reviewInputValues(review.fields, review.inputs);
     const unavailable = new Set(review.unavailableInputs);
     const unavailableLabels = review.unavailableInputs.map((name) =>
@@ -39,6 +50,30 @@ export default function ProcessInputReview({
 
     return (
         <FieldGroup>
+            {showReferences ? (
+                <div className="flex justify-end">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-auto min-h-8 max-w-full justify-start text-left whitespace-normal"
+                        onClick={async () => {
+                            if (
+                                await copy(
+                                    inputSupportSummary(review, execution),
+                                )
+                            ) {
+                                toast.success(t('jobs.supportSummaryCopied'));
+                            } else {
+                                toast.error(t('jobs.supportSummaryCopyError'));
+                            }
+                        }}
+                    >
+                        <CopyIcon data-icon="inline-start" aria-hidden="true" />
+                        {t('jobs.copySupportSummary')}
+                    </Button>
+                </div>
+            ) : null}
             {review.legacy ? (
                 <Alert>
                     <InfoIcon aria-hidden="true" />
@@ -92,11 +127,15 @@ export default function ProcessInputReview({
                                 className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
                             >
                                 <div className="min-w-0">
-                                    <p className="text-sm font-medium break-all">
-                                        {file.name}
-                                    </p>
+                                    <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                                        <p className="text-sm font-medium break-all">
+                                            {file.name}
+                                        </p>
+                                        <FieldSupportReference
+                                            name={file.path.join('.')}
+                                        />
+                                    </div>
                                     <p className="text-xs text-muted-foreground">
-                                        {file.path[0]} ·{' '}
                                         {file.sizeBytes.toLocaleString(locale)}{' '}
                                         bytes
                                         {file.mediaType
@@ -113,7 +152,7 @@ export default function ProcessInputReview({
                                     >
                                         <a
                                             href={download.url({
-                                                processExecution: executionId,
+                                                processExecution: execution.id,
                                                 file: file.id,
                                             })}
                                         >

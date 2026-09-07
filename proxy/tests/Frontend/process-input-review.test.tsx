@@ -30,6 +30,17 @@ function renderReadOnly(field: OgcNormalizedField, value: unknown): string {
 }
 
 describe('submitted inputs in read-only mode', () => {
+    test('shows the descriptive label without the technical reference by default', () => {
+        const html = renderReadOnly(
+            { name: 'max_distance', title: 'Maximum distance', kind: 'scalar' },
+            100,
+        );
+
+        expect(html).toContain('Maximum distance');
+        expect(html).not.toContain('max_distance');
+        expect(html).toContain('value="100"');
+    });
+
     test('does not guess an unknown legacy variant or hide its values', () => {
         const html = renderReadOnly(
             {

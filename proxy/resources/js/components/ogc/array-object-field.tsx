@@ -41,6 +41,7 @@ export default function ArrayObjectField({
     return (
         <SectionFieldSet
             label={fieldDisplayLabel(field)}
+            supportReference={field.name}
             description={field.description}
             fieldPath={path}
             error={structuralError}
