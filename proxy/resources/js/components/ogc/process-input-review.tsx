@@ -1,20 +1,13 @@
-import { CopyIcon, DownloadIcon, InfoIcon } from 'lucide-react';
-import { useContext } from 'react';
-import { toast } from 'sonner';
+import { DownloadIcon, InfoIcon } from 'lucide-react';
 
-import {
-    FieldSupportReference,
-    InputSupportContext,
-} from '@/components/ogc/input-support';
+import { FieldSupportReference } from '@/components/ogc/input-support';
 import ReadOnlyFieldValue from '@/components/ogc/read-only-field-value';
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
 import SectionFieldSet from '@/components/ogc/section-field-set';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
-import { useClipboard } from '@/hooks/use-clipboard';
 import { useTranslation } from '@/hooks/use-translation';
-import { inputSupportSummary } from '@/lib/input-support-summary';
 import { fieldDisplayLabel } from '@/lib/ogc-fields';
 import type { OgcFieldValidationController } from '@/lib/ogc-form-validation';
 import { reviewInputValues } from '@/lib/ogc-form-values';
@@ -39,9 +32,6 @@ export default function ProcessInputReview({
     execution: ProcessExecutionDetail;
 }) {
     const { t, locale } = useTranslation();
-    const [, copy] = useClipboard();
-    const showReferences =
-        useContext(InputSupportContext)?.showReferences ?? false;
     const values = reviewInputValues(review.fields, review.inputs);
     const unavailable = new Set(review.unavailableInputs);
     const unavailableLabels = review.unavailableInputs.map((name) =>
@@ -50,30 +40,6 @@ export default function ProcessInputReview({
 
     return (
         <FieldGroup>
-            {showReferences ? (
-                <div className="flex justify-end">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-auto min-h-8 max-w-full justify-start text-left whitespace-normal"
-                        onClick={async () => {
-                            if (
-                                await copy(
-                                    inputSupportSummary(review, execution),
-                                )
-                            ) {
-                                toast.success(t('jobs.supportSummaryCopied'));
-                            } else {
-                                toast.error(t('jobs.supportSummaryCopyError'));
-                            }
-                        }}
-                    >
-                        <CopyIcon data-icon="inline-start" aria-hidden="true" />
-                        {t('jobs.copySupportSummary')}
-                    </Button>
-                </div>
-            ) : null}
             {review.legacy ? (
                 <Alert>
                     <InfoIcon aria-hidden="true" />

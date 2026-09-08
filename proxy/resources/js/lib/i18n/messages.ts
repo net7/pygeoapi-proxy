@@ -284,10 +284,6 @@ const it = {
         inputReviewEmpty:
             'Non sono disponibili dati di input per questa richiesta.',
         submittedFiles: 'File inviati',
-        copySupportSummary: 'Copia riepilogo per l’assistenza',
-        supportSummaryCopied: 'Riepilogo per l’assistenza copiato',
-        supportSummaryCopyError:
-            'Impossibile copiare il riepilogo per l’assistenza',
         adminOnlySection: 'VISIBILE SOLO AGLI ADMIN',
         documentTitle: 'Processo {jobId}',
         jobId: 'ID processo',
@@ -829,9 +825,6 @@ const en = {
             'Some submitted data is no longer available: {inputs}.',
         inputReviewEmpty: 'No input data is available for this request.',
         submittedFiles: 'Submitted files',
-        copySupportSummary: 'Copy summary for support',
-        supportSummaryCopied: 'Support summary copied',
-        supportSummaryCopyError: 'Unable to copy the support summary',
         adminOnlySection: 'VISIBLE TO ADMINS ONLY',
         documentTitle: 'Job {jobId}',
         jobId: 'Job ID',
