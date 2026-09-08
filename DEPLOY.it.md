@@ -443,13 +443,18 @@ Il workflow non viene eseguito per `main`.
 
 ## Bootstrap del primo deploy automatico
 
-Usare questa procedura prima del primo deploy CI con il nuovo nome dello script,
-quando il checkout `staging` corrente non traccia ancora
-`deploy-dev-staging.sh`. Creare la Merge Request da `develop` a `staging`,
-attendere il successo dei quality gate e non fare ancora merge.
+La pipeline prepara automaticamente il primo deploy, anche quando sul server
+non esiste ancora `deploy-dev-staging.sh`. Il job `deployment-check` conserva
+lo script verificato come artifact; `deploy:staging` lo invia via SSH ed esegue
+il checkout dello SHA della pipeline. Dopo il successo dei quality gate,
+la Merge Request da `develop` a `staging` può quindi essere unita direttamente.
+Sul server devono già essere presenti il repository, `.env.staging` e gli
+strumenti descritti nei prerequisiti.
 
-Come amministratore del server, installare il bootstrap dall'esatto head
-autenticato di `develop`:
+### Alternativa per il bootstrap manuale
+
+Per avviare il primo deploy senza la pipeline, installare lo script dall'esatto
+head autenticato di `develop` prima del merge:
 
 ```bash
 sudo -u gitlab_deploy -H bash <<'BASH'
@@ -607,11 +612,12 @@ variabili del deploy.
 
 ## Deploy automatico
 
-Ogni pipeline push riuscita su `staging` passa `CI_COMMIT_SHA` a:
+Ogni pipeline push riuscita su `staging` scarica lo script verificato dal job
+`deployment-check` e passa `CI_COMMIT_SHA` a:
 
 ```bash
 ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
-  "cd '$DEPLOY_PATH' && ./deploy-dev-staging.sh staging '$CI_COMMIT_SHA'"
+  "cd '$DEPLOY_PATH' && bash -s -- staging '$CI_COMMIT_SHA'" < deploy-dev-staging.sh
 ```
 
 Sul server `deploy-dev-staging.sh`:

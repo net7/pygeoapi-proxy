@@ -164,6 +164,32 @@ grep -F 'curl --fail --silent --show-error --max-time 30 http://127.0.0.1:7070/u
 grep -F '[6/6] Verify staging' "$temporary_directory/success.log" > /dev/null
 grep -F "Deployed SHA: $target_sha" "$temporary_directory/success.log" > /dev/null
 
+stdin_checkout="$temporary_directory/stdin-bootstrap"
+stdin_commands="$temporary_directory/stdin-bootstrap-commands.log"
+git clone -q "$origin_repository" "$stdin_checkout"
+git -C "$stdin_checkout" checkout -q --detach "$bootstrap_sha"
+printf 'APP_ENV=staging\n' > "$stdin_checkout/.env.staging"
+[ ! -e "$stdin_checkout/deploy-dev-staging.sh" ]
+
+if ! (
+    cd "$stdin_checkout"
+    PATH="$fake_bin:$PATH" \
+    DEPLOY_COMMAND_LOG="$stdin_commands" \
+    DEPLOY_LOCK_FILE="$temporary_directory/stdin-bootstrap.lock" \
+        bash -s -- staging "$target_sha" < "$repository_root/deploy-dev-staging.sh"
+) > "$temporary_directory/stdin-bootstrap.log" 2>&1; then
+    cat "$temporary_directory/stdin-bootstrap.log" >&2
+    exit 1
+fi
+
+[ "$(git -C "$stdin_checkout" rev-parse HEAD)" = "$target_sha" ]
+[ "$(cat "$stdin_checkout/.env.staging")" = 'APP_ENV=staging' ]
+git -C "$stdin_checkout" ls-files --error-unmatch deploy-dev-staging.sh > /dev/null
+[ -z "$(git -C "$stdin_checkout" status --porcelain --untracked-files=all)" ]
+grep -Fx -- '--no-print-directory ENV=staging deploy-up' "$stdin_commands" > /dev/null
+grep -F "Previous SHA: $bootstrap_sha" "$temporary_directory/stdin-bootstrap.log" > /dev/null
+grep -F "Deployed SHA: $target_sha" "$temporary_directory/stdin-bootstrap.log" > /dev/null
+
 bootstrap_checkout="$temporary_directory/bootstrap"
 bootstrap_commands="$temporary_directory/bootstrap-commands.log"
 git clone -q "$origin_repository" "$bootstrap_checkout"

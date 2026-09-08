@@ -30,7 +30,9 @@ require_text 'GIT_STRATEGY: none'
 require_text 'resource_group: staging'
 require_text 'name: staging'
 require_text 'url: https://proxygeoapi.netseven.work'
-require_text "./deploy-dev-staging.sh staging '\$CI_COMMIT_SHA'"
+require_text "bash -s -- staging '\$CI_COMMIT_SHA'\" < deploy-dev-staging.sh"
+require_text 'job: deployment-check'
+require_text '      - deploy-dev-staging.sh'
 require_text '*[!A-Za-z0-9_./-]*'
 require_text '*[!0-9a-f]*'
 require_text "\${#CI_COMMIT_SHA}"

@@ -445,13 +445,18 @@ The workflow gate intentionally does not run for `main`.
 
 ## First automatic deployment bootstrap
 
-Use this procedure before the first CI deployment with the new script name, when
-the current `staging` checkout does not yet track `deploy-dev-staging.sh`.
-Create the merge request from `develop` to `staging`, wait for all quality
-gates, and do not merge it yet.
+The pipeline prepares the first deployment automatically, even when the server
+does not yet have `deploy-dev-staging.sh`. The `deployment-check` job publishes
+the verified script as an artifact; `deploy:staging` streams it over SSH and
+checks out the pipeline SHA. Once the quality gates pass, the merge request
+from `develop` to `staging` can therefore be merged directly. The server must
+already contain the repository, `.env.staging`, and the tools listed in the
+prerequisites.
 
-As a server administrator, install the bootstrap from the exact authenticated
-head of `develop`:
+### Alternative manual bootstrap
+
+To start the first deployment without the pipeline, install the script from
+the exact authenticated head of `develop` before merging:
 
 ```bash
 sudo -u gitlab_deploy -H bash <<'BASH'
@@ -608,11 +613,12 @@ variables.
 
 ## Automatic deployment
 
-Every successful push pipeline on `staging` passes `CI_COMMIT_SHA` to:
+Every successful push pipeline on `staging` downloads the verified script from
+`deployment-check` and passes `CI_COMMIT_SHA` to:
 
 ```bash
 ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
-  "cd '$DEPLOY_PATH' && ./deploy-dev-staging.sh staging '$CI_COMMIT_SHA'"
+  "cd '$DEPLOY_PATH' && bash -s -- staging '$CI_COMMIT_SHA'" < deploy-dev-staging.sh
 ```
 
 On the server, `deploy-dev-staging.sh`:

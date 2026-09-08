@@ -7,7 +7,8 @@ set -Eeuo pipefail
 
 environment=${1:-}
 requested_ref=${2:-}
-repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# CI streams this script over SSH from the repository directory.
+repository_root=$(cd "$(dirname "${BASH_SOURCE[0]:-./deploy-dev-staging.sh}")" && pwd)
 lock_file=${DEPLOY_LOCK_FILE:-/tmp/pygeoapi-proxy-staging.deploy.lock}
 health_url=${DEPLOY_HEALTH_URL:-http://127.0.0.1:7070/up}
 health_timeout=${DEPLOY_HEALTH_TIMEOUT:-30}
