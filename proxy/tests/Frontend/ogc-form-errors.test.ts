@@ -155,7 +155,7 @@ describe('OGC form errors', () => {
         expect(form).toContain('validation.focusErrors');
         expect(renderer).toContain('data-field-path');
         expect(renderer).toContain('aria-invalid');
-        expect(table).toMatch(/required=\{\s*column\.required\s*\}/);
+        expect(table).toMatch(/required=\{\s*!readOnly\s*&&\s*column\.required\s*\}/);
         expect(table).toContain('OgcFieldError');
         expect(table).toContain('OgcValidationControl');
         expect(table).not.toContain('@/components/input-error');

@@ -8,8 +8,8 @@ import {
     normalizeInputs,
     pruneOptionalInputValues,
 } from '../../resources/js/lib/ogc-form-values';
-import type { OgcNormalizedField } from '../../resources/js/types';
 import * as formValues from '../../resources/js/lib/ogc-form-values';
+import type { OgcNormalizedField } from '../../resources/js/types';
 
 test('reviewing submitted inputs never adds defaults or selects an ambiguous variant', () => {
     const fields: Record<string, OgcNormalizedField> = {
