@@ -180,7 +180,7 @@ test('owners can bulk delete their jobs', function () {
             ],
         ])
         ->assertRedirect(route('jobs.index'))
-        ->assertInertiaFlash('toast.title', 'Processi eliminati')
+        ->assertInertiaFlash('toast.title', 'Jobs deleted')
         ->assertInertiaFlash('toast.details.0.value', '3');
 
     $this->assertDatabaseMissing('process_executions', [
@@ -269,7 +269,7 @@ test('bulk remote deletion failures keep the failing job available', function ()
             'ids' => [$deletedExecution->id, $failingExecution->id],
         ])
         ->assertRedirect(route('jobs.index'))
-        ->assertInertiaFlash('toast.title', 'Impossibile eliminare i processi')
+        ->assertInertiaFlash('toast.title', 'Jobs could not be deleted')
         ->assertInertiaFlash('toast.type', 'error');
 
     $this->assertDatabaseMissing('process_executions', [

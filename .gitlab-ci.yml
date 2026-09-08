@@ -1,3 +1,5 @@
+# CI for develop and staging only; automatic deployments target staging.
+
 workflow:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(develop|staging)$/'
@@ -16,7 +18,11 @@ deployment-check:
     - apk add --no-cache bash git jq make shellcheck
   script:
     - deploy/tests/run.sh
-    - shellcheck deploy.sh deploy/tests/*.sh
+    - shellcheck deploy-dev-staging.sh deploy/tests/*.sh
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - deploy-dev-staging.sh
 
 php-check:
   stage: test
@@ -77,9 +83,12 @@ deploy:staging:
   variables:
     GIT_STRATEGY: none
   needs:
-    - deployment-check
-    - php-check
-    - frontend-check
+    - job: deployment-check
+      artifacts: true
+    - job: php-check
+      artifacts: false
+    - job: frontend-check
+      artifacts: false
   resource_group: staging
   interruptible: false
   environment:
@@ -116,6 +125,6 @@ deploy:staging:
         printf '%s\n' 'CI_COMMIT_SHA must contain 40 hexadecimal characters' >&2
         exit 1
       fi
-      ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' && ./deploy.sh staging '$CI_COMMIT_SHA'"
+      ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' && bash -s -- staging '$CI_COMMIT_SHA'" < deploy-dev-staging.sh
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "staging"'

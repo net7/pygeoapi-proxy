@@ -4,24 +4,24 @@ use App\Models\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 
-test('language defaults to italian', function () {
+test('language defaults to english', function () {
     $this->get(route('login'))
-        ->assertOk()
-        ->assertSee('lang="it"', false);
-});
-
-test('valid language cookie sets html language', function () {
-    $this->withUnencryptedCookie('language', 'en')
-        ->get(route('login'))
         ->assertOk()
         ->assertSee('lang="en"', false);
 });
 
-test('invalid language cookie falls back to italian', function () {
-    $this->withUnencryptedCookie('language', 'fr')
+test('valid language cookie sets html language', function () {
+    $this->withUnencryptedCookie('language', 'it')
         ->get(route('login'))
         ->assertOk()
         ->assertSee('lang="it"', false);
+});
+
+test('invalid language cookie falls back to english', function () {
+    $this->withUnencryptedCookie('language', 'fr')
+        ->get(route('login'))
+        ->assertOk()
+        ->assertSee('lang="en"', false);
 });
 
 test('inertia shares the current language', function () {

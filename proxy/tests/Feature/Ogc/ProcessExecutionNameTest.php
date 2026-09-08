@@ -71,7 +71,7 @@ test('job owners can update and clear process names after creation', function ()
         ->from(route('jobs.show', $execution))
         ->patch(route('jobs.name.update', $execution), ['name' => 'Scenario crater south'])
         ->assertRedirect(route('jobs.show', $execution))
-        ->assertInertiaFlash('toast.title', 'Nome processo salvato');
+        ->assertInertiaFlash('toast.title', 'Process name saved');
 
     expect($execution->refresh()->name)->toBe('Scenario crater south')
         ->and($execution->displayName())->toBe('Scenario crater south');

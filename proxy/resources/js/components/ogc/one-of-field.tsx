@@ -4,9 +4,11 @@ import {
     ogcValidationControlClassName,
     ogcValidationDataState,
 } from '@/components/ogc/field-validation-feedback';
+import ReadOnlyFieldValue from '@/components/ogc/read-only-field-value';
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
 import SectionFieldSet from '@/components/ogc/section-field-set';
 import { FieldDescription, FieldGroup } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import {
     Select,
     SelectContent,
@@ -22,7 +24,11 @@ import {
     oneOfStructuralError,
 } from '@/lib/ogc-form-errors';
 import type { OgcFieldValidationController } from '@/lib/ogc-form-validation';
-import { defaultObjectValue, isOneOfValue } from '@/lib/ogc-form-values';
+import {
+    defaultObjectValue,
+    fieldsWithSubmittedValues,
+    isOneOfValue,
+} from '@/lib/ogc-form-values';
 import { cn } from '@/lib/utils';
 import type { OgcNormalizedField } from '@/types';
 
@@ -32,12 +38,14 @@ export default function OneOfField({
     onChange,
     path,
     validation,
+    readOnly = false,
 }: {
     field: OgcNormalizedField;
     value: unknown;
     onChange: (value: unknown) => void;
     path: string;
     validation: OgcFieldValidationController;
+    readOnly?: boolean;
 }) {
     const errors = validation.errors;
     const variants = field.variants ?? [];
@@ -46,7 +54,7 @@ export default function OneOfField({
         : { variant: variants[0]?.id ?? '0', value: {} };
     const selected =
         variants.find((variant) => variant.id === current.variant) ??
-        variants[0];
+        (readOnly ? undefined : variants[0]);
     const structuralError = oneOfStructuralError(errors, path);
     const structuralState = validation.stateFor(path, structuralError);
     const variantPath = path + '.variant';
@@ -61,12 +69,19 @@ export default function OneOfField({
               : 'neutral';
 
     if (!selected) {
-        return null;
+        return readOnly ? (
+            <ReadOnlyFieldValue
+                field={field}
+                value={current.value}
+                path={path}
+            />
+        ) : null;
     }
 
     return (
         <SectionFieldSet
             label={fieldDisplayLabel(field)}
+            supportReference={field.name}
             description={field.description}
             className="overflow-hidden"
             fieldPath={path}
@@ -78,51 +93,65 @@ export default function OneOfField({
                 validLabel={validation.validLabel}
                 hasBuiltInEndIcon
             >
-                <Select
-                    value={current.variant}
-                    onValueChange={(variant) => {
-                        const selectedVariant = variants.find(
-                            (item) => item.id === variant,
-                        );
+                {readOnly ? (
+                    <Input
+                        value={selected.label}
+                        readOnly
+                        aria-label={fieldDisplayLabel(field)}
+                    />
+                ) : (
+                    <Select
+                        value={current.variant}
+                        onValueChange={(variant) => {
+                            const selectedVariant = variants.find(
+                                (item) => item.id === variant,
+                            );
 
-                        validation.resetPathPrefix(path + '.value');
-                        validation.fieldChanged(variantPath);
-                        onChange({
-                            variant,
-                            value: selectedVariant
-                                ? defaultObjectValue(selectedVariant.fields)
-                                : {},
-                        });
-                    }}
-                >
-                    <SelectTrigger
-                        className={cn(
-                            'w-full max-w-full min-w-0',
-                            ogcValidationControlClassName(variantState, true),
-                        )}
-                        data-field-path={variantPath}
-                        data-validation-state={ogcValidationDataState(
-                            variantState,
-                        )}
-                        aria-invalid={
-                            variantState === 'invalid' ? true : undefined
-                        }
-                        aria-describedby={
-                            variantError ? variantErrorId : undefined
-                        }
+                            validation.resetPathPrefix(path + '.value');
+                            validation.fieldChanged(variantPath);
+                            onChange({
+                                variant,
+                                value: selectedVariant
+                                    ? defaultObjectValue(selectedVariant.fields)
+                                    : {},
+                            });
+                        }}
                     >
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectGroup>
-                            {variants.map((variant) => (
-                                <SelectItem key={variant.id} value={variant.id}>
-                                    {variant.label}
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
-                    </SelectContent>
-                </Select>
+                        <SelectTrigger
+                            className={cn(
+                                'w-full max-w-full min-w-0',
+                                ogcValidationControlClassName(
+                                    variantState,
+                                    true,
+                                ),
+                            )}
+                            data-field-path={variantPath}
+                            data-validation-state={ogcValidationDataState(
+                                variantState,
+                            )}
+                            aria-invalid={
+                                variantState === 'invalid' ? true : undefined
+                            }
+                            aria-describedby={
+                                variantError ? variantErrorId : undefined
+                            }
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectGroup>
+                                {variants.map((variant) => (
+                                    <SelectItem
+                                        key={variant.id}
+                                        value={variant.id}
+                                    >
+                                        {variant.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
+                        </SelectContent>
+                    </Select>
+                )}
             </OgcValidationControl>
             <OgcFieldError id={variantErrorId} message={variantError} />
             {selected.description ? (
@@ -132,7 +161,14 @@ export default function OneOfField({
             ) : null}
 
             <FieldGroup key={selected.id} className="min-w-0">
-                {Object.entries(selected.fields).map(([key, child]) => (
+                {Object.entries(
+                    readOnly
+                        ? fieldsWithSubmittedValues(
+                              selected.fields,
+                              current.value,
+                          )
+                        : selected.fields,
+                ).map(([key, child]) => (
                     <SchemaFieldRenderer
                         key={key}
                         field={child}
@@ -145,6 +181,7 @@ export default function OneOfField({
                         }
                         path={path + '.value.' + key}
                         validation={validation}
+                        readOnly={readOnly}
                     />
                 ))}
             </FieldGroup>

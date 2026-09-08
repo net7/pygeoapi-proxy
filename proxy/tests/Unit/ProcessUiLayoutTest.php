@@ -241,12 +241,6 @@ test('interactive button and link surfaces use pointer cursors', function () {
         'resources/js/components/appearance-tabs.tsx' => [
             'cursor-pointer',
         ],
-        'resources/js/components/language-tabs.tsx' => [
-            'cursor-pointer',
-            'LanguagesIcon',
-            'languageMetadata',
-            'updateLanguage',
-        ],
     ];
 
     foreach ($requirements as $path => $expectedClasses) {
@@ -558,7 +552,7 @@ test('remove and delete buttons use destructive styling', function () {
 test('job detail prioritizes collapsible output panels and header metadata without summary section', function () {
     $source = file_get_contents(getcwd().'/resources/js/pages/process-executions/show.tsx');
     $messagesSource = file_get_contents(getcwd().'/resources/js/lib/i18n/messages.ts');
-    $inputPosition = strpos($source, "title={t('jobs.inputs')}");
+    $inputPosition = strpos($source, "title={t('jobs.submittedInputs')}");
     $outputPosition = strpos($source, "title={t('ogc.outputs')}");
     $notePosition = strpos($source, '<JobNoteCard execution={execution} />');
     $headerMetaPosition = strpos($source, 'HeaderMetadata');
@@ -622,7 +616,7 @@ test('job detail prioritizes collapsible output panels and header metadata witho
         ->toContain('HeaderMetadataValue')
         ->toContain('HeaderMetadataProgress')
         ->toContain('variant="destructive"')
-        ->toContain('className="h-5 shrink-0 px-1.5 text-[10px] uppercase"')
+        ->toContain('className="h-5 w-fit px-1.5 text-[10px] uppercase"')
         ->toContain('className="flex justify-end lg:pt-9"')
         ->toContain('DeleteJobButton')
         ->toContain('className="w-full sm:w-auto"')

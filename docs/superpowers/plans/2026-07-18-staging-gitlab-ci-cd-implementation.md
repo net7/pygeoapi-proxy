@@ -4,15 +4,14 @@
 
 **Goal:** Aggiungere quality gate GitLab e deploy automatico dello staging tramite SSH e uno script versionato eseguito sul server.
 
-**Architecture:** Le Merge Request verso `develop` e `staging` eseguono controlli PHP, frontend e infrastrutturali sul runner GitLab generico. Un push risultante da merge su `staging` esegue gli stessi controlli e, soltanto dopo il loro successo, usa SSH per invocare `deploy.sh` nel checkout stabile; lo script costruisce e aggiorna lo stack Docker Compose sul server usando l'attuale `.env.staging`.
+**Architecture:** Le Merge Request verso `develop` e `staging` eseguono controlli PHP, frontend e infrastrutturali sul runner GitLab generico. Un push risultante da merge su `staging` esegue gli stessi controlli e, soltanto dopo il loro successo, usa SSH per invocare `deploy-dev-staging.sh` nel checkout stabile; lo script costruisce e aggiorna lo stack Docker Compose sul server usando l'attuale `.env.staging`.
 
 **Tech Stack:** GitLab CI/CD, Bash, GNU Make, Docker Compose v2, Laravel 13, `serversideup/php`, Composer, Bun, Vite, Pest/PHPUnit, ShellCheck, OpenSSH.
 
 ## Global Constraints
 
 - Il deploy automatico riguarda esclusivamente il branch e l'ambiente `staging`.
-- Non aggiungere job, regole, comandi o alias production.
-- Non modificare `.env.production.example` o `compose.production.yaml`.
+- Limitare job, regole, comandi e alias agli ambienti supportati `develop` e `staging`.
 - Non pubblicare immagini applicative nel GitLab Container Registry.
 - Non installare un GitLab Runner sul server staging.
 - `.env.staging` resta soltanto sul server e non deve comparire in Git, artefatti o log.
@@ -22,20 +21,20 @@
 - Migrazioni Laravel: una sola esecuzione, `--force --isolated`, sul servizio web.
 - Horizon, Scheduler e Reverb devono ottimizzare Laravel ma non eseguire migrazioni.
 - Non usare `StrictHostKeyChecking=no`, `docker compose down -v`, reset del database o prune Docker globale.
-- I target Make esistenti per develop e production devono mantenere il comportamento corrente.
-- `Pipelines must succeed` verrà abilitato a livello progetto; le Merge Request verso `main` resteranno intenzionalmente bloccate fino alla futura pipeline production.
+- I target Make esistenti per develop devono mantenere il comportamento corrente.
+- `Pipelines must succeed` verrà abilitato a livello progetto; le Merge Request verso `main` resteranno intenzionalmente bloccate perché il workflow non crea una pipeline corrispondente.
 - Seguire la spec approvata in `docs/superpowers/specs/2026-07-18-staging-gitlab-ci-cd-design.md`.
 
 ## File Structure
 
 - Create `.gitlab-ci.yml`: workflow GitLab, quality gate e trigger SSH staging.
-- Create `deploy.sh`: unica orchestrazione del deploy eseguita nel checkout server.
+- Create `deploy-dev-staging.sh`: unica orchestrazione del deploy eseguita nel checkout server.
 - Modify `Makefile`: primitive Docker Compose non interattive e riusabili dallo script.
 - Modify `compose.staging.yaml`: automazioni Laravel esplicite per web e processi persistenti.
 - Create `deploy/tests/makefile-deploy.sh`: regressione dei target Make senza richiedere un daemon Docker.
 - Create `deploy/tests/compose-staging-automation.sh`: verifica della configurazione Laravel renderizzata da Compose.
 - Create `deploy/tests/deploy-script.sh`: test end-to-end isolato di validazione, checkout SHA, sequenza e failure diagnostics.
-- Create `deploy/tests/gitlab-ci.sh`: contratto strutturale della pipeline e assenza di production.
+- Create `deploy/tests/gitlab-ci.sh`: contratto strutturale della pipeline e limiti degli ambienti supportati.
 - Create `deploy/tests/run.sh`: entry point unico della suite shell/infrastruttura.
 - Create `deploy/README.md`: procedura operativa di bootstrap, deploy, rollback e troubleshooting.
 - Modify `README.md`: panoramica CI/CD, nuovi target e link alla procedura.
@@ -50,7 +49,7 @@
 
 **Interfaces:**
 - Consumes: `ENV`, `ENV_FILE`, `compose.yaml`, `compose.<env>.yaml` e il comando `docker compose` già usati dal Makefile.
-- Produces: target `require-env`, `config-check`, `deploy-build`, `deploy-up`, `deploy-status`; variabili `DEPLOY_WAIT_TIMEOUT`, `DEPLOY_STOP_TIMEOUT`, `LOG_FOLLOW`, `LOG_TAIL` usate da `deploy.sh` e dai test successivi.
+- Produces: target `require-env`, `config-check`, `deploy-build`, `deploy-up`, `deploy-status`; variabili `DEPLOY_WAIT_TIMEOUT`, `DEPLOY_STOP_TIMEOUT`, `LOG_FOLLOW`, `LOG_TAIL` usate da `deploy-dev-staging.sh` e dai test successivi.
 
 - [ ] **Step 1: Scrivere il test fallente dei target di deploy**
 
@@ -147,7 +146,7 @@ DEPLOY_BUILD_PROGRESS ?= plain
 LOG_FOLLOW ?= -f
 LOG_TAIL ?= 100
 
-.PHONY: help develop staging production env require-env config config-check build deploy-build pull up start deploy-up stop down restart ps deploy-status logs shell artisan migrate fresh seed test pint composer bun-install bun-build optimize clear horizon-status pygeoapi-validate destroy
+.PHONY: help develop staging env require-env config config-check build deploy-build pull up start deploy-up stop down restart ps deploy-status logs shell artisan migrate fresh seed test pint composer bun-install bun-build optimize clear horizon-status pygeoapi-validate destroy
 ```
 
 Aggiungere all'help, dopo `config` e `build`:
@@ -326,11 +325,11 @@ git commit -m "feat: configure staging Laravel automations"
 
 **Files:**
 - Create: `deploy/tests/deploy-script.sh`
-- Create: `deploy.sh`
+- Create: `deploy-dev-staging.sh`
 - Uses: `Makefile` targets from Task 1
 
 **Interfaces:**
-- Consumes: `./deploy.sh staging <sha>`, `origin/staging`, `.env.staging`, GNU `flock`, Docker, Make e Curl.
+- Consumes: `./deploy-dev-staging.sh staging <sha>`, `origin/staging`, `.env.staging`, GNU `flock`, Docker, Make e Curl.
 - Produces: checkout detached allo SHA richiesto, invocazioni ordinate `config-check -> deploy-build -> deploy-up -> deploy-status`, health check `/up`, diagnostica con SHA precedente.
 
 - [ ] **Step 1: Scrivere il test end-to-end fallente**
@@ -356,16 +355,16 @@ git clone -q "$origin_repository" "$seed_repository"
 git -C "$seed_repository" config user.name 'Deploy Test'
 git -C "$seed_repository" config user.email 'deploy-test@example.test'
 
-if [ ! -f "$repository_root/deploy.sh" ]; then
-    printf 'deploy.sh does not exist\n' >&2
+if [ ! -f "$repository_root/deploy-dev-staging.sh" ]; then
+    printf 'deploy-dev-staging.sh does not exist\n' >&2
     exit 1
 fi
 
-bash -n "$repository_root/deploy.sh"
+bash -n "$repository_root/deploy-dev-staging.sh"
 
-cp "$repository_root/deploy.sh" "$seed_repository/deploy.sh"
-chmod +x "$seed_repository/deploy.sh"
-git -C "$seed_repository" add deploy.sh
+cp "$repository_root/deploy-dev-staging.sh" "$seed_repository/deploy-dev-staging.sh"
+chmod +x "$seed_repository/deploy-dev-staging.sh"
+git -C "$seed_repository" add deploy-dev-staging.sh
 git -C "$seed_repository" commit -q -m 'add deploy script'
 git -C "$seed_repository" branch -M staging
 git -C "$seed_repository" push -q -u origin staging
@@ -418,19 +417,19 @@ create_checkout() {
 }
 
 invalid_output="$temporary_directory/invalid.log"
-if "$repository_root/deploy.sh" production "$target_sha" > "$invalid_output" 2>&1; then
-    printf 'deploy.sh unexpectedly accepted production\n' >&2
+if "$repository_root/deploy-dev-staging.sh" unsupported "$target_sha" > "$invalid_output" 2>&1; then
+    printf 'deploy-dev-staging.sh unexpectedly accepted an unsupported environment\n' >&2
     exit 1
 fi
 grep -F 'Only staging deployments are supported.' "$invalid_output" > /dev/null
 
-if "$repository_root/deploy.sh" staging "$target_sha" unexpected \
+if "$repository_root/deploy-dev-staging.sh" staging "$target_sha" unexpected \
     > "$temporary_directory/extra-argument.log" 2>&1
 then
-    printf 'deploy.sh unexpectedly accepted an extra argument\n' >&2
+    printf 'deploy-dev-staging.sh unexpectedly accepted an extra argument\n' >&2
     exit 1
 fi
-grep -F 'Usage: ./deploy.sh staging <commit-sha>' \
+grep -F 'Usage: ./deploy-dev-staging.sh staging <commit-sha>' \
     "$temporary_directory/extra-argument.log" > /dev/null
 
 missing_env_checkout="$temporary_directory/missing-env"
@@ -438,10 +437,10 @@ create_checkout "$missing_env_checkout"
 if PATH="$fake_bin:$PATH" \
     DEPLOY_COMMAND_LOG="$temporary_directory/missing-env-commands.log" \
     DEPLOY_LOCK_FILE="$temporary_directory/missing-env.lock" \
-    "$missing_env_checkout/deploy.sh" staging "$target_sha" \
+    "$missing_env_checkout/deploy-dev-staging.sh" staging "$target_sha" \
     > "$temporary_directory/missing-env.log" 2>&1
 then
-    printf 'deploy.sh unexpectedly accepted a missing .env.staging\n' >&2
+    printf 'deploy-dev-staging.sh unexpectedly accepted a missing .env.staging\n' >&2
     exit 1
 fi
 grep -F 'Missing required environment file:' "$temporary_directory/missing-env.log" > /dev/null
@@ -454,7 +453,7 @@ create_checkout "$successful_checkout"
 PATH="$fake_bin:$PATH" \
 DEPLOY_COMMAND_LOG="$successful_commands" \
 DEPLOY_LOCK_FILE="$temporary_directory/success.lock" \
-    "$successful_checkout/deploy.sh" staging "$target_sha" \
+    "$successful_checkout/deploy-dev-staging.sh" staging "$target_sha" \
     > "$temporary_directory/success.log" 2>&1
 
 [ "$(git -C "$successful_checkout" rev-parse HEAD)" = "$target_sha" ]
@@ -482,15 +481,15 @@ if PATH="$fake_bin:$PATH" \
     DEPLOY_COMMAND_LOG="$failing_commands" \
     DEPLOY_FAIL_TARGET=deploy-build \
     DEPLOY_LOCK_FILE="$temporary_directory/failure.lock" \
-    "$failing_checkout/deploy.sh" staging "$target_sha" \
+    "$failing_checkout/deploy-dev-staging.sh" staging "$target_sha" \
     > "$temporary_directory/failure.log" 2>&1
 then
-    printf 'deploy.sh unexpectedly ignored a build failure\n' >&2
+    printf 'deploy-dev-staging.sh unexpectedly ignored a build failure\n' >&2
     exit 1
 fi
 
 grep -F 'Deploy failed during: Build images' "$temporary_directory/failure.log" > /dev/null
-grep -F "Rollback command: ./deploy.sh staging $previous_sha" \
+grep -F "Rollback command: ./deploy-dev-staging.sh staging $previous_sha" \
     "$temporary_directory/failure.log" > /dev/null
 grep -F -- '--no-print-directory ENV=staging deploy-status' \
     "$failing_commands" > /dev/null
@@ -506,11 +505,11 @@ chmod +x deploy/tests/deploy-script.sh
 deploy/tests/deploy-script.sh
 ```
 
-Expected: FAIL con `deploy.sh does not exist`.
+Expected: FAIL con `deploy-dev-staging.sh does not exist`.
 
-- [ ] **Step 3: Implementare `deploy.sh`**
+- [ ] **Step 3: Implementare `deploy-dev-staging.sh`**
 
-Creare `deploy.sh` con questo contenuto:
+Creare `deploy-dev-staging.sh` con questo contenuto:
 
 ```bash
 #!/usr/bin/env bash
@@ -595,8 +594,10 @@ on_error() {
             SERVICE='laravel horizon scheduler reverb' logs >&2
     fi
 
-    if [[ $previous_sha =~ ^[0-9a-f]{40}$ ]]; then
-        printf 'Rollback command: ./deploy.sh staging %s\n' "$previous_sha" >&2
+    if [[ $previous_sha =~ ^[0-9a-f]{40}$ ]] && \
+        git -C "$repository_root" cat-file -e "${previous_sha}:deploy-dev-staging.sh" 2>/dev/null
+    then
+        printf 'Rollback command: ./deploy-dev-staging.sh staging %s\n' "$previous_sha" >&2
     fi
 
     exit "$exit_code"
@@ -604,7 +605,7 @@ on_error() {
 
 trap on_error ERR
 
-[[ $# -eq 2 ]] || fatal 'Usage: ./deploy.sh staging <commit-sha>'
+[[ $# -eq 2 ]] || fatal 'Usage: ./deploy-dev-staging.sh staging <commit-sha>'
 [[ $environment == staging ]] || fatal 'Only staging deployments are supported.'
 
 cd "$repository_root"
@@ -631,6 +632,8 @@ if [[ $reexecuted != 1 ]]; then
     git rev-parse --verify 'origin/staging^{commit}' > /dev/null
     git merge-base --is-ancestor "$target_sha" origin/staging || \
         fatal "Requested revision is not reachable from origin/staging: $target_sha"
+    git cat-file -e "${target_sha}:deploy-dev-staging.sh" 2>/dev/null || \
+        fatal "Requested revision does not contain deploy-dev-staging.sh: $target_sha"
 
     previous_sha=$(git rev-parse HEAD)
     info "Previous SHA: $previous_sha"
@@ -641,7 +644,7 @@ if [[ $reexecuted != 1 ]]; then
     export PYGEOAPI_PROXY_DEPLOY_STARTED_AT="$started_at"
     export PYGEOAPI_PROXY_DEPLOY_PREVIOUS_SHA="$previous_sha"
     export PYGEOAPI_PROXY_DEPLOY_TARGET_SHA="$target_sha"
-    exec "$repository_root/deploy.sh" staging "$target_sha"
+    exec "$repository_root/deploy-dev-staging.sh" staging "$target_sha"
 fi
 
 [[ $(git rev-parse HEAD) == "$target_sha" ]] || \
@@ -674,7 +677,7 @@ printf 'Deployed SHA: %s\nPrevious SHA: %s\nURL: https://proxygeoapi.netseven.wo
 Impostare il bit eseguibile:
 
 ```bash
-chmod +x deploy.sh
+chmod +x deploy-dev-staging.sh
 ```
 
 - [ ] **Step 4: Eseguire test sintattico ed end-to-end**
@@ -682,7 +685,7 @@ chmod +x deploy.sh
 Run:
 
 ```bash
-bash -n deploy.sh
+bash -n deploy-dev-staging.sh
 deploy/tests/deploy-script.sh
 ```
 
@@ -693,7 +696,7 @@ Expected: entrambi exit `0`; il test non usa Docker reale e non modifica il chec
 Run:
 
 ```bash
-if command -v shellcheck >/dev/null 2>&1; then shellcheck deploy.sh deploy/tests/deploy-script.sh; else printf '%s\n' 'ShellCheck deferred to deployment-check CI job'; fi
+if command -v shellcheck >/dev/null 2>&1; then shellcheck deploy-dev-staging.sh deploy/tests/deploy-script.sh; else printf '%s\n' 'ShellCheck deferred to deployment-check CI job'; fi
 ```
 
 Expected: nessun warning se ShellCheck è installato; altrimenti messaggio esplicito di rinvio al job CI.
@@ -704,7 +707,7 @@ Run:
 
 ```bash
 git diff --check
-git add deploy.sh deploy/tests/deploy-script.sh
+git add deploy-dev-staging.sh deploy/tests/deploy-script.sh
 git commit -m "feat: add staging deployment script"
 ```
 
@@ -719,7 +722,7 @@ git commit -m "feat: add staging deployment script"
 - Uses: all tests under `deploy/tests/`
 
 **Interfaces:**
-- Consumes: branch/MR variables GitLab, cinque variabili SSH protette, runner generico e `deploy.sh` del Task 3.
+- Consumes: branch/MR variables GitLab, cinque variabili SSH protette, runner generico e `deploy-dev-staging.sh` del Task 3.
 - Produces: pipeline per MR `develop|staging`, pipeline push `staging`, job `deploy:staging` serializzato e ambiente GitLab staging.
 
 - [ ] **Step 1: Scrivere il test fallente del contratto CI**
@@ -759,15 +762,15 @@ require_text 'GIT_STRATEGY: none'
 require_text 'resource_group: staging'
 require_text 'name: staging'
 require_text 'url: https://proxygeoapi.netseven.work'
-require_text './deploy.sh staging '\''$CI_COMMIT_SHA'\'''
+require_text './deploy-dev-staging.sh staging '\''$CI_COMMIT_SHA'\'''
 require_text '*[!A-Za-z0-9_./-]*'
 require_text '*[!0-9a-f]*'
 require_text '${#CI_COMMIT_SHA}'
 require_text 'DEPLOY_KNOWN_HOSTS'
 require_text 'DEPLOY_SSH_KEY'
 
-if grep -E 'deploy:prod|CI_COMMIT_TAG|environment:[[:space:]]*production' "$ci_file" > /dev/null; then
-    printf 'Production behavior must not exist in .gitlab-ci.yml\n' >&2
+if grep -E 'CI_COMMIT_TAG' "$ci_file" > /dev/null; then
+    printf 'Tag deployment behavior must not exist in .gitlab-ci.yml\n' >&2
     exit 1
 fi
 
@@ -834,7 +837,7 @@ deployment-check:
     - apk add --no-cache bash git jq make shellcheck
   script:
     - deploy/tests/run.sh
-    - shellcheck deploy.sh deploy/tests/*.sh
+    - shellcheck deploy-dev-staging.sh deploy/tests/*.sh
 
 php-check:
   stage: test
@@ -905,7 +908,7 @@ deploy:staging:
         printf '%s\n' 'CI_COMMIT_SHA must contain 40 hexadecimal characters' >&2
         exit 1
       fi
-      ssh "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' && ./deploy.sh staging '$CI_COMMIT_SHA'"
+      ssh "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' && ./deploy-dev-staging.sh staging '$CI_COMMIT_SHA'"
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "staging"'
 ```
@@ -977,7 +980,7 @@ Il job GitLab si collega via SSH con l'utente `gitlab_deploy` e invoca nel check
 stabile:
 
 ```bash
-./deploy.sh staging <commit-sha>
+./deploy-dev-staging.sh staging <commit-sha>
 ```
 
 Il server conserva `.env.staging`, costruisce le immagini, esegue le migrazioni
@@ -997,7 +1000,7 @@ make staging deploy-up
 make staging deploy-status
 ```
 
-Aggiornare `## File principali` con `.gitlab-ci.yml`, `deploy.sh` e `deploy/README.md`. Aggiornare `## Note operative` per spiegare che Laravel migra e ottimizza, mentre Horizon, Scheduler e Reverb ottimizzano senza migrare.
+Aggiornare `## File principali` con `.gitlab-ci.yml`, `deploy-dev-staging.sh` e `deploy/README.md`. Aggiornare `## Note operative` per spiegare che Laravel migra e ottimizza, mentre Horizon, Scheduler e Reverb ottimizzano senza migrare.
 
 - [ ] **Step 2: Creare la procedura `deploy/README.md`**
 
@@ -1008,7 +1011,7 @@ Il documento deve avere le sezioni e i contenuti operativi seguenti, con comandi
 
 ## Topologia
 
-GitLab runner -> SSH -> gitlab_deploy -> stable checkout -> deploy.sh -> Docker Compose
+GitLab runner -> SSH -> gitlab_deploy -> stable checkout -> deploy-dev-staging.sh -> Docker Compose
 
 Checkout: `/docker-data/configuration/pygeoapi-proxy`
 URL: `https://proxygeoapi.netseven.work`
@@ -1071,8 +1074,8 @@ quindi eliminare in modo sicuro le copie temporanee quando non servono più.
 - Proteggere `staging` con push `No one`.
 - Abilitare `Pipelines must succeed`.
 - Proteggere l'ambiente `staging`.
-- Le Merge Request verso `main` restano bloccate finché non viene aggiunta la
-  pipeline production.
+- Le Merge Request verso `main` restano bloccate perché non viene creata una
+  pipeline corrispondente.
 
 ## Primo deploy sorvegliato
 
@@ -1080,7 +1083,7 @@ quindi eliminare in modo sicuro le copie temporanee quando non servono più.
 cd /docker-data/configuration/pygeoapi-proxy
 git fetch origin --tags --prune
 git checkout -f --detach "$(git rev-parse origin/staging)"
-./deploy.sh staging "$(git rev-parse origin/staging)"
+./deploy-dev-staging.sh staging "$(git rev-parse origin/staging)"
 curl --fail --silent --show-error http://127.0.0.1:7070/up > /dev/null
 make staging deploy-status
 ```
@@ -1093,7 +1096,7 @@ passa `CI_COMMIT_SHA`; `resource_group` e `flock` impediscono concorrenza.
 ## Deploy manuale e rollback
 
 ```bash
-./deploy.sh staging <sha-raggiungibile-da-origin-staging>
+./deploy-dev-staging.sh staging <sha-raggiungibile-da-origin-staging>
 ```
 
 Il rollback ricostruisce il codice precedente ma non annulla le migrazioni.
@@ -1120,7 +1123,7 @@ Run dalla root:
 
 ```bash
 deploy/tests/run.sh
-bash -n deploy.sh deploy/tests/*.sh
+bash -n deploy-dev-staging.sh deploy/tests/*.sh
 make ENV=staging ENV_FILE=.env.staging.example config-check
 git diff --check
 ```
@@ -1150,7 +1153,7 @@ make ENV=staging ENV_FILE=.env.staging.example deploy-build
 
 Expected:
 
-- Composer production install completato nello stage `composer_deps`;
+- dipendenze Composer runtime installate con `--no-dev` nello stage `composer_deps`;
 - `bun ci` e `bun run build` completati nello stage `assets`;
 - immagini Laravel e pygeoapi costruite;
 - nessun container staging avviato.
@@ -1162,8 +1165,8 @@ Run:
 ```bash
 git status --short
 git diff --check
-if rg -n 'StrictHostKeyChecking=no|deploy:prod|CI_COMMIT_TAG|docker compose down -v|docker image prune' \
-    .gitlab-ci.yml deploy.sh Makefile deploy/tests
+if rg -n 'StrictHostKeyChecking=no|CI_COMMIT_TAG|docker compose down -v|docker image prune' \
+    .gitlab-ci.yml deploy-dev-staging.sh Makefile deploy/tests
 then
     printf '%s\n' 'Forbidden deployment pattern found in executable files' >&2
     exit 1
@@ -1176,7 +1179,7 @@ Expected:
 
 - nessuna corrispondenza vietata nei file eseguibili; la seconda ricerca trova soltanto le frasi documentali che spiegano esplicitamente di non eseguire i comandi distruttivi;
 - nessun `.env.staging`, token, chiave privata o valore segreto nel diff;
-- nessuna modifica ai file production.
+- nessuna modifica fuori dai file previsti.
 
 - [ ] **Step 6: Committare documentazione e aggiustamenti finali**
 
@@ -1229,7 +1232,7 @@ Seguire nell'ordine `Prerequisiti server`, `Chiave SSH e known hosts` e `Primo d
 
 Expected:
 
-- comando manuale `deploy.sh` exit `0`;
+- comando manuale `deploy-dev-staging.sh` exit `0`;
 - server checkout allo SHA concordato;
 - `make staging deploy-status` mostra tutti i servizi richiesti healthy/running;
 - `/up` risponde con successo;
@@ -1256,9 +1259,9 @@ Expected: pipeline verde e staging raggiungibile.
 - [ ] GitLab CI Lint restituisce `valid: true`.
 - [ ] Suite Composer/Pest e Bun passano.
 - [ ] Build staging completa senza avviare container.
-- [ ] `deploy.sh` distribuisce soltanto SHA raggiungibili da `origin/staging`.
+- [ ] `deploy-dev-staging.sh` distribuisce soltanto SHA raggiungibili da `origin/staging`.
 - [ ] `.env.staging` non viene creato, letto nei log o versionato.
-- [ ] Il deploy non contiene production o Container Registry.
+- [ ] Il deploy resta limitato allo staging e non usa il Container Registry.
 - [ ] README e procedura operativa coincidono con nomi e comandi implementati.
-- [ ] Nessun file production è cambiato.
+- [ ] Sono cambiati soltanto i file previsti dal piano.
 - [ ] Le azioni GitLab/server attendono approvazione esplicita.

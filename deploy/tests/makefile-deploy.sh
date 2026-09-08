@@ -20,6 +20,25 @@ chmod +x "$fake_bin/docker"
 
 cd "$repository_root"
 
+assert_unsupported_invocation() {
+    : > "$docker_log"
+    if PATH="$fake_bin:$PATH" DOCKER_LOG="$docker_log" \
+        make "$@" ENV_FILE="$environment_file" > "$temporary_directory/unsupported.log" 2>&1
+    then
+        printf 'Make accepted unsupported deployment invocation: %s\n' "$*" >&2
+        exit 1
+    fi
+
+    if [ -s "$docker_log" ] || [ -e "$environment_file" ]; then
+        printf 'Unsupported deployment invocation caused side effects: %s\n' "$*" >&2
+        exit 1
+    fi
+}
+
+assert_unsupported_invocation invalid up
+assert_unsupported_invocation up invalid
+assert_unsupported_invocation ENV=invalid up
+
 if PATH="$fake_bin:$PATH" DOCKER_LOG="$docker_log" \
     make ENV=staging ENV_FILE="$environment_file" require-env \
     > "$temporary_directory/missing-env.log" 2>&1
@@ -50,7 +69,7 @@ compose_prefix="compose --env-file $environment_file -f compose.yaml -f compose.
 
 for expected_command in \
     "$compose_prefix config --quiet" \
-    "$compose_prefix build --pull laravel pygeoapi" \
+    "$compose_prefix build --pull laravel" \
     "$compose_prefix stop -t 45 horizon scheduler reverb" \
     "$compose_prefix up -d --no-build --wait --wait-timeout 90 laravel" \
     "$compose_prefix up -d --no-build --remove-orphans --wait --wait-timeout 90" \

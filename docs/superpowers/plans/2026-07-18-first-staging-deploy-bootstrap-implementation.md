@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task inline on `develop`. Do not create a worktree and do not dispatch subagents. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Preparare e verificare il bootstrap monouso di `deploy.sh`, quindi completare il primo merge `develop` → `staging` e il relativo deploy automatico senza un primo job fallito.
+**Goal:** Preparare e verificare il bootstrap monouso di `deploy-dev-staging.sh`, quindi completare il primo merge `develop` → `staging` e il relativo deploy automatico senza un primo job fallito.
 
-**Architecture:** Il server estrae un `deploy.sh` non tracciato dall'esatto SHA sorgente della Merge Request tramite il remote SSH read-only già autenticato. Il primo job automatico usa quel bootstrap per scaricare il merge commit, verificarne l'appartenenza a `origin/staging`, sostituire il bootstrap con la versione tracciata tramite `git checkout -f` e rilanciarsi. GitLab crea e accetta la MR tramite API, usando il parametro `sha` come guardia atomica contro modifiche concorrenti di `develop`.
+**Architecture:** Il server estrae un `deploy-dev-staging.sh` non tracciato dall'esatto SHA sorgente della Merge Request tramite il remote SSH read-only già autenticato. Il primo job automatico usa quel bootstrap per scaricare il merge commit, verificarne l'appartenenza a `origin/staging`, sostituire il bootstrap con la versione tracciata tramite `git checkout -f` e rilanciarsi. GitLab crea e accetta la MR tramite API, usando il parametro `sha` come guardia atomica contro modifiche concorrenti di `develop`.
 
 **Tech Stack:** Bash/POSIX shell, Git, GitLab 18.x REST API tramite `glab`, GitLab CI/CD, Docker Compose, GNU Make, Curl, ShellCheck.
 
@@ -13,14 +13,14 @@
 ## File map
 
 - Modify `deploy/tests/deploy-script.sh`: caratterizzare il caso in cui il
-  checkout precedente non contiene `deploy.sh` e il bootstrap è non tracciato.
+  checkout precedente non contiene `deploy-dev-staging.sh` e il bootstrap è non tracciato.
 - Create `deploy/tests/bootstrap-runbook.sh`: contratto eseguibile per la
   procedura monouso e le verifiche post-deploy.
 - Modify `deploy/tests/run.sh`: includere il nuovo contratto nella suite.
 - Modify `deploy/README.md`: sostituire il vecchio primo deploy manuale con il
   bootstrap pre-merge, la recovery e la verifica del primo deploy automatico.
-- No changes to `.gitlab-ci.yml`, `deploy.sh`, application code, Compose files,
-  `.env.staging`, or production configuration.
+- No changes to `.gitlab-ci.yml`, `deploy-dev-staging.sh`, application code, Compose files,
+  or `.env.staging`.
 - External state: create one GitLab Merge Request, prepare one untracked server
   file, merge with a source-SHA guard, and observe the first staging pipeline.
 
@@ -31,10 +31,10 @@
 - Modify: `deploy/tests/deploy-script.sh:109-135`
 - Test: `deploy/tests/deploy-script.sh`
 
-- [ ] **Step 1: Add a staging baseline that does not contain `deploy.sh`**
+- [ ] **Step 1: Add a staging baseline that does not contain `deploy-dev-staging.sh`**
 
 Insert the following immediately after the Git identity configuration and
-before the existing `deploy.sh` copy:
+before the existing `deploy-dev-staging.sh` copy:
 
 ```sh
 printf '.env.staging\n' > "$seed_repository/.gitignore"
@@ -49,16 +49,16 @@ bootstrap_sha=$(git -C "$seed_repository" rev-parse HEAD)
 Replace the current first deploy-script commit block with:
 
 ```sh
-cp "$repository_root/deploy.sh" "$seed_repository/deploy.sh"
-chmod +x "$seed_repository/deploy.sh"
-git -C "$seed_repository" add deploy.sh
+cp "$repository_root/deploy-dev-staging.sh" "$seed_repository/deploy-dev-staging.sh"
+chmod +x "$seed_repository/deploy-dev-staging.sh"
+git -C "$seed_repository" add deploy-dev-staging.sh
 git -C "$seed_repository" commit -q -m 'add deploy script'
 git -C "$seed_repository" push -q origin staging
 previous_sha=$(git -C "$seed_repository" rev-parse HEAD)
 ```
 
 This preserves every existing test at `previous_sha` while retaining an older
-reachable staging commit where `deploy.sh` is absent.
+reachable staging commit where `deploy-dev-staging.sh` is absent.
 
 - [ ] **Step 2: Add the bootstrap deployment scenario**
 
@@ -70,21 +70,21 @@ bootstrap_checkout="$temporary_directory/bootstrap"
 bootstrap_commands="$temporary_directory/bootstrap-commands.log"
 git clone -q "$origin_repository" "$bootstrap_checkout"
 git -C "$bootstrap_checkout" checkout -q --detach "$bootstrap_sha"
-cp "$repository_root/deploy.sh" "$bootstrap_checkout/deploy.sh"
-chmod +x "$bootstrap_checkout/deploy.sh"
+cp "$repository_root/deploy-dev-staging.sh" "$bootstrap_checkout/deploy-dev-staging.sh"
+chmod +x "$bootstrap_checkout/deploy-dev-staging.sh"
 : > "$bootstrap_checkout/.env.staging"
 
 [ "$(git -C "$bootstrap_checkout" status --porcelain --untracked-files=all)" = \
-    '?? deploy.sh' ]
+    '?? deploy-dev-staging.sh' ]
 
 PATH="$fake_bin:$PATH" \
 DEPLOY_COMMAND_LOG="$bootstrap_commands" \
 DEPLOY_LOCK_FILE="$temporary_directory/bootstrap.lock" \
-    "$bootstrap_checkout/deploy.sh" staging "$target_sha" \
+    "$bootstrap_checkout/deploy-dev-staging.sh" staging "$target_sha" \
     > "$temporary_directory/bootstrap.log" 2>&1
 
 [ "$(git -C "$bootstrap_checkout" rev-parse HEAD)" = "$target_sha" ]
-git -C "$bootstrap_checkout" ls-files --error-unmatch deploy.sh > /dev/null
+git -C "$bootstrap_checkout" ls-files --error-unmatch deploy-dev-staging.sh > /dev/null
 [ -z "$(git -C "$bootstrap_checkout" status --porcelain --untracked-files=all)" ]
 grep -F "Previous SHA: $bootstrap_sha" \
     "$temporary_directory/bootstrap.log" > /dev/null
@@ -100,7 +100,7 @@ Run:
 sh deploy/tests/deploy-script.sh
 ```
 
-Expected: exit `0`. The scenario proves that the actual `deploy.sh` can start
+Expected: exit `0`. The scenario proves that the actual `deploy-dev-staging.sh` can start
 untracked, check out a descendant where it is tracked, re-execute, and finish
 with a clean working tree.
 
@@ -162,11 +162,11 @@ require_text() {
 
 require_text '## Bootstrap del primo deploy automatico'
 require_text 'SOURCE_SHA=$(git -C "$DEPLOY_PATH" rev-parse'
-require_text 'git -C "$DEPLOY_PATH" show "${SOURCE_SHA}:deploy.sh"'
+require_text 'git -C "$DEPLOY_PATH" show "${SOURCE_SHA}:deploy-dev-staging.sh"'
 require_text 'ACTUAL_BLOB=$(git -C "$DEPLOY_PATH" hash-object "$TEMPORARY_SCRIPT")'
 require_text 'bash -n "$TEMPORARY_SCRIPT"'
-require_text '?? deploy.sh'
-require_text 'git ls-files --error-unmatch deploy.sh'
+require_text '?? deploy-dev-staging.sh'
+require_text 'git ls-files --error-unmatch deploy-dev-staging.sh'
 require_text '## Verifica del primo deploy automatico'
 require_text 'https://proxygeoapi.netseven.work/up'
 ```
@@ -201,7 +201,7 @@ Replace `## Primo deploy sorvegliato` through the paragraph immediately before
 ## Bootstrap del primo deploy automatico
 
 Questa procedura si usa una sola volta, perché l'attuale `staging` non contiene
-ancora `deploy.sh`. Prima di eseguirla, creare la Merge Request da `develop` a
+ancora `deploy-dev-staging.sh`. Prima di eseguirla, creare la Merge Request da `develop` a
 `staging`, attendere il successo dei quality gate e non effettuare ancora il
 merge.
 
@@ -221,10 +221,10 @@ cleanup() {
         rm -f -- "$TEMPORARY_SCRIPT"
     fi
     if [ "$BOOTSTRAP_INSTALLED" -eq 1 ] &&
-        ! git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy.sh \
+        ! git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy-dev-staging.sh \
             > /dev/null 2>&1
     then
-        rm -f -- "$DEPLOY_PATH/deploy.sh"
+        rm -f -- "$DEPLOY_PATH/deploy-dev-staging.sh"
     fi
 }
 
@@ -252,20 +252,20 @@ git -C "$DEPLOY_PATH" check-ignore -q .env.staging
     exit 1
 }
 
-if git -C "$DEPLOY_PATH" cat-file -e 'HEAD:deploy.sh' 2>/dev/null; then
-    printf 'deploy.sh è già tracciato nel commit corrente\n' >&2
+if git -C "$DEPLOY_PATH" cat-file -e 'HEAD:deploy-dev-staging.sh' 2>/dev/null; then
+    printf 'deploy-dev-staging.sh è già tracciato nel commit corrente\n' >&2
     exit 1
 fi
 
-[ ! -e "$DEPLOY_PATH/deploy.sh" ] || {
-    printf 'deploy.sh esiste già nel working tree\n' >&2
+[ ! -e "$DEPLOY_PATH/deploy-dev-staging.sh" ] || {
+    printf 'deploy-dev-staging.sh esiste già nel working tree\n' >&2
     exit 1
 }
 
-TEMPORARY_SCRIPT=$(mktemp "$DEPLOY_PATH/.deploy.sh.bootstrap.XXXXXX")
-git -C "$DEPLOY_PATH" show "${SOURCE_SHA}:deploy.sh" > "$TEMPORARY_SCRIPT"
+TEMPORARY_SCRIPT=$(mktemp "$DEPLOY_PATH/.deploy-dev-staging.sh.bootstrap.XXXXXX")
+git -C "$DEPLOY_PATH" show "${SOURCE_SHA}:deploy-dev-staging.sh" > "$TEMPORARY_SCRIPT"
 
-EXPECTED_BLOB=$(git -C "$DEPLOY_PATH" rev-parse "${SOURCE_SHA}:deploy.sh")
+EXPECTED_BLOB=$(git -C "$DEPLOY_PATH" rev-parse "${SOURCE_SHA}:deploy-dev-staging.sh")
 ACTUAL_BLOB=$(git -C "$DEPLOY_PATH" hash-object "$TEMPORARY_SCRIPT")
 [ "$ACTUAL_BLOB" = "$EXPECTED_BLOB" ] || {
     printf 'Blob bootstrap inatteso\n' >&2
@@ -274,21 +274,21 @@ ACTUAL_BLOB=$(git -C "$DEPLOY_PATH" hash-object "$TEMPORARY_SCRIPT")
 
 bash -n "$TEMPORARY_SCRIPT"
 chmod 0755 "$TEMPORARY_SCRIPT"
-mv -- "$TEMPORARY_SCRIPT" "$DEPLOY_PATH/deploy.sh"
+mv -- "$TEMPORARY_SCRIPT" "$DEPLOY_PATH/deploy-dev-staging.sh"
 TEMPORARY_SCRIPT=
 BOOTSTRAP_INSTALLED=1
 
 VISIBLE_STATUS=$(
     git -C "$DEPLOY_PATH" status --porcelain --untracked-files=all
 )
-[ "$VISIBLE_STATUS" = '?? deploy.sh' ] || {
+[ "$VISIBLE_STATUS" = '?? deploy-dev-staging.sh' ] || {
     printf 'Stato working tree inatteso:\n%s\n' "$VISIBLE_STATUS" >&2
     exit 1
 }
 
-[ "$(git -C "$DEPLOY_PATH" hash-object "$DEPLOY_PATH/deploy.sh")" = \
+[ "$(git -C "$DEPLOY_PATH" hash-object "$DEPLOY_PATH/deploy-dev-staging.sh")" = \
     "$EXPECTED_BLOB" ]
-stat -c '%a %U:%G %n' "$DEPLOY_PATH/deploy.sh"
+stat -c '%a %U:%G %n' "$DEPLOY_PATH/deploy-dev-staging.sh"
 printf 'BOOTSTRAP_SOURCE_SHA=%s\n' "$SOURCE_SHA"
 printf 'BOOTSTRAP_BLOB_SHA=%s\n' "$EXPECTED_BLOB"
 printf '%s\n' "$VISIBLE_STATUS"
@@ -305,15 +305,15 @@ merge. Rimuovere soltanto il bootstrap non tracciato con:
 sudo -u gitlab_deploy -H bash <<'BASH'
 set -Eeuo pipefail
 DEPLOY_PATH='/docker-data/configuration/pygeoapi-proxy'
-if git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy.sh \
+if git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy-dev-staging.sh \
     > /dev/null 2>&1
 then
-    printf 'deploy.sh è tracciato: rimozione rifiutata\n' >&2
+    printf 'deploy-dev-staging.sh è tracciato: rimozione rifiutata\n' >&2
     exit 1
 fi
 [ "$(git -C "$DEPLOY_PATH" status --porcelain --untracked-files=all)" = \
-    '?? deploy.sh' ]
-rm -- "$DEPLOY_PATH/deploy.sh"
+    '?? deploy-dev-staging.sh' ]
+rm -- "$DEPLOY_PATH/deploy-dev-staging.sh"
 BASH
 ```
 
@@ -334,7 +334,7 @@ git -C "$DEPLOY_PATH" fetch origin --tags --prune
 HEAD_SHA=$(git -C "$DEPLOY_PATH" rev-parse 'HEAD^{commit}')
 STAGING_SHA=$(git -C "$DEPLOY_PATH" rev-parse 'origin/staging^{commit}')
 [ "$HEAD_SHA" = "$STAGING_SHA" ]
-git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy.sh > /dev/null
+git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy-dev-staging.sh > /dev/null
 [ -z "$(git -C "$DEPLOY_PATH" status --porcelain --untracked-files=all)" ]
 git -C "$DEPLOY_PATH" check-ignore -q .env.staging
 [ "$(stat -c '%a %U:%G' "$DEPLOY_PATH/.env.staging")" = \
@@ -348,7 +348,7 @@ curl --fail --silent --show-error \
 ```
 
 Lo SHA `DEPLOYED_SHA` deve coincidere con `merge_commit_sha` della Merge
-Request e con lo SHA della pipeline push di `staging`. `deploy.sh` deve essere
+Request e con lo SHA della pipeline push di `staging`. `deploy-dev-staging.sh` deve essere
 tracciato e il working tree deve essere pulito.
 ````
 
@@ -364,11 +364,11 @@ Expected: exit `0` with no output.
 
 ```bash
 bash deploy/tests/run.sh
-bash -n deploy.sh deploy/tests/*.sh
+bash -n deploy-dev-staging.sh deploy/tests/*.sh
 docker run --rm \
   -v /Users/nicola/Desktop/repository/pygeoapi-proxy:/work:ro \
   koalaman/shellcheck:stable \
-  /work/deploy.sh \
+  /work/deploy-dev-staging.sh \
   /work/deploy/tests/compose-oauth-env.sh \
   /work/deploy/tests/compose-staging-automation.sh \
   /work/deploy/tests/deploy-script.sh \
@@ -392,7 +392,7 @@ git commit -m "docs: add first staging deploy bootstrap runbook"
 
 **Files:**
 - Verify: `.gitlab-ci.yml`
-- Verify: `deploy.sh`
+- Verify: `deploy-dev-staging.sh`
 - Verify: `deploy/README.md`
 - Verify: `deploy/tests/*.sh`
 
@@ -400,7 +400,7 @@ git commit -m "docs: add first staging deploy bootstrap runbook"
 
 ```bash
 bash deploy/tests/run.sh
-bash -n deploy.sh deploy/tests/*.sh
+bash -n deploy-dev-staging.sh deploy/tests/*.sh
 git diff --check
 git status --short --branch
 ```
@@ -462,7 +462,7 @@ case "$MR_COUNT" in
       '- deploy automatico al primo tentativo' \
       '' \
       '## Escluso' \
-      '- produzione' \
+      '- altri ambienti di deploy' \
       '- push diretti a staging' \
       '- rollback automatico delle migrazioni')
     MR=$(glab api --method POST "projects/$PROJECT_ID/merge_requests" \
@@ -565,10 +565,10 @@ Copy the complete command under `## Bootstrap del primo deploy automatico` from
 
 Expected final output contains `BOOTSTRAP_SOURCE_SHA=` and
 `BOOTSTRAP_BLOB_SHA=`, each followed by exactly 40 lowercase hexadecimal
-characters, plus the exact Git status line `?? deploy.sh`.
+characters, plus the exact Git status line `?? deploy-dev-staging.sh`.
 
 It must also report mode `755`, owner `gitlab_deploy:gitlab_deploy`, and the
-path `/docker-data/configuration/pygeoapi-proxy/deploy.sh`. It must not run
+path `/docker-data/configuration/pygeoapi-proxy/deploy-dev-staging.sh`. It must not run
 Docker or change server HEAD.
 
 - [ ] **Step 2: Compare the server SHA to GitLab and the remote**
@@ -612,7 +612,7 @@ reports the MR as mergeable; otherwise stop and diagnose without merging.
 **External state:**
 - Mutates `staging` only through the approved Merge Request.
 - Must preserve `develop`.
-- Must not create or modify production state.
+- Must not create or modify state outside staging.
 
 - [ ] **Step 1: Accept the Merge Request atomically**
 
@@ -739,7 +739,7 @@ Expected: `true`; all four jobs succeeded in the first push pipeline.
 
 **External state:**
 - Read-only verification after the successful deploy.
-- No cleanup command should be needed because `deploy.sh` is now tracked.
+- No cleanup command should be needed because `deploy-dev-staging.sh` is now tracked.
 
 - [ ] **Step 1: Run the post-deploy server verification**
 
@@ -749,7 +749,7 @@ Copy and execute the complete command under
 Expected:
 
 - `DEPLOYED_SHA` is printed;
-- `deploy.sh` is tracked;
+- `deploy-dev-staging.sh` is tracked;
 - the working tree is clean;
 - `.env.staging` remains ignored with mode `600` and owner
   `gitlab_deploy:gitlab_deploy`;
@@ -801,4 +801,4 @@ git rev-parse origin/staging
 
 Expected: local `develop` remains clean and synchronized. Report the MR URL,
 MR source SHA, merge SHA, push pipeline URL, deployed SHA, and verification
-results. Do not create a production MR or modify `main`.
+results. Do not modify `main`.

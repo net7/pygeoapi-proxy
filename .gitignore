@@ -1,6 +1,5 @@
-.env.develop
-.env.staging
-.env.production
+.env
+.env.*
+!.env.example
 !.env.*.example
-
-deploy/production
+deploy/production/

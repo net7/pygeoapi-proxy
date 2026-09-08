@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class HandleLanguage
 {
-    private const DefaultLanguage = 'it';
+    private const DefaultLanguage = 'en';
 
     /**
      * @var list<string>

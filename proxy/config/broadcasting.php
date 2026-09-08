@@ -18,6 +18,17 @@ return [
     'default' => env('BROADCAST_CONNECTION', 'null'),
 
     /*
+    | Public browser connection, supplied at runtime through environment settings.
+    | Leaving the host unset preserves Echo's Vite configuration in development.
+    */
+    'client' => [
+        'key' => env('REVERB_APP_KEY'),
+        'host' => env('REVERB_PUBLIC_HOST'),
+        'port' => (int) env('REVERB_PUBLIC_PORT', 443),
+        'scheme' => env('REVERB_PUBLIC_SCHEME', 'https'),
+    ],
+
+    /*
     |--------------------------------------------------------------------------
     | Broadcast Connections
     |--------------------------------------------------------------------------

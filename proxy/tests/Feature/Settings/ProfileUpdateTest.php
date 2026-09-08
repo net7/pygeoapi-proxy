@@ -1,7 +1,9 @@
 <?php
 
+use App\Models\ProcessExecution;
 use App\Models\SocialAccount;
 use App\Models\User;
+use App\Services\Ogc\ProcessExecutionInputSnapshot;
 use App\Support\AuthFeatures;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -209,6 +211,41 @@ test('user cannot delete their account when account deletion is disabled', funct
     expect($user->fresh())->not->toBeNull();
 });
 
+test('account deletion removes its input snapshots and preserves another users files', function () {
+    config(['fortify.features' => [AuthFeatures::accountDeletion()]]);
+    Storage::fake('local');
+    $user = User::factory()->create();
+    $snapshots = app(ProcessExecutionInputSnapshot::class);
+    $largeInput = ProcessExecution::factory()->for($user)->create([
+        'input_snapshot' => $snapshots->create([], ['text' => str_repeat('a', 9000)]),
+    ]);
+    $uploadedInput = ProcessExecution::factory()->for($user)->create([
+        'input_snapshot' => $snapshots->create([], [
+            'data' => ['value' => 'AAEC', 'encoding' => 'base64'],
+        ]),
+    ]);
+    $legacyExecution = ProcessExecution::factory()->for($user)->create();
+    $otherExecution = ProcessExecution::factory()->create([
+        'input_snapshot' => $snapshots->create([], ['text' => str_repeat('b', 9000)]),
+    ]);
+
+    $this->actingAs($user)->delete(route('profile.destroy'), [
+        'password' => 'password',
+    ])->assertSessionHasNoErrors()->assertRedirect(route('home'));
+
+    $this->assertGuest();
+    $this->assertModelMissing($user);
+    $this->assertModelMissing($largeInput);
+    $this->assertModelMissing($uploadedInput);
+    $this->assertModelMissing($legacyExecution);
+    $this->assertModelExists($otherExecution);
+    Storage::disk('local')->assertMissing([
+        $largeInput->input_snapshot['inputsPath'],
+        $uploadedInput->input_snapshot['inputsPath'],
+    ]);
+    Storage::disk('local')->assertExists($otherExecution->input_snapshot['inputsPath']);
+});
+
 test('social only user cannot delete their account when account deletion is disabled', function () {
     config(['fortify.features' => []]);
 
@@ -224,8 +261,14 @@ test('social only user cannot delete their account when account deletion is disa
 
 test('correct password must be provided to delete account', function () {
     config(['fortify.features' => [AuthFeatures::accountDeletion()]]);
+    Storage::fake('local');
 
     $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create([
+        'input_snapshot' => app(ProcessExecutionInputSnapshot::class)->create([], [
+            'text' => str_repeat('a', 9000),
+        ]),
+    ]);
 
     $response = $this
         ->actingAs($user)
@@ -239,4 +282,6 @@ test('correct password must be provided to delete account', function () {
         ->assertRedirect(route('profile.edit'));
 
     expect($user->fresh())->not->toBeNull();
+    $this->assertModelExists($execution);
+    Storage::disk('local')->assertExists($execution->input_snapshot['inputsPath']);
 });

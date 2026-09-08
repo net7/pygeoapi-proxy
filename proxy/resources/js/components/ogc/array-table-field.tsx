@@ -1,4 +1,5 @@
 import { MoveHorizontal, Plus, Trash2 } from 'lucide-react';
+import { useContext } from 'react';
 import type { CSSProperties } from 'react';
 
 import {
@@ -7,6 +8,10 @@ import {
     ogcValidationControlClassName,
     ogcValidationDataState,
 } from '@/components/ogc/field-validation-feedback';
+import {
+    FieldSupportReference,
+    InputSupportContext,
+} from '@/components/ogc/input-support';
 import SectionFieldSet from '@/components/ogc/section-field-set';
 import { Button } from '@/components/ui/button';
 import { Field, FieldLabel } from '@/components/ui/field';
@@ -34,14 +39,18 @@ export default function ArrayTableField({
     onChange,
     path,
     validation,
+    readOnly = false,
 }: {
     field: OgcNormalizedField;
     value: unknown;
     onChange: (value: unknown) => void;
     path: string;
     validation: OgcFieldValidationController;
+    readOnly?: boolean;
 }) {
     const { t } = useTranslation();
+    const showReferences =
+        useContext(InputSupportContext)?.showReferences ?? false;
     const isMobile = useIsMobile();
     const errors = validation.errors;
     const rows = Array.isArray(value) ? value : [];
@@ -88,6 +97,7 @@ export default function ArrayTableField({
     return (
         <SectionFieldSet
             label={label}
+            supportReference={field.name}
             description={field.description}
             fieldPath={path}
             error={structuralError}
@@ -127,13 +137,18 @@ export default function ArrayTableField({
                                 key={column.key}
                                 className="w-32 break-words whitespace-normal"
                             >
-                                {column.label}
+                                {!showReferences || column.label !== column.key
+                                    ? column.label
+                                    : null}{' '}
+                                <FieldSupportReference name={column.key} />
                             </TableHead>
                         ))}
-                        <TableHead
-                            className="sticky right-0 z-20 w-14 min-w-14 border-l bg-muted text-center shadow-sm"
-                            aria-label={t('ogc.removeRow')}
-                        />
+                        {!readOnly ? (
+                            <TableHead
+                                className="sticky right-0 z-20 w-14 min-w-14 border-l bg-muted text-center shadow-sm"
+                                aria-label={t('ogc.removeRow')}
+                            />
+                        ) : null}
                     </TableRow>
                 </TableHeader>
                 <TableBody className="flex flex-col gap-3 md:table-row-group md:gap-0 [&_tr:last-child]:border md:[&_tr:last-child]:border-0">
@@ -154,16 +169,18 @@ export default function ArrayTableField({
                                             row: rowIndex + 1,
                                         })}
                                     </span>
-                                    <Button
-                                        type="button"
-                                        variant="destructive"
-                                        size="icon"
-                                        aria-label={t('ogc.removeRow')}
-                                        disabled={isRemoveRowDisabled}
-                                        onClick={() => removeRow(rowIndex)}
-                                    >
-                                        <Trash2 data-icon="icon" />
-                                    </Button>
+                                    {!readOnly ? (
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            aria-label={t('ogc.removeRow')}
+                                            disabled={isRemoveRowDisabled}
+                                            onClick={() => removeRow(rowIndex)}
+                                        >
+                                            <Trash2 data-icon="icon" />
+                                        </Button>
+                                    ) : null}
                                 </TableCell>
                                 {columns.map((column, columnIndex) => {
                                     const cellPath =
@@ -198,12 +215,24 @@ export default function ArrayTableField({
                                                         : undefined
                                                 }
                                             >
-                                                <FieldLabel
-                                                    htmlFor={controlId}
-                                                    className="text-xs font-medium break-words text-muted-foreground md:sr-only md:max-w-px"
-                                                >
-                                                    {column.label}
-                                                </FieldLabel>
+                                                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 md:contents">
+                                                    <FieldLabel
+                                                        htmlFor={controlId}
+                                                        className={cn(
+                                                            'text-xs font-medium break-words text-muted-foreground md:sr-only md:max-w-px',
+                                                            showReferences &&
+                                                                column.label ===
+                                                                    column.key &&
+                                                                'sr-only',
+                                                        )}
+                                                    >
+                                                        {column.label}
+                                                    </FieldLabel>
+                                                    <FieldSupportReference
+                                                        name={column.key}
+                                                        className="md:hidden"
+                                                    />
+                                                </div>
                                                 <OgcValidationControl
                                                     state={state}
                                                     validLabel={
@@ -211,6 +240,7 @@ export default function ArrayTableField({
                                                     }
                                                 >
                                                     <Input
+                                                        readOnly={readOnly}
                                                         id={controlId}
                                                         className={cn(
                                                             'w-full min-w-0',
@@ -219,6 +249,7 @@ export default function ArrayTableField({
                                                             ),
                                                         )}
                                                         required={
+                                                            !readOnly &&
                                                             column.required
                                                         }
                                                         data-field-path={
@@ -238,10 +269,11 @@ export default function ArrayTableField({
                                                                 : undefined
                                                         }
                                                         type={
-                                                            column.type ===
+                                                            !readOnly &&
+                                                            (column.type ===
                                                                 'number' ||
-                                                            column.type ===
-                                                                'integer'
+                                                                column.type ===
+                                                                    'integer')
                                                                 ? 'number'
                                                                 : 'text'
                                                         }
@@ -302,44 +334,48 @@ export default function ArrayTableField({
                                         </TableCell>
                                     );
                                 })}
-                                <TableCell
-                                    data-row-action-layout="desktop"
-                                    className="hidden align-top md:sticky md:right-0 md:z-10 md:table-cell md:w-14 md:min-w-14 md:border-l md:bg-background md:p-2 md:text-center md:shadow-sm"
-                                >
-                                    <Button
-                                        type="button"
-                                        variant="destructive"
-                                        size="icon"
-                                        className="md:mx-auto"
-                                        aria-label={t('ogc.removeRow')}
-                                        disabled={isRemoveRowDisabled}
-                                        onClick={() => removeRow(rowIndex)}
+                                {!readOnly ? (
+                                    <TableCell
+                                        data-row-action-layout="desktop"
+                                        className="hidden align-top md:sticky md:right-0 md:z-10 md:table-cell md:w-14 md:min-w-14 md:border-l md:bg-background md:p-2 md:text-center md:shadow-sm"
                                     >
-                                        <Trash2 data-icon="icon" />
-                                    </Button>
-                                </TableCell>
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            className="md:mx-auto"
+                                            aria-label={t('ogc.removeRow')}
+                                            disabled={isRemoveRowDisabled}
+                                            onClick={() => removeRow(rowIndex)}
+                                        >
+                                            <Trash2 data-icon="icon" />
+                                        </Button>
+                                    </TableCell>
+                                ) : null}
                             </TableRow>
                         );
                     })}
                 </TableBody>
             </Table>
-            <Button
-                type="button"
-                variant="outline"
-                className="w-full md:w-auto"
-                disabled={
-                    field.maxItems !== null &&
-                    field.maxItems !== undefined &&
-                    rows.length >= field.maxItems
-                }
-                onClick={() => {
-                    validation.fieldChanged(path);
-                    onChange([...rows, columns.map(() => '')]);
-                }}
-            >
-                <Plus data-icon="inline-start" />
-                {t('ogc.addRow')}
-            </Button>
+            {!readOnly ? (
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full md:w-auto"
+                    disabled={
+                        field.maxItems !== null &&
+                        field.maxItems !== undefined &&
+                        rows.length >= field.maxItems
+                    }
+                    onClick={() => {
+                        validation.fieldChanged(path);
+                        onChange([...rows, columns.map(() => '')]);
+                    }}
+                >
+                    <Plus data-icon="inline-start" />
+                    {t('ogc.addRow')}
+                </Button>
+            ) : null}
         </SectionFieldSet>
     );
 }

@@ -8,15 +8,12 @@ import {
     ogcValidationDataState,
     ogcValidationFieldClassName,
 } from '@/components/ogc/field-validation-feedback';
+import { FieldLabelWithSupport } from '@/components/ogc/input-support';
 import NumericInput from '@/components/ogc/numeric-input';
 import OneOfField from '@/components/ogc/one-of-field';
+import ReadOnlyFieldValue from '@/components/ogc/read-only-field-value';
 import SectionFieldSet from '@/components/ogc/section-field-set';
-import {
-    Field,
-    FieldDescription,
-    FieldGroup,
-    FieldLabel,
-} from '@/components/ui/field';
+import { Field, FieldDescription, FieldGroup } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -30,6 +27,7 @@ import { htmlPatternForInput } from '@/lib/html-pattern';
 import { fieldDisplayLabel, optionDisplayLabel } from '@/lib/ogc-fields';
 import { errorIdForPath, fieldError } from '@/lib/ogc-form-errors';
 import type { OgcFieldValidationController } from '@/lib/ogc-form-validation';
+import { fieldsWithSubmittedValues } from '@/lib/ogc-form-values';
 import { cn } from '@/lib/utils';
 import type { OgcNormalizedField } from '@/types';
 
@@ -40,6 +38,7 @@ export default function SchemaFieldRenderer({
     path,
     validation,
     topLevel = false,
+    readOnly = false,
 }: {
     field: OgcNormalizedField;
     value: unknown;
@@ -47,24 +46,33 @@ export default function SchemaFieldRenderer({
     path: string;
     validation: OgcFieldValidationController;
     topLevel?: boolean;
+    readOnly?: boolean;
 }) {
     const errors = validation.errors;
+
+    if (readOnly && (value === undefined || value === null)) {
+        return <ReadOnlyFieldValue field={field} value={value} path={path} />;
+    }
 
     if (field.kind === 'object' && field.fields) {
         const objectValue = isRecord(value) ? value : {};
         const objectPath = topLevel ? path + '.value' : path;
         const error = fieldError(errors, path);
+        const children = readOnly
+            ? fieldsWithSubmittedValues(field.fields, objectValue)
+            : field.fields;
 
         return (
             <SectionFieldSet
                 label={fieldDisplayLabel(field)}
+                supportReference={field.name}
                 description={field.description}
                 fieldPath={path}
                 error={error}
                 validationState={validation.stateFor(path, error)}
             >
                 <FieldGroup className="min-w-0">
-                    {Object.entries(field.fields).map(([key, child]) => (
+                    {Object.entries(children).map(([key, child]) => (
                         <SchemaFieldRenderer
                             key={key}
                             field={child}
@@ -74,6 +82,7 @@ export default function SchemaFieldRenderer({
                             }
                             path={objectPath + '.' + key}
                             validation={validation}
+                            readOnly={readOnly}
                         />
                     ))}
                 </FieldGroup>
@@ -89,6 +98,7 @@ export default function SchemaFieldRenderer({
                 onChange={onChange}
                 path={path}
                 validation={validation}
+                readOnly={readOnly}
             />
         );
     }
@@ -101,6 +111,7 @@ export default function SchemaFieldRenderer({
                 onChange={onChange}
                 path={path}
                 validation={validation}
+                readOnly={readOnly}
             />
         );
     }
@@ -113,6 +124,7 @@ export default function SchemaFieldRenderer({
                 onChange={onChange}
                 path={path}
                 validation={validation}
+                readOnly={readOnly}
             />
         );
     }
@@ -125,8 +137,13 @@ export default function SchemaFieldRenderer({
                 onChange={onChange}
                 path={path}
                 validation={validation}
+                readOnly={readOnly}
             />
         );
+    }
+
+    if (readOnly) {
+        return <ReadOnlyFieldValue field={field} value={value} path={path} />;
     }
 
     const error = fieldError(errors, path);
@@ -139,7 +156,7 @@ export default function SchemaFieldRenderer({
                 className={cn('min-w-0', ogcValidationFieldClassName(state))}
                 data-invalid={state === 'invalid' ? true : undefined}
             >
-                <FieldLabel>{fieldDisplayLabel(field)}</FieldLabel>
+                <FieldLabelWithSupport field={field} />
                 {field.description ? (
                     <FieldDescription className="break-words">
                         {field.description}
@@ -217,7 +234,7 @@ export default function SchemaFieldRenderer({
             className={cn('min-w-0', ogcValidationFieldClassName(state))}
             data-invalid={state === 'invalid' ? true : undefined}
         >
-            <FieldLabel>{fieldDisplayLabel(field)}</FieldLabel>
+            <FieldLabelWithSupport field={field} />
             {field.description ? (
                 <FieldDescription className="break-words">
                     {field.description}

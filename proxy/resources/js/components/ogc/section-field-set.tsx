@@ -1,3 +1,4 @@
+import { useContext } from 'react';
 import type { ReactNode } from 'react';
 
 import {
@@ -5,6 +6,10 @@ import {
     ogcValidationContainerClassName,
     ogcValidationDataState,
 } from '@/components/ogc/field-validation-feedback';
+import {
+    FieldSupportReference,
+    InputSupportContext,
+} from '@/components/ogc/input-support';
 import { FieldDescription, FieldLegend, FieldSet } from '@/components/ui/field';
 import { errorIdForPath } from '@/lib/ogc-form-errors';
 import type { OgcFieldValidationState } from '@/lib/ogc-form-validation';
@@ -13,6 +18,7 @@ import { cn } from '@/lib/utils';
 export default function SectionFieldSet({
     label,
     description,
+    supportReference,
     children,
     className,
     fieldPath,
@@ -21,12 +27,15 @@ export default function SectionFieldSet({
 }: {
     label: string;
     description?: string | null;
+    supportReference?: string;
     children: ReactNode;
     className?: string;
     fieldPath?: string;
     error?: string;
     validationState?: OgcFieldValidationState;
 }) {
+    const showReferences =
+        useContext(InputSupportContext)?.showReferences ?? false;
     const errorId = fieldPath ? errorIdForPath(fieldPath) : undefined;
     const resolvedValidationState =
         validationState ?? (error ? 'invalid' : 'neutral');
@@ -39,6 +48,7 @@ export default function SectionFieldSet({
                 className,
             )}
             data-field-path={fieldPath}
+            aria-label={label}
             data-invalid={
                 resolvedValidationState === 'invalid' ? true : undefined
             }
@@ -53,12 +63,15 @@ export default function SectionFieldSet({
         >
             <FieldLegend
                 className={cn(
-                    'mb-1 w-fit px-1 text-sm',
+                    'mb-1 flex w-fit max-w-full flex-wrap items-baseline gap-x-2 px-1 text-sm',
                     resolvedValidationState === 'invalid' &&
                         'text-destructive-emphasis',
                 )}
             >
-                {label}
+                {!showReferences || label !== supportReference ? label : null}
+                {supportReference ? (
+                    <FieldSupportReference name={supportReference} />
+                ) : null}
             </FieldLegend>
             <div className="flex min-w-0 flex-col gap-4">
                 {description ? (

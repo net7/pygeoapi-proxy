@@ -8,20 +8,26 @@ import {
     CopyPlusIcon,
     FileInputIcon,
     ListChecksIcon,
+    LockKeyholeIcon,
     PackageCheckIcon,
     RefreshCwIcon,
     ShieldCheckIcon,
     TimerIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import { DeleteJobButton } from '@/components/ogc/delete-job-dialog';
+import {
+    InputSupport,
+    InputSupportToggle,
+} from '@/components/ogc/input-support';
 import JobIdentifiers from '@/components/ogc/job-identifiers';
 import { JobNameEditDialog } from '@/components/ogc/job-name-edit-dialog';
 import { JobNoteCard } from '@/components/ogc/job-note-card';
 import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
+import ProcessInputReview from '@/components/ogc/process-input-review';
 import RawPayloadBlock from '@/components/ogc/raw-payload-block';
 import ResultCollectionFailureNotice from '@/components/ogc/result-collection-failure-notice';
 import ResultPreview from '@/components/ogc/result-preview';
@@ -58,7 +64,7 @@ import { cn } from '@/lib/utils';
 import { index } from '@/routes/jobs';
 import { retry as retryResultCollection } from '@/routes/jobs/results';
 import { show as processShow } from '@/routes/processes';
-import type { ProcessExecutionDetail } from '@/types';
+import type { OgcInputReview, ProcessExecutionDetail } from '@/types';
 
 const GeoTiffMapResultPreview = lazy(
     () => import('@/components/ogc/geotiff-map-result-preview'),
@@ -69,11 +75,14 @@ type Translate = ReturnType<typeof useTranslation>['t'];
 export default function ProcessExecutionShow({
     execution,
     pollingInterval,
+    inputReview = null,
 }: {
     execution: ProcessExecutionDetail;
     pollingInterval: number;
+    inputReview?: OgcInputReview | null;
 }) {
     const { locale, t } = useTranslation();
+    const [inputReviewOpen, setInputReviewOpen] = useState(false);
     const styles = jobStatusStyles(execution.status);
     const StatusIcon = styles.icon;
     const terminalTimestamp = execution.completedAt ?? execution.failedAt;
@@ -201,28 +210,51 @@ export default function ProcessExecutionShow({
 
                 <JobNoteCard execution={execution} />
 
-                {execution.requestPayload !== undefined ? (
-                    <DetailSection
-                        icon={FileInputIcon}
-                        title={t('jobs.inputs')}
-                        description={t('jobs.inputsDescription')}
-                        defaultOpen={false}
-                        badge={
-                            <Badge
-                                variant="destructive"
-                                className="h-5 shrink-0 px-1.5 text-[10px] uppercase"
-                            >
-                                <ShieldCheckIcon data-icon="inline-start" />
-                                {t('jobs.adminOnlySection')}
-                            </Badge>
-                        }
-                    >
-                        <RawPayloadBlock
-                            title={t('jobs.inputs')}
-                            data={execution.requestPayload}
-                            kind="json"
-                        />
-                    </DetailSection>
+                {inputReview ? (
+                    <InputSupport>
+                        <DetailSection
+                            icon={FileInputIcon}
+                            title={t('jobs.submittedInputs')}
+                            description={t('jobs.submittedInputsDescription')}
+                            defaultOpen={false}
+                            open={inputReviewOpen}
+                            onOpenChange={setInputReviewOpen}
+                            actions={
+                                <InputSupportToggle
+                                    onShowReferences={() =>
+                                        setInputReviewOpen(true)
+                                    }
+                                />
+                            }
+                            badge={
+                                <Badge variant="secondary">
+                                    <LockKeyholeIcon data-icon="inline-start" />
+                                    {t('jobs.readOnly')}
+                                </Badge>
+                            }
+                        >
+                            <ProcessInputReview
+                                review={inputReview}
+                                execution={execution}
+                            />
+                            {execution.requestPayload !== undefined ? (
+                                <div className="mt-6 flex min-w-0 flex-col gap-3 border-t pt-6">
+                                    <Badge
+                                        variant="destructive"
+                                        className="h-5 w-fit px-1.5 text-[10px] uppercase"
+                                    >
+                                        <ShieldCheckIcon data-icon="inline-start" />
+                                        {t('jobs.adminOnlySection')}
+                                    </Badge>
+                                    <RawPayloadBlock
+                                        title={t('ogc.rawJson')}
+                                        data={execution.requestPayload}
+                                        kind="json"
+                                    />
+                                </div>
+                            ) : null}
+                        </DetailSection>
+                    </InputSupport>
                 ) : null}
 
                 <DetailSection
@@ -394,6 +426,9 @@ function DetailSection({
     description,
     badge,
     defaultOpen,
+    open,
+    onOpenChange,
+    actions,
     children,
 }: {
     icon: LucideIcon;
@@ -401,6 +436,9 @@ function DetailSection({
     description: string;
     badge?: ReactNode;
     defaultOpen?: boolean;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+    actions?: ReactNode;
     children: ReactNode;
 }) {
     const header = (
@@ -414,13 +452,21 @@ function DetailSection({
                 </CardTitleWithIcon>
                 <CardDescription>{description}</CardDescription>
             </div>
-            {badge}
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 self-end sm:self-start">
+                {badge}
+                {actions}
+            </div>
         </CardHeader>
     );
 
     if (defaultOpen !== undefined) {
         return (
-            <Collapsible defaultOpen={defaultOpen} asChild>
+            <Collapsible
+                defaultOpen={defaultOpen}
+                open={open}
+                onOpenChange={onOpenChange}
+                asChild
+            >
                 <Card className="min-w-0 shadow-sm dark:border-border/70 dark:bg-card/95">
                     {header}
                     <CollapsibleContent>

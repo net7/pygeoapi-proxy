@@ -7,6 +7,7 @@ use App\Http\Requests\Settings\ProfileAvatarUpdateRequest;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\User;
+use App\Services\Ogc\ProcessExecutionInputSnapshot;
 use App\Support\AuthFeatures;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -123,11 +124,15 @@ class ProfileController extends Controller
     /**
      * Delete the user's profile.
      */
-    public function destroy(ProfileDeleteRequest $request): RedirectResponse
+    public function destroy(ProfileDeleteRequest $request, ProcessExecutionInputSnapshot $inputSnapshots): RedirectResponse
     {
         abort_unless(AuthFeatures::enabled(AuthFeatures::accountDeletion()), 404);
 
         $user = $request->user();
+
+        foreach ($user->processExecutions()->select(['id', 'input_snapshot'])->lazyById() as $execution) {
+            $inputSnapshots->delete($execution->input_snapshot);
+        }
 
         Auth::logout();
 

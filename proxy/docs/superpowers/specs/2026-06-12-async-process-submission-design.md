@@ -29,7 +29,7 @@ La pagina dettaglio esiste gia in `resources/js/pages/process-executions/show.ts
 - visualizzazione messaggio di stato;
 - risultati salvati.
 
-Il progetto usa queue database in locale e Horizon in produzione.
+Il progetto usa queue database in locale e Horizon nello stack Docker per `develop` e `staging`, gli unici ambienti previsti dai file di deploy.
 Il worker queue e considerato parte del runtime applicativo.
 
 Le descrizioni dei processi sono gia preriscaldate in cache dal warm-up OGC.

@@ -269,6 +269,21 @@ const it = {
         first: 'Prima',
         inputs: 'Input',
         inputsDescription: 'Input inviati al processo.',
+        submittedInputs: 'Dati inviati',
+        submittedInputsDescription:
+            'Dati utilizzati per questa elaborazione. Consultazione in sola lettura.',
+        readOnly: 'Sola lettura',
+        inputNotProvided: 'Non fornito',
+        inputEmpty: 'Nessun valore',
+        inputUnavailable: 'Dato non disponibile',
+        inputBinaryContent: 'Contenuto binario. Consulta il file allegato.',
+        inputReviewLegacy:
+            'Per questa richiesta precedente, il modulo è ricostruito dai dati ancora disponibili. Le etichette e la struttura originali potrebbero non essere recuperabili.',
+        inputReviewIncomplete:
+            'Alcuni dati della richiesta non sono più disponibili: {inputs}.',
+        inputReviewEmpty:
+            'Non sono disponibili dati di input per questa richiesta.',
+        submittedFiles: 'File inviati',
         adminOnlySection: 'VISIBILE SOLO AGLI ADMIN',
         documentTitle: 'Processo {jobId}',
         jobId: 'ID processo',
@@ -384,6 +399,13 @@ const it = {
         inputPrefillSkipped:
             'Input non copiati perché oscurati o non più disponibili: {inputs}.',
         inputPrefillTitle: 'Input copiati da “{source}”',
+        showSupportReferences: 'Mostra riferimenti per l’assistenza',
+        showSupportReferencesTooltip:
+            'Mostra i nomi tecnici dei campi da comunicare all’assistenza. Clicca su un nome tra parentesi per copiarlo negli appunti.',
+        copySupportReference: 'Copia riferimento per l’assistenza {name}',
+        supportReferenceCopied: 'Riferimento per l’assistenza copiato',
+        supportReferenceCopyError:
+            'Impossibile copiare il riferimento per l’assistenza',
         jobControls: 'Controlli processo',
         mapLayerHillshadeWarning:
             'Lo stile SLD applicato usa solo una hillshade: il DEM può apparire come un raster scuro o rettangolare. La resa dipende dallo SLD fornito, non dalla mappa.',
@@ -795,6 +817,20 @@ const en = {
         first: 'First',
         inputs: 'Inputs',
         inputsDescription: 'Inputs submitted to the process.',
+        submittedInputs: 'Submitted data',
+        submittedInputsDescription:
+            'Data used for this execution. Read-only view.',
+        readOnly: 'Read only',
+        inputNotProvided: 'Not provided',
+        inputEmpty: 'No values',
+        inputUnavailable: 'Data unavailable',
+        inputBinaryContent: 'Binary content. See the attached file.',
+        inputReviewLegacy:
+            'For this earlier request, the form is reconstructed from the data still available. The original labels and structure may no longer be recoverable.',
+        inputReviewIncomplete:
+            'Some submitted data is no longer available: {inputs}.',
+        inputReviewEmpty: 'No input data is available for this request.',
+        submittedFiles: 'Submitted files',
         adminOnlySection: 'VISIBLE TO ADMINS ONLY',
         documentTitle: 'Job {jobId}',
         jobId: 'Job ID',
@@ -908,6 +944,12 @@ const en = {
         inputPrefillSkipped:
             'Inputs not copied because they were redacted or are no longer available: {inputs}.',
         inputPrefillTitle: 'Inputs copied from “{source}”',
+        showSupportReferences: 'Show support references',
+        showSupportReferencesTooltip:
+            'Shows the technical field names to share with support. Click a name in parentheses to copy it to the clipboard.',
+        copySupportReference: 'Copy support reference {name}',
+        supportReferenceCopied: 'Support reference copied',
+        supportReferenceCopyError: 'Unable to copy the support reference',
         jobControls: 'Job controls',
         mapLayerHillshadeWarning:
             'The applied SLD style only defines hillshade: the DEM may appear as a dark or rectangular raster. The rendering depends on the supplied SLD, not the map.',

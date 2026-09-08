@@ -7,6 +7,7 @@ import {
     ogcValidationDataState,
     ogcValidationFieldClassName,
 } from '@/components/ogc/field-validation-feedback';
+import ReadOnlyFieldValue from '@/components/ogc/read-only-field-value';
 import SectionFieldSet from '@/components/ogc/section-field-set';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
@@ -35,12 +36,14 @@ export default function DataInputField({
     onChange,
     path,
     validation,
+    readOnly = false,
 }: {
     field: OgcNormalizedField;
     value: unknown;
     onChange: (value: unknown) => void;
     path: string;
     validation: OgcFieldValidationController;
+    readOnly?: boolean;
 }) {
     const { t } = useTranslation();
     const [mode, setMode] = useState<InputMode>(() =>
@@ -50,6 +53,33 @@ export default function DataInputField({
     const error = fieldError(validation.errors, path);
     const errorId = errorIdForPath(path);
     const state = validation.stateFor(path, error);
+
+    if (readOnly) {
+        const reference = field.references?.find(
+            (item) => item.href === selectedReference,
+        );
+        const binary =
+            typeof value === 'object' &&
+            value !== null &&
+            'encoding' in value &&
+            value.encoding === 'base64';
+
+        return (
+            <ReadOnlyFieldValue
+                field={field}
+                path={path}
+                value={
+                    isHrefValue(value)
+                        ? reference
+                            ? referenceDisplayLabel(reference)
+                            : value.href
+                        : binary
+                          ? t('jobs.inputBinaryContent')
+                          : inlineValue(value)
+                }
+            />
+        );
+    }
 
     function changeMode(nextMode: string) {
         if (
@@ -87,30 +117,39 @@ export default function DataInputField({
 
         reader.onload = () => {
             const result = String(reader.result ?? '');
+            const content = result.slice(result.indexOf(',') + 1);
+            const metadata = {
+                __inputFileName: file.name,
+                __inputFileContent: content,
+                __inputFileEncoding: 'base64',
+            };
 
             if (isBinaryInput(field, file)) {
                 onChange({
-                    value: result.includes(',') ? result.split(',')[1] : result,
+                    value: content,
                     mediaType: file.type || field.mediaType || undefined,
                     encoding: 'base64',
+                    ...metadata,
                 });
 
                 return;
             }
 
-            onChange(qualifiedValue(field, result));
+            const text = new TextDecoder().decode(
+                Uint8Array.from(atob(content), (character) =>
+                    character.charCodeAt(0),
+                ),
+            );
+            onChange({ ...qualifiedValue(field, text), ...metadata });
         };
 
-        if (isBinaryInput(field, file)) {
-            reader.readAsDataURL(file);
-        } else {
-            reader.readAsText(file);
-        }
+        reader.readAsDataURL(file);
     }
 
     return (
         <SectionFieldSet
             label={fieldDisplayLabel(field)}
+            supportReference={field.name}
             description={field.description}
             validationState={state}
         >

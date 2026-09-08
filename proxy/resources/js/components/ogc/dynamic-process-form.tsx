@@ -9,6 +9,10 @@ import {
     ogcValidationControlClassName,
     ogcValidationDataState,
 } from '@/components/ogc/field-validation-feedback';
+import {
+    InputSupport,
+    InputSupportToggle,
+} from '@/components/ogc/input-support';
 import { JobNoteEditor } from '@/components/ogc/job-note-editor';
 import ProcessOutputSelector from '@/components/ogc/process-output-selector';
 import SchemaFieldRenderer from '@/components/ogc/schema-field-renderer';
@@ -30,7 +34,10 @@ import { validateOgcInputs } from '@/lib/ogc-ajv-validation';
 import { fieldError } from '@/lib/ogc-form-errors';
 import type { OgcFormErrors } from '@/lib/ogc-form-errors';
 import { ogcConstraintMessage } from '@/lib/ogc-form-validation';
-import { initialInputValues, normalizeInputs } from '@/lib/ogc-form-values';
+import {
+    initialInputValues,
+    prepareInputSubmission,
+} from '@/lib/ogc-form-values';
 import {
     buildRequestedOutputs,
     initialOutputSelections,
@@ -152,7 +159,7 @@ export default function DynamicProcessForm({
 
                 transform((formData) => ({
                     ...formData,
-                    inputs: normalizeInputs(schema.fields, formData.inputs),
+                    ...prepareInputSubmission(schema.fields, formData.inputs),
                     outputs: buildRequestedOutputs(formData.outputs),
                 }));
                 submit(store(schema.id), {
@@ -211,36 +218,41 @@ export default function DynamicProcessForm({
                 </CardContent>
             </Card>
 
-            <Card className="min-w-0">
-                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <CardTitle>{t('ogc.inputs')}</CardTitle>
-                    {schema.examplePayload ? (
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200 hover:text-amber-950 focus-visible:ring-amber-500 dark:border-amber-500/50 dark:bg-amber-500/15 dark:text-amber-200 dark:hover:bg-amber-500/25"
-                            onClick={applyExamplePayload}
-                        >
-                            <WandSparklesIcon data-icon="inline-start" />
-                            {t('ogc.prefillTestData')}
-                        </Button>
-                    ) : null}
-                </CardHeader>
-                <CardContent className="flex min-w-0 flex-col gap-4">
-                    {Object.entries(schema.fields).map(([name, field]) => (
-                        <SchemaFieldRenderer
-                            key={name}
-                            field={field}
-                            value={data.inputs[name]}
-                            onChange={(value) => setInput(name, value)}
-                            path={'inputs.' + name}
-                            validation={validation}
-                            topLevel
-                        />
-                    ))}
-                </CardContent>
-            </Card>
+            <InputSupport>
+                <Card className="min-w-0">
+                    <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <CardTitle>{t('ogc.inputs')}</CardTitle>
+                        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 self-end">
+                            {schema.examplePayload ? (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200 hover:text-amber-950 focus-visible:ring-amber-500 dark:border-amber-500/50 dark:bg-amber-500/15 dark:text-amber-200 dark:hover:bg-amber-500/25"
+                                    onClick={applyExamplePayload}
+                                >
+                                    <WandSparklesIcon data-icon="inline-start" />
+                                    {t('ogc.prefillTestData')}
+                                </Button>
+                            ) : null}
+                            <InputSupportToggle />
+                        </div>
+                    </CardHeader>
+                    <CardContent className="flex min-w-0 flex-col gap-4">
+                        {Object.entries(schema.fields).map(([name, field]) => (
+                            <SchemaFieldRenderer
+                                key={name}
+                                field={field}
+                                value={data.inputs[name]}
+                                onChange={(value) => setInput(name, value)}
+                                path={'inputs.' + name}
+                                validation={validation}
+                                topLevel
+                            />
+                        ))}
+                    </CardContent>
+                </Card>
+            </InputSupport>
 
             <ProcessOutputSelector
                 outputs={schema.outputs}

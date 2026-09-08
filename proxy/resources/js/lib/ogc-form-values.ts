@@ -5,6 +5,180 @@ export type OneOfValue = {
     value: Record<string, unknown>;
 };
 
+type InputFile = {
+    path: string[];
+    name: string;
+    content?: string;
+    encoding?: 'base64';
+};
+
+export function reviewInputValues(
+    fields: Record<string, OgcNormalizedField>,
+    inputs: Record<string, unknown>,
+    topLevel = true,
+): Record<string, unknown> {
+    return Object.fromEntries(
+        Object.entries(inputs).map(([name, input]) => {
+            const field = fields[name];
+
+            if (!field) {
+                return [name, input];
+            }
+
+            if (field.kind === 'oneOf') {
+                const value =
+                    isRecord(input) && isRecord(input.value)
+                        ? input.value
+                        : isRecord(input)
+                          ? input
+                          : {};
+                const explicit =
+                    isRecord(input) && typeof input.variant === 'string'
+                        ? field.variants?.find(
+                              (candidate) => candidate.id === input.variant,
+                          )
+                        : undefined;
+                const matches =
+                    field.variants?.filter((candidate) =>
+                        matchesVariant(candidate, value),
+                    ) ?? [];
+                const variant =
+                    explicit ?? (matches.length === 1 ? matches[0] : undefined);
+
+                return [
+                    name,
+                    {
+                        variant: variant?.id ?? '',
+                        value: reviewInputValues(
+                            variant?.fields ?? {},
+                            value,
+                            false,
+                        ),
+                    },
+                ];
+            }
+
+            if (field.kind === 'object') {
+                const value = topLevel ? unwrapExampleValue(input) : input;
+
+                return [
+                    name,
+                    isRecord(value)
+                        ? reviewInputValues(field.fields ?? {}, value, false)
+                        : value,
+                ];
+            }
+
+            if (field.kind === 'array_object' && Array.isArray(input)) {
+                return [
+                    name,
+                    input.map((value) =>
+                        isRecord(value)
+                            ? reviewInputValues(
+                                  field.fields ?? {},
+                                  value,
+                                  false,
+                              )
+                            : value,
+                    ),
+                ];
+            }
+
+            const isComplex =
+                field.mediaType ||
+                field.contentEncoding === 'binary' ||
+                field.references?.length;
+
+            return [
+                name,
+                topLevel && !isComplex ? unwrapExampleValue(input) : input,
+            ];
+        }),
+    );
+}
+
+export function fieldsWithSubmittedValues(
+    fields: Record<string, OgcNormalizedField>,
+    values: Record<string, unknown>,
+): Record<string, OgcNormalizedField> {
+    return {
+        ...fields,
+        ...Object.fromEntries(
+            Object.keys(values)
+                .filter((name) => !fields[name])
+                .map((name) => [
+                    name,
+                    {
+                        name,
+                        title: name.replaceAll('_', ' '),
+                        kind: 'scalar' as const,
+                    },
+                ]),
+        ),
+    };
+}
+
+export function prepareInputSubmission(
+    fields: Record<string, OgcNormalizedField>,
+    values: Record<string, unknown>,
+): { inputs: Record<string, unknown>; inputFiles: InputFile[] } {
+    const inputFiles: InputFile[] = [];
+
+    function removeFileMetadata(value: unknown, path: string[]): unknown {
+        if (Array.isArray(value)) {
+            return value.map((item, index) =>
+                removeFileMetadata(item, [...path, String(index)]),
+            );
+        }
+
+        if (!isRecord(value)) {
+            return value;
+        }
+
+        const isUpload =
+            'value' in value && typeof value.__inputFileName === 'string';
+
+        if (isUpload) {
+            inputFiles.push({
+                path,
+                name: value.__inputFileName as string,
+                ...(typeof value.__inputFileContent === 'string'
+                    ? { content: value.__inputFileContent }
+                    : {}),
+                ...(value.__inputFileEncoding === 'base64'
+                    ? { encoding: 'base64' as const }
+                    : {}),
+            });
+        }
+
+        return Object.fromEntries(
+            Object.entries(value)
+                .filter(
+                    ([key]) =>
+                        !isUpload ||
+                        ![
+                            '__inputFileName',
+                            '__inputFileContent',
+                            '__inputFileEncoding',
+                        ].includes(key),
+                )
+                .map(([key, child]) => [
+                    key,
+                    removeFileMetadata(child, [...path, key]),
+                ]),
+        );
+    }
+
+    const inputs = Object.fromEntries(
+        Object.entries(normalizeInputs(fields, values)).map(([name, value]) => [
+            name,
+            removeFileMetadata(value, [name]),
+        ]),
+    );
+
+    return { inputs, inputFiles };
+}
+
 export function exampleInputsToFormValues(
     fields: Record<string, OgcNormalizedField>,
     inputs: Record<string, unknown>,

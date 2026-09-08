@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\Auth\SocialEmailController;
 use App\Http\Controllers\Ogc\ProcessController;
 use App\Http\Controllers\Ogc\ProcessExecutionController;
+use App\Http\Controllers\Ogc\ProcessExecutionInputController;
 use App\Http\Controllers\Ogc\ProcessExecutionResultCollectionController;
 use App\Http\Controllers\Ogc\ProcessExecutionResultController;
 use App\Http\Controllers\Ogc\ProcessExecutionResultMapTileController;
@@ -54,6 +55,9 @@ Route::middleware(['auth', EnsureUserIsActive::class, 'verified'])->group(functi
         ->name('jobs.bulk-destroy');
     Route::get('jobs/{processExecution}', [ProcessExecutionController::class, 'show'])
         ->name('jobs.show');
+    Route::get('jobs/{processExecution}/inputs/{file}/download', ProcessExecutionInputController::class)
+        ->whereNumber('file')
+        ->name('jobs.inputs.download');
     Route::patch('jobs/{processExecution}/name', [ProcessExecutionController::class, 'updateName'])
         ->name('jobs.name.update');
     Route::patch('jobs/{processExecution}/note', [ProcessExecutionController::class, 'updateNote'])

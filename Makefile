@@ -1,5 +1,18 @@
-ENV_TARGET := $(firstword $(filter develop staging production,$(MAKECMDGOALS)))
+# Deployment commands for develop and staging only.
+
+ENV_TARGET := $(firstword $(filter develop staging,$(MAKECMDGOALS)))
 ENV ?= $(if $(ENV_TARGET),$(ENV_TARGET),develop)
+TARGETS := help develop staging env require-env config config-check build deploy-build pull up start deploy-up stop down restart ps deploy-status logs shell artisan migrate fresh seed test pint composer bun-install bun-build optimize clear horizon-status destroy
+
+ifneq ($(filter-out $(TARGETS),$(MAKECMDGOALS)),)
+$(error Unsupported target(s): $(filter-out $(TARGETS),$(MAKECMDGOALS)); use make help)
+endif
+ifneq ($(ENV),develop)
+ifneq ($(ENV),staging)
+$(error Unsupported ENV "$(ENV)"; use develop or staging)
+endif
+endif
+
 ENV_FILE := .env.$(ENV)
 COMPOSE_FILES := -f compose.yaml -f compose.$(ENV).yaml
 COMPOSE := docker compose --env-file $(ENV_FILE) $(COMPOSE_FILES)
@@ -11,16 +24,16 @@ DEPLOY_BUILD_PROGRESS ?= plain
 LOG_FOLLOW ?= -f
 LOG_TAIL ?= 100
 
-.PHONY: help develop staging production env require-env config config-check build deploy-build pull up start deploy-up stop down restart ps deploy-status logs shell artisan migrate fresh seed test pint composer bun-install bun-build optimize clear horizon-status pygeoapi-validate destroy
+.PHONY: $(TARGETS)
 
 help:
-	@printf '%s\n' 'Usage: make [develop|staging|production] <target>'
+	@printf '%s\n' 'Usage: make [develop|staging] <target>'
 	@printf '%s\n' ''
 	@printf '%s\n' 'Default environment: develop'
 	@printf '%s\n' 'Examples:'
 	@printf '%s\n' '  make up'
 	@printf '%s\n' '  make staging up'
-	@printf '%s\n' '  make production logs SERVICE=laravel'
+	@printf '%s\n' '  make staging logs SERVICE=laravel'
 	@printf '%s\n' '  make artisan CMD="route:list"'
 	@printf '%s\n' ''
 	@printf '%s\n' 'Targets:'
@@ -51,10 +64,9 @@ help:
 	@printf '%s\n' '  optimize          Cache Laravel config/routes/views/events'
 	@printf '%s\n' '  clear             Clear Laravel caches'
 	@printf '%s\n' '  horizon-status    Show Horizon status'
-	@printf '%s\n' '  pygeoapi-validate Validate pygeoapi config in the container'
 	@printf '%s\n' '  destroy           Remove containers and named volumes for this env'
 
-develop staging production:
+develop staging:
 	@:
 
 env:
@@ -73,7 +85,7 @@ build: env
 	$(COMPOSE) build --pull
 
 deploy-build: require-env
-	BUILDKIT_PROGRESS=$(DEPLOY_BUILD_PROGRESS) $(COMPOSE) build --pull laravel pygeoapi
+	BUILDKIT_PROGRESS=$(DEPLOY_BUILD_PROGRESS) $(COMPOSE) build --pull laravel
 
 pull: env
 	$(COMPOSE) pull
@@ -145,9 +157,6 @@ clear: env
 
 horizon-status: env
 	$(COMPOSE) exec laravel php artisan horizon:status
-
-pygeoapi-validate: env
-	$(COMPOSE) exec pygeoapi /venv/bin/pygeoapi config validate -c /pygeoapi/local.config.yml
 
 destroy: env
 	$(COMPOSE) down -v --remove-orphans

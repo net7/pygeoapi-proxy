@@ -1,4 +1,10 @@
-# Staging Nginx reverse proxy
+# Nginx reverse proxies
+
+This runbook covers the standalone `staging` host. Like all deployment files,
+examples, and guides in this repository, its scope is exclusively `develop`
+and `staging`; this Nginx configuration applies to staging only.
+
+## Staging
 
 This directory contains the initial HTTP-only host configuration for
 `proxygeoapi.netseven.work`. Docker publishes Laravel on `127.0.0.1:7070` and
@@ -11,7 +17,7 @@ The repository is installed at:
 /docker-data/configuration/pygeoapi-proxy
 ```
 
-## 1. Start the staging stack
+### 1. Start the staging stack
 
 ```bash
 cd /docker-data/configuration/pygeoapi-proxy
@@ -26,7 +32,7 @@ The Reverb process must also be healthy:
 docker compose --env-file .env.staging -f compose.yaml -f compose.staging.yaml ps reverb
 ```
 
-## 2. Install the HTTP bootstrap vhost
+### 2. Install the HTTP bootstrap vhost
 
 The host Nginx configuration must include `/etc/nginx/conf.d/*.conf`.
 
@@ -42,7 +48,7 @@ curl --fail --head http://proxygeoapi.netseven.work
 At this stage Nginx listens only on port `80`. Do not add certificate paths to
 the repository vhost.
 
-## 3. Issue and install the first certificate
+### 3. Issue and install the first certificate
 
 Back up the installed Nginx configuration, then let Certbot obtain the
 certificate, add the TLS listener, and enable the HTTP-to-HTTPS redirect:
@@ -67,7 +73,7 @@ file remains an HTTP-only bootstrap template. Do not overwrite the installed
 file with the repository template after Certbot without first preserving the
 generated TLS directives.
 
-## 4. Verify routing
+### 4. Verify routing
 
 ```bash
 bash <<'BASH'

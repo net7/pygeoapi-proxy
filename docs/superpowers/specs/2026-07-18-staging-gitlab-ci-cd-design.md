@@ -9,11 +9,11 @@ su `staging`.
 
 Il deploy segue il modello già in uso per `AI/3p-italia-pgf`: GitLab usa un
 runner generico per i controlli e apre una connessione SSH verso l'utente
-`gitlab_deploy`; tutta la logica operativa vive in un `deploy.sh` versionato ed
+`gitlab_deploy`; tutta la logica operativa vive in un `deploy-dev-staging.sh` versionato ed
 eseguito nel checkout stabile sul server.
 
-La produzione avrà un flusso differente e non deve comparire nella pipeline,
-nello script o nelle nuove procedure operative.
+La pipeline, lo script e le procedure operative coprono esclusivamente gli
+ambienti supportati `develop` e `staging`.
 
 ## Contesto esistente
 
@@ -32,7 +32,8 @@ nello script o nelle nuove procedure operative.
 - Laravel, Horizon, Scheduler, Reverb, MariaDB, Redis, pygeoapi e GeoServer
   sono servizi Docker Compose.
 - L'immagine Laravel viene costruita dal `proxy/Dockerfile`: lo stage Composer
-  installa le dipendenze production e lo stage asset esegue Bun e Vite.
+  installa le dipendenze runtime con `--no-dev` e lo stage asset esegue Bun e
+  Vite.
 - Il servizio web staging ha già `AUTORUN_ENABLED=true` e usa le Laravel
   Automations di `serversideup/php`.
 - Nginx espone Laravel e Reverb tramite
@@ -49,7 +50,7 @@ nello script o nelle nuove procedure operative.
    vengono ripetuti sul commit risultante in `staging`.
 4. Un runner GitLab generico esegue CI e job SSH; non viene installato un runner
    sul server staging.
-5. Il job GitLab è un trigger sottile. Il server esegue un `deploy.sh`
+5. Il job GitLab è un trigger sottile. Il server esegue un `deploy-dev-staging.sh`
    versionato, analogo al progetto 3P.
 6. Il server costruisce localmente le immagini. La pipeline non pubblica
    immagini nel Container Registry.
@@ -58,16 +59,15 @@ nello script o nelle nuove procedure operative.
 9. Makefile, Compose staging e README possono essere modificati per rendere il
    processo chiaro, ordinato e leggibile nei log.
 10. L'impostazione GitLab di progetto `Pipelines must succeed` viene abilitata.
-    Poiché non esiste ancora una pipeline per `main`, le Merge Request verso
-    `main` restano intenzionalmente bloccate fino alla progettazione del flusso
-    production.
+    Poiché non esiste una pipeline per `main`, le Merge Request verso `main`
+    restano intenzionalmente bloccate.
 
 ## Ambito
 
 ### Incluso
 
 - `.gitlab-ci.yml` per CI e deploy staging;
-- `deploy.sh` eseguito sul server;
+- `deploy-dev-staging.sh` eseguito sul server;
 - target Makefile non interattivi per il deploy;
 - configurazione esplicita delle automazioni Laravel nello staging;
 - quality gate PHP e frontend;
@@ -78,8 +78,7 @@ nello script o nelle nuove procedure operative.
 
 ### Escluso
 
-- qualsiasi job o comportamento production;
-- modifica di `.env.production.example` o `compose.production.yaml`;
+- job o comportamenti per ambienti diversi da `develop` e `staging`;
 - pubblicazione di immagini applicative nel Container Registry;
 - installazione di un GitLab Runner sul server;
 - esecuzione dei comandi di bootstrap sul server durante l'implementazione;
@@ -105,7 +104,7 @@ merge su staging -> pipeline staging ----+
                                utente deploy sul server
                                          |
                                          v
-                       checkout stabile -> ./deploy.sh
+                       checkout stabile -> ./deploy-dev-staging.sh
                                          |
                                          v
                         build e update Docker Compose
@@ -147,8 +146,8 @@ Responsabilità:
   presente;
 - fallire al primo controllo non superato.
 
-Il job CI non riusa le dipendenze production dell'immagine di deploy: ha bisogno
-dei pacchetti development per test e lint.
+Il job CI non riusa le dipendenze runtime installate con `--no-dev`
+nell'immagine di deploy: ha bisogno dei pacchetti development per test e lint.
 
 ### `frontend-check`
 
@@ -170,8 +169,8 @@ Responsabilità:
 - validare la configurazione ottenuta da `compose.yaml` e
   `compose.staging.yaml` usando `.env.staging.example`;
 - non stampare la configurazione Compose risolta;
-- eseguire `bash -n deploy.sh`;
-- eseguire ShellCheck su `deploy.sh`;
+- eseguire `bash -n deploy-dev-staging.sh`;
+- eseguire ShellCheck su `deploy-dev-staging.sh`;
 - verificare gli eventuali test shell già presenti sotto `deploy/tests`.
 
 ### `deploy:staging`
@@ -188,7 +187,7 @@ i job precedenti. Usa un'immagine minimale con OpenSSH client e:
 Il comando remoto concettuale è:
 
 ```bash
-cd "$DEPLOY_PATH" && ./deploy.sh staging "$CI_COMMIT_SHA"
+cd "$DEPLOY_PATH" && ./deploy-dev-staging.sh staging "$CI_COMMIT_SHA"
 ```
 
 Argomenti, host e path devono essere quotati in modo sicuro. Lo script valida
@@ -228,7 +227,7 @@ a documentare la convenzione.
 Il gate sulla pipeline è globale in GitLab. Dal momento che `workflow:rules`
 non crea pipeline per Merge Request verso `main`, tali Merge Request non possono
 essere completate. Questo blocco è intenzionale e impedisce modifiche al ramo
-production prima che il relativo flusso venga progettato.
+senza una pipeline di verifica.
 
 ## Prerequisiti del server
 
@@ -244,28 +243,29 @@ La procedura operativa verifica e documenta:
 - chiave pubblica dedicata aggiunta all'utente `gitlab_deploy`;
 - directory priva di modifiche manuali ai file versionati.
 
-Il checkout è deployment-managed. `deploy.sh` può sostituire modifiche ai file
+Il checkout è deployment-managed. `deploy-dev-staging.sh` può sostituire modifiche ai file
 tracciati, ma non usa `git clean -fdx` e quindi non rimuove `.env.staging` o
 altri file ignorati necessari al server.
 
-## Contratto di `deploy.sh`
+## Contratto di `deploy-dev-staging.sh`
 
 Uso automatico:
 
 ```bash
-./deploy.sh staging <commit-sha>
+./deploy-dev-staging.sh staging <commit-sha>
 ```
 
 Uso manuale e rollback:
 
 ```bash
-./deploy.sh staging <commit-sha-precedente>
+./deploy-dev-staging.sh staging <commit-sha-precedente>
 ```
 
 Lo script accetta esclusivamente l'ambiente `staging`. Non contiene alias,
-branch o comandi production. La revisione deve esistere nel repository e deve
-essere un commit raggiungibile da `origin/staging`; questo impedisce il deploy
-accidentale di codice estraneo al ramo staging.
+branch o comandi per altri ambienti. La revisione deve esistere nel repository,
+essere raggiungibile da `origin/staging` e contenere `deploy-dev-staging.sh`.
+Questi controlli precedono il checkout, quindi una revisione incompatibile
+viene rifiutata senza cambiare il checkout corrente.
 
 Lo script usa `set -Eeuo pipefail`, una trap di errore e un lock `flock`
 dedicato allo stack. Il lock copre sia i deploy GitLab sia le esecuzioni
@@ -287,9 +287,10 @@ il server.
 - esegue `git fetch origin --tags --prune`;
 - risolve e valida lo SHA;
 - verifica che sia raggiungibile da `origin/staging`;
+- verifica che contenga `deploy-dev-staging.sh`;
 - allinea forzatamente il checkout al commit richiesto;
 - preserva `.env.staging` e gli altri file ignorati;
-- riesegue la versione di `deploy.sh` presente nel commit appena selezionato,
+- riesegue la versione di `deploy-dev-staging.sh` presente nel commit appena selezionato,
   usando un marker interno per evitare ricorsione.
 
 ### 3. Validazione configurazione
@@ -385,7 +386,7 @@ espliciti e non interattivi:
 | `deploy-up` | aggiorna i servizi nell'ordine definito e attende gli health check |
 | `deploy-status` | mostra lo stato finale senza seguire i log |
 
-`deploy.sh` orchestra questi target e aggiunge titoli e contesto. Il Makefile
+`deploy-dev-staging.sh` orchestra questi target e aggiunge titoli e contesto. Il Makefile
 mantiene i comandi Compose come singola fonte, evitando di duplicare lunghe
 invocazioni nello script.
 
@@ -409,7 +410,7 @@ La trap di errore stampa:
 - SHA corrente, richiesto e precedente;
 - `docker compose ps`;
 - un numero limitato di righe recenti dei servizi coinvolti;
-- comando di rollback suggerito.
+- comando di rollback suggerito, se lo SHA precedente contiene `deploy-dev-staging.sh`.
 
 ## Errori e rollback
 
@@ -420,8 +421,8 @@ La trap di errore stampa:
   evidente.
 - Non viene eseguito rollback automatico, perché una migrazione può non essere
   compatibile con il codice precedente.
-- Il rollback manuale riesegue `deploy.sh` con lo SHA precedente e ricostruisce
-  le immagini da quel commit.
+- Il rollback manuale riesegue `deploy-dev-staging.sh` con uno SHA precedente
+  compatibile che contiene lo script e ricostruisce le immagini da quel commit.
 - Il rollback del codice non esegue downgrade dello schema. Prima di usarlo
   l'operatore deve verificare la compatibilità delle migrazioni applicate.
 - Lo script non usa `docker compose down -v`, non elimina volumi e non esegue
@@ -430,7 +431,7 @@ La trap di errore stampa:
 ## File interessati dall'implementazione
 
 - `.gitlab-ci.yml`: workflow, quality gate e trigger SSH;
-- `deploy.sh`: orchestrazione server staging;
+- `deploy-dev-staging.sh`: orchestrazione server staging;
 - `Makefile`: primitive non interattive del deploy;
 - `compose.staging.yaml`: automazioni Laravel esplicite e ordine operativo;
 - `README.md`: panoramica CI/CD e collegamento alla procedura;
@@ -445,7 +446,7 @@ Non sono previste modifiche al codice applicativo Laravel o React.
 Prima dell'attivazione:
 
 1. lint della configurazione con GitLab CI Lint;
-2. `bash -n` e ShellCheck su `deploy.sh`;
+2. `bash -n` e ShellCheck su `deploy-dev-staging.sh`;
 3. test shell pertinenti;
 4. validazione Compose con `.env.staging.example` e output silenzioso;
 5. suite PHP completa;
@@ -486,9 +487,9 @@ La prima attivazione sul server viene eseguita con una procedura sorvegliata:
 13. Un errore produce diagnostica e istruzioni di rollback senza eliminare
     volumi.
 14. README e procedura server descrivono tutti i prerequisiti e i comandi.
-15. Non esiste alcun job production e i file production restano invariati.
-16. Le Merge Request verso `main` restano bloccate dal gate di progetto fino
-    all'introduzione della futura pipeline production.
+15. Pipeline e file di deploy restano limitati a `develop` e `staging`.
+16. Le Merge Request verso `main` restano bloccate dal gate di progetto perché
+    non esiste un workflow corrispondente.
 
 ## Riferimenti
 
