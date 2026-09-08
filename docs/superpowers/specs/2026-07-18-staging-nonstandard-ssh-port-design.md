@@ -16,7 +16,7 @@ The deployment checkout is
 groups.
 
 This design extends the approved staging CI/CD design without changing its
-branch workflow, Laravel deployment sequence, or production scope.
+branch workflow, Laravel deployment sequence, or environment scope.
 
 ## Decision
 
@@ -130,8 +130,8 @@ Implementation follows a red-green cycle in `deploy/tests/gitlab-ci.sh`:
 6. verify through the GitLab API that all six variables exist with type,
    protection, and scope metadata as designed, without displaying their values.
 
-The existing PHP, frontend, Docker, and production behavior is unchanged by
-this extension.
+The existing PHP, frontend, and Docker behavior is unchanged by this
+extension.
 
 ## Rollout boundary
 

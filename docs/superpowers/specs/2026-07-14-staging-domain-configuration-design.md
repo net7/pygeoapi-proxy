@@ -83,7 +83,7 @@ ${HOST_BIND_ADDRESS:-0.0.0.0}:${APP_PORT:-8080}:8080
 ${HOST_BIND_ADDRESS:-0.0.0.0}:${REVERB_HOST_PORT:-8081}:8000
 ```
 
-Il default `0.0.0.0` preserva il comportamento di `develop` e `production`.
+Il default `0.0.0.0` preserva il comportamento di `develop`.
 Solo lo staging imposta esplicitamente `127.0.0.1`.
 
 ## Vhost Nginx iniziale
@@ -190,4 +190,4 @@ La modifica è accettata quando:
 - aggiunta di un reverse proxy allo stack Docker;
 - modifica delle porte container `8080` e `8000`;
 - modifica del codice Laravel o Reverb;
-- modifica del comportamento degli ambienti `develop` e `production`.
+- modifica del comportamento dell'ambiente `develop`.

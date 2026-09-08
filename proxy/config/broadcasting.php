@@ -18,7 +18,7 @@ return [
     'default' => env('BROADCAST_CONNECTION', 'null'),
 
     /*
-    | Public browser connection, supplied at runtime by the production deployment.
+    | Public browser connection, supplied at runtime through environment settings.
     | Leaving the host unset preserves Echo's Vite configuration in development.
     */
     'client' => [

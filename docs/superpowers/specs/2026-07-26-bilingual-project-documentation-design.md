@@ -53,8 +53,8 @@ in `deploy/README.md`. It will cover:
 - supported environments and their differences;
 - Docker Compose topology and service responsibilities;
 - prerequisites and environment-file preparation;
-- required production and staging secrets;
-- local development, staging, and production commands;
+- required staging secrets;
+- local development and staging commands;
 - application build and runtime behavior;
 - staging CI/CD architecture and GitLab configuration;
 - server bootstrap, Nginx, TLS, and health checks;
@@ -112,7 +112,7 @@ documented:
 - `compose.yaml` and environment-specific Compose overrides;
 - `.env.*.example`;
 - `.gitlab-ci.yml`;
-- `deploy.sh`;
+- `deploy-dev-staging.sh`;
 - `proxy/Dockerfile` and the root `Dockerfile`;
 - existing deployment and Nginx runbooks.
 
@@ -122,8 +122,9 @@ README must distinguish exact locked application versions from floating image
 tags such as `latest` and `alpine`.
 
 The new guides must not invent commands, defaults, ports, secrets, or
-production automation that the repository does not provide. Production must be
-clearly distinguished from the currently automated staging deployment.
+automation that the repository does not provide. They must state that only
+`develop` and `staging` are supported, and clearly distinguish automatic from
+manual staging deployment.
 
 ## Editorial Style
 
@@ -165,7 +166,7 @@ paths or commands affected by this reorganization.
 ## Out of Scope
 
 - application behavior or configuration changes;
-- a production CI/CD pipeline;
+- additional deployment environments;
 - changes to infrastructure credentials or server state;
 - generated documentation sites;
 - screenshots or architecture artwork beyond the approved wordmark;

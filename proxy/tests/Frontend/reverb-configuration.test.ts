@@ -7,7 +7,7 @@ describe('runtime Reverb configuration', () => {
         expect(reverbOptions(null)).toEqual({ broadcaster: 'reverb' });
     });
 
-    test.each(['voice_ui.pi.ingv.it', 'renamed-ui.example.test'])(
+    test.each(['public_app.example.test', 'renamed-ui.example.test'])(
         'uses the public host %s from the page instead of build settings',
         (host) => {
             const options = reverbOptions(

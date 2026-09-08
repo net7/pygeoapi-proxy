@@ -50,11 +50,11 @@ require_text "$italian_runbook" '## Verifica del primo deploy automatico'
 
 for runbook in "$english_runbook" "$italian_runbook"; do
     require_text "$runbook" 'SOURCE_SHA=$(git -C "$DEPLOY_PATH" rev-parse'
-    require_text "$runbook" 'git -C "$DEPLOY_PATH" show "${SOURCE_SHA}:deploy.sh"'
+    require_text "$runbook" 'git -C "$DEPLOY_PATH" show "${SOURCE_SHA}:deploy-dev-staging.sh"'
     require_text "$runbook" 'ACTUAL_BLOB=$(git -C "$DEPLOY_PATH" hash-object "$TEMPORARY_SCRIPT")'
     require_text "$runbook" 'bash -n "$TEMPORARY_SCRIPT"'
-    require_text "$runbook" '?? deploy.sh'
-    require_text "$runbook" 'git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy.sh'
+    require_text "$runbook" '?? deploy-dev-staging.sh'
+    require_text "$runbook" 'git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy-dev-staging.sh'
     require_text "$runbook" 'https://proxygeoapi.netseven.work/up'
     require_text "$runbook" "read -r -s -p 'Staging Basic Auth (user:password): ' STAGING_BASIC_AUTH"
     require_text "$runbook" '--user "$STAGING_BASIC_AUTH"'

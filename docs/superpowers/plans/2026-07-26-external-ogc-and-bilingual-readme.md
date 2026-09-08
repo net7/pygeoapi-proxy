@@ -751,7 +751,7 @@ Run ShellCheck using the installed binary, or the transient Alpine container
 when it is not installed locally:
 
 ```bash
-shellcheck deploy.sh deploy/tests/*.sh
+shellcheck deploy-dev-staging.sh deploy/tests/*.sh
 ```
 
 Container fallback:
@@ -761,7 +761,7 @@ docker run --rm \
   -v "$PWD:/work" \
   -w /work \
   alpine:3.24 \
-  sh -lc 'apk add --no-cache shellcheck >/dev/null && shellcheck deploy.sh deploy/tests/*.sh'
+  sh -lc 'apk add --no-cache shellcheck >/dev/null && shellcheck deploy-dev-staging.sh deploy/tests/*.sh'
 ```
 
 Expected: every check exits `0`; the deployment suite prints
@@ -810,7 +810,7 @@ Run:
 rg -n \
   'http://pygeoapi|localhost:5000|PYGEOAPI_BASE_URL|PYGEOAPI_SERVER_URL|PYGEOAPI_PORT|pygeoapi-validate|geopython/pygeoapi:latest' \
   README.md README.it.md DEPLOY.md DEPLOY.it.md PYGEOAPI.md \
-  compose*.yaml .env.*.example Makefile deploy deploy.sh .gitlab-ci.yml
+  compose*.yaml .env.*.example Makefile deploy deploy-dev-staging.sh .gitlab-ci.yml
 ```
 
 Expected: no matches. Matches under historical `docs/superpowers/` paths are

@@ -9,14 +9,14 @@ test('pages expose the public websocket connection without server credentials', 
             'scheme' => 'https',
         ],
         'broadcasting.connections.reverb.secret' => 'private-broadcast-secret',
-        'broadcasting.connections.reverb.options.host' => 'voice-ui-reverb',
+        'broadcasting.connections.reverb.options.host' => 'reverb-internal',
     ]);
 
     $response = $this->get(route('login'));
 
     $response->assertSee('name="reverb-config"', escape: false)
         ->assertDontSee('private-broadcast-secret')
-        ->assertDontSee('voice-ui-reverb');
+        ->assertDontSee('reverb-internal');
 
     $document = new DOMDocument;
     $document->loadHTML($response->getContent(), LIBXML_NOERROR | LIBXML_NOWARNING);
@@ -28,7 +28,7 @@ test('pages expose the public websocket connection without server credentials', 
         'port' => 443,
         'scheme' => 'https',
     ]);
-})->with(['voice_ui.pi.ingv.it', 'renamed-ui.example.test']);
+})->with(['public_app.example.test', 'renamed-ui.example.test']);
 
 test('pages preserve the build configuration when no runtime websocket host is set', function () {
     config(['broadcasting.client.host' => null]);
@@ -42,7 +42,7 @@ test('runtime websocket configuration cannot inject page markup', function () {
     config([
         'broadcasting.client' => [
             'key' => '\"><script>alert("injected")</script>',
-            'host' => 'voice-ui.example.test',
+            'host' => 'public-app.example.test',
             'port' => 443,
             'scheme' => 'https',
         ],
@@ -66,7 +66,7 @@ test('runtime environment keeps public and internal websocket connections separa
     $originalServer = $_SERVER;
     $runtimeEnvironment = [
         'REVERB_APP_KEY' => 'runtime-public-key',
-        'REVERB_HOST' => 'voice-ui-reverb',
+        'REVERB_HOST' => 'reverb-internal',
         'REVERB_PORT' => '8000',
         'REVERB_SCHEME' => 'http',
         'REVERB_PUBLIC_HOST' => 'renamed-ui.example.test',
@@ -87,7 +87,7 @@ test('runtime environment keeps public and internal websocket connections separa
             'port' => 443,
             'scheme' => 'https',
         ]);
-        expect($broadcasting['connections']['reverb']['options']['host'])->toBe('voice-ui-reverb');
+        expect($broadcasting['connections']['reverb']['options']['host'])->toBe('reverb-internal');
         expect($reverb['apps']['apps'][0]['allowed_origins'])->toBe([
             'renamed-ui.example.test',
             'second-ui.example.test',

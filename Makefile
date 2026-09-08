@@ -1,12 +1,15 @@
+# Deployment commands for develop and staging only.
+
 ENV_TARGET := $(firstword $(filter develop staging,$(MAKECMDGOALS)))
 ENV ?= $(if $(ENV_TARGET),$(ENV_TARGET),develop)
+TARGETS := help develop staging env require-env config config-check build deploy-build pull up start deploy-up stop down restart ps deploy-status logs shell artisan migrate fresh seed test pint composer bun-install bun-build optimize clear horizon-status destroy
 
-ifneq ($(filter production,$(MAKECMDGOALS)),)
-$(error Production uses docker compose --env-file .env -f compose.voice-ui.yaml; see DEPLOY.md)
+ifneq ($(filter-out $(TARGETS),$(MAKECMDGOALS)),)
+$(error Unsupported target(s): $(filter-out $(TARGETS),$(MAKECMDGOALS)); use make help)
 endif
 ifneq ($(ENV),develop)
 ifneq ($(ENV),staging)
-$(error Unsupported ENV "$(ENV)"; use develop or staging. Production uses compose.voice-ui.yaml; see DEPLOY.md)
+$(error Unsupported ENV "$(ENV)"; use develop or staging)
 endif
 endif
 
@@ -21,7 +24,7 @@ DEPLOY_BUILD_PROGRESS ?= plain
 LOG_FOLLOW ?= -f
 LOG_TAIL ?= 100
 
-.PHONY: help develop staging env require-env config config-check build deploy-build pull up start deploy-up stop down restart ps deploy-status logs shell artisan migrate fresh seed test pint composer bun-install bun-build optimize clear horizon-status destroy
+.PHONY: $(TARGETS)
 
 help:
 	@printf '%s\n' 'Usage: make [develop|staging] <target>'
@@ -32,7 +35,6 @@ help:
 	@printf '%s\n' '  make staging up'
 	@printf '%s\n' '  make staging logs SERVICE=laravel'
 	@printf '%s\n' '  make artisan CMD="route:list"'
-	@printf '%s\n' 'Production: docker compose --env-file .env -f compose.voice-ui.yaml (see DEPLOY.md)'
 	@printf '%s\n' ''
 	@printf '%s\n' 'Targets:'
 	@printf '%s\n' '  env               Create .env.<env> from .env.<env>.example if missing'

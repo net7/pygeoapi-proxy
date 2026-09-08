@@ -102,7 +102,8 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 # Deployment
 
-- Laravel can be deployed using [Laravel Cloud](https://cloud.laravel.com/), which is the fastest way to deploy and scale production Laravel applications.
+- All repository deployment files, examples and guides apply exclusively to `develop` and `staging`.
+- The root Makefile manages both environments; `deploy-dev-staging.sh` automates staging only. Keep this scope explicit in deployment files and documentation.
 
 === tests rules ===
 

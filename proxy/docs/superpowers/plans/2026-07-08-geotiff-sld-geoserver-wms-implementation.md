@@ -13,7 +13,7 @@
 ## Implementation Notes
 
 - Work in the current workspace only. The user explicitly requested no git worktrees.
-- Parent development/staging Compose files are `../compose.yaml`, `../compose.develop.yaml`, and `../compose.staging.yaml`. Current production deployment is documented in `../DEPLOY.md`.
+- Parent Compose files are `../compose.yaml`, `../compose.develop.yaml`, and `../compose.staging.yaml`. These deployment files and the guides in `../DEPLOY.md` and `../DEPLOY.it.md` apply exclusively to `develop` and `staging`.
 - Do not keep the old client-side GeoTIFF preview as fallback. Once the WMS flow exists, unpublished/failed layers show state text and download buttons only.
 - Keep MapLibre. Remove `geotiff` and `geostyler-sld-parser` frontend runtime dependencies because raster decoding and SLD interpretation move server-side to GeoServer.
 - The tile endpoint must authorize with `ProcessExecutionPolicy::view` through the existing process execution authorization flow before proxying any WMS request.
@@ -125,9 +125,9 @@ Use `docker.osgeo.org/geoserver:2.27.1`. Keep the service on the existing projec
       - '${GEOSERVER_PORT:-8081}:8080'
 ```
 
-- [ ] Add staging service participation to `../compose.staging.yaml`. Production uses the independent stack described in `../DEPLOY.md`.
+- [ ] Add staging service participation to `../compose.staging.yaml`.
 
-The service should not publish a public port in production or staging. Laravel reaches it on the compose network through `GEOSERVER_INTERNAL_URL`.
+The service should not publish a public port in staging. Laravel reaches it on the compose network through `GEOSERVER_INTERNAL_URL`.
 
 - [ ] Verification.
 

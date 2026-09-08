@@ -17,8 +17,7 @@ risultati.
 
 Il servizio upstream è configurato tramite `OGC_PROCESSES_BASE_URL`. Il valore
 predefinito è `https://voice.pi.ingv.it/geoinquire/` in sviluppo e staging.
-La produzione usa `http://pygeoapi_service/` sulla rete Docker esistente;
-deploy e versione del servizio upstream sono gestiti fuori da questo repository.
+Deploy e versione del servizio upstream sono gestiti fuori da questo repository.
 
 ## Funzionalità principali
 
@@ -61,10 +60,6 @@ Browser -> Laravel/Inertia -> Redis/Horizon -> pygeoapi esterno
 
 Sviluppo e staging gestiscono Laravel, Horizon, Scheduler, Reverb, MariaDB,
 Redis e GeoServer. In sviluppo si aggiungono Vite, phpMyAdmin e Mailpit.
-La produzione usa il Compose indipendente `compose.voice-ui.yaml`: web,
-Horizon e Reverb si collegano all'infrastruttura tramite una rete esterna,
-riutilizzando PostgreSQL, pygeoapi e Nginx esistenti. Non pubblica porte host;
-Redis e GeoServer restano sulla rete privata della UI.
 
 ## Stack tecnologico
 
@@ -73,7 +68,7 @@ committati. I tag delle immagini floating sono indicati esplicitamente.
 
 | Area | Tecnologie e versioni correnti |
 | --- | --- |
-| Runtime | PHP `8.5` in sviluppo/staging; produzione predefinita su `serversideup/php:8.4-fpm-nginx`; Nginx incluso |
+| Runtime | PHP `8.5`; Nginx incluso |
 | Backend | Laravel `13.22.0`; Inertia Laravel `3.1.1` |
 | Autenticazione | Fortify `1.37.3`; Socialite `5.29.0`; provider Google `4.1.0`; OAuth ORCID custom e OTP email; Laravel Passkeys JS `0.2.0` |
 | Asincrono e realtime | Horizon `5.48.1`; Reverb `1.11.0`; Redis `alpine` (tag floating) |
@@ -82,8 +77,8 @@ committati. I tag delle immagini floating sono indicati esplicitamente.
 | Validazione e dati | AJV `8.17.1`; TanStack React Table `8.21.3`; JSON View `2.0.0-alpha.43`; Tiptap `3.29.0` |
 | Mappe e grafici | MapLibre GL `5.24.0`; Chart.js `4.5.1`; GeoServer `2.27.1` |
 | Elaborazione OGC | pygeoapi remoto / OGC API - Processes; endpoint configurato con `OGC_PROCESSES_BASE_URL`; versione upstream gestita esternamente |
-| Persistenza | Sviluppo/staging: MariaDB `latest`, Redis `alpine` (tag floating); produzione: PostgreSQL esistente e Redis privato `7-alpine` |
-| Build | Vite `8.1.5`; Bun `latest` e Node `latest` nelle immagini sviluppo/staging; produzione: Bun `1.3.14` e Node `24-bookworm-slim`; CI: Bun `1.3.14` |
+| Persistenza | MariaDB `latest`; Redis `alpine` (tag floating) |
+| Build | Vite `8.1.5`; Bun `latest` e Node `latest` nelle immagini sviluppo/staging; CI: Bun `1.3.14` |
 | Container e CI | Docker Compose; GitLab CI; Docker CLI `29`; Composer `2`; immagine di deploy Alpine `3.24` |
 | Solo sviluppo | Dev server Vite; phpMyAdmin `latest`; Mailpit `latest` |
 
@@ -109,13 +104,12 @@ Endpoint predefiniti in sviluppo:
 
 ## Deploy
 
-La produzione usa `compose.voice-ui.yaml` e un `.env` nella root copiato da
-`.env.voice-ui.example`. Il dominio si imposta con `VOICE_UI_HOST`, il cui
-valore iniziale è `voice_ui.pi.ingv.it`.
-
-Consulta **[DEPLOY.it.md](DEPLOY.it.md)** per il deploy di produzione e il
-collaudo del cliente, la gestione di sviluppo/staging, il bootstrap del server
-e il troubleshooting.
+Tutti i file, gli esempi e le guide di deploy di questo repository fanno
+riferimento esclusivamente a `develop` e `staging`. Make supporta entrambi gli
+ambienti;
+`deploy-dev-staging.sh` automatizza soltanto lo staging. Consulta
+**[DEPLOY.it.md](DEPLOY.it.md)** per operazioni, bootstrap del server, verifica,
+backup e troubleshooting.
 
 ## Mappa della documentazione
 

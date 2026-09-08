@@ -29,7 +29,7 @@ La configurazione esistente e in `config/services.php`:
 - `services.ogc_processes.connect_timeout`
 - `services.ogc_processes.cache_ttl`
 
-L'applicazione usa cache database, queue database in locale e Horizon in produzione. Il worker queue e considerato sempre attivo.
+L'applicazione usa cache database e queue database in locale. Lo stack Docker usa Horizon per `develop` e `staging`, gli unici ambienti previsti dai file di deploy. Il worker queue e considerato sempre attivo.
 
 ## Decisioni
 

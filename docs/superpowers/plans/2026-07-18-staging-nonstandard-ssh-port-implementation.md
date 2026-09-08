@@ -4,7 +4,7 @@
 
 **Goal:** Make the staging deploy use SSH port `1024`, verify the existing `gitlab_deploy` identity, configure all protected GitLab variables, and document its supervised SSH bootstrap.
 
-**Architecture:** Keep the server-side `deploy.sh` interface unchanged and add the port only at the GitLab Runner-to-server SSH boundary. Store host, port, user, path, private key, and verified host key as protected variables scoped to `staging`; reject invalid port values before networking. Generate key material outside the repository, upload the private portion without logging it, and stop before any server mutation or `develop` to `staging` merge.
+**Architecture:** Keep the server-side `deploy-dev-staging.sh` interface unchanged and add the port only at the GitLab Runner-to-server SSH boundary. Store host, port, user, path, private key, and verified host key as protected variables scoped to `staging`; reject invalid port values before networking. Generate key material outside the repository, upload the private portion without logging it, and stop before any server mutation or `develop` to `staging` merge.
 
 **Tech Stack:** GitLab CI/CD YAML, POSIX shell, OpenSSH (`ssh`, `ssh-keygen`, `ssh-keyscan`, `ssh-copy-id`), `glab` REST API, ShellCheck, existing shell contract tests.
 
@@ -15,7 +15,7 @@
 - Modify `.gitlab-ci.yml`: validate `DEPLOY_PORT` and pass it to the SSH client.
 - Modify `deploy/tests/gitlab-ci.sh`: contract-test the new variable, validation messages, and SSH invocation.
 - Modify `deploy/README.md`: document port `1024`, the sixth GitLab variable, verified fingerprint, and supervised `gitlab_deploy` SSH bootstrap.
-- No application, Compose, Laravel, production, or server-side `deploy.sh` behavior changes.
+- No application, Compose, Laravel, or server-side `deploy-dev-staging.sh` behavior changes.
 - No key material is created under the repository root.
 
 ### Task 1: Add the staging SSH port contract with TDD
@@ -63,7 +63,7 @@ In `.gitlab-ci.yml`, insert this block before `DEPLOY_PATH` validation:
 Change the final invocation to:
 
 ```yaml
-      ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' && ./deploy.sh staging '$CI_COMMIT_SHA'"
+      ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' && ./deploy-dev-staging.sh staging '$CI_COMMIT_SHA'"
 ```
 
 Do not default to port `22`: a missing variable must fail clearly.
@@ -75,7 +75,7 @@ Run:
 ```bash
 bash deploy/tests/gitlab-ci.sh
 bash deploy/tests/run.sh
-bash -n deploy.sh deploy/tests/*.sh
+bash -n deploy-dev-staging.sh deploy/tests/*.sh
 ```
 
 Expected: all commands exit `0`; the full suite ends with
@@ -89,7 +89,7 @@ Run:
 docker run --rm \
   -v /Users/nicola/Desktop/repository/pygeoapi-proxy:/work:ro \
   koalaman/shellcheck:stable \
-  /work/deploy.sh \
+  /work/deploy-dev-staging.sh \
   /work/deploy/tests/compose-oauth-env.sh \
   /work/deploy/tests/compose-staging-automation.sh \
   /work/deploy/tests/deploy-script.sh \
@@ -368,7 +368,7 @@ Run:
 
 ```bash
 bash deploy/tests/run.sh
-bash -n deploy.sh deploy/tests/*.sh
+bash -n deploy-dev-staging.sh deploy/tests/*.sh
 git diff --check origin/develop...HEAD
 git status --short
 ```

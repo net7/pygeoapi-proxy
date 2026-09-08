@@ -423,8 +423,8 @@ docker compose --env-file .env.staging -f compose.yaml -f compose.staging.yaml l
 
 Document Laravel on `${APP_PORT:-8088}` and Reverb on
 `${REVERB_HOST_PORT:-8089}` in development. Staging uses
-`127.0.0.1:7070` and `127.0.0.1:7071`, respectively. Production exposure is
-documented separately in `DEPLOY.md` and `DEPLOY.it.md`.
+`127.0.0.1:7070` and `127.0.0.1:7071`, respectively. These are the only
+supported environments.
 
 - [ ] **Step 4: Document the staging variables that control the host proxy**
 

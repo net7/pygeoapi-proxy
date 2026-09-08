@@ -5,8 +5,6 @@ set -eu
 tests_directory=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 
 for test_script in \
-    voice-ui-compose.sh \
-    voice-ui-nginx.sh \
     compose-oauth-env.sh \
     compose-external-ogc.sh \
     makefile-deploy.sh \
@@ -20,4 +18,4 @@ do
     "$tests_directory/$test_script"
 done
 
-printf '\nAll deployment tests passed.\n'
+printf '\nAll develop/staging deployment tests passed.\n'

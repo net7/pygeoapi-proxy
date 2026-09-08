@@ -15,7 +15,7 @@
 - Keep English and Italian in separate documents; do not mix full translations in one file.
 - Treat `DEPLOY.md` and `DEPLOY.it.md` as the canonical deployment guides.
 - Retain current host-specific staging details that form part of the operational contract.
-- Clearly distinguish automated staging deployment from the non-automated production workflow.
+- State that only `develop` and `staging` are supported, clearly distinguishing automated and manual staging deployment.
 - Verify every command, port, environment, service, and variable against repository configuration.
 - List the complete application and infrastructure stack in both READMEs, using exact lockfile versions where pinned and labelling `latest` or `alpine` image tags as floating.
 - Do not invent deployment automation, secrets, defaults, or infrastructure behavior.
@@ -49,12 +49,10 @@
 - Reference: `compose.yaml`
 - Reference: `compose.develop.yaml`
 - Reference: `compose.staging.yaml`
-- Reference: `compose.voice-ui.yaml`
 - Reference: `.env.develop.example`
 - Reference: `.env.staging.example`
-- Reference: `.env.voice-ui.example`
 - Reference: `.gitlab-ci.yml`
-- Reference: `deploy.sh`
+- Reference: `deploy-dev-staging.sh`
 - Reference: `deploy/nginx/README.md`
 - Reference: `proxy/Dockerfile`
 - Reference: `Dockerfile`
@@ -108,11 +106,11 @@ require_text "$italian_runbook" '## Verifica del primo deploy automatico'
 
 for runbook in "$english_runbook" "$italian_runbook"; do
     require_text "$runbook" 'SOURCE_SHA=$(git -C "$DEPLOY_PATH" rev-parse'
-    require_text "$runbook" 'git -C "$DEPLOY_PATH" show "${SOURCE_SHA}:deploy.sh"'
+    require_text "$runbook" 'git -C "$DEPLOY_PATH" show "${SOURCE_SHA}:deploy-dev-staging.sh"'
     require_text "$runbook" 'ACTUAL_BLOB=$(git -C "$DEPLOY_PATH" hash-object "$TEMPORARY_SCRIPT")'
     require_text "$runbook" 'bash -n "$TEMPORARY_SCRIPT"'
-    require_text "$runbook" '?? deploy.sh'
-    require_text "$runbook" 'git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy.sh'
+    require_text "$runbook" '?? deploy-dev-staging.sh'
+    require_text "$runbook" 'git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy-dev-staging.sh'
     require_text "$runbook" 'https://proxygeoapi.netseven.work/up'
     require_text "$runbook" "read -r -s -p 'Staging Basic Auth (user:password): ' STAGING_BASIC_AUTH"
     require_text "$runbook" '--user "$STAGING_BASIC_AUTH"'
@@ -153,7 +151,6 @@ Create `DEPLOY.md` with this heading order:
 ## Runtime and image builds
 ## Development
 ## Staging
-## Production
 ## Staging CI/CD
 ## Deployment account
 ## Server prerequisites
@@ -174,21 +171,18 @@ Create `DEPLOY.md` with this heading order:
 
 Populate those sections using these exact source-of-truth rules:
 
-- development/staging commands use `make [develop|staging] <target>` and
-  state that `develop` is the default; production uses the independent
-  `compose.voice-ui.yaml` with the root `.env`;
+- development/staging commands use `make [develop|staging] <target>`, state
+  that `develop` is the default, and make clear that only these two
+  environments are supported;
 - the environment table lists development ports `8088`, `8089`, `5174`,
-  `5000`, `8091`, `8090`, and `8026`; staging loopback ports `7070` and `7071`;
-  production publishes no host ports and uses the existing Nginx service;
+  `5000`, `8091`, `8090`, and `8026`, plus staging loopback ports `7070`
+  and `7071`;
 - the service table includes `laravel`, `horizon`, `scheduler`, `reverb`,
   `mariadb`, `redis`, `pygeoapi`, and `geoserver`, plus development-only
   `vite`, `phpmyadmin`, and `mailpit`;
 - required staging values include `APP_KEY`, `APP_URL`,
   `MARIADB_ROOT_PASSWORD`, `MARIADB_PASSWORD`, `REVERB_APP_KEY`,
   `REVERB_APP_SECRET`, `REVERB_HOST`, and `REVERB_SCHEME`;
-- production values come from `.env.voice-ui.example`, including the dedicated
-  PostgreSQL credentials, `POSTGRES_CLIENT_VERSION`, `PRODUCTION_NETWORK`, and
-  `VOICE_UI_HOST`;
 - optional Google and ORCID settings are documented from
   `.env.staging.example` without suggesting fake credentials;
 - staging CI/CD describes quality gates for merge requests targeting
@@ -206,8 +200,7 @@ Populate those sections using these exact source-of-truth rules:
   restore replaces the current database and `--force` skips confirmation;
 - explain that `make destroy` removes named data volumes and that database
   migrations are not automatically reversed by a code rollback;
-- state explicitly that the repository currently has no automatic production
-  deployment pipeline.
+- state explicitly that automatic deployment runs only for staging.
 
 - [ ] **Step 4: Write the Italian deployment guide**
 
@@ -228,7 +221,6 @@ warnings as `DEPLOY.md`, using this heading order:
 ## Runtime e build delle immagini
 ## Sviluppo
 ## Staging
-## Produzione
 ## CI/CD dello staging
 ## Account di deploy
 ## Prerequisiti server
@@ -597,7 +589,7 @@ rg -n 'TBD|TODO|FIXME|XXX|CHANGE_THIS|change-this' \
   README.md README.it.md DEPLOY.md DEPLOY.it.md deploy/README.md
 git diff --check
 deploy/tests/run.sh
-shellcheck deploy.sh deploy/tests/*.sh
+shellcheck deploy-dev-staging.sh deploy/tests/*.sh
 ```
 
 Expected:

@@ -57,9 +57,8 @@ shared application service:
 OGC_PROCESSES_BASE_URL: ${OGC_PROCESSES_BASE_URL:-https://voice.pi.ingv.it/geoinquire/}
 ```
 
-The environment examples for development and staging expose the same setting
-and default value. Production uses the existing service on its external Docker
-network as described in `DEPLOY.md`. The obsolete variables
+The supported environment examples for development and staging expose the same
+setting and default value. The obsolete variables
 `PYGEOAPI_BASE_URL`, `PYGEOAPI_SERVER_URL`, and `PYGEOAPI_PORT` will be
 removed.
 

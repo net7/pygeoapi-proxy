@@ -38,7 +38,7 @@ GeoServer needs:
 - credentials supplied through environment variables;
 - a workspace dedicated to this app, for example `pygeoapi_proxy`.
 
-The base compose file should define the service and volume. Environment-specific compose files can decide whether to expose GeoServer for local debugging. Production and staging should keep GeoServer internal unless there is a deliberate public gateway.
+The base compose file should define the service and volume for `develop` and `staging` only. Environment-specific compose files can decide whether to expose GeoServer for local debugging. Staging should keep GeoServer internal unless there is a deliberate public gateway.
 
 Relevant configuration keys:
 

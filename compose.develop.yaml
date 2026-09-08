@@ -1,3 +1,5 @@
+# Develop overrides for the shared develop/staging stack.
+
 services:
   laravel:
     environment:

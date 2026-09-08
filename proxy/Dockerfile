@@ -1,3 +1,5 @@
+# Application image for the develop and staging environments only.
+
 ARG PHP_IMAGE_TAG=8.5-fpm-nginx
 ARG BUN_IMAGE_TAG=latest
 ARG NODE_IMAGE_TAG=latest

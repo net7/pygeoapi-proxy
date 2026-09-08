@@ -3,15 +3,15 @@
 ## Context
 
 The staging server checkout currently tracks `origin/staging`, where
-`deploy.sh` is absent. The approved CI/CD implementation is present on
+`deploy-dev-staging.sh` is absent. The approved CI/CD implementation is present on
 `develop`; after the first `develop` to `staging` merge, the deploy job will
 connect over SSH and invoke:
 
 ```bash
-cd "$DEPLOY_PATH" && ./deploy.sh staging "$CI_COMMIT_SHA"
+cd "$DEPLOY_PATH" && ./deploy-dev-staging.sh staging "$CI_COMMIT_SHA"
 ```
 
-This creates a one-time bootstrap dependency: the job needs `deploy.sh` before
+This creates a one-time bootstrap dependency: the job needs `deploy-dev-staging.sh` before
 the merge commit has been checked out on the server. The first staging merge
 must deploy successfully on its first pipeline attempt; an intentionally
 failed deploy followed by a manual retry is not acceptable.
@@ -29,7 +29,7 @@ The server prerequisites are already established:
 ## Decision
 
 Before merging the first Merge Request from `develop` to `staging`, install a
-one-time, untracked bootstrap copy of `deploy.sh` in the server checkout. The
+one-time, untracked bootstrap copy of `deploy-dev-staging.sh` in the server checkout. The
 file must be extracted directly from the exact source commit of the approved
 Merge Request through the authenticated Git remote.
 
@@ -40,7 +40,7 @@ The bootstrap is self-consuming. Git documents that `checkout --force` may
 replace an untracked file that is in the way. The bootstrap script fetches the
 merged staging commit, validates that the requested SHA is reachable from
 `origin/staging`, runs `git checkout -f --detach`, and then re-executes the
-tracked `deploy.sh` from the target commit.
+tracked `deploy-dev-staging.sh` from the target commit.
 
 ## Pre-merge flow
 
@@ -50,14 +50,14 @@ tracked `deploy.sh` from the target commit.
    `develop` head.
 4. On the server, fetch the authenticated remote as `gitlab_deploy`.
 5. Confirm that tracked files are clean, `.env.staging` is ignored, and
-   `deploy.sh` is absent from the current `staging` commit.
-6. Extract `<source-sha>:deploy.sh` to a temporary file inside the checkout,
+   `deploy-dev-staging.sh` is absent from the current `staging` commit.
+6. Extract `<source-sha>:deploy-dev-staging.sh` to a temporary file inside the checkout,
    verify its Git blob hash and shell syntax, then atomically install it as
-   executable `deploy.sh` owned by `gitlab_deploy`.
+   executable `deploy-dev-staging.sh` owned by `gitlab_deploy`.
 7. Confirm that the only non-ignored working-tree change is
-   `?? deploy.sh` and that no tracked file changed.
+   `?? deploy-dev-staging.sh` and that no tracked file changed.
 8. Re-read the MR source SHA immediately before merge. If it changed, stop,
-   verify that `deploy.sh` is still untracked, remove only that exact bootstrap
+   verify that `deploy-dev-staging.sh` is still untracked, remove only that exact bootstrap
    file, and repeat from the new SHA.
 9. Merge only after all checks still match.
 
@@ -80,7 +80,7 @@ jobs before `deploy:staging`. When the deploy job connects:
 6. Compose validation, image builds, service updates, Laravel migrations,
    cache optimization, status checks, and the HTTP health check run normally.
 
-After checkout, no bootstrap artifact remains: `deploy.sh` is an ordinary
+After checkout, no bootstrap artifact remains: `deploy-dev-staging.sh` is an ordinary
 tracked file at the deployed SHA.
 
 ## Safety and error handling
@@ -89,13 +89,13 @@ tracked file at the deployed SHA.
 - The bootstrap commit is pinned to the MR source SHA; branch names alone are
   not accepted as proof of identity.
 - A blob hash mismatch, shell syntax failure, dirty tracked file, unexpected
-  pre-existing `deploy.sh`, or changed MR source SHA stops the process before
+  pre-existing `deploy-dev-staging.sh`, or changed MR source SHA stops the process before
   merge.
 - `.env.staging` is never read into logs, copied, regenerated, or removed.
 - The bootstrap does not run `git checkout`, `git reset`, a deployment, or any
   Docker mutation before the MR merge.
 - If preparation is cancelled before merge, recovery removes only the exact
-  untracked `deploy.sh` after verifying that Git does not track it.
+  untracked `deploy-dev-staging.sh` after verifying that Git does not track it.
 - If the pipeline fails before checkout, the bootstrap remains available for a
   safe retry. If it fails after checkout, the tracked script is already
   installed and the job can be retried without bootstrapping again.
@@ -108,9 +108,9 @@ Before merge, evidence must show:
 
 - the MR pipeline succeeded;
 - the recorded source SHA matches both the MR and remote `develop` head;
-- the bootstrap blob hash matches `<source-sha>:deploy.sh`;
-- `bash -n deploy.sh` succeeds and the file is executable;
-- tracked status is clean and the only visible untracked file is `deploy.sh`;
+- the bootstrap blob hash matches `<source-sha>:deploy-dev-staging.sh`;
+- `bash -n deploy-dev-staging.sh` succeeds and the file is executable;
+- tracked status is clean and the only visible untracked file is `deploy-dev-staging.sh`;
 - `.env.staging` remains ignored, mode `0600`, and owned by
   `gitlab_deploy`.
 
@@ -118,7 +118,7 @@ After merge, evidence must show:
 
 - the first push pipeline on `staging` and `deploy:staging` job succeeded;
 - the server HEAD equals the pipeline's merge commit SHA;
-- `deploy.sh` is tracked and the tracked working tree is clean;
+- `deploy-dev-staging.sh` is tracked and the tracked working tree is clean;
 - Laravel and Reverb are healthy and all other services are healthy or
   running;
 - `http://127.0.0.1:7070/up` and
@@ -135,7 +135,7 @@ server maintenance responsibility.
 
 ### Runner-side script transfer
 
-Copying or streaming `deploy.sh` from the GitLab Runner would avoid an
+Copying or streaming `deploy-dev-staging.sh` from the GitLab Runner would avoid an
 untracked server file, but it would make the runner more than a thin SSH
 trigger and duplicate code-delivery responsibilities already handled by Git.
 
@@ -147,7 +147,7 @@ first pipeline attempt.
 
 ## Out of scope
 
-- production CI/CD or production server preparation;
+- preparation for additional deployment environments;
 - changes to the established deployment sequence;
 - a permanent bootstrap service or server-side GitLab Runner;
 - direct pushes to `staging`;

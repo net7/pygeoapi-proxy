@@ -8,15 +8,10 @@ Development and staging use the shared Compose application stack with Laravel,
 GeoServer, MariaDB, Redis, Horizon, Scheduler, and Reverb. Development also
 adds Vite, phpMyAdmin, and Mailpit.
 
-Production is a separate `voice-ui` Compose project defined by
-`compose.voice-ui.yaml`. It runs `web`, Horizon, Reverb, a private Redis, and a
-private GeoServer. It connects through the existing external production network
-to PostgreSQL at `postgres_service:5432`, the OGC Processes API at
-`pygeoapi_service:80`, and the existing Nginx reverse proxy. It does not publish
-host ports and does not run a scheduler or database container.
-
-The repository automates only **staging** deployments through GitLab CI/CD.
-Production releases are manual and do not use the Makefile or `deploy.sh`.
+All deployment files, examples, and guides in this repository refer
+exclusively to `develop` and `staging`. Make supports both environments;
+`deploy-dev-staging.sh` automates staging only through GitLab CI/CD or a manual
+invocation.
 
 ## Environments
 
@@ -26,7 +21,6 @@ The Makefile supports two isolated environments. `develop` is the default.
 | --- | --- | --- | --- |
 | `develop` | `pygeoapi-proxy-develop` | App `8088`, Reverb `8089`, Vite `5174`, GeoServer `8091`, phpMyAdmin `8090`, Mailpit `8026` | Local development |
 | `staging` | `pygeoapi-proxy-staging` | App `127.0.0.1:7070`, Reverb `127.0.0.1:7071` | GitLab-managed staging behind host Nginx |
-| Production | `voice-ui` | No published ports; existing Nginx reaches network aliases | Manually operated production |
 
 The normal command form is:
 
@@ -51,8 +45,7 @@ The `make -e staging up` form is also supported.
 
 Named volumes are isolated by `COMPOSE_PROJECT_NAME`, so database, Redis,
 Laravel storage, and GeoServer data do not overlap between development and
-staging. Production has its own named volumes for Laravel storage, Redis, and
-GeoServer.
+staging.
 
 ## Architecture and services
 
@@ -63,48 +56,32 @@ Development / staging
      MariaDB     Redis    GeoServer
         |
         +---- HTTPS ----> remote OGC Processes API
-
-Production external network
-  existing Nginx ----> voice-ui-web:8080
-          |----------> voice-ui-reverb:8000
-  web / Horizon / Reverb ---> postgres_service:5432
-          |-----------------> pygeoapi_service:80
-          +-- private network --> Redis / GeoServer
 ```
 
 | Service | Responsibility | Exposure |
 | --- | --- | --- |
 | `laravel` | Development/staging HTTP application | Published locally or on staging loopback |
-| `web` | Production HTTP application | Alias `voice-ui-web`; no published port |
 | `horizon` | Redis-backed Laravel queue workers | Internal |
-| `scheduler` | `php artisan schedule:work` | Development/staging only |
-| `reverb` | Laravel WebSocket server | Development/staging port; production alias `voice-ui-reverb` |
-| `mariadb` | Development/staging application database | Internal |
-| PostgreSQL | Existing production database at `postgres_service:5432` | External production network |
-| `redis` | Cache, sessions, queues, and Reverb scaling | Internal; production instance is private to `voice-ui` |
-| `geoserver` | Publishes GeoTIFF/SLD outputs as map layers | Host port `8091` only in development; production instance is private |
+| `scheduler` | `php artisan schedule:work` | Internal |
+| `reverb` | Laravel WebSocket server | Published locally or on staging loopback |
+| `mariadb` | Application database | Internal |
+| `redis` | Cache, sessions, queues, and Reverb scaling | Internal |
+| `geoserver` | Publishes GeoTIFF/SLD outputs as map layers | Host port `8091` only in development |
 | `vite` | Frontend development server built with Bun | Development only, host port `5174` |
 | `phpmyadmin` | MariaDB administration UI | Development only, host port `8090` |
 | `mailpit` | Local SMTP sink and email UI | Development only, host port `8026` |
 
 Development and staging default `OGC_PROCESSES_BASE_URL` to the separately
-operated `https://voice.pi.ingv.it/geoinquire/`. Production defaults to the
-existing internal service at `http://pygeoapi_service/`. Laravel reaches its
+operated `https://voice.pi.ingv.it/geoinquire/`. Laravel reaches its
 environment's GeoServer at `http://geoserver:8080/geoserver` through a private
 Compose network.
 
 ## Prerequisites
 
-For development and staging Compose operation:
-
 - Git;
 - Docker Engine with the Docker Compose plugin;
 - GNU Make;
 - an environment file created from the matching versioned template.
-
-Production additionally requires `jq` and OpenSSL. The existing production
-network, PostgreSQL, OGC service, Nginx container, DNS, and TLS material must
-already be administered by the customer.
 
 The staging deployment account also needs Bash, Curl, `flock`, and SSH access
 to the Git remote. Host Nginx and Certbot are required for the public staging
@@ -117,8 +94,6 @@ git --version
 docker --version
 docker compose version
 make --version
-jq --version
-openssl version
 ```
 
 ## Configure an environment
@@ -236,16 +211,9 @@ Compose also uses:
 Tags marked `latest` or `alpine` are floating. Rebuilds can therefore pick up
 new upstream releases. Review and test such changes before deployment.
 
-The production image pins PHP `8.4-fpm-nginx`, Bun `1.3.14`, and Node
-`24-bookworm-slim` by default. Its PostgreSQL client major is selected through
-the required `POSTGRES_CLIENT_VERSION` build argument and must match the
-production server major. Browser-facing Reverb configuration is injected from
-the runtime environment, so changing `VOICE_UI_HOST` does not require rebuilding
-frontend assets.
-
 The default PHP memory limit is `2G`. OPcache is disabled with timestamp
 validation in development; it is enabled with timestamp validation disabled
-in staging and production.
+in staging.
 
 Build application images:
 
@@ -319,299 +287,13 @@ The Laravel container runs isolated forced migrations, creates the storage
 link, and rebuilds Laravel caches. Horizon, Scheduler, and Reverb rebuild their
 caches but do not run migrations.
 
-## Production
-
-Production is the standalone project in `compose.voice-ui.yaml`. All commands
-in this section run from the repository root. Define a shell helper if desired:
-
-```bash
-voice_ui_compose() {
-  docker compose --env-file .env -f compose.voice-ui.yaml "$@"
-}
-```
-
-The function exists only in the current shell. The literal Compose command can
-be used in its place.
-
-### 1. Verify the host and existing services
-
-Install Git, Docker Engine with the Compose plugin, `jq`, and OpenSSL. Confirm
-that the customer-managed production network exists:
-
-```bash
-PRODUCTION_NETWORK=geoinquire_stack_wps_internal_network
-docker network inspect "$PRODUCTION_NETWORK" \
-  | jq -r '.[0].IPAM.Config[]? | [.Subnet, .Gateway] | @tsv'
-```
-
-The existing PostgreSQL service must be reachable on that network as
-`postgres_service:5432`, the existing OGC service as `pygeoapi_service:80`, and
-`nginx_container` (running the existing `nginx:1.23.4` image) must also join the
-network. Inspect the network rather
-than changing those services from this repository:
-
-```bash
-docker network inspect "$PRODUCTION_NETWORK" \
-  | jq -r '.[0].Containers[]? | [.Name, .IPv4Address] | @tsv'
-```
-
-The directory `deploy/production/` is an ignored operational snapshot and is
-not a complete production deployment package. Preserve it and use the
-customer's authoritative Compose files to manage existing infrastructure.
-
-### 2. Run the isolated deployment smoke tests
-
-These checks use an image built with PHP 8.4, Bun 1.3.14, Node 24 on Debian
-Bookworm, and PostgreSQL client 15:
-
-```bash
-docker build --pull --target runtime \
-  --build-arg PHP_IMAGE_TAG=8.4-fpm-nginx \
-  --build-arg BUN_IMAGE_TAG=1.3.14 \
-  --build-arg NODE_IMAGE_TAG=24-bookworm-slim \
-  --build-arg POSTGRES_CLIENT_VERSION=15 \
-  --build-arg 'VITE_APP_NAME=Geo-INQUIRE Voice UI' \
-  --tag voice-ui-app:smoke proxy
-
-deploy/tests/voice-ui-compose.sh
-deploy/tests/voice-ui-nginx.sh
-deploy/tests/voice-ui-image.sh voice-ui-app:smoke
-POSTGRES_TEST_IMAGE=postgres:15 \
-  deploy/tests/voice-ui-postgres.sh voice-ui-app:smoke
-POSTGRES_TEST_IMAGE=postgres:15 NGINX_TEST_IMAGE=nginx:1.23.4 \
-  deploy/tests/voice-ui-stack.sh voice-ui-app:smoke
-```
-
-The PostgreSQL round trip uses an isolated PostgreSQL 15 fixture. The stack
-test uses a mocked OGC endpoint and self-signed TLS. The scripts create uniquely
-named containers, networks, and temporary directories and clean up their own
-resources. Passing them validates the deployment artifacts on the test host; it
-does not verify the real production database, certificates, network, or public
-endpoint.
-
-### 3. Create and complete the production environment
-
-Create the root environment file once and restrict it:
-
-```bash
-test -f .env || cp .env.voice-ui.example .env
-chmod 600 .env
-```
-
-Fill every blank required value. Generate independent random values with
-OpenSSL and enter them through the approved secret-management workflow:
-
-```bash
-openssl rand -base64 32  # prefix this output with base64: for APP_KEY
-openssl rand -hex 32     # run again for each independent secret
-```
-
-Review at least:
-
-- `PRODUCTION_NETWORK`, matching the existing Docker network;
-- `VOICE_UI_HOST`, initially `voice_ui.pi.ingv.it` unless DNS planning assigns
-  another public name;
-- `VOICE_UI_TLS_CERTIFICATE` and `VOICE_UI_TLS_CERTIFICATE_KEY`, using absolute
-  paths readable inside `nginx_container` and a certificate valid for
-  `VOICE_UI_HOST`;
-- `APP_KEY`, `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD`;
-- `REVERB_APP_ID`, `REVERB_APP_KEY`, and `REVERB_APP_SECRET`;
-- `GEOSERVER_USERNAME`, `GEOSERVER_PASSWORD`, and workspace settings;
-- `OGC_PROCESSES_BASE_URL` and the allowed result-host list;
-- a real SMTP transport before enabling email login, verification, or password
-  resets;
-- optional Google and ORCID client IDs and secrets. Their callback URLs are
-  derived from `VOICE_UI_HOST`.
-
-The internal Reverb client always uses `voice-ui-reverb:8000` over HTTP. The
-browser receives `VOICE_UI_HOST:443` over HTTPS at runtime. Do not add those
-derived values to `.env`.
-
-### 4. Provision PostgreSQL access
-
-Ask the PostgreSQL administrator for the server version:
-
-```sql
-SHOW server_version;
-```
-
-Set `POSTGRES_CLIENT_VERSION` to that server's major version. Version 15 in the
-smoke tests is only a fixture and must not be assumed for production.
-
-Using the customer's established PostgreSQL administration path, create a
-dedicated login and database. Enter the password interactively so it is not
-stored in shell history:
-
-```sql
-CREATE ROLE voice_ui LOGIN;
-\password voice_ui
-CREATE DATABASE voice_ui OWNER voice_ui;
-```
-
-Use the same password for the role and `DB_PASSWORD`. Use different names if
-`DB_USERNAME` or `DB_DATABASE` in `.env` differs. Read the actual application
-subnet from `docker network inspect` and add the narrow matching `pg_hba.conf`
-rule according to the site's TLS policy, for example:
-
-```text
-hostssl  <database>  <role>  <actual-application-subnet>  scram-sha-256
-```
-
-Do not copy a sample CIDR. Have the database administrator reload PostgreSQL
-and verify that the dedicated role can connect from the external Docker network
-before starting the application.
-
-### 5. Validate, build, and start
-
-Validate without printing the resolved configuration, build the application
-image, and wait for service health:
-
-```bash
-voice_ui_compose config --quiet
-voice_ui_compose build --pull web
-voice_ui_compose up -d --no-build --wait --wait-timeout 180
-voice_ui_compose ps
-```
-
-The `web` container runs isolated forced migrations during startup. Horizon and
-Reverb wait for their dependencies and do not run migrations. Redis and
-GeoServer remain on the project's private network; `web`, Horizon, and Reverb
-also join the external production network. No service publishes a host port.
-
-### 6. Add the Nginx virtual host
-
-Choose a persistent absolute host path that is already covered by the
-customer's backup and configuration management, create its directory, and
-render the virtual host:
-
-```bash
-VOICE_UI_NGINX_CONF=/absolute/persistent/path/voice-ui.conf
-sudo install -d -m 0755 "$(dirname "$VOICE_UI_NGINX_CONF")"
-sudo deploy/nginx/render-voice-ui.sh .env "$VOICE_UI_NGINX_CONF"
-```
-
-For the first installation, add this bind to `nginx_service` in the customer's
-complete existing Compose definition:
-
-```text
-/absolute/persistent/path/voice-ui.conf:/etc/nginx/conf.d/voice-ui.conf:ro
-```
-
-Ensure that service remains attached to `PRODUCTION_NETWORK`, then recreate
-only `nginx_service` using the customer's complete established Compose command.
-This one-time recreation is required for Docker to create the bind mount. Do
-not start a duplicate Nginx service from this repository.
-
-Validate the configuration and certificate readability inside the existing
-container, then reload it:
-
-```bash
-docker exec nginx_container nginx -t
-docker exec nginx_container nginx -s reload
-```
-
-For later changes, render to the same host path. The renderer validates input
-and overwrites an existing regular file without replacing its inode, so the
-bind mount continues to see updates. Define `VOICE_UI_NGINX_CONF` again when
-starting a new shell. Always run `nginx -t` before reload.
-
-### 7. Perform functional checks
-
-Start with public health and login checks:
-
-```bash
-VOICE_UI_HOST=$(voice_ui_compose config --format json \
-  | jq -r '.services.web.environment.VOICE_UI_HOST')
-curl --fail --silent --show-error "https://${VOICE_UI_HOST}/up" >/dev/null
-curl --fail --silent --show-error "https://${VOICE_UI_HOST}/login" >/dev/null
-```
-
-Then use a production test account to complete the real workflow:
-
-1. Sign in and open the process catalogue.
-2. Confirm that the catalogue loads from the existing OGC service.
-3. Submit an approved lightweight test process.
-4. Wait for Horizon to process it and verify its result page and downloadable
-   or mapped result.
-5. Confirm in the browser network tools that the Reverb WebSocket completes a
-   `101 Switching Protocols` handshake at `wss://VOICE_UI_HOST/app/...`.
-
-Process status and results use HTTP polling; verify that polling reaches the
-completed state independently of the WebSocket check.
-
-Check that GeoServer remains inaccessible as a public Nginx route.
-
-### 8. Inspect status and logs
-
-```bash
-voice_ui_compose ps
-voice_ui_compose logs --tail=200 web horizon reverb
-voice_ui_compose logs --tail=100 redis geoserver
-docker logs --tail=200 nginx_container
-```
-
-Use `voice_ui_compose logs -f SERVICE` only during an attended diagnostic
-session.
-
-### 9. Back up and update safely
-
-Before an update, create a database dump and copy the approved dump from the
-Laravel storage volume to protected off-host storage:
-
-```bash
-voice_ui_compose exec web php artisan db:backup backup --no-interaction
-```
-
-Record the current image digest and revision. Build the reviewed revision
-before stopping workers, then update the HTTP service first so its startup
-migration finishes before Horizon and Reverb resume:
-
-```bash
-voice_ui_compose build --pull web
-voice_ui_compose stop -t 70 horizon reverb
-voice_ui_compose up -d --no-build --wait --wait-timeout 180 web
-voice_ui_compose up -d --no-build --remove-orphans --wait --wait-timeout 180
-voice_ui_compose ps
-```
-
-Repeat the functional checks. Rollback means redeploying a previously reviewed
-revision or immutable image and repeating the same health checks. Application
-rollback does not reverse database migrations; confirm schema compatibility
-first. If a database restore is required, stop application traffic and workers,
-preserve the current database, and use the tested dump in a controlled recovery
-procedure.
-
-Do not run `down --volumes`: it removes the production Redis, GeoServer, and
-Laravel storage volumes.
-
-### 10. Change the public hostname
-
-Update DNS and certificates, then change `VOICE_UI_HOST` and the certificate
-paths in `.env`. Recreate only the application services so they receive the new
-derived URL, OAuth callback URLs, allowed origin, and public Reverb host:
-
-```bash
-voice_ui_compose up -d --no-build --force-recreate \
-  --wait --wait-timeout 180 web horizon reverb
-sudo deploy/nginx/render-voice-ui.sh .env "$VOICE_UI_NGINX_CONF"
-docker exec nginx_container nginx -t
-docker exec nginx_container nginx -s reload
-```
-
-Update the OAuth provider registrations and repeat the login, process, result,
-and WebSocket checks. Frontend assets do not need to be rebuilt for a hostname
-change.
-
-`deploy.sh` accepts only `staging`; production releases, rollback, database
-protection, and traffic switching remain manual operational responsibilities.
-
 ## Staging CI/CD
 
 The staging topology is:
 
 ```text
 GitLab runner -> SSH -> gitlab_deploy -> stable checkout
-              -> deploy.sh -> Docker Compose
+              -> deploy-dev-staging.sh -> Docker Compose
 ```
 
 Current operational endpoints:
@@ -635,7 +317,7 @@ does not build or publish application images. It connects to the server and
 executes:
 
 ```bash
-./deploy.sh staging <commit-sha>
+./deploy-dev-staging.sh staging <commit-sha>
 ```
 
 Composer, Bun, Vite, and Docker builds run on the deployment server. GitLab
@@ -759,14 +441,14 @@ The live branch rule verified on 2026-07-26 sets push access to **No one**,
 merge access to **Developers + Maintainers**, and disables force-push for
 `staging`. `develop`, `main`, and `staging` are all protected.
 
-The workflow gate intentionally does not run for `main`; production automation
-must be designed before enabling a production pipeline.
+The workflow gate intentionally does not run for `main`.
 
 ## First automatic deployment bootstrap
 
-Use this procedure only when the current `staging` checkout does not yet track
-`deploy.sh`. Create the merge request from `develop` to `staging`, wait for all
-quality gates, and do not merge it yet.
+Use this procedure before the first CI deployment with the new script name, when
+the current `staging` checkout does not yet track `deploy-dev-staging.sh`.
+Create the merge request from `develop` to `staging`, wait for all quality
+gates, and do not merge it yet.
 
 As a server administrator, install the bootstrap from the exact authenticated
 head of `develop`:
@@ -784,10 +466,10 @@ cleanup() {
         rm -f -- "$TEMPORARY_SCRIPT"
     fi
     if [ "$BOOTSTRAP_INSTALLED" -eq 1 ] &&
-        ! git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy.sh \
+        ! git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy-dev-staging.sh \
             > /dev/null 2>&1
     then
-        rm -f -- "$DEPLOY_PATH/deploy.sh"
+        rm -f -- "$DEPLOY_PATH/deploy-dev-staging.sh"
     fi
 }
 
@@ -809,26 +491,26 @@ CURRENT_SHA=$(git -C "$DEPLOY_PATH" rev-parse 'HEAD^{commit}')
 }
 
 git -C "$DEPLOY_PATH" check-ignore -q .env.staging
-[ "$(stat -c '%a %U:%G' "$DEPLOY_PATH/.env.staging")" =
+[ "$(stat -c '%a %U:%G' "$DEPLOY_PATH/.env.staging")" = \
     '600 gitlab_deploy:gitlab_deploy' ] || {
     printf '.env.staging has unexpected owner or permissions\n' >&2
     exit 1
 }
 
-if git -C "$DEPLOY_PATH" cat-file -e 'HEAD:deploy.sh' 2>/dev/null; then
-    printf 'deploy.sh is already tracked by the current commit\n' >&2
+if git -C "$DEPLOY_PATH" cat-file -e 'HEAD:deploy-dev-staging.sh' 2>/dev/null; then
+    printf 'deploy-dev-staging.sh is already tracked by the current commit\n' >&2
     exit 1
 fi
 
-[ ! -e "$DEPLOY_PATH/deploy.sh" ] || {
-    printf 'deploy.sh already exists in the working tree\n' >&2
+[ ! -e "$DEPLOY_PATH/deploy-dev-staging.sh" ] || {
+    printf 'deploy-dev-staging.sh already exists in the working tree\n' >&2
     exit 1
 }
 
-TEMPORARY_SCRIPT=$(mktemp "$DEPLOY_PATH/.deploy.sh.bootstrap.XXXXXX")
-git -C "$DEPLOY_PATH" show "${SOURCE_SHA}:deploy.sh" > "$TEMPORARY_SCRIPT"
+TEMPORARY_SCRIPT=$(mktemp "$DEPLOY_PATH/.deploy-dev-staging.sh.bootstrap.XXXXXX")
+git -C "$DEPLOY_PATH" show "${SOURCE_SHA}:deploy-dev-staging.sh" > "$TEMPORARY_SCRIPT"
 
-EXPECTED_BLOB=$(git -C "$DEPLOY_PATH" rev-parse "${SOURCE_SHA}:deploy.sh")
+EXPECTED_BLOB=$(git -C "$DEPLOY_PATH" rev-parse "${SOURCE_SHA}:deploy-dev-staging.sh")
 ACTUAL_BLOB=$(git -C "$DEPLOY_PATH" hash-object "$TEMPORARY_SCRIPT")
 [ "$ACTUAL_BLOB" = "$EXPECTED_BLOB" ] || {
     printf 'Unexpected bootstrap blob\n' >&2
@@ -837,21 +519,21 @@ ACTUAL_BLOB=$(git -C "$DEPLOY_PATH" hash-object "$TEMPORARY_SCRIPT")
 
 bash -n "$TEMPORARY_SCRIPT"
 chmod 0755 "$TEMPORARY_SCRIPT"
-mv -- "$TEMPORARY_SCRIPT" "$DEPLOY_PATH/deploy.sh"
+mv -- "$TEMPORARY_SCRIPT" "$DEPLOY_PATH/deploy-dev-staging.sh"
 TEMPORARY_SCRIPT=
 BOOTSTRAP_INSTALLED=1
 
 VISIBLE_STATUS=$(
     git -C "$DEPLOY_PATH" status --porcelain --untracked-files=all
 )
-[ "$VISIBLE_STATUS" = '?? deploy.sh' ] || {
+[ "$VISIBLE_STATUS" = '?? deploy-dev-staging.sh' ] || {
     printf 'Unexpected working tree status:\n%s\n' "$VISIBLE_STATUS" >&2
     exit 1
 }
 
-[ "$(git -C "$DEPLOY_PATH" hash-object "$DEPLOY_PATH/deploy.sh")" =
+[ "$(git -C "$DEPLOY_PATH" hash-object "$DEPLOY_PATH/deploy-dev-staging.sh")" = \
     "$EXPECTED_BLOB" ]
-stat -c '%a %U:%G %n' "$DEPLOY_PATH/deploy.sh"
+stat -c '%a %U:%G %n' "$DEPLOY_PATH/deploy-dev-staging.sh"
 printf 'BOOTSTRAP_SOURCE_SHA=%s\n' "$SOURCE_SHA"
 printf 'BOOTSTRAP_BLOB_SHA=%s\n' "$EXPECTED_BLOB"
 printf '%s\n' "$VISIBLE_STATUS"
@@ -869,15 +551,15 @@ Remove only an untracked bootstrap with:
 sudo -u gitlab_deploy -H bash <<'BASH'
 set -Eeuo pipefail
 DEPLOY_PATH='/docker-data/configuration/pygeoapi-proxy'
-if git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy.sh \
+if git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy-dev-staging.sh \
     > /dev/null 2>&1
 then
-    printf 'deploy.sh is tracked; refusing removal\n' >&2
+    printf 'deploy-dev-staging.sh is tracked; refusing removal\n' >&2
     exit 1
 fi
-[ "$(git -C "$DEPLOY_PATH" status --porcelain --untracked-files=all)" =
-    '?? deploy.sh' ]
-rm -- "$DEPLOY_PATH/deploy.sh"
+[ "$(git -C "$DEPLOY_PATH" status --porcelain --untracked-files=all)" = \
+    '?? deploy-dev-staging.sh' ]
+rm -- "$DEPLOY_PATH/deploy-dev-staging.sh"
 BASH
 ```
 
@@ -897,10 +579,10 @@ git -C "$DEPLOY_PATH" fetch origin --tags --prune
 HEAD_SHA=$(git -C "$DEPLOY_PATH" rev-parse 'HEAD^{commit}')
 STAGING_SHA=$(git -C "$DEPLOY_PATH" rev-parse 'origin/staging^{commit}')
 [ "$HEAD_SHA" = "$STAGING_SHA" ]
-git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy.sh > /dev/null
+git -C "$DEPLOY_PATH" ls-files --error-unmatch deploy-dev-staging.sh > /dev/null
 [ -z "$(git -C "$DEPLOY_PATH" status --porcelain --untracked-files=all)" ]
 git -C "$DEPLOY_PATH" check-ignore -q .env.staging
-[ "$(stat -c '%a %U:%G' "$DEPLOY_PATH/.env.staging")" =
+[ "$(stat -c '%a %U:%G' "$DEPLOY_PATH/.env.staging")" = \
     '600 gitlab_deploy:gitlab_deploy' ]
 make -C "$DEPLOY_PATH" --no-print-directory ENV=staging deploy-status
 curl --fail --silent --show-error http://127.0.0.1:7070/up > /dev/null
@@ -919,7 +601,7 @@ BASH
 ```
 
 `DEPLOYED_SHA` must match the merge request `merge_commit_sha` and the staging
-push pipeline SHA. `deploy.sh` must be tracked and the working tree must be
+push pipeline SHA. `deploy-dev-staging.sh` must be tracked and the working tree must be
 clean. The Basic Auth value is entered without echo and exists only in the
 temporary shell; never put it in the repository, command history, or deployment
 variables.
@@ -930,14 +612,14 @@ Every successful push pipeline on `staging` passes `CI_COMMIT_SHA` to:
 
 ```bash
 ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
-  "cd '$DEPLOY_PATH' && ./deploy.sh staging '$CI_COMMIT_SHA'"
+  "cd '$DEPLOY_PATH' && ./deploy-dev-staging.sh staging '$CI_COMMIT_SHA'"
 ```
 
-On the server, `deploy.sh`:
+On the server, `deploy-dev-staging.sh`:
 
 1. validates tools, Docker, `.env.staging`, and the deployment lock;
 2. fetches Git refs and confirms the requested SHA is reachable from
-   `origin/staging`;
+   `origin/staging` and contains `deploy-dev-staging.sh`;
 3. checks out that exact SHA in detached mode and re-executes the versioned
    script;
 4. validates Compose;
@@ -946,23 +628,27 @@ On the server, `deploy.sh`:
    remaining services, and checks health.
 
 If the image build fails, previous containers keep running. Later failures
-print the failed phase, command, SHA values, service status, recent logs, and a
-rollback command.
+print the failed phase, command, SHA values, service status, and recent logs.
+They print a rollback command only when the previous revision contains
+`deploy-dev-staging.sh`.
 
 ## Manual deployment and rollback
 
 From the stable server checkout:
 
 ```bash
-./deploy.sh staging <sha-reachable-from-origin-staging>
+./deploy-dev-staging.sh staging <sha-reachable-from-origin-staging>
 ```
 
-The script refuses revisions that are not ancestors of `origin/staging`.
+The script refuses revisions that are not ancestors of `origin/staging` or do
+not contain `deploy-dev-staging.sh`. This preflight runs before checkout, so a
+rejected old revision leaves the current checkout unchanged.
 
-Rollback redeploys a previous compatible revision:
+Rollback redeploys a previous compatible revision that contains
+`deploy-dev-staging.sh`:
 
 ```bash
-./deploy.sh staging <previous-commit-sha>
+./deploy-dev-staging.sh staging <previous-commit-sha>
 ```
 
 > **Warning:** rollback rebuilds and redeploys application code, but it does
@@ -1055,9 +741,7 @@ storage/app/private/database-backups
 ```
 
 In staging, `storage/` is on the shared stack's `laravel-storage` named volume.
-In production, run the command shown in the production update procedure through
-the `web` service; its storage is on the `voice-ui` project's Laravel volume. A
-volume is not an off-host backup: copy approved dumps to protected external
+A volume is not an off-host backup: copy approved dumps to protected external
 storage according to the retention policy.
 
 Restore interactively:
@@ -1086,7 +770,7 @@ curl --fail --silent --show-error http://127.0.0.1:7070/up > /dev/null
 make staging logs SERVICE='laravel horizon scheduler reverb'
 make staging logs SERVICE=laravel LOG_FOLLOW= LOG_TAIL=200
 make staging logs SERVICE=reverb LOG_FOLLOW= LOG_TAIL=200
-ps -ef | grep '[d]eploy.sh staging'
+ps -ef | grep '[d]eploy-dev-staging.sh staging'
 ```
 
 Public staging health is protected by Basic Auth. Enter credentials without
@@ -1115,7 +799,7 @@ sudo systemctl reload nginx
 | SSH key rejected | `ssh -vvv -p "$DEPLOY_PORT" -i ./pygeoapi-proxy-staging "gitlab_deploy@$DEPLOY_HOST" true` | Check the public key in `~gitlab_deploy/.ssh/authorized_keys`, ownership, and permissions; rotate only when necessary. |
 | Wrong host key | Compare `ssh-keygen -lf ./pygeoapi-proxy-staging.known_hosts` with the server host key | Verify through a separate channel, regenerate `known_hosts`, then update `DEPLOY_KNOWN_HOSTS`. |
 | Missing `.env.staging` | `sudo -u gitlab_deploy test -f /docker-data/configuration/pygeoapi-proxy/.env.staging` | Restore the approved file from the secret store or backup; deployment does not create it. |
-| Deployment lock busy | `ps -ef \| grep '[d]eploy.sh staging'` | Wait for the active deployment; remove a stale lock only after confirming no process exists. |
+| Deployment lock busy | `ps -ef \| grep '[d]eploy-dev-staging.sh staging'` | Wait for the active deployment; remove a stale lock only after confirming no process exists. |
 | Image build fails | `make staging deploy-build` | Fix the first Composer, Bun/Vite, or Docker error, then redeploy the same SHA. |
 | Migration fails | Inspect Laravel logs with `LOG_FOLLOW=` | Fix the migration or database connectivity; verify schema compatibility before rollback. |
 | Laravel unhealthy | `make staging deploy-status` and `curl http://127.0.0.1:7070/up` | Inspect bounded Laravel logs, correct the cause, and redeploy. |
@@ -1128,18 +812,14 @@ shared server during diagnosis.
 
 ## Security notes
 
-- Keep `.env.staging` and the production root `.env` out of Git with mode
-  `0600`.
+- Keep `.env.staging` out of Git with mode `0600`.
 - Use dedicated SSH keys and protected GitLab variables.
 - Verify SSH host keys out of band; never use `StrictHostKeyChecking=no`.
 - Block direct pushes to `staging` and require successful pipelines.
-- Keep development/staging MariaDB, Redis, and GeoServer private. In production,
-  expose only `web`, Horizon, and Reverb to the existing external network; keep
-  the dedicated Redis and GeoServer on the `voice-ui` private network.
+- Keep development/staging MariaDB, Redis, and GeoServer private.
 - Treat each configured OGC Processes API as a separately operated dependency
   and keep its credentials outside Git when authentication is required.
-- Replace example secrets and review every default before staging or production
-  use.
+- Replace example secrets and review every default before use.
 - Treat database dumps as secrets and copy them to encrypted, access-controlled
   off-host storage.
 - Review floating container tags before rebuilds.
@@ -1153,17 +833,12 @@ shared server during diagnosis.
 | `compose.yaml` | Common services, networks, volumes, and defaults |
 | `compose.develop.yaml` | Development bind mounts, ports, Vite, phpMyAdmin, and Mailpit |
 | `compose.staging.yaml` | Staging automation and persistent Laravel storage |
-| `compose.voice-ui.yaml` | Standalone production application project |
 | `.env.develop.example`, `.env.staging.example` | Versioned Make environment templates |
-| `.env.voice-ui.example` | Versioned template for the production root `.env` |
 | `Makefile` | Development/staging operational commands |
 | `proxy/Dockerfile` | Laravel runtime and frontend multi-stage build |
 | `.gitlab-ci.yml` | Quality gates and automatic staging deployment |
-| `deploy.sh` | Versioned, locked staging-only deployment orchestrator |
+| `deploy-dev-staging.sh` | Versioned, locked staging-only deployment orchestrator |
 | `deploy/README.md` | Deployment documentation index |
-| `deploy/nginx/README.md` | Staging host and existing production Nginx runbook |
+| `deploy/nginx/README.md` | Staging host Nginx and TLS runbook |
 | `deploy/nginx/proxygeoapi.netseven.work.conf` | Versioned staging virtual host |
-| `deploy/nginx/voice-ui.conf.template` | Production virtual-host template |
-| `deploy/nginx/render-voice-ui.sh` | Safe production virtual-host renderer |
-| `deploy/production/` | Preserved ignored operational snapshot; not a complete deployment package |
 | `deploy/tests/` | Deployment automation contract tests |

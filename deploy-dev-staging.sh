@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Deployment tooling is limited to develop and staging.
+# This script automates staging; use the Makefile for develop.
+
 set -Eeuo pipefail
 
 environment=${1:-}
@@ -80,8 +83,10 @@ on_error() {
             SERVICE='laravel horizon scheduler reverb' logs >&2
     fi
 
-    if [[ $previous_sha =~ ^[0-9a-f]{40}$ ]]; then
-        printf 'Rollback command: ./deploy.sh staging %s\n' "$previous_sha" >&2
+    if [[ $previous_sha =~ ^[0-9a-f]{40}$ ]] && \
+        git -C "$repository_root" cat-file -e "${previous_sha}:deploy-dev-staging.sh" 2>/dev/null
+    then
+        printf 'Rollback command: ./deploy-dev-staging.sh staging %s\n' "$previous_sha" >&2
     fi
 
     exit "$exit_code"
@@ -89,7 +94,7 @@ on_error() {
 
 trap on_error ERR
 
-[[ $# -eq 2 ]] || fatal 'Usage: ./deploy.sh staging <commit-sha>'
+[[ $# -eq 2 ]] || fatal 'Usage: ./deploy-dev-staging.sh staging <commit-sha>'
 [[ $environment == staging ]] || fatal 'Only staging deployments are supported.'
 
 cd "$repository_root"
@@ -116,6 +121,8 @@ if [[ $reexecuted != 1 ]]; then
     git rev-parse --verify 'origin/staging^{commit}' > /dev/null
     git merge-base --is-ancestor "$target_sha" origin/staging || \
         fatal "Requested revision is not reachable from origin/staging: $target_sha"
+    git cat-file -e "${target_sha}:deploy-dev-staging.sh" 2>/dev/null || \
+        fatal "Requested revision does not contain deploy-dev-staging.sh: $target_sha"
 
     previous_sha=$(git rev-parse HEAD)
     info "Previous SHA: $previous_sha"
@@ -126,7 +133,7 @@ if [[ $reexecuted != 1 ]]; then
     export PYGEOAPI_PROXY_DEPLOY_STARTED_AT="$started_at"
     export PYGEOAPI_PROXY_DEPLOY_PREVIOUS_SHA="$previous_sha"
     export PYGEOAPI_PROXY_DEPLOY_TARGET_SHA="$target_sha"
-    exec "$repository_root/deploy.sh" staging "$target_sha"
+    exec "$repository_root/deploy-dev-staging.sh" staging "$target_sha"
 fi
 
 [[ $(git rev-parse HEAD) == "$target_sha" ]] || \
