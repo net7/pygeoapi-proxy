@@ -154,6 +154,12 @@ class ProcessExecutionController extends Controller
             'noteUpdatedAt' => $processExecution->note_updated_at?->toIso8601String(),
             'requestedOutputs' => $processExecution->requested_outputs,
             'outputMetadata' => (object) $this->outputMetadata($processExecution, $textNormalizer),
+            'resultCollection' => [
+                'status' => $processExecution->result_collection_status?->value,
+                'error' => $includeAdminData
+                    ? $processExecution->result_collection_error
+                    : null,
+            ],
             'results' => $processExecution->results->map(fn (ProcessExecutionResult $result): array => [
                 'id' => $result->id,
                 'outputId' => $result->output_id,

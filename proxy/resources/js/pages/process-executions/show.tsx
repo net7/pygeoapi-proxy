@@ -10,6 +10,7 @@ import {
     ListChecksIcon,
     LockKeyholeIcon,
     PackageCheckIcon,
+    RefreshCwIcon,
     ShieldCheckIcon,
     TimerIcon,
 } from 'lucide-react';
@@ -28,6 +29,7 @@ import { JobNoteCard } from '@/components/ogc/job-note-card';
 import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
 import ProcessInputReview from '@/components/ogc/process-input-review';
 import RawPayloadBlock from '@/components/ogc/raw-payload-block';
+import ResultCollectionFailureNotice from '@/components/ogc/result-collection-failure-notice';
 import ResultPreview from '@/components/ogc/result-preview';
 import ResultPreviewLoading from '@/components/ogc/result-preview-loading';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -53,12 +55,14 @@ import {
     formatJobDate,
     isJobFailure,
     isJobTerminal,
+    isResultCollectionActive,
     jobStatusStyles,
 } from '@/lib/jobs';
 import { hasPendingMapLayers } from '@/lib/ogc-map-layers';
 import { groupProcessResults } from '@/lib/ogc-result-groups';
 import { cn } from '@/lib/utils';
 import { index } from '@/routes/jobs';
+import { retry as retryResultCollection } from '@/routes/jobs/results';
 import { show as processShow } from '@/routes/processes';
 import type { OgcInputReview, ProcessExecutionDetail } from '@/types';
 
@@ -88,8 +92,14 @@ export default function ProcessExecutionShow({
           ? t('jobs.failed')
           : t('jobs.finished');
     const isPolling = !isJobTerminal(execution.status);
-    const shouldRefreshMapLayers =
-        !isPolling && hasPendingMapLayers(execution.results);
+    const isCollectingResults = isResultCollectionActive(
+        execution.resultCollection.status,
+    );
+    const resultCollectionFailed =
+        execution.resultCollection.status === 'failed';
+    const shouldRefreshExecution =
+        (!isPolling && isCollectingResults) ||
+        (!isPolling && hasPendingMapLayers(execution.results));
     const visualResults = groupProcessResults(
         execution.results,
         execution.outputMetadata,
@@ -102,8 +112,8 @@ export default function ProcessExecutionShow({
                     jobId: execution.displayName,
                 })}
             />
-            <MapLayerRefreshPoller
-                active={shouldRefreshMapLayers}
+            <ExecutionRefreshPoller
+                active={shouldRefreshExecution}
                 interval={pollingInterval}
             />
 
@@ -263,58 +273,102 @@ export default function ProcessExecutionShow({
                         </Badge>
                     }
                 >
-                    {isPolling ? (
-                        <OutputPendingNotice
-                            title={t('jobs.outputPendingTitle')}
-                            description={t('jobs.outputPendingDescription')}
-                        />
-                    ) : execution.results.length > 0 ? (
-                        <div className="flex min-w-0 flex-col gap-3">
-                            {visualResults.map((item) =>
-                                item.kind === 'geotiff-map' ? (
-                                    <Suspense
-                                        key={`map-${item.outputId}`}
-                                        fallback={
-                                            <ResultPreviewLoading className="min-h-[30rem]" />
-                                        }
+                    <div className="flex min-w-0 flex-col gap-3">
+                        {isPolling ? (
+                            <OutputPendingNotice
+                                title={t('jobs.outputPendingTitle')}
+                                description={t('jobs.outputPendingDescription')}
+                            />
+                        ) : isCollectingResults ? (
+                            <OutputPendingNotice
+                                title={t('jobs.resultCollectionPendingTitle')}
+                                description={t(
+                                    'jobs.resultCollectionPendingDescription',
+                                )}
+                            />
+                        ) : null}
+                        {resultCollectionFailed ? (
+                            <ResultCollectionFailureNotice
+                                title={t('jobs.resultCollectionFailedTitle')}
+                                description={t(
+                                    'jobs.resultCollectionFailedDescription',
+                                )}
+                                error={execution.resultCollection.error}
+                                retryAction={
+                                    <Button
+                                        asChild
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-fit"
                                     >
-                                        <GeoTiffMapResultPreview
-                                            executionId={execution.id}
-                                            title={item.title}
-                                            description={item.description}
-                                            geotiff={item.geotiff}
-                                            sld={item.sld}
-                                        />
-                                    </Suspense>
-                                ) : (
-                                    <ResultPreview
-                                        key={item.result.id}
-                                        executionId={execution.id}
-                                        result={item.result}
-                                    />
-                                ),
-                            )}
-                        </div>
-                    ) : isJobFailure(execution.status) ? (
-                        <ProcessFailureNotice
-                            title={t('jobs.failureTitle')}
-                            description={
-                                execution.message ?? t('jobs.noJobMessage')
-                            }
-                        />
-                    ) : (
-                        <AlertResultsEmpty
-                            title={t('jobs.noResultsTitle')}
-                            description={t('jobs.noResultsDescription')}
-                        />
-                    )}
+                                        <Link
+                                            href={retryResultCollection(
+                                                execution.id,
+                                            )}
+                                            method="post"
+                                            as="button"
+                                            preserveScroll
+                                        >
+                                            <RefreshCwIcon data-icon="inline-start" />
+                                            {t('common.retry')}
+                                        </Link>
+                                    </Button>
+                                }
+                            />
+                        ) : null}
+                        {!isPolling && execution.results.length > 0
+                            ? visualResults.map((item) =>
+                                  item.kind === 'geotiff-map' ? (
+                                      <Suspense
+                                          key={`map-${item.outputId}`}
+                                          fallback={
+                                              <ResultPreviewLoading className="min-h-[30rem]" />
+                                          }
+                                      >
+                                          <GeoTiffMapResultPreview
+                                              executionId={execution.id}
+                                              title={item.title}
+                                              description={item.description}
+                                              geotiff={item.geotiff}
+                                              sld={item.sld}
+                                          />
+                                      </Suspense>
+                                  ) : (
+                                      <ResultPreview
+                                          key={item.result.id}
+                                          executionId={execution.id}
+                                          result={item.result}
+                                      />
+                                  ),
+                              )
+                            : null}
+                        {!isPolling &&
+                        !isCollectingResults &&
+                        !resultCollectionFailed &&
+                        execution.results.length === 0 ? (
+                            isJobFailure(execution.status) ? (
+                                <ProcessFailureNotice
+                                    title={t('jobs.failureTitle')}
+                                    description={
+                                        execution.message ??
+                                        t('jobs.noJobMessage')
+                                    }
+                                />
+                            ) : (
+                                <AlertResultsEmpty
+                                    title={t('jobs.noResultsTitle')}
+                                    description={t('jobs.noResultsDescription')}
+                                />
+                            )
+                        ) : null}
+                    </div>
                 </DetailSection>
             </div>
         </>
     );
 }
 
-function MapLayerRefreshPoller({
+function ExecutionRefreshPoller({
     active,
     interval,
 }: {

@@ -3,6 +3,7 @@
 namespace App\Notifications\Ogc;
 
 use App\Enums\Ogc\ExecutionStatus;
+use App\Enums\Ogc\ResultCollectionStatus;
 use App\Models\ProcessExecution;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -50,6 +51,10 @@ class ProcessExecutionCompleted extends Notification implements ShouldQueue
 
     private function body(): string
     {
+        if ($this->hasResultCollectionFailure()) {
+            return __('The process finished successfully, but the results could not be collected. You can retry from the job page.');
+        }
+
         if ($this->execution->status === ExecutionStatus::Successful) {
             return __('The process finished successfully and the results are ready.');
         }
@@ -65,6 +70,10 @@ class ProcessExecutionCompleted extends Notification implements ShouldQueue
 
     private function icon(): string
     {
+        if ($this->hasResultCollectionFailure()) {
+            return 'circle-alert';
+        }
+
         return match ($this->execution->status) {
             ExecutionStatus::Successful => 'check-circle',
             ExecutionStatus::Failed => 'circle-alert',
@@ -74,10 +83,20 @@ class ProcessExecutionCompleted extends Notification implements ShouldQueue
 
     private function tone(): string
     {
+        if ($this->hasResultCollectionFailure()) {
+            return 'warning';
+        }
+
         return match ($this->execution->status) {
             ExecutionStatus::Successful => 'success',
             ExecutionStatus::Failed => 'error',
             default => 'info',
         };
+    }
+
+    private function hasResultCollectionFailure(): bool
+    {
+        return $this->execution->status === ExecutionStatus::Successful
+            && $this->execution->result_collection_status === ResultCollectionStatus::Failed;
     }
 }

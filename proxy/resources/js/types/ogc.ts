@@ -185,6 +185,14 @@ export type ProcessOutputMetadata = Record<
     }
 >;
 
+export type ResultCollectionStatus =
+    'pending' | 'collecting' | 'successful' | 'failed';
+
+export type ProcessExecutionResultCollection = {
+    status: ResultCollectionStatus | null;
+    error?: string | null;
+};
+
 export type ProcessExecutionDetail = ProcessExecutionListItem & {
     processVersion?: string | null;
     note?: TiptapDocument | null;
@@ -192,5 +200,6 @@ export type ProcessExecutionDetail = ProcessExecutionListItem & {
     requestPayload?: Record<string, unknown> | null;
     requestedOutputs?: Record<string, unknown> | null;
     outputMetadata: ProcessOutputMetadata;
+    resultCollection: ProcessExecutionResultCollection;
     results: ProcessExecutionResult[];
 };

@@ -5,6 +5,7 @@ import { hasPendingMapLayers } from '../../resources/js/lib/ogc-map-layers';
 import {
     automaticOutputTransmissionMode,
     downloadLabelForMediaType,
+    isPreviewableImageMediaType,
 } from '../../resources/js/lib/ogc-outputs';
 import { groupProcessResults } from '../../resources/js/lib/ogc-result-groups';
 import type { ProcessExecutionResult } from '../../resources/js/types';
@@ -91,6 +92,26 @@ describe('downloadLabelForMediaType', () => {
                 downloadLabels,
             ),
         ).toBe('Image');
+    });
+});
+
+describe('isPreviewableImageMediaType', () => {
+    test('accepts browser-safe raster formats', () => {
+        expect(isPreviewableImageMediaType('image/png')).toBe(true);
+        expect(isPreviewableImageMediaType('image/jpeg')).toBe(true);
+        expect(isPreviewableImageMediaType('image/webp')).toBe(true);
+        expect(isPreviewableImageMediaType('image/gif; charset=binary')).toBe(
+            true,
+        );
+    });
+
+    test('rejects unsafe or unsupported image formats', () => {
+        expect(isPreviewableImageMediaType('image/svg+xml')).toBe(false);
+        expect(isPreviewableImageMediaType('image/tiff')).toBe(false);
+        expect(isPreviewableImageMediaType('application/octet-stream')).toBe(
+            false,
+        );
+        expect(isPreviewableImageMediaType(null)).toBe(false);
     });
 });
 

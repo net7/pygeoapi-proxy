@@ -85,6 +85,14 @@ export function downloadLabelForMediaType(
     return labels.file;
 }
 
+export function isPreviewableImageMediaType(
+    mediaType?: string | null,
+): boolean {
+    return ['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(
+        baseMediaType(mediaType) ?? '',
+    );
+}
+
 function baseMediaType(mediaType?: string | null): string | null {
     if (!mediaType) {
         return null;

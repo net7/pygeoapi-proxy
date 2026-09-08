@@ -584,7 +584,12 @@ test('job detail prioritizes collapsible output panels and header metadata witho
         ->toContain("t('jobs.outputPendingDescription')")
         ->toContain('isJobFailure(execution.status) ? (')
         ->toContain("title={t('jobs.failureTitle')}")
-        ->toContain("execution.message ?? t('jobs.noJobMessage')")
+        ->toContain('execution.message ??')
+        ->toContain("t('jobs.noJobMessage')")
+        ->toContain('ResultCollectionFailureNotice')
+        ->toContain("t('jobs.resultCollectionPendingTitle')")
+        ->toContain("t('jobs.resultCollectionFailedTitle')")
+        ->toContain('retryResultCollection')
         ->toContain("variant=\"destructive\"\n            className=\"border-destructive-emphasis bg-destructive/10 text-destructive-emphasis")
         ->toContain('border-destructive-emphasis bg-destructive/10 text-destructive-emphasis')
         ->toContain('<CircleAlertIcon aria-hidden="true" />')
@@ -640,7 +645,7 @@ test('job detail prioritizes collapsible output panels and header metadata witho
         ->not->toContain('<code className="min-w-0 truncate');
 
     expect(strpos($source, 'isPolling ? ('))
-        ->toBeLessThan(strpos($source, 'execution.results.length > 0 ? ('));
+        ->toBeLessThan(strpos($source, '!isPolling && execution.results.length > 0'));
 
     expect($messagesSource)
         ->toContain("failureTitle: 'Processo terminato con errore'")
@@ -864,12 +869,14 @@ test('job pages poll while executions are active', function () {
     expect($showSource)
         ->toContain('pollingInterval')
         ->toContain('isJobTerminal(execution.status)')
+        ->toContain('isResultCollectionActive')
         ->toContain('hasPendingMapLayers')
-        ->toContain('const shouldRefreshMapLayers =')
-        ->toContain('!isPolling && hasPendingMapLayers(execution.results);')
+        ->toContain('const shouldRefreshExecution =')
+        ->toContain('!isPolling && isCollectingResults')
+        ->toContain('!isPolling && hasPendingMapLayers(execution.results)')
         ->toContain('<JobPollingIndicator')
-        ->toContain('<MapLayerRefreshPoller')
-        ->toContain('active={shouldRefreshMapLayers}')
+        ->toContain('<ExecutionRefreshPoller')
+        ->toContain('active={shouldRefreshExecution}')
         ->toContain("only: ['execution', 'pollingInterval']")
         ->toContain("mode: 'rest'")
         ->toContain('jobs.pollingShowActive')
@@ -1069,15 +1076,16 @@ test('sidebar labels process executions as jobs', function () {
         ->not->toContain("title: 'Executions'");
 });
 
-test('flash toasts support rich descriptions and optional icons', function () {
+test('flash toasts support rich descriptions without rendering icons', function () {
     $source = file_get_contents(getcwd().'/resources/js/hooks/use-flash-toast.ts');
     $types = file_get_contents(getcwd().'/resources/js/types/ui.ts');
 
     expect($source)
         ->toContain('renderToastDescription(data, t)')
-        ->toContain('data.icon === false ? null : getToastIcon(data.type)')
         ->toContain("'strong'")
-        ->toContain("'em'");
+        ->toContain("'em'")
+        ->not->toContain('getToastIcon')
+        ->not->toContain("from 'lucide-react'");
 
     expect($types)
         ->toContain('details?: FlashToastDetail[]')

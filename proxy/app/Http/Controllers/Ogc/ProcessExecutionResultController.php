@@ -15,6 +15,26 @@ use Illuminate\Support\Str;
 
 class ProcessExecutionResultController extends Controller
 {
+    public function preview(
+        ProcessExecution $processExecution,
+        ProcessExecutionResult $result,
+        OgcProcessesClient $client,
+    ): Response {
+        $this->authorizeResult($processExecution, $result);
+        abort_unless($this->isPreviewableImageMediaType($result->media_type), 404);
+
+        $this->ensureResultFileIsCached($processExecution, $result, $client);
+        $result->refresh();
+
+        abort_unless(
+            filled($result->storage_path)
+            && $this->isPreviewableImageMediaType($result->media_type),
+            404,
+        );
+
+        return $this->fileResponse($processExecution, $result, 'inline');
+    }
+
     public function download(
         ProcessExecution $processExecution,
         ProcessExecutionResult $result,
@@ -72,6 +92,7 @@ class ProcessExecutionResultController extends Controller
     {
         return response(Storage::disk('local')->get($result->storage_path), 200, [
             'Content-Type' => $result->media_type ?: 'application/octet-stream',
+            'X-Content-Type-Options' => 'nosniff',
             'Content-Disposition' => "{$disposition}; filename=\"".ResultFileName::forOutput(
                 $processExecution,
                 $result->output_id,
@@ -162,5 +183,15 @@ class ProcessExecutionResultController extends Controller
     private function isJsonMediaType(string $mediaType): bool
     {
         return $mediaType === 'application/json' || str_ends_with($mediaType, '+json');
+    }
+
+    private function isPreviewableImageMediaType(?string $mediaType): bool
+    {
+        return in_array($this->baseMediaType($mediaType), [
+            'image/gif',
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+        ], true);
     }
 }

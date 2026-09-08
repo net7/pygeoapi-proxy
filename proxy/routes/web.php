@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\SocialEmailController;
 use App\Http\Controllers\Ogc\ProcessController;
 use App\Http\Controllers\Ogc\ProcessExecutionController;
 use App\Http\Controllers\Ogc\ProcessExecutionInputController;
+use App\Http\Controllers\Ogc\ProcessExecutionResultCollectionController;
 use App\Http\Controllers\Ogc\ProcessExecutionResultController;
 use App\Http\Controllers\Ogc\ProcessExecutionResultMapTileController;
 use App\Http\Middleware\EnsureUserIsActive;
@@ -63,8 +64,12 @@ Route::middleware(['auth', EnsureUserIsActive::class, 'verified'])->group(functi
         ->name('jobs.note.update');
     Route::delete('jobs/{processExecution}', [ProcessExecutionController::class, 'destroy'])
         ->name('jobs.destroy');
+    Route::get('jobs/{processExecution}/results/{result}/preview', [ProcessExecutionResultController::class, 'preview'])
+        ->name('jobs.results.preview');
     Route::get('jobs/{processExecution}/results/{result}/download', [ProcessExecutionResultController::class, 'download'])
         ->name('jobs.results.download');
+    Route::post('jobs/{processExecution}/results/retry', ProcessExecutionResultCollectionController::class)
+        ->name('jobs.results.retry');
     Route::get('jobs/{processExecution}/results/{result}/map-tile', ProcessExecutionResultMapTileController::class)
         ->name('jobs.results.map-tile');
 

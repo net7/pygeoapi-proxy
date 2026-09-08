@@ -41,6 +41,7 @@
     "The output format schema must be a string or object.": "Lo schema del formato di output deve essere una stringa o un oggetto.",
     "The outputs must be an object keyed by output identifier.": "Gli output devono essere un oggetto indicizzato per identificatore di output.",
     "The process failed: :message": "Il processo è fallito: :message",
+    "The process finished successfully, but the results could not be collected. You can retry from the job page.": "Il processo è terminato correttamente, ma non è stato possibile acquisire i risultati. Puoi riprovare dalla pagina del processo.",
     "The process finished successfully and the results are ready.": "Il processo è terminato correttamente e i risultati sono pronti.",
     "The process is running.": "Il processo è in esecuzione.",
     "The process name has been saved.": "Il nome del processo è stato salvato.",

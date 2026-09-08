@@ -3,20 +3,18 @@
 namespace App\Actions\Ogc;
 
 use App\Enums\Ogc\ExecutionStatus;
+use App\Enums\Ogc\ResultCollectionStatus;
+use App\Jobs\Ogc\CollectProcessExecutionResultsJob;
 use App\Jobs\Ogc\PollProcessExecutionJob;
 use App\Models\ProcessExecution;
 use App\Notifications\Ogc\ProcessExecutionCompleted;
 use App\Services\Ogc\OgcProcessesClient;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Str;
 
 class PollProcessExecution
 {
-    public function __construct(
-        private OgcProcessesClient $client,
-        private StoreProcessResult $storeProcessResult,
-    ) {}
+    public function __construct(private OgcProcessesClient $client) {}
 
     public function handle(ProcessExecution $execution): void
     {
@@ -59,27 +57,23 @@ class PollProcessExecution
         $execution->refresh();
 
         if ($status === ExecutionStatus::Successful) {
-            if ($execution->requested_outputs !== []) {
-                $resultLink = collect($job['links'] ?? [])
-                    ->first(fn (array $link): bool => str_contains(
-                        (string) ($link['rel'] ?? ''),
-                        'results',
-                    ));
-
-                if (is_array($resultLink) && $this->shouldDeferResultDownload($resultLink)) {
-                    $this->storeProcessResult->fromLink($execution, $resultLink);
-                } else {
-                    $this->storeProcessResult->fromResponse($execution, $this->client->jobResults($execution->remote_job_id));
-                }
-            }
-
             $execution->update([
                 'status' => ExecutionStatus::Successful,
+                'result_collection_status' => $execution->requested_outputs === []
+                    ? ResultCollectionStatus::Successful
+                    : ResultCollectionStatus::Pending,
+                'result_collection_error' => null,
                 'completed_at' => now(),
             ]);
             $execution->refresh();
 
-            $execution->user->notify((new ProcessExecutionCompleted($execution))->afterCommit());
+            if ($execution->result_collection_status === ResultCollectionStatus::Successful) {
+                $execution->user->notify((new ProcessExecutionCompleted($execution))->afterCommit());
+
+                return;
+            }
+
+            CollectProcessExecutionResultsJob::dispatch($execution->id);
 
             return;
         }
@@ -102,23 +96,6 @@ class PollProcessExecution
             'failed' => ExecutionStatus::Failed,
             default => ExecutionStatus::Running,
         };
-    }
-
-    /**
-     * @param  array<string, mixed>  $link
-     */
-    private function shouldDeferResultDownload(array $link): bool
-    {
-        $mediaType = Str::of((string) ($link['type'] ?? ''))
-            ->before(';')
-            ->trim()
-            ->lower()
-            ->toString();
-
-        return filled($mediaType)
-            && ! str_starts_with($mediaType, 'multipart/')
-            && ! str_contains($mediaType, 'application/json')
-            && ! str_starts_with($mediaType, 'text/');
     }
 
     private function parseRemoteDate(?string $date): ?CarbonImmutable
