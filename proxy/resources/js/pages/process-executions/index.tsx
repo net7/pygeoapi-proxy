@@ -2,20 +2,9 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     flexRender,
     getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
     useReactTable,
 } from '@tanstack/react-table';
-import type {
-    Column,
-    ColumnDef,
-    ColumnFiltersState,
-    PaginationState,
-    RowSelectionState,
-    SortingState,
-    VisibilityState,
-} from '@tanstack/react-table';
+import type { Column, ColumnDef } from '@tanstack/react-table';
 import {
     ArrowUpDownIcon,
     ChevronDownIcon,
@@ -39,6 +28,10 @@ import { createSelectColumn } from '@/components/data-table-select-column';
 import { DeleteJobButton } from '@/components/ogc/delete-job-dialog';
 import JobIdentifiers from '@/components/ogc/job-identifiers';
 import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
+import {
+    TableSettingsActions,
+    TableSettingsReset,
+} from '@/components/table-settings-actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -67,6 +60,8 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import type { TablePagination } from '@/hooks/use-server-table';
+import { useServerTable } from '@/hooks/use-server-table';
 import { useTranslation } from '@/hooks/use-translation';
 import type { TranslationKey } from '@/lib/i18n/translation';
 import { consumeJobsIndexStale } from '@/lib/job-list-refresh';
@@ -79,12 +74,13 @@ import {
     jobStatusStyles,
 } from '@/lib/jobs';
 import { runUiTransition } from '@/lib/motion';
+import type { TableSettings } from '@/lib/table-settings';
 import { cn } from '@/lib/utils';
 import { bulkDestroy, index, show } from '@/routes/jobs';
 import { index as processesIndex } from '@/routes/processes';
 import type { ProcessExecutionListItem } from '@/types';
 
-type PaginatedExecutions = {
+type PaginatedExecutions = TablePagination & {
     data: ProcessExecutionListItem[];
 };
 
@@ -250,47 +246,65 @@ const columns: ColumnDef<ProcessExecutionListItem>[] = [
 export default function ProcessExecutionIndex({
     executions,
     pollingInterval,
+    filters,
+    tableSettings,
+    tableDefaults,
+    statusCounts,
 }: {
     executions: PaginatedExecutions;
     pollingInterval: number;
+    filters: { search: string; status: string };
+    tableSettings: TableSettings;
+    tableDefaults: TableSettings;
+    statusCounts: Record<string, number>;
 }) {
     'use no memo';
 
     const { t } = useTranslation();
-    const [sorting, setSorting] = useState<SortingState>([
-        { id: 'createdAt', desc: true },
-    ]);
-    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-        finishedAt: false,
-        jobSearch: false,
-        message: false,
-        submittedAt: false,
+    const serverTable = useServerTable({
+        key: 'jobs',
+        url: index.url(),
+        settings: tableSettings,
+        defaults: tableDefaults,
+        pagination: executions,
+        hiddenColumns: { jobSearch: false },
+        filters: [
+            ['jobSearch', filters.search],
+            ['status', filters.status],
+        ].flatMap(([id, value]) =>
+            value && value !== 'all' ? [{ id, value }] : [],
+        ),
+        query: (columnFilters) => {
+            const value = (id: string) =>
+                String(
+                    columnFilters.find((filter) => filter.id === id)?.value ??
+                        '',
+                );
+
+            return {
+                search: value('jobSearch'),
+                status: value('status') || 'all',
+            };
+        },
     });
-    const [pagination, setPagination] = useState<PaginationState>({
-        pageIndex: 0,
-        pageSize: 10,
-    });
-    const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
     const [bulkProcessing, setBulkProcessing] = useState(false);
-    const statusCounts = useMemo(() => {
-        const counts: Record<string, number> = {};
-
-        for (const execution of executions.data) {
-            counts[execution.status] = (counts[execution.status] ?? 0) + 1;
-        }
-
-        return counts;
-    }, [executions.data]);
     const statusOptions = useMemo(
         () => [
             {
                 value: 'all',
                 label: t('jobs.all'),
-                count: executions.data.length,
+                count: Object.values(statusCounts).reduce(
+                    (sum, count) => sum + count,
+                    0,
+                ),
                 icon: ListFilterIcon,
             },
-            ...Object.keys(statusCounts)
+            ...Array.from(
+                new Set([
+                    ...Object.keys(statusCounts),
+                    ...(filters.status !== 'all' ? [filters.status] : []),
+                ]),
+            )
                 .sort(
                     (first, second) =>
                         jobStatusSortIndex(first) - jobStatusSortIndex(second),
@@ -301,36 +315,20 @@ export default function ProcessExecutionIndex({
                     return {
                         value: status,
                         label: jobStatusLabel(status, t),
-                        count: statusCounts[status],
+                        count: statusCounts[status] ?? 0,
                         icon: styles.icon,
                     };
                 }),
         ],
-        [executions.data.length, statusCounts, t],
+        [filters.status, statusCounts, t],
     );
     // eslint-disable-next-line react-hooks/incompatible-library
     const table = useReactTable({
         data: executions.data,
         columns,
         getRowId: (row) => String(row.id),
-        onColumnFiltersChange: setColumnFilters,
-        onColumnVisibilityChange: (updater) =>
-            runUiTransition(() => setColumnVisibility(updater)),
-        onPaginationChange: setPagination,
-        onRowSelectionChange: setRowSelection,
-        onSortingChange: (updater) =>
-            runUiTransition(() => setSorting(updater)),
+        ...serverTable.tableOptions,
         getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        state: {
-            columnFilters,
-            columnVisibility,
-            pagination,
-            rowSelection,
-            sorting,
-        },
     });
     const selectedExecutions = table
         .getFilteredSelectedRowModel()
@@ -341,15 +339,11 @@ export default function ProcessExecutionIndex({
     const searchFilter =
         (table.getColumn('jobSearch')?.getFilterValue() as
             string | undefined) ?? '';
-    const filteredRowsCount = table.getFilteredRowModel().rows.length;
+    const filteredRowsCount = executions.total;
     const pageCount = Math.max(table.getPageCount(), 1);
     const hasActiveFilters = statusFilter !== 'all' || searchFilter !== '';
-    const hasActiveJobs = useMemo(
-        () =>
-            executions.data.some(
-                (execution) => !isJobTerminal(execution.status),
-            ),
-        [executions.data],
+    const hasActiveJobs = Object.entries(statusCounts).some(
+        ([status, count]) => count > 0 && !isJobTerminal(status),
     );
 
     useEffect(() => {
@@ -357,7 +351,9 @@ export default function ProcessExecutionIndex({
             return;
         }
 
-        router.reload({ only: ['executions', 'pollingInterval'] });
+        router.reload({
+            only: ['executions', 'pollingInterval', 'statusCounts'],
+        });
     }, []);
 
     function bulkDeleteSelectedJobs(): void {
@@ -391,15 +387,23 @@ export default function ProcessExecutionIndex({
                         <p className="text-sm text-muted-foreground">
                             {t('jobs.shown', {
                                 shown: filteredRowsCount,
-                                total: executions.data.length,
+                                total: Object.values(statusCounts).reduce(
+                                    (sum, count) => sum + count,
+                                    0,
+                                ),
                             })}
                         </p>
                         <JobPollingIndicator
+                            paused={serverTable.busy}
                             active={hasActiveJobs}
                             activeLabel={t('jobs.pollingActive')}
                             inactiveLabel={t('jobs.pollingInactive')}
                             interval={pollingInterval}
-                            only={['executions', 'pollingInterval']}
+                            only={[
+                                'executions',
+                                'pollingInterval',
+                                'statusCounts',
+                            ]}
                         />
                     </div>
 
@@ -417,7 +421,6 @@ export default function ProcessExecutionIndex({
                                             ? undefined
                                             : nextValue,
                                     );
-                                table.setPageIndex(0);
                             })
                         }
                         variant="outline"
@@ -449,7 +452,10 @@ export default function ProcessExecutionIndex({
                     </ToggleGroup>
                 </div>
 
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="absolute right-0 bottom-full mb-1 flex">
+                        <TableSettingsReset {...serverTable} />
+                    </div>
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <div className="relative w-full sm:w-[34rem] xl:w-[42rem]">
                             <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -461,7 +467,6 @@ export default function ProcessExecutionIndex({
                                         ?.setFilterValue(
                                             event.target.value || undefined,
                                         );
-                                    table.setPageIndex(0);
                                 }}
                                 placeholder={t('jobs.searchPlaceholder')}
                                 className="pl-9"
@@ -476,8 +481,7 @@ export default function ProcessExecutionIndex({
                                 size="sm"
                                 onClick={() =>
                                     runUiTransition(() => {
-                                        table.resetColumnFilters();
-                                        table.setPageIndex(0);
+                                        serverTable.resetFilters();
                                     })
                                 }
                             >
@@ -519,6 +523,7 @@ export default function ProcessExecutionIndex({
                             </SelectContent>
                         </Select>
 
+                        <TableSettingsActions {...serverTable} />
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm">
@@ -577,7 +582,7 @@ export default function ProcessExecutionIndex({
                 />
 
                 <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
-                    <Table>
+                    <Table aria-busy={serverTable.busy}>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
                                 <TableRow key={headerGroup.id}>
@@ -713,7 +718,9 @@ export default function ProcessExecutionIndex({
                             onClick={() =>
                                 runUiTransition(() => table.setPageIndex(0))
                             }
-                            disabled={!table.getCanPreviousPage()}
+                            disabled={
+                                serverTable.busy || !table.getCanPreviousPage()
+                            }
                         >
                             <ChevronsLeftIcon data-icon="inline-start" />
                             {t('jobs.first')}
@@ -725,7 +732,9 @@ export default function ProcessExecutionIndex({
                             onClick={() =>
                                 runUiTransition(() => table.previousPage())
                             }
-                            disabled={!table.getCanPreviousPage()}
+                            disabled={
+                                serverTable.busy || !table.getCanPreviousPage()
+                            }
                         >
                             <ChevronLeftIcon data-icon="inline-start" />
                             {t('common.previous')}
@@ -737,7 +746,9 @@ export default function ProcessExecutionIndex({
                             onClick={() =>
                                 runUiTransition(() => table.nextPage())
                             }
-                            disabled={!table.getCanNextPage()}
+                            disabled={
+                                serverTable.busy || !table.getCanNextPage()
+                            }
                         >
                             <ChevronRightIcon data-icon="inline-start" />
                             {t('common.next')}
@@ -753,7 +764,9 @@ export default function ProcessExecutionIndex({
                                     ),
                                 )
                             }
-                            disabled={!table.getCanNextPage()}
+                            disabled={
+                                serverTable.busy || !table.getCanNextPage()
+                            }
                         >
                             <ChevronsRightIcon data-icon="inline-start" />
                             {t('jobs.last')}

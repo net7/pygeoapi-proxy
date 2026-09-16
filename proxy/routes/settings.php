@@ -1,9 +1,12 @@
 <?php
 
+use App\Enums\TableKey;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\Settings\SensitiveConfirmationController;
+use App\Http\Controllers\Settings\TableSettingsController;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', EnsureUserIsActive::class])->group(function () {
@@ -19,6 +22,28 @@ Route::middleware(['auth', EnsureUserIsActive::class])->group(function () {
 });
 
 Route::middleware(['auth', EnsureUserIsActive::class, 'verified'])->group(function () {
+    Route::patch('settings/tables/jobs', [TableSettingsController::class, 'update'])
+        ->defaults('table', TableKey::Jobs->value)
+        ->name('settings.tables.jobs.update');
+    Route::delete('settings/tables/jobs', [TableSettingsController::class, 'destroy'])
+        ->defaults('table', TableKey::Jobs->value)
+        ->name('settings.tables.jobs.destroy');
+
+    Route::middleware(EnsureUserIsAdmin::class)->group(function () {
+        Route::patch('settings/admin/tables/jobs', [TableSettingsController::class, 'update'])
+            ->defaults('table', TableKey::AdminJobs->value)
+            ->name('settings.admin.tables.jobs.update');
+        Route::delete('settings/admin/tables/jobs', [TableSettingsController::class, 'destroy'])
+            ->defaults('table', TableKey::AdminJobs->value)
+            ->name('settings.admin.tables.jobs.destroy');
+        Route::patch('settings/admin/tables/users', [TableSettingsController::class, 'update'])
+            ->defaults('table', TableKey::AdminUsers->value)
+            ->name('settings.admin.tables.users.update');
+        Route::delete('settings/admin/tables/users', [TableSettingsController::class, 'destroy'])
+            ->defaults('table', TableKey::AdminUsers->value)
+            ->name('settings.admin.tables.users.destroy');
+    });
+
     Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::post('settings/sensitive-confirmation', [SensitiveConfirmationController::class, 'send'])

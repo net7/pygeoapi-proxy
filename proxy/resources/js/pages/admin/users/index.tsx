@@ -2,20 +2,9 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     flexRender,
     getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
     useReactTable,
 } from '@tanstack/react-table';
-import type {
-    Column,
-    ColumnDef,
-    ColumnFiltersState,
-    PaginationState,
-    RowSelectionState,
-    SortingState,
-    VisibilityState,
-} from '@tanstack/react-table';
+import type { Column, ColumnDef } from '@tanstack/react-table';
 import {
     AlertTriangleIcon,
     ArrowUpDownIcon,
@@ -56,6 +45,10 @@ import {
     getSocialProviderStyle,
     SocialProviderIcon,
 } from '@/components/social-provider-icon';
+import {
+    TableSettingsActions,
+    TableSettingsReset,
+} from '@/components/table-settings-actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -116,10 +109,13 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { useInitials } from '@/hooks/use-initials';
+import type { TablePagination } from '@/hooks/use-server-table';
+import { useServerTable } from '@/hooks/use-server-table';
 import { useTranslation } from '@/hooks/use-translation';
 import type { TranslationKey } from '@/lib/i18n/translation';
 import { formatJobDate } from '@/lib/jobs';
 import { runUiTransition } from '@/lib/motion';
+import type { TableSettings } from '@/lib/table-settings';
 import { cn } from '@/lib/utils';
 import { index as jobsIndex } from '@/routes/admin/jobs';
 import {
@@ -165,7 +161,7 @@ type RoleOption = {
     label: string;
 };
 
-type PaginatedUsers = {
+type PaginatedUsers = TablePagination & {
     data: AdminUser[];
     from: number | null;
     to: number | null;
@@ -213,10 +209,18 @@ export default function AdminUsersIndex({
     users,
     roles,
     filters,
+    tableSettings,
+    tableDefaults,
+    statusCounts,
+    roleCounts,
 }: {
     users: PaginatedUsers;
     roles: RoleOption[];
-    filters: { search: string };
+    filters: { search: string; role: string; status: string };
+    tableSettings: TableSettings;
+    tableDefaults: TableSettings;
+    statusCounts: Record<AdminUserStatus, number>;
+    roleCounts: Record<AdminUserRole, number>;
 }) {
     'use no memo';
 
@@ -227,20 +231,34 @@ export default function AdminUsersIndex({
     const [statusUser, setStatusUser] = useState<AdminUser | null>(null);
     const [forceDeletingUser, setForceDeletingUser] =
         useState<AdminUser | null>(null);
-    const [sorting, setSorting] = useState<SortingState>([
-        { id: 'created_at', desc: true },
-    ]);
-    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-        filters.search ? [{ id: 'userSearch', value: filters.search }] : [],
-    );
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-        userSearch: false,
+    const serverTable = useServerTable({
+        key: 'admin.users',
+        url: index.url(),
+        settings: tableSettings,
+        defaults: tableDefaults,
+        pagination: users,
+        hiddenColumns: { userSearch: false },
+        filters: [
+            ['userSearch', filters.search],
+            ['status', filters.status],
+            ['role', filters.role],
+        ].flatMap(([id, value]) =>
+            value && value !== 'all' ? [{ id, value }] : [],
+        ),
+        query: (columnFilters) => {
+            const value = (id: string) =>
+                String(
+                    columnFilters.find((filter) => filter.id === id)?.value ??
+                        '',
+                );
+
+            return {
+                search: value('userSearch'),
+                status: value('status') || 'all',
+                role: value('role') || 'all',
+            };
+        },
     });
-    const [pagination, setPagination] = useState<PaginationState>({
-        pageIndex: 0,
-        pageSize: 10,
-    });
-    const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
     const [bulkProcessing, setBulkProcessing] = useState(false);
 
     const columns = useMemo<ColumnDef<AdminUser>[]>(
@@ -535,54 +553,13 @@ export default function AdminUsersIndex({
         [auth.user?.id, locale, t],
     );
 
-    const statusCounts = useMemo(() => {
-        const counts: Record<AdminUserStatus, number> = {
-            active: 0,
-            inactive: 0,
-        };
-
-        for (const user of users.data) {
-            counts[user.is_deactivated ? 'inactive' : 'active'] += 1;
-        }
-
-        return counts;
-    }, [users.data]);
-    const roleCounts = useMemo(() => {
-        const counts: Record<AdminUserRole, number> = {
-            admin: 0,
-            user: 0,
-        };
-
-        for (const user of users.data) {
-            counts[user.role] += 1;
-        }
-
-        return counts;
-    }, [users.data]);
-
     // eslint-disable-next-line react-hooks/incompatible-library
     const table = useReactTable({
         data: users.data,
         columns,
         getRowId: (row) => String(row.id),
-        onColumnFiltersChange: setColumnFilters,
-        onColumnVisibilityChange: (updater) =>
-            runUiTransition(() => setColumnVisibility(updater)),
-        onPaginationChange: setPagination,
-        onRowSelectionChange: setRowSelection,
-        onSortingChange: (updater) =>
-            runUiTransition(() => setSorting(updater)),
+        ...serverTable.tableOptions,
         getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        state: {
-            columnFilters,
-            columnVisibility,
-            pagination,
-            rowSelection,
-            sorting,
-        },
     });
     const selectedUsers = table
         .getFilteredSelectedRowModel()
@@ -597,7 +574,7 @@ export default function AdminUsersIndex({
     const searchFilter =
         (table.getColumn('userSearch')?.getFilterValue() as
             string | undefined) ?? '';
-    const filteredRowsCount = table.getFilteredRowModel().rows.length;
+    const filteredRowsCount = users.total;
     const pageCount = Math.max(table.getPageCount(), 1);
     const hasActiveFilters =
         statusFilter !== 'all' || roleFilter !== 'all' || searchFilter !== '';
@@ -653,7 +630,10 @@ export default function AdminUsersIndex({
                         <p className="text-sm text-muted-foreground">
                             {t('admin.shownUsers', {
                                 shown: filteredRowsCount,
-                                total: users.data.length,
+                                total: Object.values(statusCounts).reduce(
+                                    (sum, count) => sum + count,
+                                    0,
+                                ),
                             })}
                         </p>
                     </div>
@@ -673,7 +653,6 @@ export default function AdminUsersIndex({
                                                 ? undefined
                                                 : nextValue,
                                         );
-                                    table.setPageIndex(0);
                                 })
                             }
                             variant="outline"
@@ -684,7 +663,10 @@ export default function AdminUsersIndex({
                                 {
                                     value: 'all',
                                     label: t('jobs.all'),
-                                    count: users.data.length,
+                                    count: Object.values(statusCounts).reduce(
+                                        (sum, count) => sum + count,
+                                        0,
+                                    ),
                                     icon: ListFilterIcon,
                                 },
                                 {
@@ -730,7 +712,10 @@ export default function AdminUsersIndex({
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="absolute right-0 bottom-full mb-1 flex">
+                        <TableSettingsReset {...serverTable} />
+                    </div>
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <div className="relative w-full sm:w-[30rem] xl:w-[38rem]">
                             <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -742,7 +727,6 @@ export default function AdminUsersIndex({
                                         ?.setFilterValue(
                                             event.target.value || undefined,
                                         );
-                                    table.setPageIndex(0);
                                 }}
                                 placeholder={t('admin.searchUsersPlaceholder')}
                                 className="pl-9"
@@ -757,8 +741,7 @@ export default function AdminUsersIndex({
                                 size="sm"
                                 onClick={() =>
                                     runUiTransition(() => {
-                                        table.resetColumnFilters();
-                                        table.setPageIndex(0);
+                                        serverTable.resetFilters();
                                     })
                                 }
                             >
@@ -778,7 +761,6 @@ export default function AdminUsersIndex({
                                         ?.setFilterValue(
                                             value === 'all' ? undefined : value,
                                         );
-                                    table.setPageIndex(0);
                                 })
                             }
                         >
@@ -837,6 +819,7 @@ export default function AdminUsersIndex({
                             </SelectContent>
                         </Select>
 
+                        <TableSettingsActions {...serverTable} />
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm">
@@ -904,7 +887,7 @@ export default function AdminUsersIndex({
                 />
 
                 <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
-                    <Table>
+                    <Table aria-busy={serverTable.busy}>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
                                 <TableRow key={headerGroup.id}>
@@ -1001,7 +984,9 @@ export default function AdminUsersIndex({
                             onClick={() =>
                                 runUiTransition(() => table.setPageIndex(0))
                             }
-                            disabled={!table.getCanPreviousPage()}
+                            disabled={
+                                serverTable.busy || !table.getCanPreviousPage()
+                            }
                         >
                             <ChevronsLeftIcon data-icon="inline-start" />
                             {t('jobs.first')}
@@ -1013,7 +998,9 @@ export default function AdminUsersIndex({
                             onClick={() =>
                                 runUiTransition(() => table.previousPage())
                             }
-                            disabled={!table.getCanPreviousPage()}
+                            disabled={
+                                serverTable.busy || !table.getCanPreviousPage()
+                            }
                         >
                             <ChevronLeftIcon data-icon="inline-start" />
                             {t('common.previous')}
@@ -1025,7 +1012,9 @@ export default function AdminUsersIndex({
                             onClick={() =>
                                 runUiTransition(() => table.nextPage())
                             }
-                            disabled={!table.getCanNextPage()}
+                            disabled={
+                                serverTable.busy || !table.getCanNextPage()
+                            }
                         >
                             <ChevronRightIcon data-icon="inline-start" />
                             {t('common.next')}
@@ -1041,7 +1030,9 @@ export default function AdminUsersIndex({
                                     ),
                                 )
                             }
-                            disabled={!table.getCanNextPage()}
+                            disabled={
+                                serverTable.busy || !table.getCanNextPage()
+                            }
                         >
                             <ChevronsRightIcon data-icon="inline-start" />
                             {t('jobs.last')}

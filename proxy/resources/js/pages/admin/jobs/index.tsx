@@ -2,20 +2,9 @@ import { Head, router } from '@inertiajs/react';
 import {
     flexRender,
     getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
     useReactTable,
 } from '@tanstack/react-table';
-import type {
-    Column,
-    ColumnDef,
-    ColumnFiltersState,
-    PaginationState,
-    RowSelectionState,
-    SortingState,
-    VisibilityState,
-} from '@tanstack/react-table';
+import type { Column, ColumnDef } from '@tanstack/react-table';
 import {
     ArrowUpDownIcon,
     ChevronDownIcon,
@@ -37,6 +26,10 @@ import type { BulkActionPayload } from '@/components/data-table-bulk-actions';
 import { createSelectColumn } from '@/components/data-table-select-column';
 import { DeleteJobButton } from '@/components/ogc/delete-job-dialog';
 import JobIdentifiers from '@/components/ogc/job-identifiers';
+import {
+    TableSettingsActions,
+    TableSettingsReset,
+} from '@/components/table-settings-actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -67,6 +60,8 @@ import {
 } from '@/components/ui/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useInitials } from '@/hooks/use-initials';
+import type { TablePagination } from '@/hooks/use-server-table';
+import { useServerTable } from '@/hooks/use-server-table';
 import { useTranslation } from '@/hooks/use-translation';
 import type { TranslationKey } from '@/lib/i18n/translation';
 import { consumeAdminJobsIndexStale } from '@/lib/job-list-refresh';
@@ -78,6 +73,7 @@ import {
     jobStatusStyles,
 } from '@/lib/jobs';
 import { runUiTransition } from '@/lib/motion';
+import type { TableSettings } from '@/lib/table-settings';
 import { cn } from '@/lib/utils';
 import { index } from '@/routes/admin/jobs';
 import { bulkDestroy, show } from '@/routes/jobs';
@@ -101,7 +97,7 @@ type AdminJobUser = {
     jobFilter: string;
 };
 
-type PaginatedJobs = {
+type PaginatedJobs = TablePagination & {
     data: AdminJob[];
     from: number | null;
     to: number | null;
@@ -109,6 +105,7 @@ type PaginatedJobs = {
 };
 
 type AdminJobFilters = {
+    status: string;
     search: string;
     selectedUserId: number | null;
 };
@@ -285,68 +282,74 @@ export default function AdminJobsIndex({
     executions,
     filters,
     users,
+    tableSettings,
+    tableDefaults,
+    statusCounts,
 }: {
     executions: PaginatedJobs;
     filters: AdminJobFilters;
     users: AdminJobUser[];
+    tableSettings: TableSettings;
+    tableDefaults: TableSettings;
+    statusCounts: Record<string, number>;
 }) {
     'use no memo';
 
     const { t } = useTranslation();
-    const [sorting, setSorting] = useState<SortingState>([
-        { id: 'submittedAt', desc: true },
-    ]);
-    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-        () => {
-            const initialFilters: ColumnFiltersState = [];
+    const serverTable = useServerTable({
+        key: 'admin.jobs',
+        url: index.url(),
+        settings: tableSettings,
+        defaults: tableDefaults,
+        pagination: executions,
+        hiddenColumns: { jobSearch: false, userId: false },
+        filters: [
+            ['jobSearch', filters.search],
+            ['status', filters.status],
+            [
+                'userId',
+                filters.selectedUserId === null
+                    ? 'all'
+                    : String(filters.selectedUserId),
+            ],
+        ].flatMap(([id, value]) =>
+            value && value !== 'all' ? [{ id, value }] : [],
+        ),
+        query: (columnFilters) => {
+            const value = (id: string) =>
+                String(
+                    columnFilters.find((filter) => filter.id === id)?.value ??
+                        '',
+                );
+            const selectedUser = users.find(
+                (user) => String(user.id) === value('userId'),
+            );
 
-            if (filters.search) {
-                initialFilters.push({
-                    id: 'jobSearch',
-                    value: filters.search,
-                });
-            }
-
-            if (filters.selectedUserId !== null) {
-                initialFilters.push({
-                    id: 'userId',
-                    value: String(filters.selectedUserId),
-                });
-            }
-
-            return initialFilters;
+            return {
+                search: value('jobSearch'),
+                status: value('status') || 'all',
+                ...(selectedUser ? { user: selectedUser.jobFilter } : {}),
+            };
         },
-    );
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-        finishedAt: false,
-        jobSearch: false,
-        message: false,
-        userId: false,
     });
-    const [pagination, setPagination] = useState<PaginationState>({
-        pageIndex: 0,
-        pageSize: 10,
-    });
-    const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
     const [bulkProcessing, setBulkProcessing] = useState(false);
-    const statusCounts = useMemo(() => {
-        const counts: Record<string, number> = {};
-
-        for (const execution of executions.data) {
-            counts[execution.status] = (counts[execution.status] ?? 0) + 1;
-        }
-
-        return counts;
-    }, [executions.data]);
     const statusOptions = useMemo(
         () => [
             {
                 value: 'all',
                 label: t('jobs.all'),
-                count: executions.data.length,
+                count: Object.values(statusCounts).reduce(
+                    (sum, count) => sum + count,
+                    0,
+                ),
                 icon: ListFilterIcon,
             },
-            ...Object.keys(statusCounts)
+            ...Array.from(
+                new Set([
+                    ...Object.keys(statusCounts),
+                    ...(filters.status !== 'all' ? [filters.status] : []),
+                ]),
+            )
                 .sort(
                     (first, second) =>
                         jobStatusSortIndex(first) - jobStatusSortIndex(second),
@@ -357,12 +360,12 @@ export default function AdminJobsIndex({
                     return {
                         value: status,
                         label: jobStatusLabel(status, t),
-                        count: statusCounts[status],
+                        count: statusCounts[status] ?? 0,
                         icon: styles.icon,
                     };
                 }),
         ],
-        [executions.data.length, statusCounts, t],
+        [filters.status, statusCounts, t],
     );
 
     // eslint-disable-next-line react-hooks/incompatible-library
@@ -370,24 +373,8 @@ export default function AdminJobsIndex({
         data: executions.data,
         columns,
         getRowId: (row) => String(row.id),
-        onColumnFiltersChange: setColumnFilters,
-        onColumnVisibilityChange: (updater) =>
-            runUiTransition(() => setColumnVisibility(updater)),
-        onPaginationChange: setPagination,
-        onRowSelectionChange: setRowSelection,
-        onSortingChange: (updater) =>
-            runUiTransition(() => setSorting(updater)),
+        ...serverTable.tableOptions,
         getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        state: {
-            columnFilters,
-            columnVisibility,
-            pagination,
-            rowSelection,
-            sorting,
-        },
     });
     const selectedExecutions = table
         .getFilteredSelectedRowModel()
@@ -403,7 +390,7 @@ export default function AdminJobsIndex({
         (filters.selectedUserId === null
             ? 'all'
             : String(filters.selectedUserId));
-    const filteredRowsCount = table.getFilteredRowModel().rows.length;
+    const filteredRowsCount = executions.total;
     const pageCount = Math.max(table.getPageCount(), 1);
     const hasActiveFilters =
         statusFilter !== 'all' ||
@@ -415,7 +402,7 @@ export default function AdminJobsIndex({
             return;
         }
 
-        router.reload({ only: ['executions'] });
+        router.reload({ only: ['executions', 'statusCounts'] });
     }, []);
 
     function bulkDeleteSelectedJobs(): void {
@@ -436,21 +423,9 @@ export default function AdminJobsIndex({
     }
 
     function selectUser(value: string): void {
-        const nextUserId = value === 'all' ? undefined : value;
-        const nextUser = users.find((user) => String(user.id) === nextUserId);
-        const query = {
-            ...(searchFilter ? { search: searchFilter } : {}),
-            ...(nextUser ? { user: nextUser.jobFilter } : {}),
-        };
-
-        table.getColumn('userId')?.setFilterValue(nextUserId);
-        table.setPageIndex(0);
-
-        router.get(
-            index.url({ query }),
-            {},
-            { preserveScroll: true, replace: true },
-        );
+        table
+            .getColumn('userId')
+            ?.setFilterValue(value === 'all' ? undefined : value);
     }
 
     return (
@@ -467,7 +442,10 @@ export default function AdminJobsIndex({
                         <p className="text-sm text-muted-foreground">
                             {t('admin.shownJobs', {
                                 shown: filteredRowsCount,
-                                total: executions.data.length,
+                                total: Object.values(statusCounts).reduce(
+                                    (sum, count) => sum + count,
+                                    0,
+                                ),
                             })}
                         </p>
                     </div>
@@ -486,7 +464,6 @@ export default function AdminJobsIndex({
                                             ? undefined
                                             : nextValue,
                                     );
-                                table.setPageIndex(0);
                             })
                         }
                         variant="outline"
@@ -518,7 +495,10 @@ export default function AdminJobsIndex({
                     </ToggleGroup>
                 </div>
 
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="absolute right-0 bottom-full mb-1 flex">
+                        <TableSettingsReset {...serverTable} />
+                    </div>
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <div className="relative w-full sm:w-[34rem] xl:w-[42rem]">
                             <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -530,7 +510,6 @@ export default function AdminJobsIndex({
                                         ?.setFilterValue(
                                             event.target.value || undefined,
                                         );
-                                    table.setPageIndex(0);
                                 }}
                                 placeholder={t('admin.searchJobsPlaceholder')}
                                 className="pl-9"
@@ -544,13 +523,7 @@ export default function AdminJobsIndex({
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {
-                                    table.resetColumnFilters();
-                                    table.setPageIndex(0);
-                                    router.get(
-                                        index.url(),
-                                        {},
-                                        { preserveScroll: true, replace: true },
-                                    );
+                                    serverTable.resetFilters();
                                 }}
                             >
                                 <XIcon data-icon="inline-start" />
@@ -621,6 +594,7 @@ export default function AdminJobsIndex({
                             </SelectContent>
                         </Select>
 
+                        <TableSettingsActions {...serverTable} />
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm">
@@ -679,7 +653,7 @@ export default function AdminJobsIndex({
                 />
 
                 <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
-                    <Table>
+                    <Table aria-busy={serverTable.busy}>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
                                 <TableRow key={headerGroup.id}>
@@ -795,7 +769,9 @@ export default function AdminJobsIndex({
                             onClick={() =>
                                 runUiTransition(() => table.setPageIndex(0))
                             }
-                            disabled={!table.getCanPreviousPage()}
+                            disabled={
+                                serverTable.busy || !table.getCanPreviousPage()
+                            }
                         >
                             <ChevronsLeftIcon data-icon="inline-start" />
                             {t('jobs.first')}
@@ -807,7 +783,9 @@ export default function AdminJobsIndex({
                             onClick={() =>
                                 runUiTransition(() => table.previousPage())
                             }
-                            disabled={!table.getCanPreviousPage()}
+                            disabled={
+                                serverTable.busy || !table.getCanPreviousPage()
+                            }
                         >
                             <ChevronLeftIcon data-icon="inline-start" />
                             {t('common.previous')}
@@ -819,7 +797,9 @@ export default function AdminJobsIndex({
                             onClick={() =>
                                 runUiTransition(() => table.nextPage())
                             }
-                            disabled={!table.getCanNextPage()}
+                            disabled={
+                                serverTable.busy || !table.getCanNextPage()
+                            }
                         >
                             <ChevronRightIcon data-icon="inline-start" />
                             {t('common.next')}
@@ -835,7 +815,9 @@ export default function AdminJobsIndex({
                                     ),
                                 )
                             }
-                            disabled={!table.getCanNextPage()}
+                            disabled={
+                                serverTable.busy || !table.getCanNextPage()
+                            }
                         >
                             <ChevronsRightIcon data-icon="inline-start" />
                             {t('jobs.last')}

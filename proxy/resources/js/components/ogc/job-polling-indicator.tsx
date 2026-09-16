@@ -1,4 +1,5 @@
 import { usePoll } from '@inertiajs/react';
+import { useEffect, useRef } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -9,6 +10,7 @@ type JobPollingIndicatorProps = {
     interval: number;
     inactiveLabel: string;
     only: string[];
+    paused?: boolean;
 };
 
 export default function JobPollingIndicator({
@@ -17,12 +19,13 @@ export default function JobPollingIndicator({
     interval,
     inactiveLabel,
     only,
+    paused = false,
 }: JobPollingIndicatorProps) {
     const label = active ? activeLabel : inactiveLabel;
 
     return (
         <>
-            {active ? (
+            {active && !paused ? (
                 <ActiveJobPoller interval={interval} only={only} />
             ) : null}
             <Badge
@@ -61,10 +64,20 @@ function ActiveJobPoller({
     interval,
     only,
 }: Pick<JobPollingIndicatorProps, 'interval' | 'only'>) {
+    const cancel = useRef<(() => void) | undefined>(undefined);
+
+    useEffect(() => () => cancel.current?.(), []);
+
     usePoll(
         interval,
         {
             only,
+            onCancelToken: (token) => {
+                cancel.current = token.cancel;
+            },
+            onFinish: () => {
+                cancel.current = undefined;
+            },
         },
         {
             mode: 'rest',

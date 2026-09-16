@@ -13,6 +13,12 @@ type MessageShape<T> = {
 };
 
 const it = {
+    tables: {
+        resetSettings: 'Ripristina impostazioni',
+        settingsSaveError: 'Impossibile salvare le impostazioni della tabella.',
+        loadError: 'Impossibile aggiornare la tabella.',
+        retry: 'Riprova',
+    },
     common: {
         appName: 'INGV Pygeoapi Proxy',
         breadcrumb: 'Percorso di navigazione',
@@ -756,6 +762,12 @@ const it = {
 } as const satisfies MessageTree;
 
 const en = {
+    tables: {
+        resetSettings: 'Reset settings',
+        settingsSaveError: 'Table settings could not be saved.',
+        loadError: 'The table could not be refreshed.',
+        retry: 'Retry',
+    },
     common: {
         appName: 'INGV Pygeoapi Proxy',
         breadcrumb: 'Breadcrumb',
