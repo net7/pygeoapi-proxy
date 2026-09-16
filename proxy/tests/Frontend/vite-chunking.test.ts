@@ -9,8 +9,12 @@ import { optimizeDeps, resolveConfig } from 'vite';
 describe('Vite result preview chunking', () => {
     test('pre-bundles lazy result viewers before completed results are displayed', async () => {
         const cacheDir = await mkdtemp(join(tmpdir(), 'job-preview-vite-'));
+        const previousEnvCheck = process.env.LARAVEL_BYPASS_ENV_CHECK;
 
         try {
+            // Only pre-bundle dependencies; no HMR server is started by this test.
+            process.env.LARAVEL_BYPASS_ENV_CHECK = '1';
+
             const config = await resolveConfig(
                 { cacheDir, logLevel: 'silent' },
                 'serve',
@@ -27,6 +31,12 @@ describe('Vite result preview chunking', () => {
                 ]),
             );
         } finally {
+            if (previousEnvCheck === undefined) {
+                delete process.env.LARAVEL_BYPASS_ENV_CHECK;
+            } else {
+                process.env.LARAVEL_BYPASS_ENV_CHECK = previousEnvCheck;
+            }
+
             await rm(cacheDir, { recursive: true, force: true });
         }
     });

@@ -193,7 +193,7 @@ make staging deploy-status
 L'immagine Laravel di sviluppo/staging usa una build multistage:
 
 - `serversideup/php:8.5-fpm-nginx` per dipendenze Composer e runtime;
-- `oven/bun:latest` per installazione dipendenze e build frontend;
+- `oven/bun:1.4.2` per installazione dipendenze e build frontend;
 - `node:latest` per il runtime richiesto dallo shebang di Vite.
 
 Bun resta il package manager e build runner. Node viene copiato nell'immagine

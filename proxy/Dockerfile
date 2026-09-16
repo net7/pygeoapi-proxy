@@ -1,7 +1,7 @@
 # Application image for the develop and staging environments only.
 
 ARG PHP_IMAGE_TAG=8.5-fpm-nginx
-ARG BUN_IMAGE_TAG=latest
+ARG BUN_IMAGE_TAG=1.4.2
 ARG NODE_IMAGE_TAG=latest
 
 FROM oven/bun:${BUN_IMAGE_TAG} AS bun

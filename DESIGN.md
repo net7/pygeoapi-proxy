@@ -548,7 +548,7 @@ applicativi condivisi; la localizzazione è implementata in `lib/i18n`.
 | `@types/react`, `@types/react-dom`  | `19.3.0`                   | Tipi React                                                             |
 | `@types/node`                       | `22.20.3`                  | Tipi Node; questa versione non fissa quella del runtime Node           |
 | `concurrently`                      | `9.2.4`                    | Esecuzione coordinata di processi di sviluppo                          |
-| Bun in CI                           | `1.3.14`, immagine Alpine  | Installazione, script e test frontend                                  |
+| Bun in CI                           | `1.4.2`, immagine Alpine   | Installazione, script e test frontend                                  |
 | Node in CI                          | `nodejs-current` da Alpine | Runtime installato dal job; versione non fissata dal manifest frontend |
 
 Le dipendenze native opzionali dichiarate sono `@rollup/rollup-linux-x64-gnu`

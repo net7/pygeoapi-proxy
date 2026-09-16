@@ -80,7 +80,7 @@ esplicitamente.
 | Mappe e grafici | MapLibre GL `5.24.0`; Chart.js `4.5.1`; GeoServer `2.27.1` |
 | Elaborazione OGC | pygeoapi remoto / OGC API - Processes; endpoint configurato con `OGC_PROCESSES_BASE_URL`; versione upstream gestita esternamente |
 | Persistenza | MariaDB `latest`; Redis `alpine` (tag floating) |
-| Build | Vite `8.3.0`; Inertia Vite `3.7.1`; React Compiler `1.0.0`; Bun `latest` e Node `latest` nelle immagini sviluppo/staging; CI: Bun `1.3.14` |
+| Build | Vite `8.3.0`; Inertia Vite `3.7.1`; React Compiler `1.0.0`; Bun `1.4.2` nelle immagini sviluppo/staging e nella CI; Node `latest` nelle immagini sviluppo/staging |
 | Container e CI | Docker Compose; GitLab CI; Docker CLI `29`; Composer `2`; immagine di deploy Alpine `3.24` |
 | Solo sviluppo | Dev server Vite; phpMyAdmin `latest`; Mailpit `latest` |
 

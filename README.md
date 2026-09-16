@@ -75,7 +75,7 @@ container configuration. Floating image tags are identified explicitly.
 | Maps and charts | MapLibre GL `5.24.0`; Chart.js `4.5.1`; GeoServer `2.27.1` |
 | OGC processing | Remote pygeoapi / OGC API - Processes; endpoint configured with `OGC_PROCESSES_BASE_URL`; upstream version managed externally |
 | Persistence | MariaDB `latest`; Redis `alpine` (floating tags) |
-| Build | Vite `8.3.0`; Inertia Vite `3.7.1`; React Compiler `1.0.0`; Bun `latest` and Node `latest` in development/staging images; CI: Bun `1.3.14` |
+| Build | Vite `8.3.0`; Inertia Vite `3.7.1`; React Compiler `1.0.0`; Bun `1.4.2` in development/staging images and CI; Node `latest` in development/staging images |
 | Containers and CI | Docker Compose; GitLab CI; Docker CLI `29`; Composer `2`; Alpine `3.24` deploy image |
 | Development only | Vite dev server; phpMyAdmin `latest`; Mailpit `latest` |
 

@@ -75,7 +75,7 @@ require_frontend_text() {
 require_frontend_text 'needs:'
 require_frontend_text 'job: php-check'
 require_frontend_text 'artifacts: true'
-require_frontend_text 'image: oven/bun:1.3.14-alpine'
+require_frontend_text 'image: oven/bun:1.4.2-alpine'
 
 if printf '%s\n' "$frontend_job" | grep -F 'docker:' > /dev/null; then
     printf 'frontend-check must remain compatible with GitLab Runner 15.4\n' >&2
