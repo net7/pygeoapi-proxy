@@ -50,7 +50,7 @@ export default function CopyableJobId({
                     })}
                     onClick={copyDisplayJobId}
                 >
-                    <span className="font-mono whitespace-nowrap">
+                    <span className="font-mono text-[0.8125rem] font-normal whitespace-nowrap">
                         {displayJobId}
                     </span>
                     <CopyIcon data-icon="inline-end" />

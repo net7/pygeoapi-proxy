@@ -23,6 +23,22 @@ function flattenMessages(
 }
 
 describe('i18n', () => {
+    test('keeps both catalogs complete with matching interpolation values', () => {
+        const italian = new Map(flattenMessages(messages.it));
+        const english = new Map(flattenMessages(messages.en));
+        const placeholders = (text: string) =>
+            [...text.matchAll(/\{([^}]+)\}/g)].map((match) => match[1]).sort();
+
+        expect([...italian.keys()].sort()).toEqual([...english.keys()].sort());
+
+        for (const [key, message] of english) {
+            const translation = italian.get(key)!;
+
+            expect(translation.trim()).not.toBe('');
+            expect(placeholders(translation)).toEqual(placeholders(message));
+        }
+    });
+
     test('defaults missing and invalid languages to english', () => {
         expect(defaultLanguage).toBe('en');
         expect(normalizeLanguage('en')).toBe('en');

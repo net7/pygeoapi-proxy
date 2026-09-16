@@ -6,6 +6,7 @@ export type User = {
     is_admin: boolean;
     is_deactivated: boolean;
     deactivated_at: string | null;
+    first_access_completed_at: string | null;
     avatar: string | null;
     has_custom_avatar: boolean;
     email_verified_at: string | null;

@@ -34,7 +34,7 @@ class UpdateUserRequest extends FormRequest
             'required',
             'string',
             'lowercase',
-            'email',
+            'email:strict',
             'max:255',
             Rule::unique(User::class)->ignore($user),
         ];
@@ -51,7 +51,7 @@ class UpdateUserRequest extends FormRequest
                 'nullable',
                 'string',
                 'lowercase',
-                'email',
+                'email:strict',
                 'max:255',
             ],
             'role' => ['required', Rule::enum(UserRole::class)],

@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Inertia\Inertia;
 use Inertia\Response;
+use Laravel\Fortify\Features;
 
 class UserController extends Controller
 {
@@ -62,10 +63,12 @@ class UserController extends Controller
             'role' => UserRole::from($validated['role']),
         ])->save();
 
-        $status = Password::sendResetLink(['email' => $user->email]);
+        if (Features::enabled(Features::resetPasswords())) {
+            $status = Password::sendResetLink(['email' => $user->email]);
 
-        if ($status !== Password::RESET_LINK_SENT) {
-            return back()->withErrors(['email' => __($status)]);
+            if ($status !== Password::RESET_LINK_SENT) {
+                return back()->withErrors(['email' => __($status)]);
+            }
         }
 
         return to_route('admin.users.index');
@@ -221,7 +224,7 @@ class UserController extends Controller
     }
 
     /**
-     * @return array{id: int, name: string, email: string, avatar: string|null, role: string, is_admin: bool, is_deactivated: bool, deactivated_at: string|null, socialProviders: list<array{provider: string, label: string}>, jobs_count: int, jobFilter: string, created_at: string|null}
+     * @return array{id: int, name: string, email: string, avatar: string|null, role: string, is_admin: bool, is_deactivated: bool, deactivated_at: string|null, socialProviders: list<array{provider: string, label: string}>, jobs_count: int, first_access_completed_at: string|null, jobFilter: string, created_at: string|null}
      */
     private function userPayload(User $user): array
     {
@@ -236,6 +239,7 @@ class UserController extends Controller
             'deactivated_at' => $user->deactivated_at?->toISOString(),
             'socialProviders' => $this->socialProviderPayload($user),
             'jobs_count' => (int) ($user->process_executions_count ?? 0),
+            'first_access_completed_at' => $user->first_access_completed_at?->toISOString(),
             'jobFilter' => Crypt::encryptString((string) $user->id),
             'created_at' => $user->created_at?->toISOString(),
         ];

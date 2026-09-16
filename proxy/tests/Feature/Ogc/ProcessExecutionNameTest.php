@@ -58,6 +58,26 @@ test('job display name falls back to process title and creation date when name i
         );
 });
 
+test('new job names use the default Rome timezone in summer and winter', function (string $instant, string $displayName) {
+    $this->travelTo(CarbonImmutable::parse($instant));
+
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create([
+        'name' => null,
+        'process_title' => 'SOLWCAD',
+        'created_at' => now(),
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('jobs.show', $execution))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('execution.displayName', $displayName)
+        );
+})->with([
+    'summer time' => ['2026-09-16T13:30:00Z', 'SOLWCAD 16/09/2026 15:30'],
+    'winter time' => ['2026-01-16T13:30:00Z', 'SOLWCAD 16/01/2026 14:30'],
+]);
+
 test('job owners can update and clear process names after creation', function () {
     $user = User::factory()->create();
     $execution = ProcessExecution::factory()->for($user)->create([

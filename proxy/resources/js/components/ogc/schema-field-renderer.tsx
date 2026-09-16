@@ -26,6 +26,7 @@ import {
 import { htmlPatternForInput } from '@/lib/html-pattern';
 import { fieldDisplayLabel, optionDisplayLabel } from '@/lib/ogc-fields';
 import { errorIdForPath, fieldError } from '@/lib/ogc-form-errors';
+import { updateFormProperty } from '@/lib/ogc-form-updates';
 import type { OgcFieldValidationController } from '@/lib/ogc-form-validation';
 import { fieldsWithSubmittedValues } from '@/lib/ogc-form-values';
 import { cn } from '@/lib/utils';
@@ -78,7 +79,9 @@ export default function SchemaFieldRenderer({
                             field={child}
                             value={objectValue[key]}
                             onChange={(nextValue) =>
-                                onChange({ ...objectValue, [key]: nextValue })
+                                onChange((current: unknown) =>
+                                    updateFormProperty(current, key, nextValue),
+                                )
                             }
                             path={objectPath + '.' + key}
                             validation={validation}

@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\EmailOtpChallengeController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\Auth\SocialEmailController;
+use App\Http\Controllers\FirstAccessController;
 use App\Http\Controllers\Ogc\ProcessController;
 use App\Http\Controllers\Ogc\ProcessExecutionController;
 use App\Http\Controllers\Ogc\ProcessExecutionInputController;
@@ -41,6 +42,8 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware(['auth', EnsureUserIsActive::class, 'verified'])->group(function () {
     Route::get('/', fn () => to_route('jobs.index'))->name('home');
+
+    Route::patch('first-access/complete', FirstAccessController::class)->name('first-access.complete');
 
     Route::get('processes', [ProcessController::class, 'index'])->name('processes.index');
     Route::get('processes/{process}', [ProcessController::class, 'show'])->name('processes.show');

@@ -9,9 +9,12 @@ use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
+use Laravel\Fortify\Features;
 
 test('admin user management is restricted to administrators', function () {
     $guestResponse = $this->get(route('admin.users.index'));
@@ -24,7 +27,7 @@ test('admin user management is restricted to administrators', function () {
         ->assertForbidden();
 });
 
-test('admins can see users with job counts', function () {
+test('admins can see users with job counts and first access dates', function () {
     Storage::fake('public');
     Storage::disk('public')->put('avatars/process-owner.jpg', 'avatar');
 
@@ -33,6 +36,7 @@ test('admins can see users with job counts', function () {
         'name' => 'Process Owner',
         'email' => 'owner@example.com',
         'avatar_path' => 'avatars/process-owner.jpg',
+        'first_access_completed_at' => '2026-09-16 09:30:00',
     ]);
     ProcessExecution::factory()->count(2)->for($user)->create();
     SocialAccount::factory()->for($user)->create(['provider' => 'google']);
@@ -49,6 +53,8 @@ test('admins can see users with job counts', function () {
             ->where('users.data.0.avatar', route('profile.avatar.show', ['path' => 'avatars/process-owner.jpg'], absolute: false))
             ->where('users.data.0.role', UserRole::User->value)
             ->where('users.data.0.jobs_count', 2)
+            ->where('users.data.0.first_access_completed_at', '2026-09-16T07:30:00.000000Z')
+            ->where('users.data.1.first_access_completed_at', null)
             ->has('users.data.0.socialProviders', 2)
             ->where('users.data.0.socialProviders.0.provider', 'google')
             ->where('users.data.0.socialProviders.0.label', 'GOOGLE')
@@ -58,6 +64,11 @@ test('admins can see users with job counts', function () {
 });
 
 test('admins can create users with a password setup link', function () {
+    config(['fortify.features' => [Features::resetPasswords()]]);
+
+    require base_path('vendor/laravel/fortify/routes/routes.php');
+    Route::getRoutes()->refreshNameLookups();
+
     Notification::fake();
 
     $admin = User::factory()->admin()->create();
@@ -77,8 +88,67 @@ test('admins can create users with a password setup link', function () {
         ->and($user->password)->toBeNull()
         ->and($user->email_verified_at)->not->toBeNull();
 
-    Notification::assertSentTo($user, ResetPassword::class);
+    Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $notification) use ($user): bool {
+        expect($notification->toMail($user)->actionUrl)
+            ->toContain('/reset-password/'.$notification->token, 'email=new.admin%40example.com');
+
+        return true;
+    });
 });
+
+test('admins can create users when password reset is disabled', function () {
+    config(['fortify.features' => []]);
+
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->post(route('admin.users.store'), [
+            'name' => 'New User',
+            'email' => 'New.User@Example.com',
+            'role' => UserRole::User->value,
+        ])
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHasNoErrors();
+
+    $user = User::query()->where('email', 'new.user@example.com')->firstOrFail();
+
+    expect($user->name)->toBe('New User')
+        ->and($user->role)->toBe(UserRole::User)
+        ->and($user->password)->toBeNull()
+        ->and($user->email_verified_at)->not->toBeNull();
+
+    $this->assertDatabaseMissing('password_reset_tokens', ['email' => $user->email]);
+
+    expect(Mail::mailer()->getSymfonyTransport()->messages())->toBeEmpty();
+});
+
+test('admins cannot create users with emails without a dotted domain', function (string $email) {
+    config(['fortify.features' => [Features::resetPasswords()]]);
+
+    require base_path('vendor/laravel/fortify/routes/routes.php');
+    Route::getRoutes()->refreshNameLookups();
+
+    Notification::fake();
+
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->post(route('admin.users.store'), [
+            'name' => 'Invalid Email User',
+            'email' => $email,
+            'role' => UserRole::User->value,
+        ])
+        ->assertSessionHasErrors([
+            'email' => 'The email field must be a valid email address.',
+        ]);
+
+    $this->assertDatabaseMissing('users', ['email' => $email]);
+    $this->assertDatabaseMissing('password_reset_tokens', ['email' => $email]);
+    Notification::assertNothingSent();
+})->with([
+    'single-letter domain' => 'f@u',
+    'local domain' => 'user@localhost',
+]);
 
 test('admin user creation supports precognitive validation', function () {
     $admin = User::factory()->admin()->create();
@@ -100,6 +170,27 @@ test('admin user creation supports precognitive validation', function () {
         ->assertJsonPath('errors.email.0', 'The email has already been taken.');
 
     expect(User::query()->where('name', 'Taken User')->exists())->toBeFalse();
+});
+
+test('admin user creation rejects emails without a dotted domain during precognitive validation', function () {
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->withHeaders([
+            'Accept' => 'application/json',
+            'Precognition' => 'true',
+            'Precognition-Validate-Only' => 'email',
+        ])
+        ->post(route('admin.users.store'), [
+            'name' => 'Invalid Email User',
+            'email' => 'f@u',
+            'role' => UserRole::User->value,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('email')
+        ->assertJsonPath('errors.email.0', 'The email field must be a valid email address.');
+
+    $this->assertDatabaseMissing('users', ['email' => 'f@u']);
 });
 
 test('admins can update users but cannot demote themselves', function () {
@@ -128,6 +219,22 @@ test('admins can update users but cannot demote themselves', function () {
         ->assertSessionHasErrors('role');
 
     expect($admin->fresh()->role)->toBe(UserRole::Admin);
+});
+
+test('admins cannot update users to emails without a dotted domain', function () {
+    $admin = User::factory()->admin()->create();
+    $user = User::factory()->create(['email' => 'original@example.com']);
+
+    $this->actingAs($admin)
+        ->patch(route('admin.users.update', $user), [
+            'name' => $user->name,
+            'email' => 'f@u',
+            'email_confirmation' => 'f@u',
+            'role' => UserRole::User->value,
+        ])
+        ->assertSessionHasErrors(['email', 'email_confirmation']);
+
+    expect($user->fresh()->email)->toBe('original@example.com');
 });
 
 test('admins must confirm changed user emails', function () {

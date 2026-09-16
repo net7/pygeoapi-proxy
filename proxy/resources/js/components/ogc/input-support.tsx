@@ -3,6 +3,7 @@ import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 
+import { ContentTransition } from '@/components/content-transition';
 import { Button } from '@/components/ui/button';
 import { FieldLabel } from '@/components/ui/field';
 import {
@@ -12,6 +13,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { useTranslation } from '@/hooks/use-translation';
+import { runUiTransition } from '@/lib/motion';
 import { fieldDisplayLabel } from '@/lib/ogc-fields';
 import { cn } from '@/lib/utils';
 import type { OgcNormalizedField } from '@/types';
@@ -29,10 +31,14 @@ export function InputSupport({ children }: { children: ReactNode }) {
             value={{
                 showReferences,
                 toggleReferences: () =>
-                    setShowReferences((visible) => !visible),
+                    runUiTransition(() =>
+                        setShowReferences((visible) => !visible),
+                    ),
             }}
         >
-            {children}
+            <ContentTransition default="none" update="content-change">
+                {children}
+            </ContentTransition>
         </InputSupportContext>
     );
 }

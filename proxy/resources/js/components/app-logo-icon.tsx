@@ -4,6 +4,7 @@ import INGV_LOGO_IMAGE from '@/images/invg-logo.svg';
 import { cn } from '@/lib/utils';
 
 type AppLogoIconProps = Omit<ComponentProps<'img'>, 'src'> & {
+    appearance?: 'auto' | 'inverse';
     collapsed?: boolean;
     collapsedLogoSrc?: string;
 };
@@ -11,8 +12,8 @@ type AppLogoIconProps = Omit<ComponentProps<'img'>, 'src'> & {
 const LOGO_VIEWBOX_WIDTH = 890;
 const LOGO_VIEWBOX_HEIGHT = 200;
 const LOGO_ASPECT_RATIO = LOGO_VIEWBOX_WIDTH / LOGO_VIEWBOX_HEIGHT;
-const COLLAPSED_LOGO_WIDTH = 13;
-const COLLAPSED_LOGO_HEIGHT = 20;
+const COLLAPSED_LOGO_WIDTH = 26;
+const COLLAPSED_LOGO_HEIGHT = 40;
 
 export const APP_LOGO_DEFAULT_WIDTH = 400;
 export const APP_LOGO_DEFAULT_HEIGHT = Math.round(
@@ -40,6 +41,7 @@ export function resolveAppLogoDimensions({
 export default function AppLogoIcon({
     alt = 'INGV Logo',
     className,
+    appearance = 'auto',
     collapsed = false,
     collapsedLogoSrc,
     width,
@@ -54,7 +56,11 @@ export default function AppLogoIcon({
                 {...props}
                 width={COLLAPSED_LOGO_WIDTH}
                 height={COLLAPSED_LOGO_HEIGHT}
-                className={cn(className, 'mx-auto object-contain')}
+                className={cn(
+                    className,
+                    'mx-auto shrink-0 object-contain',
+                    appearance === 'inverse' && 'brightness-0 invert',
+                )}
                 src={collapsedLogoSrc}
                 alt={alt}
             />
@@ -66,14 +72,20 @@ export default function AppLogoIcon({
             <img
                 {...props}
                 {...dimensions}
-                className={cn(className, 'dark:hidden')}
+                className={cn(
+                    className,
+                    appearance === 'inverse' ? 'hidden' : 'dark:hidden',
+                )}
                 src={INGV_LOGO_IMAGE}
                 alt={alt}
             />
             <img
                 {...props}
                 {...dimensions}
-                className={cn(className, 'hidden dark:block')}
+                className={cn(
+                    className,
+                    appearance === 'inverse' ? 'block' : 'hidden dark:block',
+                )}
                 src={INGV_LOGO_WHITE_IMAGE}
                 alt={alt}
             />

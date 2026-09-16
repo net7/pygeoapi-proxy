@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
+import { ContentTransition } from '@/components/content-transition';
 import { DataTableBulkActions } from '@/components/data-table-bulk-actions';
 import type { BulkActionPayload } from '@/components/data-table-bulk-actions';
 import { createSelectColumn } from '@/components/data-table-select-column';
@@ -72,9 +73,11 @@ import { consumeAdminJobsIndexStale } from '@/lib/job-list-refresh';
 import {
     clampProgress,
     formatJobDate,
+    jobMessage,
     jobStatusSortIndex,
     jobStatusStyles,
 } from '@/lib/jobs';
+import { runUiTransition } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { index } from '@/routes/admin/jobs';
 import { bulkDestroy, show } from '@/routes/jobs';
@@ -368,10 +371,12 @@ export default function AdminJobsIndex({
         columns,
         getRowId: (row) => String(row.id),
         onColumnFiltersChange: setColumnFilters,
-        onColumnVisibilityChange: setColumnVisibility,
+        onColumnVisibilityChange: (updater) =>
+            runUiTransition(() => setColumnVisibility(updater)),
         onPaginationChange: setPagination,
         onRowSelectionChange: setRowSelection,
-        onSortingChange: setSorting,
+        onSortingChange: (updater) =>
+            runUiTransition(() => setSorting(updater)),
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
@@ -453,14 +458,12 @@ export default function AdminJobsIndex({
             <Head title={t('admin.allJobs')} />
 
             <div className="flex flex-col gap-5 p-4">
-                <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
+                <div className="page-header flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
                     <div className="flex flex-col gap-1">
                         <p className="text-sm font-medium text-muted-foreground">
                             {t('admin.administration')}
                         </p>
-                        <h1 className="text-2xl font-semibold">
-                            {t('admin.allJobs')}
-                        </h1>
+                        <h1>{t('admin.allJobs')}</h1>
                         <p className="text-sm text-muted-foreground">
                             {t('admin.shownJobs', {
                                 shown: filteredRowsCount,
@@ -472,16 +475,20 @@ export default function AdminJobsIndex({
                     <ToggleGroup
                         type="single"
                         value={statusFilter}
-                        onValueChange={(value) => {
-                            const nextValue = value || 'all';
+                        onValueChange={(value) =>
+                            runUiTransition(() => {
+                                const nextValue = value || 'all';
 
-                            table
-                                .getColumn('status')
-                                ?.setFilterValue(
-                                    nextValue === 'all' ? undefined : nextValue,
-                                );
-                            table.setPageIndex(0);
-                        }}
+                                table
+                                    .getColumn('status')
+                                    ?.setFilterValue(
+                                        nextValue === 'all'
+                                            ? undefined
+                                            : nextValue,
+                                    );
+                                table.setPageIndex(0);
+                            })
+                        }
                         variant="outline"
                         size="sm"
                         className="flex-wrap justify-start"
@@ -585,9 +592,11 @@ export default function AdminJobsIndex({
 
                         <Select
                             value={`${table.getState().pagination.pageSize}`}
-                            onValueChange={(value) => {
-                                table.setPageSize(Number(value));
-                            }}
+                            onValueChange={(value) =>
+                                runUiTransition(() =>
+                                    table.setPageSize(Number(value)),
+                                )
+                            }
                         >
                             <SelectTrigger
                                 size="sm"
@@ -669,7 +678,7 @@ export default function AdminJobsIndex({
                     ]}
                 />
 
-                <div className="overflow-hidden rounded-md border bg-card shadow-sm dark:border-border/70 dark:bg-card/95">
+                <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
                     <Table>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
@@ -696,66 +705,77 @@ export default function AdminJobsIndex({
                                 </TableRow>
                             ))}
                         </TableHeader>
-                        <TableBody>
-                            {table.getRowModel().rows.length > 0 ? (
-                                table.getRowModel().rows.map((row) => {
-                                    const styles = jobStatusStyles(
-                                        row.original.status,
-                                    );
+                        <ContentTransition default="none" update="table-change">
+                            <TableBody>
+                                {table.getRowModel().rows.length > 0 ? (
+                                    table.getRowModel().rows.map((row) => {
+                                        const styles = jobStatusStyles(
+                                            row.original.status,
+                                        );
 
-                                    return (
-                                        <TableRow
-                                            key={row.id}
-                                            data-state={
-                                                row.getIsSelected()
-                                                    ? 'selected'
-                                                    : undefined
-                                            }
-                                            onClick={() =>
-                                                router.visit(
-                                                    show(row.original.id),
-                                                )
-                                            }
-                                            className={cn(
-                                                'cursor-pointer align-top transition-colors hover:bg-accent/50 dark:hover:bg-accent/30',
-                                                styles.rowClassName,
-                                            )}
+                                        return (
+                                            <ContentTransition
+                                                key={row.id}
+                                                default="table-change"
+                                            >
+                                                <TableRow
+                                                    data-state={
+                                                        row.getIsSelected()
+                                                            ? 'selected'
+                                                            : undefined
+                                                    }
+                                                    onClick={() =>
+                                                        router.visit(
+                                                            show(
+                                                                row.original.id,
+                                                            ),
+                                                        )
+                                                    }
+                                                    className={cn(
+                                                        'cursor-pointer align-top transition-colors hover:bg-accent/50 dark:hover:bg-accent/30',
+                                                        styles.rowClassName,
+                                                    )}
+                                                >
+                                                    {row
+                                                        .getVisibleCells()
+                                                        .map((cell) => (
+                                                            <TableCell
+                                                                key={cell.id}
+                                                                className={cn(
+                                                                    'align-top',
+                                                                    columnClassNames[
+                                                                        cell
+                                                                            .column
+                                                                            .id
+                                                                    ],
+                                                                )}
+                                                            >
+                                                                {flexRender(
+                                                                    cell.column
+                                                                        .columnDef
+                                                                        .cell,
+                                                                    cell.getContext(),
+                                                                )}
+                                                            </TableCell>
+                                                        ))}
+                                                </TableRow>
+                                            </ContentTransition>
+                                        );
+                                    })
+                                ) : (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={columns.length}
+                                            className="h-28 text-center text-muted-foreground"
                                         >
-                                            {row
-                                                .getVisibleCells()
-                                                .map((cell) => (
-                                                    <TableCell
-                                                        key={cell.id}
-                                                        className={cn(
-                                                            'align-top',
-                                                            columnClassNames[
-                                                                cell.column.id
-                                                            ],
-                                                        )}
-                                                    >
-                                                        {flexRender(
-                                                            cell.column
-                                                                .columnDef.cell,
-                                                            cell.getContext(),
-                                                        )}
-                                                    </TableCell>
-                                                ))}
-                                        </TableRow>
-                                    );
-                                })
-                            ) : (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={columns.length}
-                                        className="h-28 text-center text-muted-foreground"
-                                    >
-                                        {hasActiveFilters
-                                            ? t('jobs.noJobsMatch')
-                                            : t('admin.noUserJobsStarted')}
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
+                                            {hasActiveFilters
+                                                ? t('jobs.noJobsMatch')
+                                                : t('admin.noUserJobsStarted')}
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </ContentTransition>
                     </Table>
                 </div>
 
@@ -772,7 +792,9 @@ export default function AdminJobsIndex({
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => table.setPageIndex(0)}
+                            onClick={() =>
+                                runUiTransition(() => table.setPageIndex(0))
+                            }
                             disabled={!table.getCanPreviousPage()}
                         >
                             <ChevronsLeftIcon data-icon="inline-start" />
@@ -782,7 +804,9 @@ export default function AdminJobsIndex({
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => table.previousPage()}
+                            onClick={() =>
+                                runUiTransition(() => table.previousPage())
+                            }
                             disabled={!table.getCanPreviousPage()}
                         >
                             <ChevronLeftIcon data-icon="inline-start" />
@@ -792,7 +816,9 @@ export default function AdminJobsIndex({
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => table.nextPage()}
+                            onClick={() =>
+                                runUiTransition(() => table.nextPage())
+                            }
                             disabled={!table.getCanNextPage()}
                         >
                             <ChevronRightIcon data-icon="inline-start" />
@@ -803,7 +829,11 @@ export default function AdminJobsIndex({
                             variant="outline"
                             size="sm"
                             onClick={() =>
-                                table.setPageIndex(table.getPageCount() - 1)
+                                runUiTransition(() =>
+                                    table.setPageIndex(
+                                        table.getPageCount() - 1,
+                                    ),
+                                )
                             }
                             disabled={!table.getCanNextPage()}
                         >
@@ -853,9 +883,9 @@ function AdminJobUserIdentity({ owner }: { owner: AdminJob['owner'] }) {
 
     return (
         <div className="flex min-w-0 items-center gap-3">
-            <Avatar className="size-8 rounded-full">
+            <Avatar className="size-8 rounded-none">
                 <AvatarImage src={owner.avatar ?? undefined} alt={owner.name} />
-                <AvatarFallback className="rounded-full bg-muted text-xs font-medium text-muted-foreground">
+                <AvatarFallback className="rounded-none bg-muted text-xs font-medium text-muted-foreground">
                     {getInitials(owner.name)}
                 </AvatarFallback>
             </Avatar>
@@ -870,9 +900,9 @@ function AdminJobUserIdentity({ owner }: { owner: AdminJob['owner'] }) {
 }
 
 function JobMessage({ message }: { message?: string | null }) {
-    const { t } = useTranslation();
+    const { language } = useTranslation();
 
-    return <>{message ?? t('jobs.noJobMessage')}</>;
+    return <>{jobMessage(message, language)}</>;
 }
 
 function JobIdentifier({ execution }: { execution: AdminJob }) {
@@ -944,7 +974,7 @@ function JobProgress({ execution }: { execution: AdminJob }) {
                 <span className="tabular-nums">{progress}%</span>
             </div>
             <div
-                className="h-2 overflow-hidden rounded-full bg-muted"
+                className="h-2 overflow-hidden rounded-none bg-muted"
                 role="progressbar"
                 aria-valuemin={0}
                 aria-valuemax={100}
@@ -952,7 +982,7 @@ function JobProgress({ execution }: { execution: AdminJob }) {
             >
                 <div
                     className={cn(
-                        'h-full rounded-full transition-[width]',
+                        'h-full rounded-none transition-[width]',
                         styles.progressClassName,
                     )}
                     style={{

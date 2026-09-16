@@ -28,12 +28,16 @@ function Toaster({ toastOptions, ...props }: ToasterProps) {
                 closeButtonAriaLabel: t('toast.close'),
                 ...toastOptions,
                 classNames: {
+                    actionButton: 'rounded-none!',
+                    cancelButton: 'rounded-none!',
+                    closeButton: 'rounded-none!',
                     ...toastOptions?.classNames,
                     icon: 'hidden!',
                 },
             }}
             style={
                 {
+                    '--border-radius': 'var(--radius)',
                     '--normal-bg': 'var(--popover)',
                     '--normal-text': 'var(--popover-foreground)',
                     '--normal-border': 'var(--muted-foreground)',

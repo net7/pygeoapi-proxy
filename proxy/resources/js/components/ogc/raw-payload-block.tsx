@@ -3,6 +3,10 @@ import { lazy, Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 
+import {
+    AfterNavigation,
+    ContentTransition,
+} from '@/components/content-transition';
 import ResultPreviewLoading from '@/components/ogc/result-preview-loading';
 import { Button } from '@/components/ui/button';
 import { useClipboard } from '@/hooks/use-clipboard';
@@ -100,9 +104,13 @@ function RawPayloadContent({
 
     if (jsonValue) {
         return (
-            <Suspense fallback={<ResultPreviewLoading />}>
-                <JsonPayloadContent value={jsonValue} />
-            </Suspense>
+            <ContentTransition default="none" update="content-change">
+                <Suspense fallback={<ResultPreviewLoading />}>
+                    <AfterNavigation>
+                        <JsonPayloadContent value={jsonValue} />
+                    </AfterNavigation>
+                </Suspense>
+            </ContentTransition>
         );
     }
 

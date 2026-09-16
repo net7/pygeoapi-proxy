@@ -47,6 +47,7 @@ import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 
+import { ContentTransition } from '@/components/content-transition';
 import { DataTableBulkActions } from '@/components/data-table-bulk-actions';
 import type { BulkActionPayload } from '@/components/data-table-bulk-actions';
 import { createSelectColumn } from '@/components/data-table-select-column';
@@ -118,6 +119,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { useTranslation } from '@/hooks/use-translation';
 import type { TranslationKey } from '@/lib/i18n/translation';
 import { formatJobDate } from '@/lib/jobs';
+import { runUiTransition } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { index as jobsIndex } from '@/routes/admin/jobs';
 import {
@@ -153,6 +155,7 @@ type AdminUser = {
     deactivated_at: string | null;
     socialProviders: SocialProvider[];
     jobs_count: number;
+    first_access_completed_at: string | null;
     jobFilter: string;
     created_at: string | null;
 };
@@ -190,6 +193,7 @@ const columnLabelKeys: Record<string, TranslationKey> = {
     socialProviders: 'admin.registeredWith',
     status: 'common.status',
     jobs_count: 'admin.userJobs',
+    first_access_completed_at: 'admin.firstAccess',
     created_at: 'jobs.created',
 };
 
@@ -200,6 +204,7 @@ const columnClassNames: Record<string, string> = {
     socialProviders: 'min-w-40',
     status: 'min-w-32',
     jobs_count: 'min-w-24 text-right',
+    first_access_completed_at: 'min-w-40',
     created_at: 'min-w-40',
     actions: 'w-12 text-right',
 };
@@ -332,6 +337,27 @@ export default function AdminUsersIndex({
                         {row.original.jobs_count}
                     </span>
                 ),
+            },
+            {
+                accessorKey: 'first_access_completed_at',
+                header: ({ column }) => (
+                    <SortableHeader
+                        column={column}
+                        titleKey="admin.firstAccess"
+                    />
+                ),
+                cell: ({ row }) => (
+                    <span className="text-muted-foreground">
+                        {formatJobDate(
+                            row.original.first_access_completed_at,
+                            locale,
+                            t('common.notAvailable'),
+                        )}
+                    </span>
+                ),
+                sortingFn: (first, second) =>
+                    dateSortValue(first.original.first_access_completed_at) -
+                    dateSortValue(second.original.first_access_completed_at),
             },
             {
                 accessorKey: 'created_at',
@@ -540,10 +566,12 @@ export default function AdminUsersIndex({
         columns,
         getRowId: (row) => String(row.id),
         onColumnFiltersChange: setColumnFilters,
-        onColumnVisibilityChange: setColumnVisibility,
+        onColumnVisibilityChange: (updater) =>
+            runUiTransition(() => setColumnVisibility(updater)),
         onPaginationChange: setPagination,
         onRowSelectionChange: setRowSelection,
-        onSortingChange: setSorting,
+        onSortingChange: (updater) =>
+            runUiTransition(() => setSorting(updater)),
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
@@ -616,14 +644,12 @@ export default function AdminUsersIndex({
             <Head title={t('admin.allUsers')} />
 
             <div className="flex flex-col gap-5 p-4">
-                <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
+                <div className="page-header flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
                     <div className="flex flex-col gap-1">
                         <p className="text-sm font-medium text-muted-foreground">
                             {t('admin.administration')}
                         </p>
-                        <h1 className="text-2xl font-semibold">
-                            {t('admin.allUsers')}
-                        </h1>
+                        <h1>{t('admin.allUsers')}</h1>
                         <p className="text-sm text-muted-foreground">
                             {t('admin.shownUsers', {
                                 shown: filteredRowsCount,
@@ -636,18 +662,20 @@ export default function AdminUsersIndex({
                         <ToggleGroup
                             type="single"
                             value={statusFilter}
-                            onValueChange={(value) => {
-                                const nextValue = value || 'all';
+                            onValueChange={(value) =>
+                                runUiTransition(() => {
+                                    const nextValue = value || 'all';
 
-                                table
-                                    .getColumn('status')
-                                    ?.setFilterValue(
-                                        nextValue === 'all'
-                                            ? undefined
-                                            : nextValue,
-                                    );
-                                table.setPageIndex(0);
-                            }}
+                                    table
+                                        .getColumn('status')
+                                        ?.setFilterValue(
+                                            nextValue === 'all'
+                                                ? undefined
+                                                : nextValue,
+                                        );
+                                    table.setPageIndex(0);
+                                })
+                            }
                             variant="outline"
                             size="sm"
                             className="flex-wrap justify-start"
@@ -727,10 +755,12 @@ export default function AdminUsersIndex({
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={() => {
-                                    table.resetColumnFilters();
-                                    table.setPageIndex(0);
-                                }}
+                                onClick={() =>
+                                    runUiTransition(() => {
+                                        table.resetColumnFilters();
+                                        table.setPageIndex(0);
+                                    })
+                                }
                             >
                                 <XIcon data-icon="inline-start" />
                                 {t('jobs.resetFilters')}
@@ -741,14 +771,16 @@ export default function AdminUsersIndex({
                     <div className="flex flex-wrap items-center gap-2">
                         <Select
                             value={roleFilter}
-                            onValueChange={(value) => {
-                                table
-                                    .getColumn('role')
-                                    ?.setFilterValue(
-                                        value === 'all' ? undefined : value,
-                                    );
-                                table.setPageIndex(0);
-                            }}
+                            onValueChange={(value) =>
+                                runUiTransition(() => {
+                                    table
+                                        .getColumn('role')
+                                        ?.setFilterValue(
+                                            value === 'all' ? undefined : value,
+                                        );
+                                    table.setPageIndex(0);
+                                })
+                            }
                         >
                             <SelectTrigger
                                 size="sm"
@@ -776,9 +808,11 @@ export default function AdminUsersIndex({
 
                         <Select
                             value={`${table.getState().pagination.pageSize}`}
-                            onValueChange={(value) => {
-                                table.setPageSize(Number(value));
-                            }}
+                            onValueChange={(value) =>
+                                runUiTransition(() =>
+                                    table.setPageSize(Number(value)),
+                                )
+                            }
                         >
                             <SelectTrigger
                                 size="sm"
@@ -869,7 +903,7 @@ export default function AdminUsersIndex({
                     ]}
                 />
 
-                <div className="overflow-hidden rounded-md border bg-card shadow-sm dark:border-border/70 dark:bg-card/95">
+                <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
                     <Table>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
@@ -896,47 +930,58 @@ export default function AdminUsersIndex({
                                 </TableRow>
                             ))}
                         </TableHeader>
-                        <TableBody>
-                            {table.getRowModel().rows.length > 0 ? (
-                                table.getRowModel().rows.map((row) => (
-                                    <TableRow
-                                        key={row.id}
-                                        data-state={
-                                            row.getIsSelected()
-                                                ? 'selected'
-                                                : undefined
-                                        }
-                                        className="align-top"
-                                    >
-                                        {row.getVisibleCells().map((cell) => (
-                                            <TableCell
-                                                key={cell.id}
-                                                className={cn(
-                                                    'align-top',
-                                                    columnClassNames[
-                                                        cell.column.id
-                                                    ],
-                                                )}
+                        <ContentTransition default="none" update="table-change">
+                            <TableBody>
+                                {table.getRowModel().rows.length > 0 ? (
+                                    table.getRowModel().rows.map((row) => (
+                                        <ContentTransition
+                                            key={row.id}
+                                            default="table-change"
+                                        >
+                                            <TableRow
+                                                data-state={
+                                                    row.getIsSelected()
+                                                        ? 'selected'
+                                                        : undefined
+                                                }
+                                                className="align-top"
                                             >
-                                                {flexRender(
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext(),
-                                                )}
-                                            </TableCell>
-                                        ))}
+                                                {row
+                                                    .getVisibleCells()
+                                                    .map((cell) => (
+                                                        <TableCell
+                                                            key={cell.id}
+                                                            className={cn(
+                                                                'align-top',
+                                                                columnClassNames[
+                                                                    cell.column
+                                                                        .id
+                                                                ],
+                                                            )}
+                                                        >
+                                                            {flexRender(
+                                                                cell.column
+                                                                    .columnDef
+                                                                    .cell,
+                                                                cell.getContext(),
+                                                            )}
+                                                        </TableCell>
+                                                    ))}
+                                            </TableRow>
+                                        </ContentTransition>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={columns.length}
+                                            className="h-28 text-center text-muted-foreground"
+                                        >
+                                            {t('admin.usersNoMatch')}
+                                        </TableCell>
                                     </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={columns.length}
-                                        className="h-28 text-center text-muted-foreground"
-                                    >
-                                        {t('admin.usersNoMatch')}
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
+                                )}
+                            </TableBody>
+                        </ContentTransition>
                     </Table>
                 </div>
 
@@ -953,7 +998,9 @@ export default function AdminUsersIndex({
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => table.setPageIndex(0)}
+                            onClick={() =>
+                                runUiTransition(() => table.setPageIndex(0))
+                            }
                             disabled={!table.getCanPreviousPage()}
                         >
                             <ChevronsLeftIcon data-icon="inline-start" />
@@ -963,7 +1010,9 @@ export default function AdminUsersIndex({
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => table.previousPage()}
+                            onClick={() =>
+                                runUiTransition(() => table.previousPage())
+                            }
                             disabled={!table.getCanPreviousPage()}
                         >
                             <ChevronLeftIcon data-icon="inline-start" />
@@ -973,7 +1022,9 @@ export default function AdminUsersIndex({
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => table.nextPage()}
+                            onClick={() =>
+                                runUiTransition(() => table.nextPage())
+                            }
                             disabled={!table.getCanNextPage()}
                         >
                             <ChevronRightIcon data-icon="inline-start" />
@@ -984,7 +1035,11 @@ export default function AdminUsersIndex({
                             variant="outline"
                             size="sm"
                             onClick={() =>
-                                table.setPageIndex(table.getPageCount() - 1)
+                                runUiTransition(() =>
+                                    table.setPageIndex(
+                                        table.getPageCount() - 1,
+                                    ),
+                                )
                             }
                             disabled={!table.getCanNextPage()}
                         >
@@ -1231,12 +1286,12 @@ function UserFormDialog({
 
                     {isEditing && (
                         <div className="px-6">
-                            <Alert className="w-full max-w-full min-w-0 border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-emerald-100 [&>svg]:size-5">
-                                <InfoIcon className="mt-0.5 size-5 text-emerald-600 dark:text-emerald-300" />
+                            <Alert className="w-full max-w-full min-w-0 border-success/25 bg-success/10 text-success-emphasis [&>svg]:size-5">
+                                <InfoIcon className="mt-0.5 size-5 text-success" />
                                 <AlertTitle>
                                     {t('admin.socialReconciliation')}
                                 </AlertTitle>
-                                <AlertDescription className="min-w-0 text-emerald-900/80 dark:text-emerald-100/80">
+                                <AlertDescription className="min-w-0 text-success-emphasis">
                                     <ul className="min-w-0 list-disc space-y-1 pl-4 break-words">
                                         <li>{t('admin.providerLinked')}</li>
                                         <li>{t('admin.providerEmail')}</li>
@@ -1287,17 +1342,16 @@ function UserStatusDialog({
     const statusTone = isRestoring
         ? {
               panelClassName:
-                  'border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-emerald-100',
-              iconClassName:
-                  'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200',
+                  'border-success/25 bg-success/10 text-success-emphasis',
+              iconClassName: 'bg-success/15 text-success-emphasis',
               title: t('admin.activateTitle'),
               description: t('admin.statusRestoreDescription'),
           }
         : {
               panelClassName:
-                  'border-red-200 bg-red-50 text-red-950 dark:border-red-900/60 dark:bg-red-950/35 dark:text-red-100',
+                  'border-destructive-emphasis/25 bg-destructive-emphasis/10 text-destructive-emphasis',
               iconClassName:
-                  'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-200',
+                  'bg-destructive-emphasis/15 text-destructive-emphasis',
               title: t('admin.deactivateTitle'),
               description: t('admin.statusDeactivateDescription'),
           };
@@ -1625,9 +1679,9 @@ function AdminUserIdentity({
 
     return (
         <div className="flex min-w-0 items-center gap-3">
-            <Avatar className="size-8 rounded-full">
+            <Avatar className="size-8 rounded-none">
                 <AvatarImage src={user.avatar ?? undefined} alt={user.name} />
-                <AvatarFallback className="rounded-full bg-muted text-xs font-medium text-muted-foreground">
+                <AvatarFallback className="rounded-none bg-muted text-xs font-medium text-muted-foreground">
                     {getInitials(user.name)}
                 </AvatarFallback>
             </Avatar>
@@ -1711,7 +1765,7 @@ function UserStatusBadge({ user }: { user: AdminUser }) {
     return (
         <Badge
             variant="outline"
-            className="border-emerald-200 bg-emerald-100 text-emerald-800 uppercase dark:border-emerald-400/70 dark:bg-emerald-500/15 dark:text-emerald-100"
+            className="border-success/25 bg-success/10 text-success-emphasis uppercase"
         >
             <CheckCircle2Icon data-icon="inline-start" />
             {t('admin.statusActive')}
