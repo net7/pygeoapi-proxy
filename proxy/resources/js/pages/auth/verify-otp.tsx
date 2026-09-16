@@ -1,13 +1,12 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head, useForm } from '@inertiajs/react';
 import { RefreshCwIcon, ShieldCheckIcon } from 'lucide-react';
 import InputError from '@/components/input-error';
 import StatusNotice from '@/components/status-notice';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
-import { cn } from '@/lib/utils';
 
 type Props = {
     email: string;
@@ -23,6 +22,7 @@ export default function VerifyOtp({
     resendUrl,
 }: Props) {
     const { t } = useTranslation();
+    const resendForm = useForm({});
 
     return (
         <>
@@ -56,7 +56,11 @@ export default function VerifyOtp({
                                 <InputError message={errors.code} />
                             </div>
 
-                            <Button type="submit" className="w-full">
+                            <Button
+                                type="submit"
+                                className="w-full"
+                                disabled={resendForm.processing}
+                            >
                                 {processing ? (
                                     <Spinner data-icon="inline-start" />
                                 ) : (
@@ -66,18 +70,20 @@ export default function VerifyOtp({
                             </Button>
                         </div>
 
-                        <Link
-                            href={resendUrl}
-                            method="post"
-                            as="button"
-                            className={cn(
-                                buttonVariants({ variant: 'outline' }),
-                                'w-full',
-                            )}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full"
+                            disabled={processing || resendForm.processing}
+                            onClick={() => resendForm.post(resendUrl)}
                         >
-                            <RefreshCwIcon data-icon="inline-start" />
+                            {resendForm.processing ? (
+                                <Spinner data-icon="inline-start" />
+                            ) : (
+                                <RefreshCwIcon data-icon="inline-start" />
+                            )}
                             {t('auth.sendNewCode')}
-                        </Link>
+                        </Button>
                     </>
                 )}
             </Form>
