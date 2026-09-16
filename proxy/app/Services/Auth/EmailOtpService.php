@@ -4,6 +4,7 @@ namespace App\Services\Auth;
 
 use App\Models\EmailOtpChallenge;
 use App\Notifications\EmailOtpNotification;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
@@ -31,30 +32,51 @@ class EmailOtpService
 
         $signedUrl = URL::temporarySignedRoute(
             'auth.otp.show',
-            now()->addMinutes(10),
+            $challenge->expires_at,
             ['challenge' => $challenge],
         );
 
         Notification::route('mail', $normalizedEmail)
-            ->notify((new EmailOtpNotification($challenge, $plainCode, $signedUrl))->locale(app()->getLocale()));
+            ->notify((new EmailOtpNotification($challenge, $plainCode, $signedUrl))
+                ->locale(app()->getLocale())
+                ->afterCommit());
 
         return $challenge;
     }
 
+    public function resend(EmailOtpChallenge $challenge): ?EmailOtpChallenge
+    {
+        return DB::transaction(function () use ($challenge): ?EmailOtpChallenge {
+            $challenge = EmailOtpChallenge::query()->lockForUpdate()->findOrFail($challenge->getKey());
+
+            if ($challenge->isConsumed()) {
+                return null;
+            }
+
+            $challenge->consume();
+
+            return $this->createAndSend($challenge->email, $challenge->purpose, $challenge->payload ?? []);
+        });
+    }
+
     public function verify(EmailOtpChallenge $challenge, string $purpose, string $code): bool
     {
-        if ($challenge->purpose !== $purpose || ! $challenge->canAttempt()) {
-            return false;
-        }
+        return DB::transaction(function () use ($challenge, $purpose, $code): bool {
+            $challenge = EmailOtpChallenge::query()->lockForUpdate()->findOrFail($challenge->getKey());
 
-        if (! Hash::check($code, $challenge->code_hash)) {
-            $challenge->increment('attempts');
+            if ($challenge->purpose !== $purpose || ! $challenge->canAttempt()) {
+                return false;
+            }
 
-            return false;
-        }
+            if (! Hash::check($code, $challenge->code_hash)) {
+                $challenge->increment('attempts');
 
-        $challenge->consume();
+                return false;
+            }
 
-        return true;
+            $challenge->consume();
+
+            return true;
+        });
     }
 }
