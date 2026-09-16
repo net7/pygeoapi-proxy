@@ -9,9 +9,12 @@ use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
+use Laravel\Fortify\Features;
 
 test('admin user management is restricted to administrators', function () {
     $guestResponse = $this->get(route('admin.users.index'));
@@ -58,6 +61,11 @@ test('admins can see users with job counts', function () {
 });
 
 test('admins can create users with a password setup link', function () {
+    config(['fortify.features' => [Features::resetPasswords()]]);
+
+    require base_path('vendor/laravel/fortify/routes/routes.php');
+    Route::getRoutes()->refreshNameLookups();
+
     Notification::fake();
 
     $admin = User::factory()->admin()->create();
@@ -77,7 +85,38 @@ test('admins can create users with a password setup link', function () {
         ->and($user->password)->toBeNull()
         ->and($user->email_verified_at)->not->toBeNull();
 
-    Notification::assertSentTo($user, ResetPassword::class);
+    Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $notification) use ($user): bool {
+        expect($notification->toMail($user)->actionUrl)
+            ->toContain('/reset-password/'.$notification->token, 'email=new.admin%40example.com');
+
+        return true;
+    });
+});
+
+test('admins can create users when password reset is disabled', function () {
+    config(['fortify.features' => []]);
+
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->post(route('admin.users.store'), [
+            'name' => 'New User',
+            'email' => 'New.User@Example.com',
+            'role' => UserRole::User->value,
+        ])
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHasNoErrors();
+
+    $user = User::query()->where('email', 'new.user@example.com')->firstOrFail();
+
+    expect($user->name)->toBe('New User')
+        ->and($user->role)->toBe(UserRole::User)
+        ->and($user->password)->toBeNull()
+        ->and($user->email_verified_at)->not->toBeNull();
+
+    $this->assertDatabaseMissing('password_reset_tokens', ['email' => $user->email]);
+
+    expect(Mail::mailer()->getSymfonyTransport()->messages())->toBeEmpty();
 });
 
 test('admin user creation supports precognitive validation', function () {

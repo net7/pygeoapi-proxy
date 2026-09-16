@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Inertia\Inertia;
 use Inertia\Response;
+use Laravel\Fortify\Features;
 
 class UserController extends Controller
 {
@@ -62,10 +63,12 @@ class UserController extends Controller
             'role' => UserRole::from($validated['role']),
         ])->save();
 
-        $status = Password::sendResetLink(['email' => $user->email]);
+        if (Features::enabled(Features::resetPasswords())) {
+            $status = Password::sendResetLink(['email' => $user->email]);
 
-        if ($status !== Password::RESET_LINK_SENT) {
-            return back()->withErrors(['email' => __($status)]);
+            if ($status !== Password::RESET_LINK_SENT) {
+                return back()->withErrors(['email' => __($status)]);
+            }
         }
 
         return to_route('admin.users.index');

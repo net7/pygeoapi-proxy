@@ -155,7 +155,7 @@ const it = {
         confirmEmail: 'Conferma email',
         copyUserEmail: 'Copia email',
         createUser: 'Crea utente',
-        createUserDescription: 'Verrà inviato un link di configurazione.',
+        createUserDescription: 'Crea un account e assegna il ruolo.',
         bulkDeactivate: 'Disattiva selezionati',
         bulkDeactivateConfirm: 'Disattiva selezionati',
         bulkDeactivateDescription:
@@ -705,7 +705,7 @@ const en = {
         confirmEmail: 'Confirm email',
         copyUserEmail: 'Copy email',
         createUser: 'Create user',
-        createUserDescription: 'A setup link will be sent.',
+        createUserDescription: 'Create an account and assign its role.',
         bulkDeactivate: 'Deactivate selected',
         bulkDeactivateConfirm: 'Deactivate selected',
         bulkDeactivateDescription:
