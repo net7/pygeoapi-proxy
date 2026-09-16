@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { ContentTransition } from '@/components/content-transition';
 import {
     OgcFieldError,
     OgcValidationControl,
@@ -22,6 +23,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useTranslation } from '@/hooks/use-translation';
+import { runUiTransition } from '@/lib/motion';
 import { fieldDisplayLabel, referenceDisplayLabel } from '@/lib/ogc-fields';
 import { errorIdForPath, fieldError } from '@/lib/ogc-form-errors';
 import type { OgcFieldValidationController } from '@/lib/ogc-form-validation';
@@ -87,8 +89,10 @@ export default function DataInputField({
             nextMode === 'reference' ||
             nextMode === 'upload'
         ) {
-            validation.resetPathPrefix(path);
-            setMode(nextMode);
+            runUiTransition(() => {
+                validation.resetPathPrefix(path);
+                setMode(nextMode);
+            });
         }
     }
 
@@ -147,196 +151,212 @@ export default function DataInputField({
     }
 
     return (
-        <SectionFieldSet
-            label={fieldDisplayLabel(field)}
-            supportReference={field.name}
-            description={field.description}
-            validationState={state}
-        >
-            <ToggleGroup
-                type="single"
-                value={mode}
-                onValueChange={changeMode}
-                className="flex-wrap justify-start"
+        <ContentTransition default="none" update="content-change">
+            <SectionFieldSet
+                label={fieldDisplayLabel(field)}
+                supportReference={field.name}
+                description={field.description}
+                validationState={state}
             >
-                <ToggleGroupItem value="inline">
-                    {t('ogc.inline')}
-                </ToggleGroupItem>
-                <ToggleGroupItem value="reference">URL</ToggleGroupItem>
-                <ToggleGroupItem value="upload">
-                    {t('ogc.upload')}
-                </ToggleGroupItem>
-            </ToggleGroup>
+                <ToggleGroup
+                    type="single"
+                    value={mode}
+                    onValueChange={changeMode}
+                    className="flex-wrap justify-start"
+                >
+                    <ToggleGroupItem value="inline">
+                        {t('ogc.inline')}
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="reference">URL</ToggleGroupItem>
+                    <ToggleGroupItem value="upload">
+                        {t('ogc.upload')}
+                    </ToggleGroupItem>
+                </ToggleGroup>
 
-            <FieldGroup className="min-w-0">
-                {mode === 'inline' ? (
-                    <Field
-                        className={cn(
-                            'min-w-0',
-                            ogcValidationFieldClassName(state),
-                        )}
-                        data-invalid={state === 'invalid' ? true : undefined}
-                    >
-                        <FieldLabel>{t('ogc.value')}</FieldLabel>
-                        <OgcValidationControl
-                            state={state}
-                            validLabel={validation.validLabel}
+                <FieldGroup className="min-w-0">
+                    {mode === 'inline' ? (
+                        <Field
+                            className={cn(
+                                'min-w-0',
+                                ogcValidationFieldClassName(state),
+                            )}
+                            data-invalid={
+                                state === 'invalid' ? true : undefined
+                            }
                         >
-                            <Textarea
-                                className={cn(
-                                    'min-w-0',
-                                    ogcValidationControlClassName(state),
-                                )}
-                                data-field-path={path}
-                                data-validation-state={ogcValidationDataState(
-                                    state,
-                                )}
-                                aria-invalid={
-                                    state === 'invalid' ? true : undefined
-                                }
-                                aria-describedby={error ? errorId : undefined}
-                                value={inlineValue(value)}
-                                onChange={(event) =>
-                                    onChange(
-                                        qualifiedValue(
-                                            field,
-                                            event.target.value,
-                                        ),
-                                    )
-                                }
-                            />
-                        </OgcValidationControl>
-                    </Field>
-                ) : null}
-
-                {mode === 'reference' ? (
-                    <Field
-                        className={cn(
-                            'min-w-0',
-                            ogcValidationFieldClassName(state),
-                        )}
-                        data-invalid={state === 'invalid' ? true : undefined}
-                    >
-                        <FieldLabel>{t('ogc.referenceUrl')}</FieldLabel>
-                        {field.references && field.references.length > 0 ? (
+                            <FieldLabel>{t('ogc.value')}</FieldLabel>
                             <OgcValidationControl
                                 state={state}
                                 validLabel={validation.validLabel}
-                                hasBuiltInEndIcon
                             >
-                                <Select
-                                    value={selectedReference || undefined}
-                                    onValueChange={selectReference}
-                                >
-                                    <SelectTrigger
-                                        className={cn(
-                                            'w-full min-w-0',
-                                            ogcValidationControlClassName(
-                                                state,
-                                                true,
+                                <Textarea
+                                    className={cn(
+                                        'min-w-0',
+                                        ogcValidationControlClassName(state),
+                                    )}
+                                    data-field-path={path}
+                                    data-validation-state={ogcValidationDataState(
+                                        state,
+                                    )}
+                                    aria-invalid={
+                                        state === 'invalid' ? true : undefined
+                                    }
+                                    aria-describedby={
+                                        error ? errorId : undefined
+                                    }
+                                    value={inlineValue(value)}
+                                    onChange={(event) =>
+                                        onChange(
+                                            qualifiedValue(
+                                                field,
+                                                event.target.value,
                                             ),
-                                        )}
-                                        data-field-path={path}
-                                        data-validation-state={ogcValidationDataState(
-                                            state,
-                                        )}
-                                        aria-invalid={
-                                            state === 'invalid'
-                                                ? true
-                                                : undefined
-                                        }
-                                        aria-describedby={
-                                            error ? errorId : undefined
-                                        }
+                                        )
+                                    }
+                                />
+                            </OgcValidationControl>
+                        </Field>
+                    ) : null}
+
+                    {mode === 'reference' ? (
+                        <Field
+                            className={cn(
+                                'min-w-0',
+                                ogcValidationFieldClassName(state),
+                            )}
+                            data-invalid={
+                                state === 'invalid' ? true : undefined
+                            }
+                        >
+                            <FieldLabel>{t('ogc.referenceUrl')}</FieldLabel>
+                            {field.references && field.references.length > 0 ? (
+                                <OgcValidationControl
+                                    state={state}
+                                    validLabel={validation.validLabel}
+                                    hasBuiltInEndIcon
+                                >
+                                    <Select
+                                        value={selectedReference || undefined}
+                                        onValueChange={selectReference}
                                     >
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            {field.references.map(
-                                                (reference) => (
-                                                    <SelectItem
-                                                        key={reference.href}
-                                                        value={reference.href}
-                                                    >
-                                                        {referenceDisplayLabel(
-                                                            reference,
-                                                        )}
-                                                    </SelectItem>
+                                        <SelectTrigger
+                                            className={cn(
+                                                'w-full min-w-0',
+                                                ogcValidationControlClassName(
+                                                    state,
+                                                    true,
                                                 ),
                                             )}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
+                                            data-field-path={path}
+                                            data-validation-state={ogcValidationDataState(
+                                                state,
+                                            )}
+                                            aria-invalid={
+                                                state === 'invalid'
+                                                    ? true
+                                                    : undefined
+                                            }
+                                            aria-describedby={
+                                                error ? errorId : undefined
+                                            }
+                                        >
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                {field.references.map(
+                                                    (reference) => (
+                                                        <SelectItem
+                                                            key={reference.href}
+                                                            value={
+                                                                reference.href
+                                                            }
+                                                        >
+                                                            {referenceDisplayLabel(
+                                                                reference,
+                                                            )}
+                                                        </SelectItem>
+                                                    ),
+                                                )}
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                </OgcValidationControl>
+                            ) : null}
+                            <OgcValidationControl
+                                state={state}
+                                validLabel={validation.validLabel}
+                            >
+                                <Input
+                                    type="url"
+                                    className={cn(
+                                        'min-w-0',
+                                        ogcValidationControlClassName(state),
+                                    )}
+                                    data-field-path={path}
+                                    data-validation-state={ogcValidationDataState(
+                                        state,
+                                    )}
+                                    aria-invalid={
+                                        state === 'invalid' ? true : undefined
+                                    }
+                                    aria-describedby={
+                                        error ? errorId : undefined
+                                    }
+                                    value={selectedReference}
+                                    onChange={(event) =>
+                                        setReference(event.target.value)
+                                    }
+                                />
                             </OgcValidationControl>
-                        ) : null}
-                        <OgcValidationControl
-                            state={state}
-                            validLabel={validation.validLabel}
-                        >
-                            <Input
-                                type="url"
-                                className={cn(
-                                    'min-w-0',
-                                    ogcValidationControlClassName(state),
-                                )}
-                                data-field-path={path}
-                                data-validation-state={ogcValidationDataState(
-                                    state,
-                                )}
-                                aria-invalid={
-                                    state === 'invalid' ? true : undefined
-                                }
-                                aria-describedby={error ? errorId : undefined}
-                                value={selectedReference}
-                                onChange={(event) =>
-                                    setReference(event.target.value)
-                                }
-                            />
-                        </OgcValidationControl>
-                    </Field>
-                ) : null}
+                        </Field>
+                    ) : null}
 
-                {mode === 'upload' ? (
-                    <Field
-                        className={cn(
-                            'min-w-0',
-                            ogcValidationFieldClassName(state),
-                        )}
-                        data-invalid={state === 'invalid' ? true : undefined}
-                    >
-                        <FieldLabel>{t('ogc.file')}</FieldLabel>
-                        <OgcValidationControl
-                            state={state}
-                            validLabel={validation.validLabel}
+                    {mode === 'upload' ? (
+                        <Field
+                            className={cn(
+                                'min-w-0',
+                                ogcValidationFieldClassName(state),
+                            )}
+                            data-invalid={
+                                state === 'invalid' ? true : undefined
+                            }
                         >
-                            <Input
-                                type="file"
-                                className={cn(
-                                    'min-w-0',
-                                    ogcValidationControlClassName(state),
-                                )}
-                                data-field-path={path}
-                                data-validation-state={ogcValidationDataState(
-                                    state,
-                                )}
-                                aria-invalid={
-                                    state === 'invalid' ? true : undefined
-                                }
-                                aria-describedby={error ? errorId : undefined}
-                                accept={field.mediaType ?? undefined}
-                                onChange={(event) =>
-                                    readFile(
-                                        event.target.files?.item(0) ?? null,
-                                    )
-                                }
-                            />
-                        </OgcValidationControl>
-                    </Field>
-                ) : null}
-            </FieldGroup>
-            <OgcFieldError id={errorId} message={error} />
-        </SectionFieldSet>
+                            <FieldLabel>{t('ogc.file')}</FieldLabel>
+                            <OgcValidationControl
+                                state={state}
+                                validLabel={validation.validLabel}
+                            >
+                                <Input
+                                    type="file"
+                                    className={cn(
+                                        'min-w-0',
+                                        ogcValidationControlClassName(state),
+                                    )}
+                                    data-field-path={path}
+                                    data-validation-state={ogcValidationDataState(
+                                        state,
+                                    )}
+                                    aria-invalid={
+                                        state === 'invalid' ? true : undefined
+                                    }
+                                    aria-describedby={
+                                        error ? errorId : undefined
+                                    }
+                                    accept={field.mediaType ?? undefined}
+                                    onChange={(event) =>
+                                        readFile(
+                                            event.target.files?.item(0) ?? null,
+                                        )
+                                    }
+                                />
+                            </OgcValidationControl>
+                        </Field>
+                    ) : null}
+                </FieldGroup>
+                <OgcFieldError id={errorId} message={error} />
+            </SectionFieldSet>
+        </ContentTransition>
     );
 }
 

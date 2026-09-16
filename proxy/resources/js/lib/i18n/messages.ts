@@ -65,6 +65,87 @@ const it = {
         processes: 'Processi',
         settings: 'Impostazioni',
     },
+    userGuide: {
+        help: 'Aiuto',
+        open: 'Aiuto: apri la guida',
+        greeting: 'Ciao',
+        description:
+            'Ti accompagniamo dalla scelta di un processo ai risultati della tua analisi.',
+        chapters: 'Passaggi della guida',
+        step: 'Passaggio {current} di {total}',
+        previous: 'Indietro',
+        next: 'Avanti',
+        finish: 'Inizia a usare l’app',
+        close: 'Chiudi guida',
+        reopen: 'Puoi riaprire questa guida in qualsiasi momento dal pulsante Aiuto.',
+        saveError:
+            'Non è stato possibile salvare il primo accesso. La guida potrebbe riapparire al prossimo accesso.',
+        tip: 'Da sapere',
+        choose: {
+            label: 'Scegli un processo',
+            title: 'Da quale analisi vuoi partire?',
+            description:
+                'In Processi trovi i servizi disponibili. Ogni scheda presenta il nome del processo e una breve descrizione.',
+            firstTitle: 'Apri il catalogo',
+            firstBody:
+                'Seleziona Processi nella barra laterale. Su schermi piccoli, apri il menu in alto a sinistra.',
+            secondTitle: 'Scegli una scheda',
+            secondBody:
+                'Fai clic sulla scheda del processo che vuoi eseguire per aprire il modulo di configurazione.',
+            thirdTitle: 'Leggi la descrizione',
+            thirdBody:
+                'Espandi Descrizione del servizio per capire cosa fa il processo prima di inserire i tuoi dati.',
+            tip: 'Processi contiene i servizi disponibili; I miei processi raccoglie le esecuzioni che hai avviato.',
+        },
+        configure: {
+            label: 'Configura e avvia',
+            title: 'Prepara i dati della tua analisi',
+            description:
+                'Il modulo cambia in base al processo scelto e ti guida nella compilazione dei dati richiesti.',
+            firstTitle: 'Dai un nome e compila gli input',
+            firstBody:
+                'Scegli un nome riconoscibile. Inserisci i parametri e, se previsti, aggiungi righe alle tabelle o carica i file richiesti.',
+            secondTitle: 'Scegli gli output',
+            secondBody:
+                'Seleziona i risultati da ottenere e i formati disponibili. Puoi aggiungere una nota per ricordare lo scopo dell’esecuzione.',
+            thirdTitle: 'Controlla e avvia',
+            thirdBody:
+                'Premi Esegui. Se un valore non è valido o manca un dato obbligatorio, correggi i campi segnalati e riprova.',
+            tip: 'Le indicazioni accanto ai campi aiutano a rispettare formati, unità di misura e limiti previsti dal processo.',
+        },
+        monitor: {
+            label: 'Segui l’esecuzione',
+            title: 'Ritrova tutte le tue esecuzioni',
+            description:
+                'In I miei processi puoi consultare le analisi avviate e seguirne lo stato fino al completamento.',
+            firstTitle: 'Trova il tuo processo',
+            firstBody:
+                'Usa la ricerca e i filtri della tabella per trovare un’esecuzione per nome, processo o stato.',
+            secondTitle: 'Apri il dettaglio',
+            secondBody:
+                'Consulta lo stato e i dettagli dell’esecuzione. Gli aggiornamenti arrivano automaticamente mentre il processo è in corso.',
+            thirdTitle: 'Organizza le tue analisi',
+            thirdBody:
+                'Modifica il nome o la nota per riconoscere l’analisi. Puoi anche rivedere gli input utilizzati nel dettaglio del processo.',
+            tip: 'Puoi lasciare la pagina mentre un processo è in esecuzione e ritrovarlo in seguito in I miei processi.',
+        },
+        results: {
+            label: 'Esplora i risultati',
+            title: 'Dai risultati alla prossima analisi',
+            description:
+                'Quando l’esecuzione termina, apri il suo dettaglio per consultare gli output disponibili.',
+            firstTitle: 'Visualizza le anteprime',
+            firstBody:
+                'In base al tipo di risultato puoi trovare tabelle, grafici, immagini o mappe. Alcuni formati sono disponibili solo come file da scaricare.',
+            secondTitle: 'Scarica i file',
+            secondBody:
+                'Usa Scarica sul risultato che ti interessa. Se il recupero dei risultati non riesce, usa Riprova quando disponibile.',
+            thirdTitle: 'Riutilizza gli input',
+            thirdBody:
+                'Premi Riutilizza input per preparare una nuova esecuzione con gli stessi dati. Controlla i valori copiati e scegli di nuovo nome, nota e output.',
+            tip: 'Per lingua, aspetto e impostazioni dell’account usa i controlli della barra superiore e il menu del tuo profilo.',
+        },
+    },
     toast: {
         close: 'Chiudi notifica',
         defaultError: 'La richiesta non è stata completata.',
@@ -117,6 +198,8 @@ const it = {
         newPassword: 'Nuova password',
         noAccount: 'Non hai un account?',
         password: 'Password',
+        hidePassword: 'Nascondi password',
+        showPassword: 'Mostra password',
         register: {
             description: 'Inserisci i dati per creare il tuo account',
             title: 'Crea un account',
@@ -155,7 +238,7 @@ const it = {
         confirmEmail: 'Conferma email',
         copyUserEmail: 'Copia email',
         createUser: 'Crea utente',
-        createUserDescription: 'Verrà inviato un link di configurazione.',
+        createUserDescription: 'Crea un account e assegna il ruolo.',
         bulkDeactivate: 'Disattiva selezionati',
         bulkDeactivateConfirm: 'Disattiva selezionati',
         bulkDeactivateDescription:
@@ -223,6 +306,7 @@ const it = {
         userSelfStatusUnavailable:
             'Non puoi modificare lo stato del tuo account.',
         userJobs: 'Processi',
+        firstAccess: 'Primo accesso',
         usersNoMatch: 'Nessun utente corrisponde ai filtri correnti.',
         viewUserJobs: 'Vedi processi',
     },
@@ -299,6 +383,7 @@ const it = {
         localJobId: 'ID locale',
         message: 'Messaggio',
         noJobMessage: 'Nessun messaggio disponibile per il processo.',
+        remoteJobMissing: 'Il processo remoto non è più disponibile.',
         noJobsMatch: 'Nessun processo corrisponde ai filtri correnti.',
         noJobsStarted: 'Non hai ancora avviato processi.',
         noNote: 'Nessuna nota salvata per questo processo.',
@@ -372,12 +457,16 @@ const it = {
     ogc: {
         addRow: 'Aggiungi riga',
         arrayTableRow: 'Riga {row}',
+        arrayTableColumn: 'Colonna {column}',
+        variant: 'Variante',
         arrayTableScrollHint:
             'Scorri orizzontalmente per vedere tutte le colonne.',
         async: 'Asincrono',
         chartHideAll: 'Nascondi tutte le serie',
         chartShowAll: 'Mostra tutte le serie',
         chartValueAxis: 'Valore',
+        chartDomain: 'Dominio',
+        chartSeries: 'Serie {number}',
         checkInputs: 'Controlla gli input del processo',
         checkProcessData: 'Controlla i dati del processo',
         csvPreviewTruncated:
@@ -436,16 +525,23 @@ const it = {
         processCountOne: '{count} processo',
         processPreparing: 'Processo in preparazione',
         processPreparingDescription:
-            'Il form del processo apparirà al termine del warm-up in background.',
+            'Il modulo del processo apparirà al termine della preparazione.',
         processPreparingTitle: 'La descrizione del processo è in preparazione',
         processesDescription: 'Processi OGC API disponibili da Geo-INQUIRE.',
         processesTitle: 'Processi',
         reference: 'Riferimento',
         referenceUrl: 'URL di riferimento',
         recenterMap: 'Ricentra sulla mappa',
+        mapTitle: 'Mappa',
+        mapZoomIn: 'Ingrandisci',
+        mapZoomOut: 'Riduci',
+        mapToggleAttribution: 'Mostra o nascondi le attribuzioni',
+        mapFeedback: 'Invia un commento sulla mappa',
+        mapContributors: 'Collaboratori di OpenStreetMap',
         removeRow: 'Rimuovi riga',
+        serviceDescription: 'Descrizione del servizio',
         servicePreparingDescription:
-            'La lista processi apparirà al termine del warm-up in background.',
+            'L’elenco dei processi apparirà al termine della preparazione.',
         servicePreparingTitle: 'Catalogo servizi in preparazione',
         selectOutputsDescription:
             'Scegli gli output da richiedere e, quando disponibile, il formato desiderato.',
@@ -526,6 +622,17 @@ const it = {
             nameLabel: 'Nome passkey',
             namePlaceholder: 'es. MacBook Pro, iPhone',
             notSupported: 'Le passkey non sono supportate in questo browser.',
+            cancelled: 'L’operazione con la passkey è stata annullata.',
+            alreadyRegistered:
+                'Questo dispositivo è già registrato come passkey.',
+            invalidDomain:
+                'Le passkey non possono essere usate su questo dominio.',
+            unknownError: 'Si è verificato un errore con la passkey. Riprova.',
+            networkError:
+                'Impossibile contattare il server. Controlla la connessione e riprova.',
+            requestFailed:
+                'La richiesta della passkey non è riuscita (codice {status}). Riprova.',
+            deviceName: '{browser} su {os}',
             register: 'Registra passkey',
             registering: 'Registrazione...',
             remove: 'Rimuovi passkey',
@@ -618,6 +725,87 @@ const en = {
         processes: 'Processes',
         settings: 'Settings',
     },
+    userGuide: {
+        help: 'Help',
+        open: 'Help: open user guide',
+        greeting: 'Hi',
+        description:
+            'Let’s walk through choosing a process, running an analysis, and exploring your results.',
+        chapters: 'Guide steps',
+        step: 'Step {current} of {total}',
+        previous: 'Back',
+        next: 'Next',
+        finish: 'Start using the app',
+        close: 'Close guide',
+        reopen: 'You can reopen this guide at any time using the Help button.',
+        saveError:
+            'Your first access could not be saved. The guide may appear again the next time you sign in.',
+        tip: 'Good to know',
+        choose: {
+            label: 'Choose a process',
+            title: 'Which analysis will you start with?',
+            description:
+                'Processes lists the available services. Each card shows a process name and a short description.',
+            firstTitle: 'Open the catalog',
+            firstBody:
+                'Select Processes in the sidebar. On smaller screens, open the menu in the top left corner.',
+            secondTitle: 'Choose a card',
+            secondBody:
+                'Click the card of the process you want to run to open its configuration form.',
+            thirdTitle: 'Read the description',
+            thirdBody:
+                'Expand Service description to understand what the process does before entering your data.',
+            tip: 'Processes contains the available services; My Jobs collects the executions you have started.',
+        },
+        configure: {
+            label: 'Configure and run',
+            title: 'Prepare the data for your analysis',
+            description:
+                'The form adapts to the selected process and guides you through its required inputs.',
+            firstTitle: 'Name the job and fill in the inputs',
+            firstBody:
+                'Choose a recognizable name. Enter the parameters and, where supported, add table rows or upload the required files.',
+            secondTitle: 'Choose your outputs',
+            secondBody:
+                'Select the results you need and their available formats. You can add a note to remember the purpose of this execution.',
+            thirdTitle: 'Review and run',
+            thirdBody:
+                'Press Execute. If a value is invalid or a required input is missing, correct the highlighted fields and try again.',
+            tip: 'The instructions beside each field explain the formats, units, and limits expected by the process.',
+        },
+        monitor: {
+            label: 'Follow your job',
+            title: 'Find all your executions in one place',
+            description:
+                'In My Jobs you can find your analyses and follow their status through to completion.',
+            firstTitle: 'Find your job',
+            firstBody:
+                'Use the table search and filters to find an execution by name, process, or status.',
+            secondTitle: 'Open the details',
+            secondBody:
+                'Check the execution status and details. Updates arrive automatically while the job is running.',
+            thirdTitle: 'Organize your work',
+            thirdBody:
+                'Edit the name or note to identify the analysis. You can also review the inputs used in the job details.',
+            tip: 'You can leave the page while a job is running and return to it later in My Jobs.',
+        },
+        results: {
+            label: 'Explore the results',
+            title: 'From your results to the next analysis',
+            description:
+                'Once the execution finishes, open its details to explore the available outputs.',
+            firstTitle: 'View the previews',
+            firstBody:
+                'Depending on the result type, you may find tables, charts, images, or maps. Some formats are only available as downloadable files.',
+            secondTitle: 'Download the files',
+            secondBody:
+                'Use Download on the result you need. If result collection fails, use Retry when available.',
+            thirdTitle: 'Reuse your inputs',
+            thirdBody:
+                'Press Reuse inputs to prepare a new execution with the same data. Review the copied values and choose the name, note, and outputs again.',
+            tip: 'For language, appearance, and account settings, use the top bar controls and your profile menu.',
+        },
+    },
     toast: {
         close: 'Close notification',
         defaultError: 'The request could not be completed.',
@@ -669,6 +857,8 @@ const en = {
         newPassword: 'New password',
         noAccount: "Don't have an account?",
         password: 'Password',
+        hidePassword: 'Hide password',
+        showPassword: 'Show password',
         register: {
             description: 'Enter your details below to create your account',
             title: 'Create an account',
@@ -705,7 +895,7 @@ const en = {
         confirmEmail: 'Confirm email',
         copyUserEmail: 'Copy email',
         createUser: 'Create user',
-        createUserDescription: 'A setup link will be sent.',
+        createUserDescription: 'Create an account and assign its role.',
         bulkDeactivate: 'Deactivate selected',
         bulkDeactivateConfirm: 'Deactivate selected',
         bulkDeactivateDescription:
@@ -771,6 +961,7 @@ const en = {
         userSelfStatusUnavailable:
             'You cannot change the status of your own account.',
         userJobs: 'Jobs',
+        firstAccess: 'First access',
         usersNoMatch: 'No users match the current filters.',
         viewUserJobs: 'View jobs',
     },
@@ -846,6 +1037,7 @@ const en = {
         localJobId: 'Local ID',
         message: 'Message',
         noJobMessage: 'No job message available.',
+        remoteJobMissing: 'The remote job is no longer available.',
         noJobsMatch: 'No jobs match the current filters.',
         noJobsStarted: 'You have not started any jobs yet.',
         noNote: 'No note saved for this job.',
@@ -918,11 +1110,15 @@ const en = {
     ogc: {
         addRow: 'Add row',
         arrayTableRow: 'Row {row}',
+        arrayTableColumn: 'Column {column}',
+        variant: 'Variant',
         arrayTableScrollHint: 'Scroll horizontally to view all columns.',
         async: 'Async',
         chartHideAll: 'Hide all series',
         chartShowAll: 'Show all series',
         chartValueAxis: 'Value',
+        chartDomain: 'Domain',
+        chartSeries: 'Series {number}',
         checkInputs: 'Check the process inputs',
         checkProcessData: 'Check the process data',
         csvPreviewTruncated:
@@ -986,7 +1182,14 @@ const en = {
         reference: 'Reference',
         referenceUrl: 'Reference URL',
         recenterMap: 'Recenter map',
+        mapTitle: 'Map',
+        mapZoomIn: 'Zoom in',
+        mapZoomOut: 'Zoom out',
+        mapToggleAttribution: 'Toggle attribution',
+        mapFeedback: 'Map feedback',
+        mapContributors: 'OpenStreetMap contributors',
         removeRow: 'Remove row',
+        serviceDescription: 'Service description',
         servicePreparingDescription:
             'The process list will appear when the background warm-up finishes.',
         servicePreparingTitle: 'Service catalog is being prepared',
@@ -1065,6 +1268,16 @@ const en = {
             nameLabel: 'Passkey name',
             namePlaceholder: 'e.g., MacBook Pro, iPhone',
             notSupported: 'Passkeys are not supported in this browser.',
+            cancelled: 'The passkey operation was cancelled.',
+            alreadyRegistered:
+                'This device is already registered as a passkey.',
+            invalidDomain: 'Passkeys cannot be used on this domain.',
+            unknownError: 'A passkey error occurred. Please try again.',
+            networkError:
+                'Unable to reach the server. Check your connection and try again.',
+            requestFailed:
+                'The passkey request failed (status {status}). Please try again.',
+            deviceName: '{browser} on {os}',
             register: 'Register passkey',
             registering: 'Registering...',
             remove: 'Remove passkey',

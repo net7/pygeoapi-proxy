@@ -36,7 +36,7 @@ class EmailOtpService
         );
 
         Notification::route('mail', $normalizedEmail)
-            ->notify(new EmailOtpNotification($challenge, $plainCode, $signedUrl));
+            ->notify((new EmailOtpNotification($challenge, $plainCode, $signedUrl))->locale(app()->getLocale()));
 
         return $challenge;
     }

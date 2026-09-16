@@ -42,31 +42,26 @@ class PollProcessExecution
         $status = $this->statusFromRemote((string) ($job['status'] ?? 'running'));
 
         $execution->update([
+            'status' => $status,
             'progress' => (int) ($job['progress'] ?? $execution->progress),
             'message' => $job['message'] ?? $execution->message,
             'remote_created_at' => $this->parseRemoteDate($job['created'] ?? null),
             'remote_started_at' => $this->parseRemoteDate($job['started'] ?? null),
             'remote_finished_at' => $this->parseRemoteDate($job['finished'] ?? null),
             'last_polled_at' => now(),
-            ...($status === ExecutionStatus::Successful ? [] : [
-                'status' => $status,
-                'failed_at' => $status === ExecutionStatus::Failed ? now() : $execution->failed_at,
-            ]),
-        ]);
-
-        $execution->refresh();
-
-        if ($status === ExecutionStatus::Successful) {
-            $execution->update([
-                'status' => ExecutionStatus::Successful,
+            'failed_at' => $status === ExecutionStatus::Failed ? now() : $execution->failed_at,
+            ...($status === ExecutionStatus::Successful ? [
                 'result_collection_status' => $execution->requested_outputs === []
                     ? ResultCollectionStatus::Successful
                     : ResultCollectionStatus::Pending,
                 'result_collection_error' => null,
                 'completed_at' => now(),
-            ]);
-            $execution->refresh();
+            ] : []),
+        ]);
 
+        $execution->refresh();
+
+        if ($status === ExecutionStatus::Successful) {
             if ($execution->result_collection_status === ResultCollectionStatus::Successful) {
                 $execution->user->notify((new ProcessExecutionCompleted($execution))->afterCommit());
 
@@ -100,6 +95,8 @@ class PollProcessExecution
 
     private function parseRemoteDate(?string $date): ?CarbonImmutable
     {
-        return filled($date) ? CarbonImmutable::parse($date) : null;
+        return filled($date)
+            ? CarbonImmutable::parse($date, 'UTC')->setTimezone((string) config('app.timezone'))
+            : null;
     }
 }

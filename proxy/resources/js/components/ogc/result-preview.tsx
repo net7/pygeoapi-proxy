@@ -1,6 +1,10 @@
 import { ChevronDownIcon, Download, FileTextIcon } from 'lucide-react';
 import { lazy, Suspense } from 'react';
 
+import {
+    AfterNavigation,
+    ContentTransition,
+} from '@/components/content-transition';
 import ImageResultPreview from '@/components/ogc/image-result-preview';
 import RawPayloadBlock from '@/components/ogc/raw-payload-block';
 import ResultPreviewLoading from '@/components/ogc/result-preview-loading';
@@ -114,16 +118,25 @@ export default function ResultPreview({
                             />
                         ) : null}
                         {!isImage && preview?.kind === 'chart' ? (
-                            <Suspense
-                                fallback={
-                                    <ResultPreviewLoading className="min-h-96" />
-                                }
+                            <ContentTransition
+                                default="none"
+                                update="content-change"
                             >
-                                <ChartResultPreview
-                                    data={preview.data}
-                                    copyLabel={result.title ?? result.outputId}
-                                />
-                            </Suspense>
+                                <Suspense
+                                    fallback={
+                                        <ResultPreviewLoading className="min-h-96" />
+                                    }
+                                >
+                                    <AfterNavigation>
+                                        <ChartResultPreview
+                                            data={preview.data}
+                                            copyLabel={
+                                                result.title ?? result.outputId
+                                            }
+                                        />
+                                    </AfterNavigation>
+                                </Suspense>
+                            </ContentTransition>
                         ) : null}
                         {!isImage && preview?.kind === 'csv' ? (
                             <CsvPreview

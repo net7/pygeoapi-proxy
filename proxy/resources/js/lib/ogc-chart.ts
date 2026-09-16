@@ -1,3 +1,7 @@
+import { defaultLanguage, languageToLocale } from '@/lib/i18n/languages';
+import type { Language } from '@/lib/i18n/languages';
+import { translate } from '@/lib/i18n/translation';
+
 export type OgcChartDomain = {
     key: string;
     label: string;
@@ -27,12 +31,15 @@ export type OgcChartSeriesVisibilityControls = {
 
 const defaultVisibleSeriesCount = 3;
 
-export function normalizeChartPayload(payload: unknown): OgcLineChart | null {
+export function normalizeChartPayload(
+    payload: unknown,
+    language: Language = defaultLanguage,
+): OgcLineChart | null {
     if (!isRecord(payload) || payload.chartType !== 'line') {
         return null;
     }
 
-    const domain = normalizeDomain(payload.domain);
+    const domain = normalizeDomain(payload.domain, language);
 
     if (!domain) {
         return null;
@@ -44,7 +51,7 @@ export function normalizeChartPayload(payload: unknown): OgcLineChart | null {
 
     const series = payload.series
         .map((item, index) =>
-            normalizeSeries(item, domain.values.length, index),
+            normalizeSeries(item, domain.values.length, index, language),
         )
         .filter((item): item is OgcChartSeries => item !== null);
 
@@ -98,7 +105,10 @@ export function chartSeriesVisibilityControls(
     };
 }
 
-function normalizeDomain(value: unknown): OgcChartDomain | null {
+function normalizeDomain(
+    value: unknown,
+    language: Language,
+): OgcChartDomain | null {
     if (!isRecord(value) || !Array.isArray(value.values)) {
         return null;
     }
@@ -111,7 +121,10 @@ function normalizeDomain(value: unknown): OgcChartDomain | null {
 
     return {
         key: stringValue(value.key, 'domain'),
-        label: stringValue(value.label, stringValue(value.key, 'Domain')),
+        label: stringValue(
+            value.label,
+            stringValue(value.key, translate(language, 'ogc.chartDomain')),
+        ),
         description: optionalStringValue(value.description),
         unit: optionalStringValue(value.unit),
         values,
@@ -122,6 +135,7 @@ function normalizeSeries(
     value: unknown,
     expectedLength: number,
     index: number,
+    language: Language,
 ): OgcChartSeries | null {
     if (!isRecord(value) || !Array.isArray(value.values)) {
         return null;
@@ -140,7 +154,13 @@ function normalizeSeries(
 
     return {
         key,
-        label: stringValue(value.label, key),
+        label: stringValue(
+            value.label,
+            stringValue(
+                value.key,
+                translate(language, 'ogc.chartSeries', { number: index + 1 }),
+            ),
+        ),
         description: optionalStringValue(value.description),
         unit: optionalStringValue(value.unit),
         values,
@@ -152,6 +172,15 @@ function normalizeNumericValues(values: unknown[]): number[] {
         (value): value is number =>
             typeof value === 'number' && Number.isFinite(value),
     );
+}
+
+export function formatChartNumber(value: unknown, language: Language): string {
+    return typeof value === 'number' && Number.isFinite(value)
+        ? new Intl.NumberFormat(languageToLocale(language), {
+              maximumFractionDigits: 4,
+              notation: Math.abs(value) >= 1_000_000 ? 'compact' : 'standard',
+          }).format(value)
+        : '';
 }
 
 function stringValue(value: unknown, fallback: string): string {

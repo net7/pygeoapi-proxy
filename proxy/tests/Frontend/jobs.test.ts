@@ -4,6 +4,7 @@ import {
     formatJobDate,
     isJobFailure,
     isResultCollectionActive,
+    jobMessage,
 } from '../../resources/js/lib/jobs';
 
 describe('isJobFailure', () => {
@@ -55,6 +56,22 @@ describe('formatJobDate', () => {
         );
         expect(formatJobDate('not-a-date', 'en-US', 'Non disponibile')).toBe(
             'Non disponibile',
+        );
+    });
+});
+describe('jobMessage', () => {
+    test('translates app messages while preserving upstream diagnostics', () => {
+        expect(jobMessage('Remote job is missing.', 'it')).toBe(
+            'Il processo remoto non è più disponibile.',
+        );
+        expect(jobMessage('Remote job is missing.', 'en')).toBe(
+            'The remote job is no longer available.',
+        );
+        expect(jobMessage(null, 'it')).toBe(
+            'Nessun messaggio disponibile per il processo.',
+        );
+        expect(jobMessage('Invalid external parameter x', 'it')).toBe(
+            'Invalid external parameter x',
         );
     });
 });

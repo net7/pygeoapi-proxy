@@ -18,6 +18,11 @@ import type { LucideIcon } from 'lucide-react';
 import { lazy, Suspense, useState } from 'react';
 import type { ReactNode } from 'react';
 
+import {
+    AfterNavigation,
+    ContentTransition,
+} from '@/components/content-transition';
+
 import { DeleteJobButton } from '@/components/ogc/delete-job-dialog';
 import {
     InputSupport,
@@ -56,6 +61,7 @@ import {
     isJobFailure,
     isJobTerminal,
     isResultCollectionActive,
+    jobMessage,
     jobStatusStyles,
 } from '@/lib/jobs';
 import { hasPendingMapLayers } from '@/lib/ogc-map-layers';
@@ -81,7 +87,7 @@ export default function ProcessExecutionShow({
     pollingInterval: number;
     inputReview?: OgcInputReview | null;
 }) {
-    const { locale, t } = useTranslation();
+    const { language, locale, t } = useTranslation();
     const [inputReviewOpen, setInputReviewOpen] = useState(false);
     const styles = jobStatusStyles(execution.status);
     const StatusIcon = styles.icon;
@@ -118,7 +124,7 @@ export default function ProcessExecutionShow({
             />
 
             <div className="flex min-w-0 flex-col gap-5 p-4">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="page-header flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="flex min-w-0 flex-1 flex-col gap-3">
                         <Button
                             asChild
@@ -134,7 +140,7 @@ export default function ProcessExecutionShow({
 
                         <div className="flex min-w-0 flex-col gap-2">
                             <div className="flex flex-wrap items-center gap-2">
-                                <h1 className="min-w-0 text-2xl font-semibold">
+                                <h1 className="min-w-0 break-words">
                                     {execution.displayName}
                                 </h1>
                                 <JobNameEditDialog execution={execution} />
@@ -319,20 +325,29 @@ export default function ProcessExecutionShow({
                         {!isPolling && execution.results.length > 0
                             ? visualResults.map((item) =>
                                   item.kind === 'geotiff-map' ? (
-                                      <Suspense
+                                      <ContentTransition
                                           key={`map-${item.outputId}`}
-                                          fallback={
-                                              <ResultPreviewLoading className="min-h-[30rem]" />
-                                          }
+                                          default="none"
+                                          update="content-change"
                                       >
-                                          <GeoTiffMapResultPreview
-                                              executionId={execution.id}
-                                              title={item.title}
-                                              description={item.description}
-                                              geotiff={item.geotiff}
-                                              sld={item.sld}
-                                          />
-                                      </Suspense>
+                                          <Suspense
+                                              fallback={
+                                                  <ResultPreviewLoading className="min-h-[30rem]" />
+                                              }
+                                          >
+                                              <AfterNavigation>
+                                                  <GeoTiffMapResultPreview
+                                                      executionId={execution.id}
+                                                      title={item.title}
+                                                      description={
+                                                          item.description
+                                                      }
+                                                      geotiff={item.geotiff}
+                                                      sld={item.sld}
+                                                  />
+                                              </AfterNavigation>
+                                          </Suspense>
+                                      </ContentTransition>
                                   ) : (
                                       <ResultPreview
                                           key={item.result.id}
@@ -349,10 +364,10 @@ export default function ProcessExecutionShow({
                             isJobFailure(execution.status) ? (
                                 <ProcessFailureNotice
                                     title={t('jobs.failureTitle')}
-                                    description={
-                                        execution.message ??
-                                        t('jobs.noJobMessage')
-                                    }
+                                    description={jobMessage(
+                                        execution.message,
+                                        language,
+                                    )}
                                 />
                             ) : (
                                 <AlertResultsEmpty
@@ -708,7 +723,7 @@ function HeaderMetadataProgress({
 }) {
     return (
         <div
-            className="h-1.5 w-16 overflow-hidden rounded-full bg-muted dark:bg-background/30"
+            className="h-1.5 w-16 overflow-hidden rounded-none bg-muted dark:bg-background/30"
             role="progressbar"
             aria-valuemin={0}
             aria-valuemax={100}
@@ -716,7 +731,7 @@ function HeaderMetadataProgress({
         >
             <div
                 className={cn(
-                    'h-full rounded-full transition-[width]',
+                    'h-full rounded-none transition-[width]',
                     progressClassName,
                 )}
                 style={{ width: `${value}%` }}

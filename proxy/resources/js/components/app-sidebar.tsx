@@ -72,18 +72,25 @@ const footerNavItems: NavItem[] = [
 
 export function AppSidebar() {
     const { auth } = usePage().props;
-    const { state } = useSidebar();
+    const { state, isMobile } = useSidebar();
     const { t } = useTranslation();
 
     return (
         <Sidebar collapsible="icon" variant="inset">
-            <SidebarHeader>
+            <SidebarHeader className="px-3 pt-5 pb-6 group-data-[collapsible=icon]:px-2">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
+                        <SidebarMenuButton
+                            size="lg"
+                            className="h-auto min-h-12 hover:bg-transparent"
+                            asChild
+                        >
                             <Link href={jobsIndex()} prefetch>
                                 <AppLogo
-                                    collapsed={state === 'collapsed'}
+                                    appearance="inverse"
+                                    collapsed={
+                                        state === 'collapsed' && !isMobile
+                                    }
                                     collapsedLogoSrc={INGV_LOGO_SHORT_IMAGE}
                                 />
                             </Link>
@@ -92,7 +99,7 @@ export function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent>
+            <SidebarContent className="gap-6">
                 <NavMain items={mainNavItems} />
                 {auth.user?.is_admin && (
                     <NavMain
@@ -102,7 +109,7 @@ export function AppSidebar() {
                 )}
             </SidebarContent>
 
-            <SidebarFooter>
+            <SidebarFooter className="border-t border-sidebar-border px-2 py-3">
                 <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>

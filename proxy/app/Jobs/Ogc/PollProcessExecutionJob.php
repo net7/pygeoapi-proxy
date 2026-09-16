@@ -32,7 +32,11 @@ class PollProcessExecutionJob implements ShouldQueue
      */
     public function middleware(): array
     {
-        return [new WithoutOverlapping("process-execution-{$this->processExecutionId}")];
+        return [
+            (new WithoutOverlapping("process-execution-{$this->processExecutionId}"))
+                ->releaseAfter(10)
+                ->expireAfter(180),
+        ];
     }
 
     /**

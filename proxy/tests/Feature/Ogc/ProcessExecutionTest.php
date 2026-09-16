@@ -118,7 +118,7 @@ test('starting a process stores an optional user note without sending it to the 
     $execution = ProcessExecution::query()->sole();
 
     expect($execution->note)->toBe($note)
-        ->and($execution->note_updated_at?->toIso8601String())->toBe('2026-07-01T10:15:00+00:00');
+        ->and($execution->note_updated_at?->toIso8601String())->toBe('2026-07-01T10:15:00+02:00');
 
     Bus::assertDispatched(SubmitProcessExecutionJob::class, fn (SubmitProcessExecutionJob $job): bool => $job->processExecutionId === $execution->id
         && ! array_key_exists('note', $job->payload)

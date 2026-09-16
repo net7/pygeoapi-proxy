@@ -33,6 +33,7 @@ import { markJobsIndexStale } from '@/lib/job-list-refresh';
 import { validateOgcInputs } from '@/lib/ogc-ajv-validation';
 import { fieldError } from '@/lib/ogc-form-errors';
 import type { OgcFormErrors } from '@/lib/ogc-form-errors';
+import { updateFormProperty } from '@/lib/ogc-form-updates';
 import { ogcConstraintMessage } from '@/lib/ogc-form-validation';
 import {
     initialInputValues,
@@ -118,11 +119,11 @@ export default function DynamicProcessForm({
         });
     }
 
-    function setInput(name: string, value: unknown) {
-        setData('inputs', {
-            ...data.inputs,
-            [name]: value,
-        });
+    function setInput(name: string, update: unknown) {
+        setData((currentData) => ({
+            ...currentData,
+            inputs: updateFormProperty(currentData.inputs, name, update),
+        }));
     }
 
     function applyExamplePayload() {
@@ -192,9 +193,13 @@ export default function DynamicProcessForm({
                             <Input
                                 id="process-name"
                                 value={data.name}
-                                onChange={(event) =>
-                                    setData('name', event.target.value)
-                                }
+                                onChange={(event) => {
+                                    const name = event.target.value;
+                                    setData((currentData) => ({
+                                        ...currentData,
+                                        name,
+                                    }));
+                                }}
                                 placeholder={t('jobs.processNamePlaceholder')}
                                 maxLength={255}
                                 aria-label={t('jobs.processName')}
@@ -228,7 +233,7 @@ export default function DynamicProcessForm({
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    className="border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200 hover:text-amber-950 focus-visible:ring-amber-500 dark:border-amber-500/50 dark:bg-amber-500/15 dark:text-amber-200 dark:hover:bg-amber-500/25"
+                                    className="border-warning/30 bg-highlight/15 text-warning-emphasis hover:bg-highlight/25 hover:text-warning-emphasis focus-visible:ring-warning"
                                     onClick={applyExamplePayload}
                                 >
                                     <WandSparklesIcon data-icon="inline-start" />
@@ -257,7 +262,9 @@ export default function DynamicProcessForm({
             <ProcessOutputSelector
                 outputs={schema.outputs}
                 selections={outputSelections}
-                onChange={(outputs) => setData('outputs', outputs)}
+                onChange={(outputs) =>
+                    setData((currentData) => ({ ...currentData, outputs }))
+                }
                 validation={validation}
             />
 
@@ -271,7 +278,9 @@ export default function DynamicProcessForm({
                 <CardContent className="min-w-0">
                     <JobNoteEditor
                         value={data.note}
-                        onChange={(note) => setData('note', note)}
+                        onChange={(note) =>
+                            setData((currentData) => ({ ...currentData, note }))
+                        }
                     />
                 </CardContent>
             </Card>

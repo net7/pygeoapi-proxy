@@ -37,8 +37,8 @@ export default function DeleteUser({
                 title={t('settings.deleteAccount.title')}
                 description={t('settings.deleteAccount.description')}
             />
-            <div className="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10">
-                <div className="relative space-y-0.5 text-red-600 dark:text-red-100">
+            <div className="space-y-4 rounded-lg border border-destructive-emphasis/25 bg-destructive-emphasis/5 p-4">
+                <div className="relative space-y-0.5 text-destructive-emphasis">
                     <p className="font-medium">
                         {t('settings.deleteAccount.warning')}
                     </p>

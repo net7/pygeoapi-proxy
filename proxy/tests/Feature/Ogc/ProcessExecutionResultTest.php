@@ -166,7 +166,7 @@ test('users can view map layer metadata on their execution detail', function () 
             ->where('execution.results.0.mapLayer.name', 'pe_1_result_1_dem')
             ->where('execution.results.0.mapLayer.styleName', 'pe_1_result_1_dem_style')
             ->where('execution.results.0.mapLayer.bounds', [14.1, 40.6, 14.7, 41.1])
-            ->where('execution.results.0.mapLayer.publishedAt', '2026-07-08T10:00:00+00:00')
+            ->where('execution.results.0.mapLayer.publishedAt', '2026-07-08T10:00:00+02:00')
             ->where('execution.results.0.mapLayer.error', null));
 });
 

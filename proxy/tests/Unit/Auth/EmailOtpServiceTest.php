@@ -49,6 +49,37 @@ test('service verifies valid code and consumes challenge', function () {
         ->and($challenge->refresh()->consumed_at)->not->toBeNull();
 });
 
+test('queued notifications preserve the language selected when requested', function (string $language) {
+    Notification::fake();
+    app()->setLocale($language);
+
+    app(EmailOtpService::class)->createAndSend(
+        email: 'researcher@example.org',
+        purpose: EmailOtpChallenge::PurposeSocialLogin,
+    );
+
+    app()->setLocale($language === 'it' ? 'en' : 'it');
+
+    Notification::assertSentOnDemand(EmailOtpNotification::class, fn (EmailOtpNotification $notification): bool => $notification->locale === $language);
+})->with(['it', 'en']);
+
+test('italian verification emails localize the shared mail template', function () {
+    app()->setLocale('it');
+
+    $challenge = EmailOtpChallenge::factory()->create();
+    $mail = (new EmailOtpNotification($challenge, '123456', 'https://example.test/verify'))
+        ->toMail((object) []);
+    $html = (string) $mail->render();
+
+    expect($mail->subject)->toBe('Conferma l’accesso via email')
+        ->and($html)->toContain('Apri la pagina di verifica')
+        ->toContain('Cordiali saluti,')
+        ->toContain('Tutti i diritti riservati.')
+        ->toContain('copia e incolla')
+        ->not->toContain('Regards,')
+        ->not->toContain('If you&#039;re having trouble');
+});
+
 test('service rejects invalid code and increments attempts', function () {
     $challenge = EmailOtpChallenge::factory()->create([
         'code_hash' => Hash::make('654321'),

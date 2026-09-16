@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
+import { passkeyErrorMessage } from '@/lib/passkey-errors';
 import { index as jobsIndex } from '@/routes/jobs';
 import type { PasskeyRoutePair } from '@/types/auth';
 
@@ -22,13 +23,14 @@ export default function PasskeyVerify({
     loadingLabel,
     separator,
 }: Props) {
-    const { t } = useTranslation();
-    const { verify, isLoading, error, isSupported } = usePasskeyVerify({
+    const { language, t } = useTranslation();
+    const { verify, isLoading, errorInstance, isSupported } = usePasskeyVerify({
         routes,
         onSuccess: (response) => {
             router.visit(response.redirect ?? jobsIndex.url());
         },
     });
+    const error = passkeyErrorMessage(errorInstance, language);
 
     if (!isSupported) {
         return null;

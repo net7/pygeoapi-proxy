@@ -24,28 +24,25 @@ abstract class TestCase extends BaseTestCase
         }
     }
 
-    private function ensureTestingDatabaseIsIsolated(): void
+    protected function ensureTestingDatabaseIsIsolated(): void
     {
         $defaultConnection = config('database.default');
         $database = config("database.connections.{$defaultConnection}.database");
 
-        if ($defaultConnection === 'sqlite_testing' && is_string($database)) {
-            $this->ensureTestingSqliteDatabaseExists($database);
+        if ($defaultConnection !== 'sqlite_testing') {
+            $this->fail("Tests must use the sqlite_testing connection; [{$defaultConnection}] could contain application data.");
         }
 
         if ($database === database_path('database.sqlite')) {
             $this->fail('Tests are configured to use database/database.sqlite. Use the sqlite_testing connection instead.');
         }
-    }
 
-    private function ensureTestingSqliteDatabaseExists(string $database): void
-    {
-        if ($database === ':memory:' || str_starts_with($database, 'file:') || file_exists($database)) {
-            return;
-        }
-
-        if (! touch($database)) {
-            $this->fail("Unable to create the testing SQLite database at [{$database}].");
+        if (
+            config('database.connections.sqlite_testing.driver') !== 'sqlite'
+            || filled(config('database.connections.sqlite_testing.url'))
+            || $database !== ':memory:'
+        ) {
+            $this->fail('Tests must use SQLite in memory without a connection URL.');
         }
     }
 }
