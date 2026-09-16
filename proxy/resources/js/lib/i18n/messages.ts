@@ -444,6 +444,7 @@ const it = {
         referenceUrl: 'URL di riferimento',
         recenterMap: 'Ricentra sulla mappa',
         removeRow: 'Rimuovi riga',
+        serviceDescription: 'Descrizione del servizio',
         servicePreparingDescription:
             'La lista processi apparirà al termine del warm-up in background.',
         servicePreparingTitle: 'Catalogo servizi in preparazione',
@@ -987,6 +988,7 @@ const en = {
         referenceUrl: 'Reference URL',
         recenterMap: 'Recenter map',
         removeRow: 'Remove row',
+        serviceDescription: 'Service description',
         servicePreparingDescription:
             'The process list will appear when the background warm-up finishes.',
         servicePreparingTitle: 'Service catalog is being prepared',
