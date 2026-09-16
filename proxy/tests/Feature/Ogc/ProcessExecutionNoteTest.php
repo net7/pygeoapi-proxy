@@ -46,7 +46,7 @@ test('job owners can update notes while a job is still running', function () {
     $execution->refresh();
 
     expect($execution->note)->toBe($note)
-        ->and($execution->note_updated_at?->toIso8601String())->toBe('2026-07-01T11:00:00+00:00');
+        ->and($execution->note_updated_at?->toIso8601String())->toBe('2026-07-01T11:00:00+02:00');
 });
 
 test('admins can update notes for another users job', function () {
@@ -68,7 +68,7 @@ test('admins can update notes for another users job', function () {
     $execution->refresh();
 
     expect($execution->note)->toBe($note)
-        ->and($execution->note_updated_at?->toIso8601String())->toBe('2026-07-01T12:30:00+00:00');
+        ->and($execution->note_updated_at?->toIso8601String())->toBe('2026-07-01T12:30:00+02:00');
 });
 
 test('notes preserve code blocks', function () {
@@ -141,7 +141,7 @@ test('empty note updates clear the document and update the note timestamp', func
     $execution->refresh();
 
     expect($execution->note)->toBeNull()
-        ->and($execution->note_updated_at?->toIso8601String())->toBe('2026-07-01T13:45:00+00:00');
+        ->and($execution->note_updated_at?->toIso8601String())->toBe('2026-07-01T13:45:00+02:00');
 });
 
 test('oversized note documents are rejected', function () {

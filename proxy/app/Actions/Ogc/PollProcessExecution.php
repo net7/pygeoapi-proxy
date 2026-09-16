@@ -95,6 +95,8 @@ class PollProcessExecution
 
     private function parseRemoteDate(?string $date): ?CarbonImmutable
     {
-        return filled($date) ? CarbonImmutable::parse($date) : null;
+        return filled($date)
+            ? CarbonImmutable::parse($date, 'UTC')->setTimezone((string) config('app.timezone'))
+            : null;
     }
 }

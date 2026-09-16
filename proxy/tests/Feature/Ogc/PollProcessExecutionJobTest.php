@@ -32,6 +32,36 @@ beforeEach(function () {
     Bus::fake([PublishGeoTiffMapLayerJob::class]);
 });
 
+test('polling preserves remote instants when the application uses Rome time', function (string $remoteDate, string $expected) {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $execution = ProcessExecution::factory()->create([
+        'remote_job_id' => 'job-123',
+        'status' => ExecutionStatus::Running,
+    ]);
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123?f=json' => Http::response([
+            ...ogcFixture('job-successful'),
+            'created' => $remoteDate,
+            'started' => $remoteDate,
+            'finished' => $remoteDate,
+        ]),
+    ]);
+
+    app(PollProcessExecution::class)->handle($execution);
+
+    $execution->refresh();
+    expect($execution->remote_created_at->toISOString())->toBe($expected)
+        ->and($execution->remote_started_at->toISOString())->toBe($expected)
+        ->and($execution->remote_finished_at->toISOString())->toBe($expected);
+})->with([
+    'UTC summer time' => ['2026-09-16T13:30:00Z', '2026-09-16T13:30:00.000000Z'],
+    'UTC winter time' => ['2026-01-16T13:30:00Z', '2026-01-16T13:30:00.000000Z'],
+    'explicit offset' => ['2026-09-16T15:30:00+02:00', '2026-09-16T13:30:00.000000Z'],
+    'implicit UTC' => ['2026-09-16T13:30:00', '2026-09-16T13:30:00.000000Z'],
+]);
+
 test('it leaves polling state unchanged when completion cannot be persisted', function () {
     Bus::fake();
     Notification::fake();
