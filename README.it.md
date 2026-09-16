@@ -63,24 +63,41 @@ Redis e GeoServer. In sviluppo si aggiungono Vite, phpMyAdmin e Mailpit.
 
 ## Stack tecnologico
 
-Le versioni derivano dai lockfile e dalla configurazione dei container
-committati. I tag delle immagini floating sono indicati esplicitamente.
+Le versioni derivano da `proxy/composer.lock`, `proxy/bun.lock` e dalla
+configurazione dei container. I tag delle immagini floating sono indicati
+esplicitamente.
 
 | Area | Tecnologie e versioni correnti |
 | --- | --- |
 | Runtime | PHP `8.5`; Nginx incluso |
-| Backend | Laravel `13.22.0`; Inertia Laravel `3.1.1` |
-| Autenticazione | Fortify `1.37.3`; Socialite `5.29.0`; provider Google `4.1.0`; OAuth ORCID custom e OTP email; Laravel Passkeys JS `0.2.0` |
-| Asincrono e realtime | Horizon `5.48.1`; Reverb `1.11.0`; Redis `alpine` (tag floating) |
-| Frontend | React e React DOM `19.2.8`; Inertia React `3.6.1`; TypeScript `5.9.3` |
-| UI | Tailwind CSS `4.3.3`; Headless UI `2.2.10`; primitive Radix UI bloccate singolarmente in `bun.lock`; Lucide React `0.475.0`; Roboto Mono `5.3.0` |
-| Validazione e dati | AJV `8.17.1`; TanStack React Table `8.21.3`; JSON View `2.0.0-alpha.43`; Tiptap `3.29.0` |
+| Backend | Laravel `13.32.0`; Inertia Laravel `3.3.4` |
+| Autenticazione | Fortify `1.39.0`; Socialite `5.31.0`; provider Google `4.1.0`; OAuth ORCID custom e OTP email; Laravel Passkeys JS `0.2.0` |
+| Asincrono e realtime | Horizon `5.49.0`; Reverb `1.11.1`; Echo ed Echo React `2.5.0`; Pusher JS `8.6.0`; Redis `alpine` (tag floating) |
+| Frontend | React e React DOM `19.3.0`; Inertia React `3.7.1`; TypeScript `5.9.3` |
+| UI | Componenti shadcn/ui locali (New York) basati su Radix UI; Tailwind CSS `4.3.3`; Lucide React `0.475.0`; Sonner `2.0.8` |
+| Tipografia | Source Sans 3 Variable e Roboto Mono Variable, entrambi `5.3.0` tramite Fontsource |
+| Validazione e dati | AJV `8.17.1`; TanStack React Table `8.21.3`; JSON View `2.0.0-alpha.43`; Tiptap `3.31.3` |
 | Mappe e grafici | MapLibre GL `5.24.0`; Chart.js `4.5.1`; GeoServer `2.27.1` |
 | Elaborazione OGC | pygeoapi remoto / OGC API - Processes; endpoint configurato con `OGC_PROCESSES_BASE_URL`; versione upstream gestita esternamente |
 | Persistenza | MariaDB `latest`; Redis `alpine` (tag floating) |
-| Build | Vite `8.1.5`; Bun `latest` e Node `latest` nelle immagini sviluppo/staging; CI: Bun `1.3.14` |
+| Build | Vite `8.3.0`; Inertia Vite `3.7.1`; React Compiler `1.0.0`; Bun `latest` e Node `latest` nelle immagini sviluppo/staging; CI: Bun `1.3.14` |
 | Container e CI | Docker Compose; GitLab CI; Docker CLI `29`; Composer `2`; immagine di deploy Alpine `3.24` |
 | Solo sviluppo | Dev server Vite; phpMyAdmin `latest`; Mailpit `latest` |
+
+## Interfaccia e design
+
+L'interfaccia usa la palette del logo INGV, temi chiaro e scuro, angoli retti,
+scrollbar globali personalizzate ed effetti vetro leggeri sulle card. Hover e
+focus da tastiera condivisi mantengono coerenti i controlli in tutta l'app.
+
+**[DESIGN.md](DESIGN.md)** descrive le linee guida: token cromatici, tipografia,
+layout, composizione dei componenti, movimento, accessibilità e inventario
+completo delle dipendenze frontend, con versioni e riferimenti ai sorgenti.
+
+Bun è il package manager frontend usato dalla CI e dalle build dei container.
+Eseguire `bun ci` da `proxy/` per un'installazione riproducibile; `bun.lock`
+è il riferimento per le versioni frontend. Controlli e script sono elencati
+[nella guida di design](DESIGN.md#13-comandi-e-verifica).
 
 ## Avvio rapido
 
@@ -114,6 +131,7 @@ backup e troubleshooting.
 ## Mappa della documentazione
 
 - [Panoramica del progetto in inglese](README.md)
+- [Linee guida di design e stack frontend completo](DESIGN.md)
 - [Guida al deploy in italiano](DEPLOY.it.md)
 - [English deployment guide](DEPLOY.md)
 - [Riferimento API del pygeoapi esterno](PYGEOAPI.md)
