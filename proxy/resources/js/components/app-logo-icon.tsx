@@ -12,8 +12,8 @@ type AppLogoIconProps = Omit<ComponentProps<'img'>, 'src'> & {
 const LOGO_VIEWBOX_WIDTH = 890;
 const LOGO_VIEWBOX_HEIGHT = 200;
 const LOGO_ASPECT_RATIO = LOGO_VIEWBOX_WIDTH / LOGO_VIEWBOX_HEIGHT;
-const COLLAPSED_LOGO_WIDTH = 13;
-const COLLAPSED_LOGO_HEIGHT = 20;
+const COLLAPSED_LOGO_WIDTH = 26;
+const COLLAPSED_LOGO_HEIGHT = 40;
 
 export const APP_LOGO_DEFAULT_WIDTH = 400;
 export const APP_LOGO_DEFAULT_HEIGHT = Math.round(
@@ -58,9 +58,8 @@ export default function AppLogoIcon({
                 height={COLLAPSED_LOGO_HEIGHT}
                 className={cn(
                     className,
-                    'mx-auto object-contain',
-                    appearance === 'inverse' &&
-                        'box-content rounded-sm bg-white p-1.5',
+                    'mx-auto shrink-0 object-contain',
+                    appearance === 'inverse' && 'brightness-0 invert',
                 )}
                 src={collapsedLogoSrc}
                 alt={alt}
