@@ -49,6 +49,35 @@ test('service verifies valid code and consumes challenge', function () {
         ->and($challenge->refresh()->consumed_at)->not->toBeNull();
 });
 
+test('service rejects a code consumed by another request', function () {
+    $challenge = EmailOtpChallenge::factory()->create();
+    $challenge->fresh()->consume();
+
+    $verified = app(EmailOtpService::class)->verify(
+        challenge: $challenge,
+        purpose: EmailOtpChallenge::PurposeSocialLogin,
+        code: '123456',
+    );
+
+    expect($verified)->toBeFalse();
+});
+
+test('service rejects an expired code', function () {
+    $this->freezeTime();
+    $challenge = EmailOtpChallenge::factory()->create();
+    $this->travel(10)->minutes();
+    $this->travel(1)->seconds();
+
+    $verified = app(EmailOtpService::class)->verify(
+        challenge: $challenge,
+        purpose: EmailOtpChallenge::PurposeSocialLogin,
+        code: '123456',
+    );
+
+    expect($verified)->toBeFalse();
+    expect($challenge->refresh()->consumed_at)->toBeNull();
+});
+
 test('queued notifications preserve the language selected when requested', function (string $language) {
     Notification::fake();
     app()->setLocale($language);

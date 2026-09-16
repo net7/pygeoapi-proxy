@@ -11,6 +11,7 @@ use App\Models\EmailOtpChallenge;
 use App\Services\Auth\EmailOtpService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -51,11 +52,15 @@ class EmailOtpChallengeController extends Controller
 
     public function resend(EmailOtpChallenge $challenge, EmailOtpService $otp): RedirectResponse
     {
-        abort_unless(! $challenge->isConsumed(), 403);
+        $replacement = $otp->resend($challenge);
 
-        $otp->createAndSend($challenge->email, $challenge->purpose, $challenge->payload ?? []);
+        abort_unless($replacement !== null, 403);
 
-        return back()->with('status', __('We sent a new verification code.'));
+        return redirect()->to(URL::temporarySignedRoute(
+            'auth.otp.show',
+            $replacement->expires_at,
+            ['challenge' => $replacement],
+        ))->with('status', __('We sent a new verification code.'));
     }
 
     private function completeSocialLogin(
