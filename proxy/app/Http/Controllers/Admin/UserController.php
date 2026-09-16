@@ -3,13 +3,17 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Actions\Admin\DeleteUser;
+use App\Enums\TableKey;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BulkUserStatusRequest;
 use App\Http\Requests\Admin\ForceDeleteUserRequest;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
+use App\Http\Requests\TableIndexRequest;
 use App\Models\User;
+use App\Services\UserTableQuery;
+use App\Support\UserTableSettings;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
@@ -24,29 +28,24 @@ use Laravel\Fortify\Features;
 
 class UserController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(TableIndexRequest $request, UserTableSettings $preferences, UserTableQuery $tableQuery): Response
     {
-        $search = trim($request->string('search')->toString());
-
-        $users = User::query()
-            ->with('socialAccounts:id,user_id,provider,avatar,updated_at')
-            ->withCount('processExecutions')
-            ->when($search !== '', function ($query) use ($search): void {
-                $query
-                    ->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
-            })
-            ->latest('id')
-            ->paginate(15)
-            ->withQueryString()
+        $viewer = $request->user();
+        assert($viewer instanceof User);
+        $filters = $request->filters();
+        $settings = $preferences->forUser($viewer, TableKey::AdminUsers);
+        $table = $tableQuery->paginate($filters, $settings, $request->integer('page', 1));
+        $users = $table['users']
             ->through(fn (User $user): array => $this->userPayload($user));
 
         return Inertia::render('admin/users/index', [
             'users' => $users,
             'roles' => $this->roles(),
-            'filters' => [
-                'search' => $search,
-            ],
+            'filters' => $filters,
+            'tableSettings' => $settings,
+            'tableDefaults' => TableKey::AdminUsers->defaults(),
+            'statusCounts' => $table['statusCounts'],
+            'roleCounts' => $table['roleCounts'],
         ]);
     }
 

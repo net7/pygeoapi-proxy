@@ -75,7 +75,7 @@ for document in "$english_readme" "$italian_readme"; do
         5.49.0 1.11.1 19.3.0 3.7.1 5.9.3 4.3.3 \
         2.0.8 0.475.0 5.3.0 8.17.1 8.21.3 \
         2.0.0-alpha.43 3.31.3 5.24.0 4.5.1 2.27.1 \
-        8.3.0 1.3.14
+        8.3.0 1.4.2
     do
         require_text "$document" "$version"
     done

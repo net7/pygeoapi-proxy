@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\TableKey;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\TableIndexRequest;
 use App\Models\ProcessExecution;
 use App\Models\User;
+use App\Services\JobTableQuery;
+use App\Support\UserTableSettings;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -13,9 +17,12 @@ use Inertia\Response;
 
 class JobController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(TableIndexRequest $request, UserTableSettings $preferences, JobTableQuery $tableQuery): Response
     {
-        $search = trim($request->string('search')->toString());
+        $viewer = $request->user();
+        assert($viewer instanceof User);
+        $filters = $request->filters();
+        $settings = $preferences->forUser($viewer, TableKey::AdminJobs);
         $selectedUserId = $this->selectedUserId($request);
 
         $users = User::query()
@@ -30,31 +37,8 @@ class JobController extends Controller
             ])
             ->all();
 
-        $executions = ProcessExecution::query()
-            ->with([
-                'user:id,name,email,avatar_path',
-                'user.socialAccounts:id,user_id,avatar,updated_at',
-            ])
-            ->when($selectedUserId !== null, function ($query) use ($selectedUserId): void {
-                $query->where('user_id', $selectedUserId);
-            })
-            ->when($search !== '', function ($query) use ($search): void {
-                $query->where(function ($query) use ($search): void {
-                    $query
-                        ->where('name', 'like', "%{$search}%")
-                        ->orWhere('process_id', 'like', "%{$search}%")
-                        ->orWhere('process_title', 'like', "%{$search}%")
-                        ->orWhere('remote_job_id', 'like', "%{$search}%")
-                        ->orWhereHas('user', function ($query) use ($search): void {
-                            $query
-                                ->where('name', 'like', "%{$search}%")
-                                ->orWhere('email', 'like', "%{$search}%");
-                        });
-                });
-            })
-            ->latest()
-            ->paginate(15)
-            ->withQueryString()
+        $table = $tableQuery->paginate($viewer, TableKey::AdminJobs, $filters, $settings, $request->integer('page', 1), $selectedUserId);
+        $executions = $table['executions']
             ->through(fn (ProcessExecution $execution): array => [
                 'id' => $execution->id,
                 'name' => $execution->name,
@@ -80,8 +64,12 @@ class JobController extends Controller
         return Inertia::render('admin/jobs/index', [
             'executions' => $executions,
             'users' => $users,
+            'tableSettings' => $settings,
+            'tableDefaults' => TableKey::AdminJobs->defaults(),
+            'statusCounts' => $table['statusCounts'],
             'filters' => [
-                'search' => $search,
+                'search' => $filters['search'],
+                'status' => $filters['status'],
                 'selectedUserId' => $selectedUserId,
             ],
         ]);

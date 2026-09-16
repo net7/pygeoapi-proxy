@@ -15,7 +15,7 @@ use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 
 #[Fillable(['name', 'email', 'password', 'avatar_path', 'role', 'deactivated_at'])]
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token', 'settings'])]
 class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
@@ -93,6 +93,7 @@ class User extends Authenticatable implements PasskeyUser
             'role' => UserRole::class,
             'deactivated_at' => 'datetime',
             'first_access_completed_at' => 'datetime',
+            'settings' => 'array',
         ];
     }
 }

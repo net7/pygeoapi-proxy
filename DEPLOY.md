@@ -194,7 +194,7 @@ make staging deploy-status
 The development/staging Laravel image uses a multi-stage build:
 
 - `serversideup/php:8.5-fpm-nginx` for Composer dependencies and runtime;
-- `oven/bun:latest` for dependency installation and frontend builds;
+- `oven/bun:1.4.2` for dependency installation and frontend builds;
 - `node:latest` for Vite's Node shebang runtime.
 
 Bun remains the package manager and build runner. Node is copied into the final
