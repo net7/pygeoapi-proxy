@@ -381,14 +381,12 @@ export default function ProcessExecutionIndex({
             <Head title={t('jobs.title')} />
 
             <div className="flex flex-col gap-5 p-4">
-                <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
+                <div className="page-header flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
                     <div className="flex flex-col gap-1">
                         <p className="text-sm font-medium text-muted-foreground">
                             {t('jobs.processRuns')}
                         </p>
-                        <h1 className="text-2xl font-semibold">
-                            {t('jobs.title')}
-                        </h1>
+                        <h1>{t('jobs.title')}</h1>
                         <p className="text-sm text-muted-foreground">
                             {t('jobs.shown', {
                                 shown: filteredRowsCount,
@@ -577,7 +575,7 @@ export default function ProcessExecutionIndex({
                     ]}
                 />
 
-                <div className="overflow-hidden rounded-md border bg-card shadow-sm dark:border-border/70 dark:bg-card/95">
+                <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
                     <Table>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
@@ -882,7 +880,7 @@ function JobProgress({ execution }: { execution: ProcessExecutionListItem }) {
                 <span className="tabular-nums">{progress}%</span>
             </div>
             <div
-                className="h-2 overflow-hidden rounded-full bg-muted"
+                className="h-2 overflow-hidden rounded-none bg-muted"
                 role="progressbar"
                 aria-valuemin={0}
                 aria-valuemax={100}
@@ -890,7 +888,7 @@ function JobProgress({ execution }: { execution: ProcessExecutionListItem }) {
             >
                 <div
                     className={cn(
-                        'h-full rounded-full transition-[width]',
+                        'h-full rounded-none transition-[width]',
                         styles.progressClassName,
                     )}
                     style={{

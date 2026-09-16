@@ -144,7 +144,7 @@ function MapLayerWarningAlert({
     }
 
     return (
-        <Alert className="border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/35 dark:text-amber-100 [&>svg]:text-amber-600 dark:[&>svg]:text-amber-300">
+        <Alert className="border-warning/25 bg-warning/10 text-warning-emphasis [&>svg]:text-warning-emphasis">
             <AlertTriangleIcon />
             <AlertDescription>{message}</AlertDescription>
         </Alert>

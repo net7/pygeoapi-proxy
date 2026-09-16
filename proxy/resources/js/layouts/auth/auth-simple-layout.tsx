@@ -9,20 +9,20 @@ export default function AuthSimpleLayout({
     description,
 }: AuthLayoutProps) {
     return (
-        <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
+        <div className="auth-canvas flex min-h-svh flex-col items-center justify-center gap-6 p-5 md:p-10">
             <div data-page-content className="auth-panel w-full max-w-md">
-                <div className="flex flex-col gap-5">
-                    <div className="flex flex-col items-center gap-4">
+                <div className="flex flex-col gap-8">
+                    <div className="flex flex-col items-center gap-7">
                         <Link
                             href={home()}
                             className="flex flex-col items-center gap-2 font-medium"
                         >
-                            <AppLogoIcon />
+                            <AppLogoIcon className="h-auto w-full max-w-80" />
                             <span className="sr-only">{title}</span>
                         </Link>
 
                         <div className="flex flex-col gap-2 text-center">
-                            <h1 className="text-xl font-medium">{title}</h1>
+                            <h1 className="text-2xl font-semibold">{title}</h1>
                             <p className="text-center text-sm text-muted-foreground">
                                 {description}
                             </p>

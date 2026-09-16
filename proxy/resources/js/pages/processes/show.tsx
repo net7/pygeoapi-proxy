@@ -58,10 +58,8 @@ export default function ProcessShow({
             <Head title={formSchema.title} />
 
             <div className="flex min-w-0 flex-col gap-4 p-4">
-                <div className="flex min-w-0 flex-col gap-1">
-                    <h1 className="text-2xl font-semibold">
-                        {formSchema.title}
-                    </h1>
+                <div className="page-header flex min-w-0 flex-col gap-2">
+                    <h1 className="break-words">{formSchema.title}</h1>
                     <p className="text-sm break-words text-muted-foreground">
                         {formSchema.description}
                     </p>

@@ -457,14 +457,12 @@ export default function AdminJobsIndex({
             <Head title={t('admin.allJobs')} />
 
             <div className="flex flex-col gap-5 p-4">
-                <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
+                <div className="page-header flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
                     <div className="flex flex-col gap-1">
                         <p className="text-sm font-medium text-muted-foreground">
                             {t('admin.administration')}
                         </p>
-                        <h1 className="text-2xl font-semibold">
-                            {t('admin.allJobs')}
-                        </h1>
+                        <h1>{t('admin.allJobs')}</h1>
                         <p className="text-sm text-muted-foreground">
                             {t('admin.shownJobs', {
                                 shown: filteredRowsCount,
@@ -679,7 +677,7 @@ export default function AdminJobsIndex({
                     ]}
                 />
 
-                <div className="overflow-hidden rounded-md border bg-card shadow-sm dark:border-border/70 dark:bg-card/95">
+                <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
                     <Table>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
@@ -884,9 +882,9 @@ function AdminJobUserIdentity({ owner }: { owner: AdminJob['owner'] }) {
 
     return (
         <div className="flex min-w-0 items-center gap-3">
-            <Avatar className="size-8 rounded-full">
+            <Avatar className="size-8 rounded-none">
                 <AvatarImage src={owner.avatar ?? undefined} alt={owner.name} />
-                <AvatarFallback className="rounded-full bg-muted text-xs font-medium text-muted-foreground">
+                <AvatarFallback className="rounded-none bg-muted text-xs font-medium text-muted-foreground">
                     {getInitials(owner.name)}
                 </AvatarFallback>
             </Avatar>
@@ -975,7 +973,7 @@ function JobProgress({ execution }: { execution: AdminJob }) {
                 <span className="tabular-nums">{progress}%</span>
             </div>
             <div
-                className="h-2 overflow-hidden rounded-full bg-muted"
+                className="h-2 overflow-hidden rounded-none bg-muted"
                 role="progressbar"
                 aria-valuemin={0}
                 aria-valuemax={100}
@@ -983,7 +981,7 @@ function JobProgress({ execution }: { execution: AdminJob }) {
             >
                 <div
                     className={cn(
-                        'h-full rounded-full transition-[width]',
+                        'h-full rounded-none transition-[width]',
                         styles.progressClassName,
                     )}
                     style={{

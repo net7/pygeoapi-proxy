@@ -49,13 +49,10 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                 size="sm"
                                 variant="ghost"
                                 asChild
-                                className={cn(
-                                    'w-full justify-start rounded-none',
-                                    {
-                                        'bg-accent font-semibold text-primary hover:text-primary':
-                                            isCurrentOrParentUrl(item.href),
-                                    },
-                                )}
+                                className={cn('h-10 w-full justify-start', {
+                                    'bg-accent font-semibold text-primary hover:text-primary':
+                                        isCurrentOrParentUrl(item.href),
+                                })}
                             >
                                 <Link
                                     href={item.href}
@@ -79,7 +76,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
 
                 <Separator className="my-6 lg:hidden" />
 
-                <div className="flex-1 md:max-w-2xl">
+                <div className="flex-1 rounded-xl border border-border bg-card p-5 md:max-w-2xl md:p-8">
                     <section className="flex max-w-xl flex-col gap-12">
                         {children}
                     </section>

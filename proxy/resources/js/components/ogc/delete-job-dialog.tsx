@@ -93,9 +93,9 @@ export function DeleteJobButton({
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="mx-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-950 dark:border-red-900/60 dark:bg-red-950/35 dark:text-red-100">
+                    <div className="mx-6 rounded-lg border border-destructive-emphasis/25 bg-destructive-emphasis/5 p-4 text-destructive-emphasis">
                         <div className="flex items-start gap-3">
-                            <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-200">
+                            <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-destructive-emphasis/10 text-destructive-emphasis">
                                 <AlertTriangleIcon
                                     data-icon="dialog-status"
                                     className="size-5"
@@ -211,9 +211,9 @@ function DeleteJobOwnerIdentity({ owner }: { owner: DeleteJobOwner }) {
 
     return (
         <div className="flex min-w-0 items-center gap-3">
-            <Avatar className="size-8 rounded-full">
+            <Avatar className="size-8 rounded-none">
                 <AvatarImage src={owner.avatar ?? undefined} alt={owner.name} />
-                <AvatarFallback className="rounded-full bg-white/80 text-xs font-medium text-red-900 dark:bg-red-950/50 dark:text-red-100">
+                <AvatarFallback className="rounded-none bg-card text-xs font-medium text-destructive-emphasis">
                     {getInitials(owner.name)}
                 </AvatarFallback>
             </Avatar>

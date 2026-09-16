@@ -35,12 +35,10 @@ export default function ProcessIndex({
         <>
             <Head title={t('ogc.processesTitle')} />
 
-            <div className="flex flex-col gap-5 p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div className="flex flex-col gap-1">
-                        <h1 className="text-2xl font-semibold">
-                            {t('ogc.processesTitle')}
-                        </h1>
+            <div className="flex flex-col gap-7 p-4">
+                <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="flex flex-col gap-2">
+                        <h1>{t('ogc.processesTitle')}</h1>
                         <p className="text-sm text-muted-foreground">
                             {t('ogc.processesDescription')}
                         </p>
@@ -87,7 +85,7 @@ export default function ProcessIndex({
                         </Alert>
                     </>
                 ) : (
-                    <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+                    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                         {processes.map((process) => {
                             const description =
                                 process.description?.trim() ||
@@ -98,10 +96,10 @@ export default function ProcessIndex({
                                     key={process.id}
                                     className="process-card group h-full"
                                 >
-                                    <Card className="h-full overflow-hidden transition-colors group-hover:border-primary/40 group-hover:bg-accent/20">
+                                    <Card className="h-full overflow-hidden">
                                         <CardHeader className="gap-4">
                                             <div className="flex items-start gap-4">
-                                                <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                                                <div className="process-card-icon">
                                                     <CpuIcon
                                                         className="size-5"
                                                         aria-hidden="true"
@@ -109,7 +107,7 @@ export default function ProcessIndex({
                                                 </div>
                                                 <div className="flex min-w-0 flex-1 flex-col gap-2">
                                                     <div className="flex min-w-0 items-start justify-between gap-3">
-                                                        <CardTitle className="truncate text-base leading-tight">
+                                                        <CardTitle className="min-w-0 text-lg leading-tight break-words">
                                                             {process.title ??
                                                                 process.id}
                                                         </CardTitle>
@@ -129,11 +127,11 @@ export default function ProcessIndex({
                                             </div>
                                         </CardHeader>
                                         <CardContent className="flex flex-1 flex-col gap-5">
-                                            <p className="line-clamp-3 min-h-[3.75rem] text-sm text-muted-foreground">
+                                            <p className="line-clamp-3 min-h-[4.5rem] text-sm leading-6 text-muted-foreground">
                                                 {description}
                                             </p>
                                         </CardContent>
-                                        <CardFooter className="mt-auto px-6 pt-0">
+                                        <CardFooter className="mt-auto border-t border-border px-6 pt-5">
                                             <Button
                                                 asChild
                                                 className="w-full justify-between"

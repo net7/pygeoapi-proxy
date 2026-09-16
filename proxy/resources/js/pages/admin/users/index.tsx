@@ -620,14 +620,12 @@ export default function AdminUsersIndex({
             <Head title={t('admin.allUsers')} />
 
             <div className="flex flex-col gap-5 p-4">
-                <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
+                <div className="page-header flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
                     <div className="flex flex-col gap-1">
                         <p className="text-sm font-medium text-muted-foreground">
                             {t('admin.administration')}
                         </p>
-                        <h1 className="text-2xl font-semibold">
-                            {t('admin.allUsers')}
-                        </h1>
+                        <h1>{t('admin.allUsers')}</h1>
                         <p className="text-sm text-muted-foreground">
                             {t('admin.shownUsers', {
                                 shown: filteredRowsCount,
@@ -881,7 +879,7 @@ export default function AdminUsersIndex({
                     ]}
                 />
 
-                <div className="overflow-hidden rounded-md border bg-card shadow-sm dark:border-border/70 dark:bg-card/95">
+                <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
                     <Table>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
@@ -1264,12 +1262,12 @@ function UserFormDialog({
 
                     {isEditing && (
                         <div className="px-6">
-                            <Alert className="w-full max-w-full min-w-0 border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-emerald-100 [&>svg]:size-5">
-                                <InfoIcon className="mt-0.5 size-5 text-emerald-600 dark:text-emerald-300" />
+                            <Alert className="w-full max-w-full min-w-0 border-success/25 bg-success/10 text-success-emphasis [&>svg]:size-5">
+                                <InfoIcon className="mt-0.5 size-5 text-success" />
                                 <AlertTitle>
                                     {t('admin.socialReconciliation')}
                                 </AlertTitle>
-                                <AlertDescription className="min-w-0 text-emerald-900/80 dark:text-emerald-100/80">
+                                <AlertDescription className="min-w-0 text-success-emphasis">
                                     <ul className="min-w-0 list-disc space-y-1 pl-4 break-words">
                                         <li>{t('admin.providerLinked')}</li>
                                         <li>{t('admin.providerEmail')}</li>
@@ -1320,17 +1318,16 @@ function UserStatusDialog({
     const statusTone = isRestoring
         ? {
               panelClassName:
-                  'border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-emerald-100',
-              iconClassName:
-                  'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200',
+                  'border-success/25 bg-success/10 text-success-emphasis',
+              iconClassName: 'bg-success/15 text-success-emphasis',
               title: t('admin.activateTitle'),
               description: t('admin.statusRestoreDescription'),
           }
         : {
               panelClassName:
-                  'border-red-200 bg-red-50 text-red-950 dark:border-red-900/60 dark:bg-red-950/35 dark:text-red-100',
+                  'border-destructive-emphasis/25 bg-destructive-emphasis/10 text-destructive-emphasis',
               iconClassName:
-                  'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-200',
+                  'bg-destructive-emphasis/15 text-destructive-emphasis',
               title: t('admin.deactivateTitle'),
               description: t('admin.statusDeactivateDescription'),
           };
@@ -1658,9 +1655,9 @@ function AdminUserIdentity({
 
     return (
         <div className="flex min-w-0 items-center gap-3">
-            <Avatar className="size-8 rounded-full">
+            <Avatar className="size-8 rounded-none">
                 <AvatarImage src={user.avatar ?? undefined} alt={user.name} />
-                <AvatarFallback className="rounded-full bg-muted text-xs font-medium text-muted-foreground">
+                <AvatarFallback className="rounded-none bg-muted text-xs font-medium text-muted-foreground">
                     {getInitials(user.name)}
                 </AvatarFallback>
             </Avatar>
@@ -1744,7 +1741,7 @@ function UserStatusBadge({ user }: { user: AdminUser }) {
     return (
         <Badge
             variant="outline"
-            className="border-emerald-200 bg-emerald-100 text-emerald-800 uppercase dark:border-emerald-400/70 dark:bg-emerald-500/15 dark:text-emerald-100"
+            className="border-success/25 bg-success/10 text-success-emphasis uppercase"
         >
             <CheckCircle2Icon data-icon="inline-start" />
             {t('admin.statusActive')}

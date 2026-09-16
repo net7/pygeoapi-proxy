@@ -34,7 +34,7 @@ export function NavMain({
                                 asChild
                                 isActive={isCurrentOrParentUrl(item.href)}
                                 tooltip={{ children: title }}
-                                className="rounded-none data-[active=true]:font-semibold data-[active=true]:text-sidebar-primary"
+                                className="data-[active=true]:font-semibold"
                             >
                                 <Link
                                     href={item.href}

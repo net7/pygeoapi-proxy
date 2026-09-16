@@ -50,14 +50,14 @@ type VisibleSeriesChart = {
 };
 
 const fallbackColors = [
-    '#2563eb',
-    '#ea580c',
-    '#16a34a',
-    '#7c3aed',
-    '#be123c',
-    '#0891b2',
-    '#ca8a04',
-    '#475569',
+    '#006380',
+    '#008245',
+    '#b471ad',
+    '#c60e41',
+    '#9a8200',
+    '#327f98',
+    '#8a5c7e',
+    '#004458',
 ];
 
 export default function ChartResultPreview({
@@ -435,8 +435,17 @@ function formatNumber(value: unknown): string {
 }
 
 function chartPalette(count: number): string[] {
+    const styles =
+        typeof window === 'undefined'
+            ? null
+            : getComputedStyle(document.documentElement);
+    const colors = fallbackColors.map(
+        (fallback, index) =>
+            styles?.getPropertyValue(`--chart-${index + 1}`).trim() || fallback,
+    );
+
     return Array.from({ length: count }, (_, index) => {
-        return fallbackColors[index % fallbackColors.length];
+        return colors[index % colors.length];
     });
 }
 
@@ -449,28 +458,22 @@ function chartCanvasColors(): {
 } {
     if (typeof window === 'undefined') {
         return {
-            grid: 'rgba(148, 163, 184, 0.28)',
-            text: '#64748b',
-            tooltipBackground: 'rgba(15, 23, 42, 0.94)',
-            tooltipBorder: 'rgba(148, 163, 184, 0.28)',
-            tooltipText: '#f8fafc',
+            grid: '#d9e5eb',
+            text: '#55717e',
+            tooltipBackground: '#ffffff',
+            tooltipBorder: '#d9e5eb',
+            tooltipText: '#173d4b',
         };
     }
 
-    const isDark = document.documentElement.classList.contains('dark');
+    const styles = getComputedStyle(document.documentElement);
 
     return {
-        grid: isDark
-            ? 'rgba(148, 163, 184, 0.22)'
-            : 'rgba(100, 116, 139, 0.22)',
-        text: isDark ? '#cbd5e1' : '#64748b',
-        tooltipBackground: isDark
-            ? 'rgba(2, 6, 23, 0.95)'
-            : 'rgba(15, 23, 42, 0.94)',
-        tooltipBorder: isDark
-            ? 'rgba(148, 163, 184, 0.24)'
-            : 'rgba(148, 163, 184, 0.28)',
-        tooltipText: '#f8fafc',
+        grid: styles.getPropertyValue('--border').trim(),
+        text: styles.getPropertyValue('--muted-foreground').trim(),
+        tooltipBackground: styles.getPropertyValue('--popover').trim(),
+        tooltipBorder: styles.getPropertyValue('--border').trim(),
+        tooltipText: styles.getPropertyValue('--popover-foreground').trim(),
     };
 }
 

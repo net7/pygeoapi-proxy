@@ -58,68 +58,58 @@ export function jobStatusStyles(status: string): JobStatusStyles {
             submitting: {
                 label: 'SUBMITTING',
                 icon: RadioTowerIcon,
-                rowClassName:
-                    'bg-sky-50/60 dark:bg-sky-500/10 dark:hover:bg-sky-500/15',
-                cardClassName:
-                    'border-l-sky-500 bg-sky-50/60 dark:border-l-sky-400 dark:bg-sky-500/10',
-                badgeClassName:
-                    'border-sky-200 bg-sky-100 text-sky-800 dark:border-sky-400/70 dark:bg-sky-500/15 dark:text-sky-100',
-                progressClassName: 'bg-sky-500 dark:bg-sky-400',
+                rowClassName: 'bg-info/5 hover:bg-info/10',
+                cardClassName: 'border-l-info bg-info/5',
+                badgeClassName: 'border-info/25 bg-info/10 text-info-emphasis',
+                progressClassName: 'bg-info',
             },
             accepted: {
                 label: 'ACCEPTED',
                 icon: CircleDashedIcon,
-                rowClassName:
-                    'bg-blue-50/60 dark:bg-blue-500/10 dark:hover:bg-blue-500/15',
-                cardClassName:
-                    'border-l-blue-500 bg-blue-50/60 dark:border-l-blue-400 dark:bg-blue-500/10',
-                badgeClassName:
-                    'border-blue-200 bg-blue-100 text-blue-800 dark:border-blue-400/70 dark:bg-blue-500/15 dark:text-blue-100',
-                progressClassName: 'bg-blue-500 dark:bg-blue-400',
+                rowClassName: 'bg-primary/5 hover:bg-primary/10',
+                cardClassName: 'border-l-primary bg-primary/5',
+                badgeClassName: 'border-primary/25 bg-primary/10 text-primary',
+                progressClassName: 'bg-primary',
             },
             running: {
                 label: 'RUNNING',
                 icon: ActivityIcon,
-                rowClassName:
-                    'bg-amber-50/70 dark:bg-amber-500/10 dark:hover:bg-amber-500/15',
-                cardClassName:
-                    'border-l-amber-500 bg-amber-50/70 dark:border-l-amber-400 dark:bg-amber-500/10',
+                rowClassName: 'bg-warning/5 hover:bg-warning/10',
+                cardClassName: 'border-l-warning bg-warning/5',
                 badgeClassName:
-                    'border-amber-200 bg-amber-100 text-amber-900 dark:border-amber-400/70 dark:bg-amber-500/15 dark:text-amber-100',
-                progressClassName: 'bg-amber-500 dark:bg-amber-400',
+                    'border-warning/25 bg-warning/10 text-warning-emphasis',
+                progressClassName: 'bg-warning',
             },
             successful: {
                 label: 'SUCCESSFUL',
                 icon: CheckCircle2Icon,
-                rowClassName:
-                    'bg-emerald-50/70 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/15',
-                cardClassName:
-                    'border-l-emerald-500 bg-emerald-50/70 dark:border-l-emerald-400 dark:bg-emerald-500/10',
+                rowClassName: 'bg-success/5 hover:bg-success/10',
+                cardClassName: 'border-l-success bg-success/5',
                 badgeClassName:
-                    'border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-400/70 dark:bg-emerald-500/15 dark:text-emerald-100',
-                progressClassName: 'bg-emerald-500 dark:bg-emerald-400',
+                    'border-success/25 bg-success/10 text-success-emphasis',
+                progressClassName: 'bg-success',
             },
             failed: {
                 label: 'FAILED',
                 icon: CircleAlertIcon,
                 rowClassName:
-                    'bg-red-50/70 dark:bg-red-500/10 dark:hover:bg-red-500/15',
+                    'bg-destructive-emphasis/5 hover:bg-destructive-emphasis/10',
                 cardClassName:
-                    'border-l-red-500 bg-red-50/70 dark:border-l-red-400 dark:bg-red-500/10',
+                    'border-l-destructive-emphasis bg-destructive-emphasis/5',
                 badgeClassName:
-                    'border-red-300 bg-red-50 text-red-700 dark:border-red-400/70 dark:bg-red-500/15 dark:text-red-100',
-                progressClassName: 'bg-red-500 dark:bg-red-400',
+                    'border-destructive-emphasis/25 bg-destructive-emphasis/10 text-destructive-emphasis',
+                progressClassName: 'bg-destructive-emphasis',
             },
             submission_failed: {
                 label: 'SUBMISSION FAILED',
                 icon: XCircleIcon,
                 rowClassName:
-                    'bg-red-50/70 dark:bg-red-500/10 dark:hover:bg-red-500/15',
+                    'bg-destructive-emphasis/5 hover:bg-destructive-emphasis/10',
                 cardClassName:
-                    'border-l-red-500 bg-red-50/70 dark:border-l-red-400 dark:bg-red-500/10',
+                    'border-l-destructive-emphasis bg-destructive-emphasis/5',
                 badgeClassName:
-                    'border-red-300 bg-red-50 text-red-700 dark:border-red-400/70 dark:bg-red-500/15 dark:text-red-100',
-                progressClassName: 'bg-red-500 dark:bg-red-400',
+                    'border-destructive-emphasis/25 bg-destructive-emphasis/10 text-destructive-emphasis',
+                progressClassName: 'bg-destructive-emphasis',
             },
             remote_missing: {
                 label: 'REMOTE MISSING',

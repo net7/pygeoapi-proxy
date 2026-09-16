@@ -9,9 +9,13 @@ export function AppSidebarHeader({
     breadcrumbs?: BreadcrumbItemType[];
 }) {
     return (
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-sidebar-border/50 px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+        <header className="app-toolbar flex h-16 shrink-0 items-center gap-3 px-5 md:px-8">
             <div className="flex min-w-0 flex-1 items-center gap-2">
                 <SidebarTrigger className="-ml-1 shrink-0" />
+                <span
+                    className="mx-1 h-5 w-px shrink-0 bg-border"
+                    aria-hidden="true"
+                />
                 <Breadcrumbs breadcrumbs={breadcrumbs} />
             </div>
             <LanguageDropdown />

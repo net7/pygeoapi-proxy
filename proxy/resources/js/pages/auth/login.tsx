@@ -40,7 +40,6 @@ export default function Login({ status, canResetPassword }: Props) {
                                 key={provider.provider}
                                 asChild
                                 variant="outline"
-                                className="border-zinc-200 bg-white text-zinc-900 shadow-xs hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900"
                             >
                                 <a
                                     href={provider.redirect}

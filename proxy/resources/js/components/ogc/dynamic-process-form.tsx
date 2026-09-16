@@ -233,7 +233,7 @@ export default function DynamicProcessForm({
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    className="border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200 hover:text-amber-950 focus-visible:ring-amber-500 dark:border-amber-500/50 dark:bg-amber-500/15 dark:text-amber-200 dark:hover:bg-amber-500/25"
+                                    className="border-warning/30 bg-highlight/15 text-warning-emphasis hover:bg-highlight/25 hover:text-warning-emphasis focus-visible:ring-warning"
                                     onClick={applyExamplePayload}
                                 >
                                     <WandSparklesIcon data-icon="inline-start" />

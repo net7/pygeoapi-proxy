@@ -30,10 +30,10 @@ test('process index cards are optimized for scanning', function () {
 
     expect($source)
         ->toContain('CardFooter')
-        ->toContain('md:grid-cols-2 2xl:grid-cols-4')
+        ->toContain('md:grid-cols-2')
+        ->toContain('2xl:grid-cols-4')
         ->toContain('h-full overflow-hidden')
-        ->toContain('group-hover:border-primary/40')
-        ->toContain('min-h-[3.75rem]')
+        ->toContain('line-clamp-3')
         ->toContain('ogc.noDescription')
         ->toContain('processes.length')
         ->toContain('process.version')
@@ -54,7 +54,6 @@ test('process form exposes a local development prefill action', function () {
     expect($source)
         ->toContain('examplePayload')
         ->toContain('ogc.prefillTestData')
-        ->toContain('bg-amber-100')
         ->toContain('applyExamplePayload')
         ->toContain('WandSparklesIcon')
         ->toContain('data-icon="inline-start"');
@@ -441,7 +440,7 @@ test('job tables expose shadcn row selection and bulk delete actions', function 
 
     foreach ([$jobsIndexSource, $adminJobsIndexSource] as $source) {
         expect(strpos($source, '<DataTableBulkActions'))
-            ->toBeLessThan(strpos($source, '<div className="overflow-hidden rounded-md border'));
+            ->toBeLessThan(strpos($source, '<Table'));
     }
 
     expect($selectColumnSource)
@@ -891,13 +890,7 @@ test('job pages poll while executions are active', function () {
         ->toContain('active ? (')
         ->toContain('<ActiveJobPoller')
         ->toContain('role="status"')
-        ->toContain('bg-emerald-50')
-        ->toContain('text-emerald-800')
         ->toContain('animate-ping')
-        ->toContain('rounded-full bg-emerald-500')
-        ->toContain('bg-slate-50')
-        ->toContain('text-slate-700')
-        ->toContain('rounded-full bg-slate-400')
         ->not->toContain('Spinner');
 
     expect($helperSource)
@@ -919,15 +912,13 @@ test('job pages use readable dark mode status surfaces', function () {
     $helperSource = file_get_contents(getcwd().'/resources/js/lib/jobs.ts');
 
     expect($helperSource)
-        ->toContain('dark:bg-red-500/10')
-        ->toContain('dark:hover:bg-red-500/15')
-        ->toContain('dark:border-red-400/70')
-        ->toContain('dark:text-red-100')
-        ->toContain('dark:bg-red-400')
-        ->not->toContain('text-destructive');
+        ->toContain('bg-destructive-emphasis/')
+        ->toContain('text-destructive-emphasis')
+        ->toContain('text-success-emphasis')
+        ->toContain('text-warning-emphasis');
 
     expect($indexSource)
-        ->toContain('bg-card shadow-sm dark:border-border/70 dark:bg-card/95')
+        ->toContain('bg-card')
         ->toContain('dark:hover:bg-accent/30')
         ->toContain('variant="secondary"');
 
@@ -947,8 +938,8 @@ test('job pages use readable dark mode status surfaces', function () {
         ->toContain('ring-1 ring-border/50 dark:bg-muted/20');
 
     expect($indicatorSource)
-        ->toContain('dark:border-emerald-400/60')
-        ->toContain('dark:border-slate-500/60');
+        ->toContain('text-success-emphasis')
+        ->toContain('text-muted-foreground');
 });
 
 test('csv result previews use structured normalization instead of comma splitting in the component', function () {

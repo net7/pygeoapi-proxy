@@ -28,10 +28,10 @@ export default function JobPollingIndicator({
             <Badge
                 variant="secondary"
                 className={cn(
-                    'w-fit gap-2 border px-2.5 py-1 text-xs font-medium shadow-sm',
+                    'w-fit gap-2 border px-2.5 py-1 text-xs font-medium',
                     active
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-400/60 dark:bg-emerald-500/15 dark:text-emerald-100'
-                        : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-500/60 dark:bg-slate-500/10 dark:text-slate-200',
+                        ? 'border-success/25 bg-success/10 text-success-emphasis'
+                        : 'border-border bg-card text-muted-foreground',
                 )}
                 role="status"
             >
@@ -40,14 +40,14 @@ export default function JobPollingIndicator({
                     className="relative flex size-2.5 shrink-0"
                 >
                     {active ? (
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                        <span className="absolute inline-flex size-full animate-ping rounded-none bg-success opacity-75" />
                     ) : null}
                     <span
                         className={cn(
                             'relative inline-flex size-2.5',
                             active
-                                ? 'rounded-full bg-emerald-500 dark:bg-emerald-300'
-                                : 'rounded-full bg-slate-400 dark:bg-slate-300',
+                                ? 'rounded-none bg-success'
+                                : 'rounded-none bg-muted-foreground',
                         )}
                     />
                 </span>
