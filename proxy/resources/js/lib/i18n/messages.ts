@@ -71,6 +71,9 @@ const it = {
         greeting: 'Ciao',
         description:
             'Ti accompagniamo dalla scelta di un processo ai risultati della tua analisi.',
+        adminDescription:
+            'Ti accompagniamo dalle analisi alla gestione della piattaforma: utenti, accessi e supervisione di tutti i processi.',
+        adminOnly: 'Solo per amministratori',
         chapters: 'Passaggi della guida',
         step: 'Passaggio {current} di {total}',
         previous: 'Indietro',
@@ -144,6 +147,86 @@ const it = {
             thirdBody:
                 'Premi Riutilizza input per preparare una nuova esecuzione con gli stessi dati. Controlla i valori copiati e scegli di nuovo nome, nota e output.',
             tip: 'Per lingua, aspetto e impostazioni dell’account usa i controlli della barra superiore e il menu del tuo profilo.',
+        },
+        adminUsers: {
+            label: 'Gestisci gli utenti',
+            title: 'Utenti e ruoli della piattaforma',
+            description:
+                'Come admin trovi la sezione Amministrazione nella barra laterale. Apri Tutti gli utenti per consultare e gestire gli account.',
+            firstTitle: 'Trova un utente',
+            firstBody:
+                'Cerca per nome, email, metodo di accesso, ruolo o stato e combina i filtri per ruolo e account attivi o inattivi. Le colonne mostrano anche il primo accesso e il numero di processi avviati.',
+            secondTitle: 'Crea un account',
+            secondBody:
+                'Premi Crea utente, inserisci nome ed email e scegli il ruolo Utente o Admin. Il ruolo Admin abilita la gestione degli utenti e l’accesso ai processi di tutta la piattaforma.',
+            thirdTitle: 'Modifica i dettagli e il ruolo',
+            thirdBody:
+                'Dal menu delle azioni scegli Modifica. Puoi aggiornare nome, email e ruolo; se cambi email, devi ripeterla nel campo di conferma. Un indirizzo già usato da un altro account non può essere salvato.',
+            tip: 'Non puoi modificare il tuo ruolo da questa schermata. Con Vedi processi apri direttamente le esecuzioni dell’utente selezionato.',
+        },
+        adminSignIn: {
+            label: 'Accessi social',
+            title: 'Come gli accessi vengono associati agli utenti',
+            description:
+                'La colonna Registrato con mostra i metodi di accesso dell’account. Nel modulo di modifica trovi anche la spiegazione della riconciliazione social sign-in.',
+            firstTitle: 'Identità social già collegata',
+            firstBody:
+                'Se un’identità del provider è già collegata, gli accessi successivi continuano a usare lo stesso account anche dopo una modifica dell’email.',
+            secondTitle: 'Nuovo collegamento social',
+            secondBody:
+                'Per un’identità non ancora collegata, l’email verificata del provider viene confrontata con gli account esistenti. Se non c’è una corrispondenza viene creato un nuovo utente social. Se il provider non fornisce un’email attendibile, l’utente deve confermare un indirizzo tramite OTP.',
+            thirdTitle: 'Controlla gli effetti di un cambio email',
+            thirdBody:
+                'Un nuovo accesso social non ancora collegato viene associato in base all’email verificata. Se continua a riportare il vecchio indirizzo, potrebbe essere associato a un altro account o crearne uno separato.',
+            tip: 'Prima di cambiare un indirizzo controlla i metodi di accesso già collegati e leggi le indicazioni nel modulo di modifica.',
+        },
+        adminAccounts: {
+            label: 'Gestisci gli account',
+            title: 'Attiva, disattiva o rimuovi un account',
+            description:
+                'Le azioni di Tutti gli utenti permettono di gestire l’accesso alla piattaforma e il ciclo di vita degli account.',
+            firstTitle: 'Disattiva o riattiva un utente',
+            firstBody:
+                'Dal menu delle azioni usa Disattiva per revocare subito l’accesso. I dati vengono conservati e puoi usare Ripristina per consentire nuovamente l’accesso.',
+            secondTitle: 'Gestisci più account insieme',
+            secondBody:
+                'Seleziona gli utenti con le caselle della tabella, poi usa Disattiva selezionati o Ripristina selezionati. Controlla gli account coinvolti e conferma l’operazione.',
+            thirdTitle: 'Elimina definitivamente',
+            thirdBody:
+                'Scegli Elimina dal menu dell’utente e digita esattamente la sua email per confermare. Vengono rimossi l’account e i dati collegati, compresi processi, risultati, sessioni, collegamenti social, passkey e avatar locale. L’operazione non può essere annullata.',
+            tip: 'Non puoi disattivare o eliminare il tuo account da Tutti gli utenti. La disattivazione è reversibile; l’eliminazione definitiva rimuove anche i dati dell’utente.',
+        },
+        adminJobs: {
+            label: 'Supervisiona i processi',
+            title: 'Segui le esecuzioni di tutti gli utenti',
+            description:
+                'Apri Amministrazione → Tutti i processi per consultare le esecuzioni dell’intera piattaforma, con il relativo utente, stato e avanzamento.',
+            firstTitle: 'Combina ricerca e filtri',
+            firstBody:
+                'Cerca per utente, processo, identificativo, stato o messaggio. Usa i filtri per utente e stato, ordina le colonne e scegli quali mostrare dal pulsante Colonne.',
+            secondTitle: 'Passa dall’utente alle sue esecuzioni',
+            secondBody:
+                'In Tutti gli utenti scegli Vedi processi per aprire l’elenco già filtrato. Puoi cambiare utente o azzerare i filtri per tornare alla vista generale.',
+            thirdTitle: 'Apri e gestisci il dettaglio',
+            thirdBody:
+                'Apri un’esecuzione per controllare stato, messaggi, dati inviati e risultati. Come admin puoi anche modificare nome e nota, scaricare gli output e riutilizzare gli input dei processi degli altri utenti.',
+            tip: 'I miei processi raccoglie le tue esecuzioni; Tutti i processi include anche quelle degli altri utenti.',
+        },
+        adminDiagnostics: {
+            label: 'Diagnostica e pulizia',
+            title: 'Verifica i dettagli tecnici e gestisci la pulizia',
+            description:
+                'Nel dettaglio di un processo sono disponibili informazioni aggiuntive per gli admin, utili per controllare i dati inviati e approfondire eventuali problemi.',
+            firstTitle: 'Consulta i dati tecnici',
+            firstBody:
+                'Espandi Dati inviati per consultare il JSON della richiesta, quando disponibile. Nei risultati dei grafici puoi aprire il JSON originale; nelle mappe puoi vedere gli avvisi sulla preparazione dei livelli. Le sezioni riservate sono indicate come visibili solo agli admin.',
+            secondTitle: 'Controlla errori e recupero dei risultati',
+            secondBody:
+                'Verifica lo stato dell’esecuzione e i messaggi disponibili. Se il recupero degli output è fallito, usa Riprova quando presente per tentare nuovamente la raccolta dei risultati.',
+            thirdTitle: 'Elimina una o più esecuzioni',
+            thirdBody:
+                'Usa Elimina nel dettaglio di un processo oppure seleziona più righe in Tutti i processi e scegli Elimina selezionati. Controlla i processi coinvolti prima di confermare: la rimozione dalla piattaforma non può essere annullata.',
+            tip: 'Prima di eliminare un’esecuzione, scarica gli output che vuoi conservare e verifica a quale utente appartiene.',
         },
     },
     toast: {
@@ -731,6 +814,9 @@ const en = {
         greeting: 'Hi',
         description:
             'Let’s walk through choosing a process, running an analysis, and exploring your results.',
+        adminDescription:
+            'Let’s walk through running analyses and administering the platform: users, sign-in, and supervision of all jobs.',
+        adminOnly: 'Admins only',
         chapters: 'Guide steps',
         step: 'Step {current} of {total}',
         previous: 'Back',
@@ -804,6 +890,86 @@ const en = {
             thirdBody:
                 'Press Reuse inputs to prepare a new execution with the same data. Review the copied values and choose the name, note, and outputs again.',
             tip: 'For language, appearance, and account settings, use the top bar controls and your profile menu.',
+        },
+        adminUsers: {
+            label: 'Manage users',
+            title: 'Platform users and roles',
+            description:
+                'As an admin, you have an Administration section in the sidebar. Open All Users to view and manage accounts.',
+            firstTitle: 'Find a user',
+            firstBody:
+                'Search by name, email, sign-in method, role, or status and combine the role and active or inactive account filters. The columns also show first access and the number of jobs started.',
+            secondTitle: 'Create an account',
+            secondBody:
+                'Press Create user, enter a name and email, and choose the User or Admin role. The Admin role enables user management and access to jobs across the platform.',
+            thirdTitle: 'Edit details and roles',
+            thirdBody:
+                'Choose Edit from the actions menu. You can update the name, email, and role; if you change the email, repeat it in the confirmation field. An address already used by another account cannot be saved.',
+            tip: 'You cannot change your own role from this screen. Use View jobs to open the selected user’s executions directly.',
+        },
+        adminSignIn: {
+            label: 'Social sign-in',
+            title: 'How sign-ins are matched to users',
+            description:
+                'The Registered with column shows the account’s sign-in methods. The edit form also explains social sign-in reconciliation.',
+            firstTitle: 'An already linked social identity',
+            firstBody:
+                'If a provider identity is already linked, future sign-ins keep using the same account even after its email changes.',
+            secondTitle: 'A new social connection',
+            secondBody:
+                'For an identity that is not yet linked, the provider’s verified email is matched against existing accounts. If no match exists, a new social user is created. If the provider does not supply a trusted email, the user must confirm an address using an OTP.',
+            thirdTitle: 'Check the effects of changing an email',
+            thirdBody:
+                'A new social sign-in that is not yet linked is matched using its verified email. If it still reports the old address, it may match a different account or create a separate one.',
+            tip: 'Before changing an address, check the sign-in methods already linked and read the guidance in the edit form.',
+        },
+        adminAccounts: {
+            label: 'Manage accounts',
+            title: 'Activate, deactivate, or remove an account',
+            description:
+                'The actions in All Users let you manage platform access and the lifecycle of accounts.',
+            firstTitle: 'Deactivate or reactivate a user',
+            firstBody:
+                'Use Deactivate in the actions menu to revoke access immediately. Data is retained, and you can use Restore to restore access.',
+            secondTitle: 'Manage several accounts at once',
+            secondBody:
+                'Select users with the table checkboxes, then choose Deactivate selected or Restore selected. Review the affected accounts and confirm the action.',
+            thirdTitle: 'Delete permanently',
+            thirdBody:
+                'Choose Delete in the user’s menu and type their exact email to confirm. The account and related data are removed, including jobs, results, sessions, social connections, passkeys, and the local avatar. This cannot be undone.',
+            tip: 'You cannot deactivate or delete your own account from All Users. Deactivation is reversible; permanent deletion also removes the user’s data.',
+        },
+        adminJobs: {
+            label: 'Supervise jobs',
+            title: 'Follow every user’s executions',
+            description:
+                'Open Administration → All Jobs to view executions across the platform, including their user, status, and progress.',
+            firstTitle: 'Combine search and filters',
+            firstBody:
+                'Search by user, process, identifier, status, or message. Use the user and status filters, sort columns, and choose which ones to display with the Columns button.',
+            secondTitle: 'Go from a user to their executions',
+            secondBody:
+                'In All Users, choose View jobs to open an already filtered list. You can change the user or reset the filters to return to the full view.',
+            thirdTitle: 'Open and manage the details',
+            thirdBody:
+                'Open an execution to review its status, messages, submitted data, and results. As an admin, you can also edit names and notes, download outputs, and reuse inputs from other users’ jobs.',
+            tip: 'My Jobs collects your own executions; All Jobs also includes those started by other users.',
+        },
+        adminDiagnostics: {
+            label: 'Diagnostics and cleanup',
+            title: 'Inspect technical details and clean up jobs',
+            description:
+                'Job details include additional information for admins to inspect submitted data and investigate problems.',
+            firstTitle: 'Inspect the technical data',
+            firstBody:
+                'Expand Submitted data to inspect the request JSON, when available. Chart results let you open the original JSON, and maps show warnings about layer preparation. Restricted sections are marked as visible to admins only.',
+            secondTitle: 'Check errors and result collection',
+            secondBody:
+                'Review the execution status and available messages. If output collection failed, use Retry when available to attempt collecting the results again.',
+            thirdTitle: 'Delete one or more executions',
+            thirdBody:
+                'Use Delete in a job’s details, or select several rows in All Jobs and choose Delete selected. Review the affected jobs before confirming: removal from the platform cannot be undone.',
+            tip: 'Before deleting an execution, download any outputs you want to keep and check which user it belongs to.',
         },
     },
     toast: {
