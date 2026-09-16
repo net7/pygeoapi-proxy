@@ -270,6 +270,7 @@ test('checkbox checked states render a visible indicator', function () {
 
 test('jobs index exposes a filterable status table', function () {
     $source = file_get_contents(getcwd().'/resources/js/pages/process-executions/index.tsx');
+    $serverTableSource = file_get_contents(getcwd().'/resources/js/hooks/use-server-table.ts');
     $normalizedSource = preg_replace('/\s+/', '', $source) ?? '';
     $helperSource = file_get_contents(getcwd().'/resources/js/lib/jobs.ts');
     $copyableJobIdSource = file_get_contents(getcwd().'/resources/js/components/ogc/copyable-job-id.tsx');
@@ -280,14 +281,10 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('@/routes/jobs')
         ->toContain('@tanstack/react-table')
         ->toContain('ColumnDef')
-        ->toContain('SortingState')
-        ->toContain('ColumnFiltersState')
-        ->toContain('VisibilityState')
         ->toContain('flexRender')
         ->toContain('getCoreRowModel')
-        ->toContain('getFilteredRowModel')
-        ->toContain('getPaginationRowModel')
-        ->toContain('getSortedRowModel')
+        ->toContain('useServerTable')
+        ->toContain('...serverTable.tableOptions')
         ->toContain('useReactTable')
         ->toContain('onClick={() =>')
         ->toContain('cursor-pointer')
@@ -302,9 +299,8 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('ArrowUpDownIcon')
         ->toContain('statusOptions')
         ->toContain('columnFilters')
-        ->toContain('columnVisibility')
-        ->toContain('submittedAt: false')
-        ->toContain('finishedAt: false')
+        ->toContain('settings: tableSettings')
+        ->toContain('hiddenColumns: { jobSearch: false }')
         ->toContain('pagination')
         ->toContain('getColumn(\'jobSearch\')')
         ->toContain('getColumn(\'status\')')
@@ -336,9 +332,6 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('DeleteJobButton')
         ->toContain("actions: 'w-14 text-right'")
         ->toContain("select: 'w-12'")
-        ->toContain('RowSelectionState')
-        ->toContain('rowSelection')
-        ->toContain('onRowSelectionChange')
         ->toContain('getFilteredSelectedRowModel')
         ->toContain('createSelectColumn<ProcessExecutionListItem>()')
         ->toContain('DataTableBulkActions')
@@ -366,6 +359,15 @@ test('jobs index exposes a filterable status table', function () {
         ->not->toContain('function JobRow(')
         ->not->toContain('ExecutionCard')
         ->not->toContain('<Card');
+
+    expect($serverTableSource)
+        ->toContain('manualPagination: true')
+        ->toContain('manualFiltering: true')
+        ->toContain('manualSorting: true')
+        ->toContain('pageCount: options.pagination.last_page')
+        ->toContain('pageIndex: options.pagination.current_page - 1')
+        ->toContain('...preferences.settings.columnVisibility')
+        ->toContain('sorting: preferences.settings.sorting');
 
     expect($copyableJobIdSource)
         ->toContain("import { toast } from 'sonner';")
@@ -410,15 +412,14 @@ test('job tables expose shadcn row selection and bulk delete actions', function 
     $adminJobsIndexSource = file_get_contents(getcwd().'/resources/js/pages/admin/jobs/index.tsx');
     $selectColumnSource = file_get_contents(getcwd().'/resources/js/components/data-table-select-column.tsx');
     $bulkActionsSource = file_get_contents(getcwd().'/resources/js/components/data-table-bulk-actions.tsx');
+    $serverTableSource = file_get_contents(getcwd().'/resources/js/hooks/use-server-table.ts');
     $messagesSource = file_get_contents(getcwd().'/resources/js/lib/i18n/messages.ts');
 
     foreach ([$jobsIndexSource, $adminJobsIndexSource] as $source) {
         $normalizedSource = preg_replace('/\s+/', '', $source) ?? '';
 
         expect($source)
-            ->toContain('RowSelectionState')
-            ->toContain('rowSelection')
-            ->toContain('onRowSelectionChange')
+            ->toContain('...serverTable.tableOptions')
             ->toContain('getFilteredSelectedRowModel')
             ->toContain('createSelectColumn')
             ->toContain('DataTableBulkActions')
@@ -438,9 +439,13 @@ test('job tables expose shadcn row selection and bulk delete actions', function 
             ->toMatch('/router\.visit\(show\(row\.original\.id,?\),?\)/');
     }
 
+    expect($serverTableSource)
+        ->toContain('useState<RowSelectionState>({})')
+        ->toContain('onRowSelectionChange: setRowSelection')
+        ->toContain('setRowSelection({})');
+
     foreach ([$jobsIndexSource, $adminJobsIndexSource] as $source) {
-        expect(strpos($source, '<DataTableBulkActions'))
-            ->toBeLessThan(strpos($source, '<Table'));
+        expect($source)->toMatch('/<DataTableBulkActions\b[\s\S]*<Table(?:\s|>)/');
     }
 
     expect($selectColumnSource)
@@ -796,12 +801,14 @@ test('job metadata changes refresh stale job table history', function () {
     expect($indexSource)
         ->toContain('@/lib/job-list-refresh')
         ->toContain('consumeJobsIndexStale')
-        ->toContain("router.reload({ only: ['executions', 'pollingInterval'] })");
+        ->toContain('router.reload({')
+        ->toContain("only: ['executions', 'pollingInterval', 'statusCounts']");
 
     expect($adminIndexSource)
         ->toContain('@/lib/job-list-refresh')
         ->toContain('consumeAdminJobsIndexStale')
-        ->toContain("router.reload({ only: ['executions'] })");
+        ->toContain('router.reload({')
+        ->toContain("only: ['executions', 'statusCounts']");
 
     expect($nameDialogSource)
         ->toContain('@/lib/job-list-refresh')

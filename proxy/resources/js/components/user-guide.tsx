@@ -5,13 +5,18 @@ import {
     ChartNoAxesCombined,
     CircleHelp,
     Info,
+    KeyRound,
     ListChecks,
+    ShieldCheck,
     SlidersHorizontal,
+    UsersRound,
     Workflow,
+    Wrench,
 } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -27,11 +32,20 @@ import { useTranslation } from '@/hooks/use-translation';
 import { complete } from '@/routes/first-access';
 import type { User } from '@/types';
 
-const chapters = [
-    { key: 'choose', icon: Workflow },
-    { key: 'configure', icon: SlidersHorizontal },
-    { key: 'monitor', icon: ListChecks },
-    { key: 'results', icon: ChartNoAxesCombined },
+const userChapters = [
+    { key: 'choose', icon: Workflow, adminOnly: false },
+    { key: 'configure', icon: SlidersHorizontal, adminOnly: false },
+    { key: 'monitor', icon: ListChecks, adminOnly: false },
+    { key: 'results', icon: ChartNoAxesCombined, adminOnly: false },
+] as const;
+
+const adminChapters = [
+    ...userChapters,
+    { key: 'adminUsers', icon: UsersRound, adminOnly: true },
+    { key: 'adminSignIn', icon: KeyRound, adminOnly: true },
+    { key: 'adminAccounts', icon: ShieldCheck, adminOnly: true },
+    { key: 'adminJobs', icon: ListChecks, adminOnly: true },
+    { key: 'adminDiagnostics', icon: Wrench, adminOnly: true },
 ] as const;
 
 const instructions = ['first', 'second', 'third'] as const;
@@ -39,9 +53,10 @@ const instructions = ['first', 'second', 'third'] as const;
 export function UserGuide({
     user,
 }: {
-    user: Pick<User, 'id' | 'name' | 'first_access_completed_at'>;
+    user: Pick<User, 'id' | 'name' | 'is_admin' | 'first_access_completed_at'>;
 }) {
     const { t } = useTranslation();
+    const chapters = user.is_admin ? adminChapters : userChapters;
     const [open, setOpen] = useState(user.first_access_completed_at === null);
     const [activeChapter, setActiveChapter] = useState(0);
     const { patch, processing, wasSuccessful } = useHttp({});
@@ -95,7 +110,11 @@ export function UserGuide({
                         {t('userGuide.greeting')} <strong>{user.name}</strong>!
                     </DialogTitle>
                     <DialogDescription className="max-w-2xl leading-relaxed">
-                        {t('userGuide.description')}
+                        {t(
+                            user.is_admin
+                                ? 'userGuide.adminDescription'
+                                : 'userGuide.description',
+                        )}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -128,7 +147,21 @@ export function UserGuide({
                                         >
                                             {index + 1}.
                                         </span>
-                                        {t(`userGuide.${item.key}.label`)}
+                                        <span className="flex min-w-0 flex-col items-start gap-1.5">
+                                            <span>
+                                                {t(
+                                                    `userGuide.${item.key}.label`,
+                                                )}
+                                            </span>
+                                            {item.adminOnly ? (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="max-w-full whitespace-normal"
+                                                >
+                                                    {t('userGuide.adminOnly')}
+                                                </Badge>
+                                            ) : null}
+                                        </span>
                                     </Button>
                                 </li>
                             ))}
@@ -145,10 +178,17 @@ export function UserGuide({
                     >
                         <div className="mx-auto flex max-w-3xl flex-col gap-7">
                             <div className="flex flex-col gap-4">
-                                <ChapterIcon
-                                    className="size-9 text-primary"
-                                    aria-hidden="true"
-                                />
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <ChapterIcon
+                                        className="size-9 text-primary"
+                                        aria-hidden="true"
+                                    />
+                                    {chapter.adminOnly ? (
+                                        <Badge variant="secondary">
+                                            {t('userGuide.adminOnly')}
+                                        </Badge>
+                                    ) : null}
+                                </div>
                                 <h2
                                     ref={chapterTitle}
                                     id={titleId}

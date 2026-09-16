@@ -126,10 +126,10 @@ export function JobNoteEditor({
     }
 
     return (
-        <div className={cn('flex min-w-0 flex-col gap-2', className)}>
+        <div className={cn('flex min-h-0 min-w-0 flex-col gap-2', className)}>
             {!readOnly ? (
                 <TooltipProvider>
-                    <div className="flex flex-wrap items-center gap-1 rounded-md border bg-muted/40 p-1">
+                    <div className="flex shrink-0 flex-wrap items-center gap-1 rounded-md border bg-muted/40 p-1">
                         <ToolbarButton
                             label={t('jobs.noteToolbar.undo')}
                             onClick={() => editor.chain().focus().undo().run()}
@@ -236,7 +236,13 @@ export function JobNoteEditor({
                 </TooltipProvider>
             ) : null}
 
-            <EditorContent editor={editor} />
+            <EditorContent
+                editor={editor}
+                className={cn(
+                    !readOnly &&
+                        '-m-1 min-h-0 overflow-y-auto overscroll-contain p-1',
+                )}
+            />
         </div>
     );
 }

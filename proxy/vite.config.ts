@@ -81,6 +81,15 @@ export default defineConfig(({ command, mode }) => {
                 formVariants: true,
             }),
         ],
+        optimizeDeps: {
+            // Avoid dev-server reloads when polling first reveals lazy result viewers.
+            include: [
+                'chart.js',
+                'maplibre-gl',
+                '@uiw/react-json-view',
+                '@uiw/react-json-view/nord',
+            ],
+        },
         build: {
             // MapLibre ships as one ~1.04 MB module; every other chunk stays below 500 kB.
             chunkSizeWarningLimit: 1100,

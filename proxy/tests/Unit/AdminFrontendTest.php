@@ -23,12 +23,13 @@ test('admin sidebar groups all users and all jobs under administration', functio
         ->and($sidebar)->not->toContain("title: 'Admin Jobs'");
 });
 
-test('admin tables use tanstack filtering and expected labels', function () {
+test('admin tables use server table state and expected labels', function () {
     $users = file_get_contents(dirname(__DIR__, 2).'/resources/js/pages/admin/users/index.tsx');
     $jobs = file_get_contents(dirname(__DIR__, 2).'/resources/js/pages/admin/jobs/index.tsx');
 
     expect($users)->toContain("from '@tanstack/react-table'")
-        ->and($users)->toContain('getFilteredRowModel')
+        ->and($users)->toContain('useServerTable')
+        ->and($users)->toContain('...serverTable.tableOptions')
         ->and($users)->toContain('admin.allUsers')
         ->and($users)->toContain("variant={role === 'admin' ? 'destructive' : 'outline'}")
         ->and($users)->toContain("role === 'user' && 'bg-background'")
@@ -63,11 +64,12 @@ test('admin tables use tanstack filtering and expected labels', function () {
         ->and($users)->toContain('AdminUserIdentity')
         ->and($users)->toContain('<AvatarImage src={user.avatar ?? undefined} alt={user.name} />')
         ->and($jobs)->toContain("from '@tanstack/react-table'")
-        ->and($jobs)->toContain('getFilteredRowModel')
+        ->and($jobs)->toContain('useServerTable')
+        ->and($jobs)->toContain('...serverTable.tableOptions')
         ->and($jobs)->toContain("user: 'common.user'")
         ->and($jobs)->toContain('admin.allUsers')
         ->and($jobs)->toContain('selectedUserId')
-        ->and($jobs)->toContain('user: nextUser.jobFilter')
+        ->and($jobs)->toMatch('/user:\s*\w+\.jobFilter/')
         ->and($jobs)->not->toContain('user_id')
         ->and($jobs)->toContain('admin.jobsByUser')
         ->and($jobs)->not->toContain('Owner')
@@ -153,7 +155,8 @@ test('admin tables expose bulk actions for jobs and users', function () {
     $normalizedJobs = preg_replace('/\s+/', '', $jobs) ?? '';
 
     expect($jobs)
-        ->toContain('RowSelectionState')
+        ->toContain('getFilteredSelectedRowModel')
+        ->toContain('table.resetRowSelection()')
         ->toContain('createSelectColumn<AdminJob>()')
         ->toContain('DataTableBulkActions')
         ->toContain("selectionLabel={t('jobs.selectedJobs'")
@@ -164,7 +167,8 @@ test('admin tables expose bulk actions for jobs and users', function () {
         ->toContain("data-state={row.getIsSelected()?'selected':undefined}");
 
     expect($users)
-        ->toContain('RowSelectionState')
+        ->toContain('getFilteredSelectedRowModel')
+        ->toContain('table.resetRowSelection()')
         ->toContain('createSelectColumn<AdminUser>()')
         ->toContain('DataTableBulkActions')
         ->toContain("selectionLabel={t('admin.selectedUsers'")

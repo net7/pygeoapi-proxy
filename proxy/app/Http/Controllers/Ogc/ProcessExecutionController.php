@@ -5,15 +5,18 @@ namespace App\Http\Controllers\Ogc;
 use App\Actions\Ogc\CreateProcessExecution;
 use App\Actions\Ogc\DeleteProcessExecution;
 use App\Actions\Ogc\FindGeoTiffSldResultPairs;
+use App\Enums\TableKey;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Ogc\BulkDestroyProcessExecutionRequest;
 use App\Http\Requests\Ogc\StoreProcessExecutionRequest;
 use App\Http\Requests\Ogc\UpdateProcessExecutionNameRequest;
 use App\Http\Requests\Ogc\UpdateProcessExecutionNoteRequest;
+use App\Http\Requests\TableIndexRequest;
 use App\Jobs\Ogc\SubmitProcessExecutionJob;
 use App\Models\ProcessExecution;
 use App\Models\ProcessExecutionResult;
 use App\Models\User;
+use App\Services\JobTableQuery;
 use App\Services\Ogc\CsvPreviewBuilder;
 use App\Services\Ogc\OgcProcessCache;
 use App\Services\Ogc\OgcTextNormalizer;
@@ -24,6 +27,7 @@ use App\Services\Ogc\ProcessInputValueNormalizer;
 use App\Services\Ogc\ProcessOutputRequestBuilder;
 use App\Services\Ogc\ProcessSchemaNormalizer;
 use App\Support\Ogc\SldVisualizationInspector;
+use App\Support\UserTableSettings;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
@@ -36,18 +40,22 @@ use Inertia\Response;
 
 class ProcessExecutionController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(TableIndexRequest $request, UserTableSettings $preferences, JobTableQuery $tableQuery): Response
     {
         $user = $request->user();
         assert($user instanceof User);
         $includeRemoteJobId = $user->isAdmin();
+        $settings = $preferences->forUser($user, TableKey::Jobs);
+        $filters = $request->filters();
+        $table = $tableQuery->paginate($user, TableKey::Jobs, $filters, $settings, $request->integer('page', 1));
 
         return Inertia::render('process-executions/index', [
             'pollingInterval' => $this->pollingInterval(),
-            'executions' => $user
-                ->processExecutions()
-                ->latest()
-                ->paginate(15)
+            'tableSettings' => $settings,
+            'tableDefaults' => TableKey::Jobs->defaults(),
+            'filters' => ['search' => $filters['search'], 'status' => $filters['status']],
+            'statusCounts' => $table['statusCounts'],
+            'executions' => $table['executions']
                 ->through(fn (ProcessExecution $execution): array => $this->executionListItem($execution, $includeRemoteJobId)),
         ]);
     }

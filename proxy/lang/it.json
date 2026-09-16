@@ -119,5 +119,6 @@
     "Your account has been deactivated.": "Il tuo account è stato disattivato.",
     "Your profile image has been refreshed.": "L’immagine del profilo è stata aggiornata.",
     "Your profile now uses the default account initials.": "Il profilo ora usa le iniziali predefinite dell’account.",
-    "validation.invalid": "Il campo :attribute non è valido."
+    "validation.invalid": "Il campo :attribute non è valido.",
+    "validation.prohibited": "Il campo :attribute non è consentito."
 }

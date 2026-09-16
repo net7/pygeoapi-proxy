@@ -9,6 +9,7 @@ import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { navigationMotionOptions } from '@/lib/motion';
+import { initializeTableSettings } from '@/lib/table-settings-client';
 import { formatPageTitle } from './lib/page-title';
 import { reverbOptions } from './lib/reverb-configuration';
 
@@ -21,6 +22,7 @@ const reverbConfiguration =
 configureEcho(reverbOptions(reverbConfiguration));
 
 initializeLanguage();
+initializeTableSettings();
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 

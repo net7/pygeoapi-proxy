@@ -98,11 +98,11 @@ export function JobNoteCard({
             </Card>
 
             <DialogContent
-                className="sm:max-w-2xl"
+                className="flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden sm:max-w-2xl"
                 onOpenAutoFocus={(event) => event.preventDefault()}
             >
-                <form className="flex flex-col gap-4" onSubmit={submit}>
-                    <DialogHeader>
+                <form className="flex min-h-0 flex-col gap-4" onSubmit={submit}>
+                    <DialogHeader className="shrink-0">
                         <DialogTitle>{t('jobs.editNote')}</DialogTitle>
                         <DialogDescription>
                             {t('jobs.editNoteDescription')}
@@ -115,7 +115,7 @@ export function JobNoteCard({
                         onChange={(note) => setData('note', note)}
                     />
 
-                    <DialogFooter>
+                    <DialogFooter className="shrink-0">
                         <Button
                             type="button"
                             variant="outline"

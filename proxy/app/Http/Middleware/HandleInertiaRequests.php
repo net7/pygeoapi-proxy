@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Support\AuthFeatures;
+use App\Support\UserTableSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Middleware;
@@ -10,6 +11,8 @@ use Laravel\Fortify\Features;
 
 class HandleInertiaRequests extends Middleware
 {
+    public function __construct(private UserTableSettings $tableSettings) {}
+
     /**
      * The root template that's loaded on the first page visit.
      *
@@ -78,6 +81,7 @@ class HandleInertiaRequests extends Middleware
             'avatar' => $user->avatar(),
             'has_custom_avatar' => filled($user->avatar_path),
             'has_local_password' => $user->hasLocalPassword(),
+            'settings' => $this->tableSettings->sharedForUser($user),
         ];
     }
 
