@@ -1,10 +1,9 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowRightIcon, CpuIcon, PlayCircleIcon } from 'lucide-react';
+import { ArrowRightIcon, CpuIcon } from 'lucide-react';
 
 import CacheWarmupPoller from '@/components/ogc/cache-warmup-poller';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -92,9 +91,11 @@ export default function ProcessIndex({
                                 t('ogc.noDescription');
 
                             return (
-                                <article
+                                <Link
                                     key={process.id}
-                                    className="process-card group h-full"
+                                    href={show(process.id)}
+                                    aria-label={`${t('ogc.openProcess')}: ${process.title ?? process.id}`}
+                                    className="process-card group block h-full cursor-pointer rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                 >
                                     <Card className="h-full overflow-hidden">
                                         <CardHeader className="gap-4">
@@ -131,26 +132,18 @@ export default function ProcessIndex({
                                                 {description}
                                             </p>
                                         </CardContent>
-                                        <CardFooter className="mt-auto border-t border-border px-6 pt-5">
-                                            <Button
-                                                asChild
-                                                className="w-full justify-between"
-                                            >
-                                                <Link href={show(process.id)}>
-                                                    <span className="flex min-w-0 items-center gap-2">
-                                                        <PlayCircleIcon data-icon="inline-start" />
-                                                        <span className="truncate">
-                                                            {t(
-                                                                'ogc.openProcess',
-                                                            )}
-                                                        </span>
-                                                    </span>
-                                                    <ArrowRightIcon data-icon="inline-end" />
-                                                </Link>
-                                            </Button>
+                                        <CardFooter className="mt-auto justify-between gap-3">
+                                            <span className="text-sm font-medium text-primary underline-offset-4 group-hover:underline group-focus-visible:underline">
+                                                {t('ogc.openProcess')}
+                                            </span>
+                                            <ArrowRightIcon
+                                                aria-hidden="true"
+                                                data-icon="inline-end"
+                                                className="size-4 shrink-0 text-primary"
+                                            />
                                         </CardFooter>
                                     </Card>
-                                </article>
+                                </Link>
                             );
                         })}
                     </div>
