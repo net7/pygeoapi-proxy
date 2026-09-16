@@ -244,6 +244,11 @@
         -webkit-font-smoothing: antialiased;
     }
 
+    /* Avoid Firefox scroll jumps when Radix locks the page for a select. */
+    body[data-scroll-locked]:has([data-slot='select-content']) {
+        overflow: clip !important;
+    }
+
     h1 {
         letter-spacing: -0.035em;
         text-wrap: balance;
