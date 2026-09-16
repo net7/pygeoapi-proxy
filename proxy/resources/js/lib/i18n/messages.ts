@@ -306,6 +306,7 @@ const it = {
         userSelfStatusUnavailable:
             'Non puoi modificare lo stato del tuo account.',
         userJobs: 'Processi',
+        firstAccess: 'Primo accesso',
         usersNoMatch: 'Nessun utente corrisponde ai filtri correnti.',
         viewUserJobs: 'Vedi processi',
     },
@@ -960,6 +961,7 @@ const en = {
         userSelfStatusUnavailable:
             'You cannot change the status of your own account.',
         userJobs: 'Jobs',
+        firstAccess: 'First access',
         usersNoMatch: 'No users match the current filters.',
         viewUserJobs: 'View jobs',
     },

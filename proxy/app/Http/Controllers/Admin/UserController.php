@@ -224,7 +224,7 @@ class UserController extends Controller
     }
 
     /**
-     * @return array{id: int, name: string, email: string, avatar: string|null, role: string, is_admin: bool, is_deactivated: bool, deactivated_at: string|null, socialProviders: list<array{provider: string, label: string}>, jobs_count: int, jobFilter: string, created_at: string|null}
+     * @return array{id: int, name: string, email: string, avatar: string|null, role: string, is_admin: bool, is_deactivated: bool, deactivated_at: string|null, socialProviders: list<array{provider: string, label: string}>, jobs_count: int, first_access_completed_at: string|null, jobFilter: string, created_at: string|null}
      */
     private function userPayload(User $user): array
     {
@@ -239,6 +239,7 @@ class UserController extends Controller
             'deactivated_at' => $user->deactivated_at?->toISOString(),
             'socialProviders' => $this->socialProviderPayload($user),
             'jobs_count' => (int) ($user->process_executions_count ?? 0),
+            'first_access_completed_at' => $user->first_access_completed_at?->toISOString(),
             'jobFilter' => Crypt::encryptString((string) $user->id),
             'created_at' => $user->created_at?->toISOString(),
         ];

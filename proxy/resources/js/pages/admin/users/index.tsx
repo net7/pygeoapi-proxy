@@ -155,6 +155,7 @@ type AdminUser = {
     deactivated_at: string | null;
     socialProviders: SocialProvider[];
     jobs_count: number;
+    first_access_completed_at: string | null;
     jobFilter: string;
     created_at: string | null;
 };
@@ -192,6 +193,7 @@ const columnLabelKeys: Record<string, TranslationKey> = {
     socialProviders: 'admin.registeredWith',
     status: 'common.status',
     jobs_count: 'admin.userJobs',
+    first_access_completed_at: 'admin.firstAccess',
     created_at: 'jobs.created',
 };
 
@@ -202,6 +204,7 @@ const columnClassNames: Record<string, string> = {
     socialProviders: 'min-w-40',
     status: 'min-w-32',
     jobs_count: 'min-w-24 text-right',
+    first_access_completed_at: 'min-w-40',
     created_at: 'min-w-40',
     actions: 'w-12 text-right',
 };
@@ -334,6 +337,27 @@ export default function AdminUsersIndex({
                         {row.original.jobs_count}
                     </span>
                 ),
+            },
+            {
+                accessorKey: 'first_access_completed_at',
+                header: ({ column }) => (
+                    <SortableHeader
+                        column={column}
+                        titleKey="admin.firstAccess"
+                    />
+                ),
+                cell: ({ row }) => (
+                    <span className="text-muted-foreground">
+                        {formatJobDate(
+                            row.original.first_access_completed_at,
+                            locale,
+                            t('common.notAvailable'),
+                        )}
+                    </span>
+                ),
+                sortingFn: (first, second) =>
+                    dateSortValue(first.original.first_access_completed_at) -
+                    dateSortValue(second.original.first_access_completed_at),
             },
             {
                 accessorKey: 'created_at',

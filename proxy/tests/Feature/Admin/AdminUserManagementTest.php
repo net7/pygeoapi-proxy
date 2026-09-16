@@ -27,7 +27,7 @@ test('admin user management is restricted to administrators', function () {
         ->assertForbidden();
 });
 
-test('admins can see users with job counts', function () {
+test('admins can see users with job counts and first access dates', function () {
     Storage::fake('public');
     Storage::disk('public')->put('avatars/process-owner.jpg', 'avatar');
 
@@ -36,6 +36,7 @@ test('admins can see users with job counts', function () {
         'name' => 'Process Owner',
         'email' => 'owner@example.com',
         'avatar_path' => 'avatars/process-owner.jpg',
+        'first_access_completed_at' => '2026-09-16 09:30:00',
     ]);
     ProcessExecution::factory()->count(2)->for($user)->create();
     SocialAccount::factory()->for($user)->create(['provider' => 'google']);
@@ -52,6 +53,8 @@ test('admins can see users with job counts', function () {
             ->where('users.data.0.avatar', route('profile.avatar.show', ['path' => 'avatars/process-owner.jpg'], absolute: false))
             ->where('users.data.0.role', UserRole::User->value)
             ->where('users.data.0.jobs_count', 2)
+            ->where('users.data.0.first_access_completed_at', '2026-09-16T09:30:00.000000Z')
+            ->where('users.data.1.first_access_completed_at', null)
             ->has('users.data.0.socialProviders', 2)
             ->where('users.data.0.socialProviders.0.provider', 'google')
             ->where('users.data.0.socialProviders.0.label', 'GOOGLE')
