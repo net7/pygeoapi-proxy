@@ -122,6 +122,34 @@ test('admins can create users when password reset is disabled', function () {
     expect(Mail::mailer()->getSymfonyTransport()->messages())->toBeEmpty();
 });
 
+test('admins cannot create users with emails without a dotted domain', function (string $email) {
+    config(['fortify.features' => [Features::resetPasswords()]]);
+
+    require base_path('vendor/laravel/fortify/routes/routes.php');
+    Route::getRoutes()->refreshNameLookups();
+
+    Notification::fake();
+
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->post(route('admin.users.store'), [
+            'name' => 'Invalid Email User',
+            'email' => $email,
+            'role' => UserRole::User->value,
+        ])
+        ->assertSessionHasErrors([
+            'email' => 'The email field must be a valid email address.',
+        ]);
+
+    $this->assertDatabaseMissing('users', ['email' => $email]);
+    $this->assertDatabaseMissing('password_reset_tokens', ['email' => $email]);
+    Notification::assertNothingSent();
+})->with([
+    'single-letter domain' => 'f@u',
+    'local domain' => 'user@localhost',
+]);
+
 test('admin user creation supports precognitive validation', function () {
     $admin = User::factory()->admin()->create();
     User::factory()->create(['email' => 'taken@example.com']);
@@ -142,6 +170,27 @@ test('admin user creation supports precognitive validation', function () {
         ->assertJsonPath('errors.email.0', 'The email has already been taken.');
 
     expect(User::query()->where('name', 'Taken User')->exists())->toBeFalse();
+});
+
+test('admin user creation rejects emails without a dotted domain during precognitive validation', function () {
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->withHeaders([
+            'Accept' => 'application/json',
+            'Precognition' => 'true',
+            'Precognition-Validate-Only' => 'email',
+        ])
+        ->post(route('admin.users.store'), [
+            'name' => 'Invalid Email User',
+            'email' => 'f@u',
+            'role' => UserRole::User->value,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('email')
+        ->assertJsonPath('errors.email.0', 'The email field must be a valid email address.');
+
+    $this->assertDatabaseMissing('users', ['email' => 'f@u']);
 });
 
 test('admins can update users but cannot demote themselves', function () {
@@ -170,6 +219,22 @@ test('admins can update users but cannot demote themselves', function () {
         ->assertSessionHasErrors('role');
 
     expect($admin->fresh()->role)->toBe(UserRole::Admin);
+});
+
+test('admins cannot update users to emails without a dotted domain', function () {
+    $admin = User::factory()->admin()->create();
+    $user = User::factory()->create(['email' => 'original@example.com']);
+
+    $this->actingAs($admin)
+        ->patch(route('admin.users.update', $user), [
+            'name' => $user->name,
+            'email' => 'f@u',
+            'email_confirmation' => 'f@u',
+            'role' => UserRole::User->value,
+        ])
+        ->assertSessionHasErrors(['email', 'email_confirmation']);
+
+    expect($user->fresh()->email)->toBe('original@example.com');
 });
 
 test('admins must confirm changed user emails', function () {
