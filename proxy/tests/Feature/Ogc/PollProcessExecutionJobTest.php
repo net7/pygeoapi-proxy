@@ -17,15 +17,121 @@ use App\Services\Ogc\OgcProcessesClient;
 use App\Services\Ogc\OgcResultResponseParser;
 use App\Services\Ogc\OgcTextNormalizer;
 use GuzzleHttp\Psr7\Response as Psr7Response;
+use Illuminate\Database\QueryException;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     Bus::fake([PublishGeoTiffMapLayerJob::class]);
+});
+
+test('it leaves polling state unchanged when completion cannot be persisted', function () {
+    Bus::fake();
+    Notification::fake();
+    Http::preventStrayRequests();
+
+    $execution = ProcessExecution::factory()->create([
+        'remote_job_id' => 'job-123',
+        'status' => ExecutionStatus::Accepted,
+        'progress' => 5,
+        'message' => 'Queued',
+    ]);
+
+    Schema::table('process_executions', function (Blueprint $table) {
+        $table->dropColumn('result_collection_status');
+    });
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123?f=json' => Http::response(ogcFixture('job-successful')),
+    ]);
+
+    expect(fn () => (new PollProcessExecutionJob($execution->id))->handle(app(PollProcessExecution::class)))
+        ->toThrow(QueryException::class);
+
+    $this->assertDatabaseHas('process_executions', [
+        'id' => $execution->id,
+        'status' => 'accepted',
+        'progress' => 5,
+        'message' => 'Queued',
+        'completed_at' => null,
+        'last_polled_at' => null,
+        'remote_finished_at' => null,
+    ]);
+    Http::assertSentCount(1);
+    Bus::assertNothingDispatched();
+    Notification::assertNothingSent();
+});
+
+test('it delays overlapping polls without overwriting completed state', function () {
+    Bus::fake();
+    Notification::fake();
+    Http::preventStrayRequests();
+
+    $execution = ProcessExecution::factory()->create([
+        'remote_job_id' => 'job-123',
+        'status' => ExecutionStatus::Accepted,
+    ]);
+    $job = new PollProcessExecutionJob($execution->id);
+    $overlappingJob = (new PollProcessExecutionJob($execution->id))->withFakeQueueInteractions();
+
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123?f=json' => function () use ($overlappingJob) {
+            $overlappingJob->middleware()[0]->handle($overlappingJob, function () {
+                $this->fail('An overlapping poll must not execute.');
+            });
+
+            return Http::response(ogcFixture('job-successful'));
+        },
+    ]);
+
+    $job->middleware()[0]->handle($job, fn (PollProcessExecutionJob $job) => $job->handle(app(PollProcessExecution::class)));
+    $overlappingJob->middleware()[0]->handle($overlappingJob, fn (PollProcessExecutionJob $job) => $job->handle(app(PollProcessExecution::class)));
+
+    $overlappingJob->assertReleased(delay: 10);
+    $this->assertDatabaseHas('process_executions', [
+        'id' => $execution->id,
+        'status' => 'successful',
+        'progress' => 100,
+    ]);
+    Http::assertSentCount(1);
+    Bus::assertDispatchedTimes(CollectProcessExecutionResultsJob::class, 1);
+    Notification::assertNothingSent();
+});
+
+test('it resumes polling after an abandoned worker lock expires', function () {
+    $this->freezeTime();
+    Bus::fake();
+    Notification::fake();
+    Http::preventStrayRequests();
+
+    $execution = ProcessExecution::factory()->create([
+        'remote_job_id' => 'job-123',
+        'status' => ExecutionStatus::Accepted,
+    ]);
+    $job = (new PollProcessExecutionJob($execution->id))->withFakeQueueInteractions();
+    $middleware = $job->middleware()[0];
+    Cache::lock($middleware->getLockKey($job), $middleware->expiresAfter)->get();
+    Http::fake([
+        'https://voice.pi.ingv.it/geoinquire/jobs/job-123?f=json' => Http::response(ogcFixture('job-successful')),
+    ]);
+
+    $this->travel(181)->seconds();
+    $middleware->handle($job, fn (PollProcessExecutionJob $job) => $job->handle(app(PollProcessExecution::class)));
+
+    $this->assertDatabaseHas('process_executions', [
+        'id' => $execution->id,
+        'status' => 'successful',
+        'progress' => 100,
+    ]);
+    Http::assertSentCount(1);
+    Bus::assertDispatchedTimes(CollectProcessExecutionResultsJob::class, 1);
+    Notification::assertNothingSent();
 });
 
 test('it ignores direct response storage for an explicit empty requested output map', function () {
