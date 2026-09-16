@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
+import { passkeyErrorMessage } from '@/lib/passkey-errors';
 import type { PasskeyRoutePair } from '@/types/auth';
 
 type Props = {
@@ -15,7 +16,7 @@ type Props = {
 };
 
 export default function PasskeyRegistration({ routes, onSuccess }: Props) {
-    const { t } = useTranslation();
+    const { language, t } = useTranslation();
     const [name, setName] = useState(() => {
         const ua = navigator.userAgent;
 
@@ -27,18 +28,22 @@ export default function PasskeyRegistration({ routes, onSuccess }: Props) {
             new RegExp(os).test(ua),
         );
 
-        return [browser, os].filter(Boolean).join(' on ') || '';
+        return browser && os
+            ? t('settings.passkeys.deviceName', { browser, os })
+            : browser || os || '';
     });
 
     const [showForm, setShowForm] = useState(false);
-    const { register, isLoading, error, isSupported } = usePasskeyRegister({
-        routes,
-        onSuccess: () => {
-            setName('');
-            setShowForm(false);
-            onSuccess();
-        },
-    });
+    const { register, isLoading, errorInstance, isSupported } =
+        usePasskeyRegister({
+            routes,
+            onSuccess: () => {
+                setName('');
+                setShowForm(false);
+                onSuccess();
+            },
+        });
+    const error = passkeyErrorMessage(errorInstance, language);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

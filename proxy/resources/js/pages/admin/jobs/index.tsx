@@ -73,6 +73,7 @@ import { consumeAdminJobsIndexStale } from '@/lib/job-list-refresh';
 import {
     clampProgress,
     formatJobDate,
+    jobMessage,
     jobStatusSortIndex,
     jobStatusStyles,
 } from '@/lib/jobs';
@@ -899,9 +900,9 @@ function AdminJobUserIdentity({ owner }: { owner: AdminJob['owner'] }) {
 }
 
 function JobMessage({ message }: { message?: string | null }) {
-    const { t } = useTranslation();
+    const { language } = useTranslation();
 
-    return <>{message ?? t('jobs.noJobMessage')}</>;
+    return <>{jobMessage(message, language)}</>;
 }
 
 function JobIdentifier({ execution }: { execution: AdminJob }) {

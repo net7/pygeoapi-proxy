@@ -29,7 +29,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from '@/hooks/use-translation';
 import { htmlPatternForInput } from '@/lib/html-pattern';
 import { runUiTransition } from '@/lib/motion';
-import { fieldDisplayLabel } from '@/lib/ogc-fields';
+import { columnDisplayLabel, fieldDisplayLabel } from '@/lib/ogc-fields';
 import { errorIdForPath, fieldError } from '@/lib/ogc-form-errors';
 import {
     appendFormRow,
@@ -55,13 +55,16 @@ export default function ArrayTableField({
     validation: OgcFieldValidationController;
     readOnly?: boolean;
 }) {
-    const { t } = useTranslation();
+    const { language, t } = useTranslation();
     const showReferences =
         useContext(InputSupportContext)?.showReferences ?? false;
     const isMobile = useIsMobile();
     const errors = validation.errors;
     const rows = Array.isArray(value) ? value : [];
-    const columns = field.columns ?? [];
+    const columns = (field.columns ?? []).map((column) => ({
+        ...column,
+        label: columnDisplayLabel(column, language),
+    }));
     const tableMinWidth = `${Math.max(columns.length * 8 + 3.5, 32)}rem`;
     const showScrollHint = columns.length > 3;
     const enableDesktopScrollRegion = showScrollHint && !isMobile;

@@ -7,6 +7,7 @@ import {
     allChartSeriesKeys,
     chartSeriesVisibilityControls,
     defaultVisibleChartSeriesKeys,
+    formatChartNumber,
     hasMultipleChartSeries,
     normalizeChartPayload,
 } from '../../resources/js/lib/ogc-chart';
@@ -49,6 +50,36 @@ const chartPayload = {
 };
 
 describe('normalizeChartPayload', () => {
+    test('formats chart values using the selected language', () => {
+        expect(formatChartNumber(12345.6789, 'it')).toBe('12.345,6789');
+        expect(formatChartNumber(12345.6789, 'en')).toBe('12,345.6789');
+        expect(formatChartNumber(Number.NaN, 'it')).toBe('');
+    });
+
+    test('localizes generated chart labels without changing keys or supplied labels', () => {
+        const data = {
+            chartType: 'line',
+            domain: { values: [1, 2] },
+            series: [
+                { values: [3, 4] },
+                {
+                    key: 'temperature',
+                    label: 'Temperature (K)',
+                    values: [5, 6],
+                },
+            ],
+        };
+        const italian = normalizeChartPayload(data, 'it');
+        const english = normalizeChartPayload(data, 'en');
+
+        expect(italian?.domain.label).toBe('Dominio');
+        expect(english?.domain.label).toBe('Domain');
+        expect(italian?.series[0].label).toBe('Serie 1');
+        expect(english?.series[0].label).toBe('Series 1');
+        expect(italian?.series[0].key).toBe(english?.series[0].key);
+        expect(italian?.series[1].label).toBe('Temperature (K)');
+    });
+
     test('normalizes line chart payloads with numeric domain and series values', () => {
         const chart = normalizeChartPayload(chartPayload);
 

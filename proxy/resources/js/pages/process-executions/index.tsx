@@ -74,6 +74,7 @@ import {
     clampProgress,
     formatJobDate,
     isJobTerminal,
+    jobMessage,
     jobStatusSortIndex,
     jobStatusStyles,
 } from '@/lib/jobs';
@@ -806,9 +807,9 @@ function ActionsHeader() {
 }
 
 function JobMessage({ message }: { message?: string | null }) {
-    const { t } = useTranslation();
+    const { language } = useTranslation();
 
-    return <>{message ?? t('jobs.noJobMessage')}</>;
+    return <>{jobMessage(message, language)}</>;
 }
 
 function JobIdentifier({ execution }: { execution: ProcessExecutionListItem }) {

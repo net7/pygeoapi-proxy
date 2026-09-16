@@ -18,8 +18,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/use-translation';
 import { runUiTransition } from '@/lib/motion';
-import { fieldDisplayLabel } from '@/lib/ogc-fields';
+import { fieldDisplayLabel, variantDisplayLabel } from '@/lib/ogc-fields';
 import {
     errorIdForPath,
     fieldError,
@@ -50,8 +51,12 @@ export default function OneOfField({
     validation: OgcFieldValidationController;
     readOnly?: boolean;
 }) {
+    const { language } = useTranslation();
     const errors = validation.errors;
-    const variants = field.variants ?? [];
+    const variants = (field.variants ?? []).map((variant) => ({
+        ...variant,
+        label: variantDisplayLabel(variant.label, language),
+    }));
     const current = isOneOfValue(value)
         ? value
         : { variant: variants[0]?.id ?? '0', value: {} };

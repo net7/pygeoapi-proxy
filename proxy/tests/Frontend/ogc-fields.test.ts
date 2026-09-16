@@ -1,13 +1,27 @@
 import { describe, expect, test } from 'bun:test';
 
 import {
+    columnDisplayLabel,
     fieldDisplayLabel,
     optionDisplayLabel,
     referenceDisplayLabel,
+    variantDisplayLabel,
 } from '../../resources/js/lib/ogc-fields';
 import type { OgcNormalizedField } from '../../resources/js/types';
 
 describe('OGC field display helpers', () => {
+    test('localizes persisted fallback labels and preserves descriptive labels', () => {
+        const column = { key: '0', label: 'Column 1' };
+        expect(columnDisplayLabel(column, 'it')).toBe('Colonna 1');
+        expect(columnDisplayLabel(column, 'en')).toBe('Column 1');
+        expect(
+            columnDisplayLabel({ ...column, label: 'Temperature' }, 'it'),
+        ).toBe('Temperature');
+        expect(variantDisplayLabel('Variant', 'it')).toBe('Variante');
+        expect(variantDisplayLabel('Variant', 'en')).toBe('Variant');
+        expect(variantDisplayLabel('Temperature', 'it')).toBe('Temperature');
+    });
+
     test('shows the descriptive title without the support reference', () => {
         expect(
             fieldDisplayLabel({

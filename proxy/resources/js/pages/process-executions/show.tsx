@@ -61,6 +61,7 @@ import {
     isJobFailure,
     isJobTerminal,
     isResultCollectionActive,
+    jobMessage,
     jobStatusStyles,
 } from '@/lib/jobs';
 import { hasPendingMapLayers } from '@/lib/ogc-map-layers';
@@ -86,7 +87,7 @@ export default function ProcessExecutionShow({
     pollingInterval: number;
     inputReview?: OgcInputReview | null;
 }) {
-    const { locale, t } = useTranslation();
+    const { language, locale, t } = useTranslation();
     const [inputReviewOpen, setInputReviewOpen] = useState(false);
     const styles = jobStatusStyles(execution.status);
     const StatusIcon = styles.icon;
@@ -363,10 +364,10 @@ export default function ProcessExecutionShow({
                             isJobFailure(execution.status) ? (
                                 <ProcessFailureNotice
                                     title={t('jobs.failureTitle')}
-                                    description={
-                                        execution.message ??
-                                        t('jobs.noJobMessage')
-                                    }
+                                    description={jobMessage(
+                                        execution.message,
+                                        language,
+                                    )}
                                 />
                             ) : (
                                 <AlertResultsEmpty

@@ -33,6 +33,7 @@ import {
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { useTranslation } from '@/hooks/use-translation';
+import { translate } from '@/lib/i18n/translation';
 import { cn } from '@/lib/utils';
 import { download, mapTile } from '@/routes/jobs/results';
 import type { ProcessExecutionResult } from '@/types';
@@ -42,7 +43,6 @@ const worldBasemapSource: RasterSourceSpecification = {
     tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
     tileSize: 256,
     maxzoom: 19,
-    attribution: '&copy; OpenStreetMap contributors',
 };
 
 export default function GeoTiffMapResultPreview({
@@ -211,7 +211,7 @@ function MapLibreWmsPreview({
     executionId: number;
     geotiff: ProcessExecutionResult;
 }) {
-    const { t } = useTranslation();
+    const { language, t } = useTranslation();
     const containerRef = useRef<HTMLDivElement | null>(null);
     const bounds = useMemo(
         () => validBounds(geotiff.mapLayer?.bounds),
@@ -232,10 +232,32 @@ function MapLibreWmsPreview({
 
         const map = new maplibregl.Map({
             container: containerRef.current,
+            locale: {
+                'Map.Title': translate(language, 'ogc.mapTitle'),
+                'NavigationControl.ZoomIn': translate(
+                    language,
+                    'ogc.mapZoomIn',
+                ),
+                'NavigationControl.ZoomOut': translate(
+                    language,
+                    'ogc.mapZoomOut',
+                ),
+                'AttributionControl.ToggleAttribution': translate(
+                    language,
+                    'ogc.mapToggleAttribution',
+                ),
+                'AttributionControl.MapFeedback': translate(
+                    language,
+                    'ogc.mapFeedback',
+                ),
+            },
             style: {
                 version: 8,
                 sources: {
-                    openstreetmap: worldBasemapSource,
+                    openstreetmap: {
+                        ...worldBasemapSource,
+                        attribution: `&copy; ${translate(language, 'ogc.mapContributors')}`,
+                    },
                 },
                 layers: [
                     {
@@ -296,7 +318,7 @@ function MapLibreWmsPreview({
         return () => {
             map.remove();
         };
-    }, [bounds, recenterMapLabel, tileTemplate]);
+    }, [bounds, language, recenterMapLabel, tileTemplate]);
 
     return (
         <div

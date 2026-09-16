@@ -92,6 +92,7 @@ class User extends Authenticatable implements PasskeyUser
             'password' => 'hashed',
             'role' => UserRole::class,
             'deactivated_at' => 'datetime',
+            'first_access_completed_at' => 'datetime',
         ];
     }
 }

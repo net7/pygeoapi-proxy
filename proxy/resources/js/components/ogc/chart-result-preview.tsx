@@ -24,9 +24,11 @@ import {
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { useTranslation } from '@/hooks/use-translation';
+import type { Language } from '@/lib/i18n/languages';
 import {
     chartSeriesVisibilityControls,
     defaultVisibleChartSeriesKeys,
+    formatChartNumber,
     normalizeChartPayload,
 } from '@/lib/ogc-chart';
 import type {
@@ -67,9 +69,13 @@ export default function ChartResultPreview({
     data: unknown;
     copyLabel?: string;
 }) {
-    const { t } = useTranslation();
+    const { language, t } = useTranslation();
     const { auth } = usePage().props;
-    const chart = useMemo(() => normalizeChartPayload(data), [data]);
+    const chart = useMemo(
+        () => normalizeChartPayload(data, language),
+        [data, language],
+    );
+    const valueAxisLabel = t('ogc.chartValueAxis');
     const chartRef = useRef<ChartJS<'line', ChartPoint[]> | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [visibleSeriesCount, setVisibleSeriesCount] = useState(0);
@@ -96,7 +102,8 @@ export default function ChartResultPreview({
                 chart,
                 palette,
                 initialVisibleKeys,
-                t('ogc.chartValueAxis'),
+                valueAxisLabel,
+                language,
                 setVisibleSeriesCount,
             ),
         );
@@ -109,7 +116,7 @@ export default function ChartResultPreview({
             instance.destroy();
             setVisibleSeriesCount(0);
         };
-    }, [chart, t]);
+    }, [chart, language, valueAxisLabel]);
 
     if (!chart) {
         return (
@@ -183,6 +190,7 @@ function chartConfiguration(
     palette: string[],
     initialVisibleKeys: Set<string>,
     valueAxisLabel: string,
+    language: Language,
     onVisibilityChange: (visibleSeriesCount: number) => void,
 ): ChartConfiguration<'line', ChartPoint[]> {
     const colors = chartCanvasColors();
@@ -280,12 +288,17 @@ function chartConfiguration(
                     usePointStyle: true,
                     callbacks: {
                         title(items): string {
-                            return tooltipTitle(chart.domain, items[0]);
+                            return tooltipTitle(
+                                chart.domain,
+                                language,
+                                items[0],
+                            );
                         },
                         label(item): string {
                             return tooltipLabel(
                                 chart.series[item.datasetIndex],
                                 item,
+                                language,
                             );
                         },
                     },
@@ -302,7 +315,8 @@ function chartConfiguration(
                     ticks: {
                         color: colors.text,
                         maxTicksLimit: 8,
-                        callback: (value) => formatNumber(Number(value)),
+                        callback: (value) =>
+                            formatChartNumber(Number(value), language),
                     },
                     grid: {
                         color: colors.grid,
@@ -317,7 +331,8 @@ function chartConfiguration(
                     },
                     ticks: {
                         color: colors.text,
-                        callback: (value) => formatNumber(Number(value)),
+                        callback: (value) =>
+                            formatChartNumber(Number(value), language),
                     },
                     grid: {
                         color: colors.grid,
@@ -382,21 +397,23 @@ function axisLabel(domain: OgcChartDomain): string {
 
 function tooltipTitle(
     domain: OgcChartDomain,
+    language: Language,
     item?: TooltipItem<'line'>,
 ): string {
     const value = item?.parsed.x;
 
-    return `${axisLabel(domain)}: ${formatNumber(value)}`;
+    return `${axisLabel(domain)}: ${formatChartNumber(value, language)}`;
 }
 
 function tooltipLabel(
     series: OgcChartSeries | undefined,
     item: TooltipItem<'line'>,
+    language: Language,
 ): string {
     const label = series?.label ?? item.dataset.label ?? '';
     const unit = unitSuffix(label, series?.unit, ' ');
 
-    return `${label}: ${formatNumber(item.parsed.y)}${unit}`;
+    return `${label}: ${formatChartNumber(item.parsed.y, language)}${unit}`;
 }
 
 function chartLegendLabelText(
@@ -423,15 +440,6 @@ function unitSuffix(
     }
 
     return `${prefix}(${unit})`;
-}
-
-function formatNumber(value: unknown): string {
-    return typeof value === 'number' && Number.isFinite(value)
-        ? new Intl.NumberFormat(undefined, {
-              maximumFractionDigits: 4,
-              notation: Math.abs(value) >= 1_000_000 ? 'compact' : 'standard',
-          }).format(value)
-        : '';
 }
 
 function chartPalette(count: number): string[] {

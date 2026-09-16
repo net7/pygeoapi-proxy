@@ -74,6 +74,7 @@ class HandleInertiaRequests extends Middleware
             'role' => $user->role->value,
             'is_admin' => $user->isAdmin(),
             'is_deactivated' => $user->isDeactivated(),
+            'first_access_completed_at' => $user->first_access_completed_at?->toJSON(),
             'avatar' => $user->avatar(),
             'has_custom_avatar' => filled($user->avatar_path),
             'has_local_password' => $user->hasLocalPassword(),

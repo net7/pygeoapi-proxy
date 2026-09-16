@@ -1,12 +1,15 @@
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import LanguageDropdown from '@/components/language-dropdown';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
+import { UserGuide } from '@/components/user-guide';
+import type { BreadcrumbItem as BreadcrumbItemType, User } from '@/types';
 
 export function AppSidebarHeader({
     breadcrumbs = [],
+    user,
 }: {
     breadcrumbs?: BreadcrumbItemType[];
+    user?: User | null;
 }) {
     return (
         <header className="app-toolbar flex h-16 shrink-0 items-center gap-3 px-5 md:px-8">
@@ -18,6 +21,7 @@ export function AppSidebarHeader({
                 />
                 <Breadcrumbs breadcrumbs={breadcrumbs} />
             </div>
+            {user ? <UserGuide key={user.id} user={user} /> : null}
             <LanguageDropdown />
         </header>
     );

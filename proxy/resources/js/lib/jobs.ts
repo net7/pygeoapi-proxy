@@ -8,6 +8,19 @@ import {
     XCircleIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import type { Language } from '@/lib/i18n/languages';
+import { translate } from '@/lib/i18n/translation';
+
+export function jobMessage(
+    message: string | null | undefined,
+    language: Language,
+): string {
+    if (message === 'Remote job is missing.') {
+        return translate(language, 'jobs.remoteJobMissing');
+    }
+
+    return message ?? translate(language, 'jobs.noJobMessage');
+}
 
 export type JobStatusStyles = {
     label: string;
