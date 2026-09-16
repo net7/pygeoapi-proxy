@@ -96,7 +96,7 @@ export default function ProcessIndex({
                             return (
                                 <article
                                     key={process.id}
-                                    className="group h-full"
+                                    className="process-card group h-full"
                                 >
                                     <Card className="h-full overflow-hidden transition-colors group-hover:border-primary/40 group-hover:bg-accent/20">
                                         <CardHeader className="gap-4">

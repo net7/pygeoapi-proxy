@@ -172,7 +172,9 @@ describe('chart result preview wiring', () => {
         expect(source).not.toContain(
             "import ChartResultPreview from '@/components/ogc/chart-result-preview'",
         );
-        expect(source).toContain('copyLabel={result.title ?? result.outputId}');
+        expect(source).toMatch(
+            /copyLabel=\{\s*result\.title\s*\?\?\s*result\.outputId\s*\}/,
+        );
         expect(source).not.toContain('function ChartPreview');
     });
 

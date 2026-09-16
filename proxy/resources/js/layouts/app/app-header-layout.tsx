@@ -10,7 +10,11 @@ export default function AppHeaderLayout({
     return (
         <AppShell variant="header">
             <AppHeader breadcrumbs={breadcrumbs} />
-            <AppContent variant="header">{children}</AppContent>
+            <AppContent variant="header">
+                <div data-page-content className="flex min-w-0 flex-1 flex-col">
+                    {children}
+                </div>
+            </AppContent>
         </AppShell>
     );
 }

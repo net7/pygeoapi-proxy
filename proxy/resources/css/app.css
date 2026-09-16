@@ -1,3 +1,4 @@
+@import '@fontsource-variable/source-sans-3/wght.css';
 @import '@fontsource-variable/roboto-mono/wght.css';
 @import 'tailwindcss';
 
@@ -11,8 +12,8 @@
 
 @theme {
     --font-sans:
-        'Roboto Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco,
-        Consolas, 'Liberation Mono', 'Courier New', monospace;
+        'Source Sans 3 Variable', ui-sans-serif, system-ui, -apple-system,
+        BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-mono:
         'Roboto Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco,
         Consolas, 'Liberation Mono', 'Courier New', monospace;
@@ -76,19 +77,19 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
+    --background: #f6f8fa;
+    --foreground: #1d303d;
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
+    --card-foreground: #1d303d;
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
+    --primary: #126579;
     --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
+    --secondary: #edf3f5;
     --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
+    --muted: #edf3f5;
+    --muted-foreground: #596e7b;
+    --accent: #e8f2f4;
     --accent-foreground: oklch(0.205 0 0);
     --destructive: oklch(0.577 0.245 27.325);
     --destructive-foreground: oklch(0.577 0.245 27.325);
@@ -100,39 +101,41 @@
     --info-emphasis: oklch(0.488 0.243 264.376);
     --warning: oklch(0.555 0.163 48.998);
     --warning-emphasis: oklch(0.5 0.14 48.998);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.87 0 0);
+    --border: #dce5e9;
+    --input: #cbd9df;
+    --ring: #398194;
     --chart-1: oklch(0.646 0.222 41.116);
     --chart-2: oklch(0.6 0.118 184.704);
     --chart-3: oklch(0.398 0.07 227.392);
     --chart-4: oklch(0.828 0.189 84.429);
     --chart-5: oklch(0.769 0.188 70.08);
     --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar: #edf3f5;
+    --sidebar-foreground: #1d303d;
+    --sidebar-primary: #126579;
     --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent: #dcebef;
     --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.87 0 0);
+    --sidebar-border: #dce5e9;
+    --sidebar-ring: #398194;
+    --motion-duration: 180ms;
+    --motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.145 0 0);
+    --background: #141d26;
+    --foreground: #e7eff3;
+    --card: #1b2833;
     --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.145 0 0);
+    --popover: #1b2833;
     --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.985 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
+    --primary: #85cdd5;
+    --primary-foreground: #122d38;
+    --secondary: #243744;
     --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
+    --muted: #243744;
+    --muted-foreground: #a2b5c0;
+    --accent: #293f4c;
     --accent-foreground: oklch(0.985 0 0);
     --destructive: oklch(0.396 0.141 25.723);
     --destructive-foreground: oklch(0.637 0.237 25.331);
@@ -144,31 +147,166 @@
     --info-emphasis: oklch(0.707 0.165 254.624);
     --warning: oklch(0.828 0.189 84.429);
     --warning-emphasis: oklch(0.828 0.189 84.429);
-    --border: oklch(0.269 0 0);
-    --input: oklch(0.269 0 0);
-    --ring: oklch(0.439 0 0);
+    --border: #31434e;
+    --input: #3d535f;
+    --ring: #70b9c8;
     --chart-1: oklch(0.488 0.243 264.376);
     --chart-2: oklch(0.696 0.17 162.48);
     --chart-3: oklch(0.769 0.188 70.08);
     --chart-4: oklch(0.627 0.265 303.9);
     --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.205 0 0);
+    --sidebar: #17222c;
     --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.985 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-primary: #85cdd5;
+    --sidebar-primary-foreground: #122d38;
+    --sidebar-accent: #243d49;
     --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(0.269 0 0);
-    --sidebar-ring: oklch(0.439 0 0);
+    --sidebar-border: #31434e;
+    --sidebar-ring: #70b9c8;
 }
 
 @layer base {
+    html {
+        scrollbar-gutter: stable;
+    }
+
     * {
         @apply border-border;
     }
 
     body {
         @apply bg-background font-sans text-foreground;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection {
+        background: color-mix(in srgb, var(--primary) 20%, transparent);
+    }
+}
+
+@layer components {
+    .auth-panel {
+        border: 1px solid var(--border);
+        border-radius: calc(var(--radius) * 2);
+        background: var(--card);
+        padding: clamp(1.25rem, 4vw, 2.5rem);
+        box-shadow: 0 12px 40px -24px
+            color-mix(in srgb, var(--foreground) 25%, transparent);
+    }
+
+    main [data-page-content] > div {
+        padding: clamp(1rem, 2vw, 1.75rem);
+    }
+
+    [data-slot='button']:active:not(:disabled):not([aria-disabled='true']) {
+        translate: 0 1px;
+    }
+
+    .main-navigation [data-active='true'] {
+        box-shadow: inset 3px 0 0 var(--sidebar-primary);
+    }
+
+    .settings-navigation [aria-current='page'] {
+        box-shadow: inset 3px 0 0 var(--primary);
+    }
+
+    .process-card [data-slot='card'] {
+        border-top: 2px solid
+            color-mix(in srgb, var(--primary) 30%, var(--border));
+        transition:
+            border-color 180ms,
+            background-color 180ms,
+            box-shadow 180ms;
+    }
+
+    .process-card:focus-within [data-slot='card'],
+    .process-card:hover [data-slot='card'] {
+        border-color: color-mix(in srgb, var(--primary) 50%, var(--border));
+        box-shadow: 0 8px 24px -16px
+            color-mix(in srgb, var(--primary) 40%, transparent);
+    }
+
+    [data-slot='table-head'] {
+        background: var(--muted);
+    }
+
+    [data-slot='dialog-content'],
+    [data-slot='sheet-content'],
+    [data-slot='popover-content'],
+    [data-slot='dropdown-menu-content'],
+    [data-slot='select-content'] {
+        animation-duration: 160ms;
+        animation-timing-function: var(--motion-ease);
+    }
+}
+
+/* Capture only the outgoing viewport; the new page stays live and interactive. */
+:root[data-navigation-transition='capture'] {
+    view-transition-name: app-page;
+}
+
+:root[data-navigation-transition='reveal'] {
+    view-transition-name: none;
+}
+
+::view-transition {
+    pointer-events: none;
+}
+
+::view-transition-group(*) {
+    animation-duration: var(--motion-duration);
+    animation-timing-function: var(--motion-ease);
+}
+
+::view-transition-group(app-page) {
+    animation: none;
+}
+
+::view-transition-old(app-page) {
+    animation: var(--motion-duration) var(--motion-ease) both content-out;
+    mix-blend-mode: normal;
+}
+
+::view-transition-old(.content-change),
+::view-transition-old(.table-change),
+::view-transition-old(.disclosure-change) {
+    animation: var(--motion-duration) var(--motion-ease) both content-out;
+    mix-blend-mode: plus-lighter;
+}
+
+::view-transition-new(.content-change),
+::view-transition-new(.table-change),
+::view-transition-new(.disclosure-change) {
+    animation: var(--motion-duration) var(--motion-ease) both content-in;
+    mix-blend-mode: plus-lighter;
+}
+
+@keyframes content-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes content-out {
+    to {
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+        animation: none !important;
     }
 }
 

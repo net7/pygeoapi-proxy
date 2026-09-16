@@ -17,12 +17,12 @@ export function NavMain({
     items: NavItem[];
     label?: string;
 }) {
-    const { isCurrentUrl } = useCurrentUrl();
+    const { isCurrentOrParentUrl } = useCurrentUrl();
     const { t } = useTranslation();
     const resolvedLabel = label ?? t('navigation.platform');
 
     return (
-        <SidebarGroup className="px-2 py-0">
+        <SidebarGroup className="main-navigation px-2 py-0">
             <SidebarGroupLabel>{resolvedLabel}</SidebarGroupLabel>
             <SidebarMenu>
                 {items.map((item) => {
@@ -32,10 +32,19 @@ export function NavMain({
                         <SidebarMenuItem key={item.title}>
                             <SidebarMenuButton
                                 asChild
-                                isActive={isCurrentUrl(item.href)}
+                                isActive={isCurrentOrParentUrl(item.href)}
                                 tooltip={{ children: title }}
+                                className="rounded-none data-[active=true]:font-semibold data-[active=true]:text-sidebar-primary"
                             >
-                                <Link href={item.href} prefetch>
+                                <Link
+                                    href={item.href}
+                                    prefetch
+                                    aria-current={
+                                        isCurrentOrParentUrl(item.href)
+                                            ? 'page'
+                                            : undefined
+                                    }
+                                >
                                     {item.icon && <item.icon />}
                                     <span>{title}</span>
                                 </Link>

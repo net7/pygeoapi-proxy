@@ -7,7 +7,7 @@ test('process form stacks name inputs selectable outputs and note as full width 
         ->toContain("name: ''")
         ->toContain('ProcessOutputSelector')
         ->toContain('outputs: initialOutputSelections(schema.outputs)')
-        ->toContain("setData('outputs'")
+        ->toContain('selections={outputSelections}')
         ->toContain('buildRequestedOutputs(')
         ->toContain("t('jobs.processName')")
         ->toContain("t('jobs.processNamePlaceholder')")
@@ -393,7 +393,7 @@ test('jobs index exposes a filterable status table', function () {
         ->toContain('<CopyableJobId displayJobId={value} />');
 
     expect($normalizedSource)
-        ->toContain('router.visit(show(row.original.id),)');
+        ->toMatch('/router\.visit\(show\(row\.original\.id,?\),?\)/');
 
     expect($helperSource)
         ->toContain('SUBMISSION FAILED')
@@ -436,7 +436,7 @@ test('job tables expose shadcn row selection and bulk delete actions', function 
 
         expect($normalizedSource)
             ->toContain("data-state={row.getIsSelected()?'selected':undefined}")
-            ->toContain('router.visit(show(row.original.id),)');
+            ->toMatch('/router\.visit\(show\(row\.original\.id,?\),?\)/');
     }
 
     foreach ([$jobsIndexSource, $adminJobsIndexSource] as $source) {
@@ -496,7 +496,7 @@ test('job tables show contextual empty states', function () {
     expect($jobsIndexSource)
         ->toContain("import { index as processesIndex } from '@/routes/processes'")
         ->toContain('href={processesIndex()}')
-        ->toContain("t('jobs.noJobsStarted')")
+        ->toMatch('/t\(\s*\'jobs\.noJobsStarted\'\s*,?\s*\)/')
         ->toContain("'jobs.startProcess'")
         ->toContain('hasActiveFilters ?')
         ->toContain("t('jobs.noJobsMatch')");
@@ -713,9 +713,9 @@ test('job editable metadata appears on create and detail screens', function () {
     expect($formSource)
         ->toContain('@/components/ogc/job-note-editor')
         ->toContain("name: ''")
-        ->toContain("setData('name', event.target.value)")
+        ->toContain('value={data.name}')
         ->toContain('note: null')
-        ->toContain("setData('note', note)");
+        ->toContain('value={data.note}');
 
     expect($showSource)
         ->toContain('@/components/ogc/job-note-card')
@@ -1055,7 +1055,7 @@ test('process form sends output selections without browser transmission modes', 
         ->toContain('<ProcessOutputSelector')
         ->toContain('initialOutputSelections(schema.outputs)')
         ->toContain('buildRequestedOutputs')
-        ->toContain("setData('outputs'")
+        ->toContain('selections={outputSelections}')
         ->not->toContain('ExpectedOutputs');
 
     expect($selectorSource)->toContain('firstOutputError');

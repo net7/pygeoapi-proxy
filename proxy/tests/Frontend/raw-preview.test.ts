@@ -102,8 +102,8 @@ describe('raw preview wiring', () => {
         expect(resultPreview).toContain('kind="csv"');
         expect(resultPreview).toContain('kind="text"');
         expect(resultPreview).toContain('kind="json"');
-        expect(resultPreview).toContain(
-            'copyLabel={result.title ?? result.outputId}',
+        expect(resultPreview).toMatch(
+            /copyLabel=\{\s*result\.title\s*\?\?\s*result\.outputId\s*\}/,
         );
         expect(showPage).toContain(
             "import RawPayloadBlock from '@/components/ogc/raw-payload-block'",

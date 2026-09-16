@@ -47,6 +47,7 @@ import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 
+import { ContentTransition } from '@/components/content-transition';
 import { DataTableBulkActions } from '@/components/data-table-bulk-actions';
 import type { BulkActionPayload } from '@/components/data-table-bulk-actions';
 import { createSelectColumn } from '@/components/data-table-select-column';
@@ -118,6 +119,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { useTranslation } from '@/hooks/use-translation';
 import type { TranslationKey } from '@/lib/i18n/translation';
 import { formatJobDate } from '@/lib/jobs';
+import { runUiTransition } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { index as jobsIndex } from '@/routes/admin/jobs';
 import {
@@ -540,10 +542,12 @@ export default function AdminUsersIndex({
         columns,
         getRowId: (row) => String(row.id),
         onColumnFiltersChange: setColumnFilters,
-        onColumnVisibilityChange: setColumnVisibility,
+        onColumnVisibilityChange: (updater) =>
+            runUiTransition(() => setColumnVisibility(updater)),
         onPaginationChange: setPagination,
         onRowSelectionChange: setRowSelection,
-        onSortingChange: setSorting,
+        onSortingChange: (updater) =>
+            runUiTransition(() => setSorting(updater)),
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
@@ -636,18 +640,20 @@ export default function AdminUsersIndex({
                         <ToggleGroup
                             type="single"
                             value={statusFilter}
-                            onValueChange={(value) => {
-                                const nextValue = value || 'all';
+                            onValueChange={(value) =>
+                                runUiTransition(() => {
+                                    const nextValue = value || 'all';
 
-                                table
-                                    .getColumn('status')
-                                    ?.setFilterValue(
-                                        nextValue === 'all'
-                                            ? undefined
-                                            : nextValue,
-                                    );
-                                table.setPageIndex(0);
-                            }}
+                                    table
+                                        .getColumn('status')
+                                        ?.setFilterValue(
+                                            nextValue === 'all'
+                                                ? undefined
+                                                : nextValue,
+                                        );
+                                    table.setPageIndex(0);
+                                })
+                            }
                             variant="outline"
                             size="sm"
                             className="flex-wrap justify-start"
@@ -727,10 +733,12 @@ export default function AdminUsersIndex({
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={() => {
-                                    table.resetColumnFilters();
-                                    table.setPageIndex(0);
-                                }}
+                                onClick={() =>
+                                    runUiTransition(() => {
+                                        table.resetColumnFilters();
+                                        table.setPageIndex(0);
+                                    })
+                                }
                             >
                                 <XIcon data-icon="inline-start" />
                                 {t('jobs.resetFilters')}
@@ -741,14 +749,16 @@ export default function AdminUsersIndex({
                     <div className="flex flex-wrap items-center gap-2">
                         <Select
                             value={roleFilter}
-                            onValueChange={(value) => {
-                                table
-                                    .getColumn('role')
-                                    ?.setFilterValue(
-                                        value === 'all' ? undefined : value,
-                                    );
-                                table.setPageIndex(0);
-                            }}
+                            onValueChange={(value) =>
+                                runUiTransition(() => {
+                                    table
+                                        .getColumn('role')
+                                        ?.setFilterValue(
+                                            value === 'all' ? undefined : value,
+                                        );
+                                    table.setPageIndex(0);
+                                })
+                            }
                         >
                             <SelectTrigger
                                 size="sm"
@@ -776,9 +786,11 @@ export default function AdminUsersIndex({
 
                         <Select
                             value={`${table.getState().pagination.pageSize}`}
-                            onValueChange={(value) => {
-                                table.setPageSize(Number(value));
-                            }}
+                            onValueChange={(value) =>
+                                runUiTransition(() =>
+                                    table.setPageSize(Number(value)),
+                                )
+                            }
                         >
                             <SelectTrigger
                                 size="sm"
@@ -896,47 +908,58 @@ export default function AdminUsersIndex({
                                 </TableRow>
                             ))}
                         </TableHeader>
-                        <TableBody>
-                            {table.getRowModel().rows.length > 0 ? (
-                                table.getRowModel().rows.map((row) => (
-                                    <TableRow
-                                        key={row.id}
-                                        data-state={
-                                            row.getIsSelected()
-                                                ? 'selected'
-                                                : undefined
-                                        }
-                                        className="align-top"
-                                    >
-                                        {row.getVisibleCells().map((cell) => (
-                                            <TableCell
-                                                key={cell.id}
-                                                className={cn(
-                                                    'align-top',
-                                                    columnClassNames[
-                                                        cell.column.id
-                                                    ],
-                                                )}
+                        <ContentTransition default="none" update="table-change">
+                            <TableBody>
+                                {table.getRowModel().rows.length > 0 ? (
+                                    table.getRowModel().rows.map((row) => (
+                                        <ContentTransition
+                                            key={row.id}
+                                            default="table-change"
+                                        >
+                                            <TableRow
+                                                data-state={
+                                                    row.getIsSelected()
+                                                        ? 'selected'
+                                                        : undefined
+                                                }
+                                                className="align-top"
                                             >
-                                                {flexRender(
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext(),
-                                                )}
-                                            </TableCell>
-                                        ))}
+                                                {row
+                                                    .getVisibleCells()
+                                                    .map((cell) => (
+                                                        <TableCell
+                                                            key={cell.id}
+                                                            className={cn(
+                                                                'align-top',
+                                                                columnClassNames[
+                                                                    cell.column
+                                                                        .id
+                                                                ],
+                                                            )}
+                                                        >
+                                                            {flexRender(
+                                                                cell.column
+                                                                    .columnDef
+                                                                    .cell,
+                                                                cell.getContext(),
+                                                            )}
+                                                        </TableCell>
+                                                    ))}
+                                            </TableRow>
+                                        </ContentTransition>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={columns.length}
+                                            className="h-28 text-center text-muted-foreground"
+                                        >
+                                            {t('admin.usersNoMatch')}
+                                        </TableCell>
                                     </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={columns.length}
-                                        className="h-28 text-center text-muted-foreground"
-                                    >
-                                        {t('admin.usersNoMatch')}
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
+                                )}
+                            </TableBody>
+                        </ContentTransition>
                     </Table>
                 </div>
 
@@ -953,7 +976,9 @@ export default function AdminUsersIndex({
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => table.setPageIndex(0)}
+                            onClick={() =>
+                                runUiTransition(() => table.setPageIndex(0))
+                            }
                             disabled={!table.getCanPreviousPage()}
                         >
                             <ChevronsLeftIcon data-icon="inline-start" />
@@ -963,7 +988,9 @@ export default function AdminUsersIndex({
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => table.previousPage()}
+                            onClick={() =>
+                                runUiTransition(() => table.previousPage())
+                            }
                             disabled={!table.getCanPreviousPage()}
                         >
                             <ChevronLeftIcon data-icon="inline-start" />
@@ -973,7 +1000,9 @@ export default function AdminUsersIndex({
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => table.nextPage()}
+                            onClick={() =>
+                                runUiTransition(() => table.nextPage())
+                            }
                             disabled={!table.getCanNextPage()}
                         >
                             <ChevronRightIcon data-icon="inline-start" />
@@ -984,7 +1013,11 @@ export default function AdminUsersIndex({
                             variant="outline"
                             size="sm"
                             onClick={() =>
-                                table.setPageIndex(table.getPageCount() - 1)
+                                runUiTransition(() =>
+                                    table.setPageIndex(
+                                        table.getPageCount() - 1,
+                                    ),
+                                )
                             }
                             disabled={!table.getCanNextPage()}
                         >

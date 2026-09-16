@@ -166,7 +166,7 @@ function DeleteJobSummary({
                     >
                         {t('jobs.localJobId')}
                     </th>
-                    <td className="table-cell px-3 py-2 align-middle font-mono font-semibold break-all">
+                    <td className="table-cell px-3 py-2 align-middle font-mono text-[0.8125rem] font-medium break-all">
                         #{execution.id}
                     </td>
                 </tr>
@@ -183,7 +183,7 @@ function DeleteJobSummary({
                         >
                             {t('jobs.remoteJobId')}
                         </th>
-                        <td className="table-cell px-3 py-2 align-middle font-mono font-semibold break-all">
+                        <td className="table-cell px-3 py-2 align-middle font-mono text-[0.8125rem] font-medium break-all">
                             {execution.remoteJobId}
                         </td>
                     </tr>

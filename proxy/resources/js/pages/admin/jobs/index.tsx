@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
+import { ContentTransition } from '@/components/content-transition';
 import { DataTableBulkActions } from '@/components/data-table-bulk-actions';
 import type { BulkActionPayload } from '@/components/data-table-bulk-actions';
 import { createSelectColumn } from '@/components/data-table-select-column';
@@ -75,6 +76,7 @@ import {
     jobStatusSortIndex,
     jobStatusStyles,
 } from '@/lib/jobs';
+import { runUiTransition } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { index } from '@/routes/admin/jobs';
 import { bulkDestroy, show } from '@/routes/jobs';
@@ -368,10 +370,12 @@ export default function AdminJobsIndex({
         columns,
         getRowId: (row) => String(row.id),
         onColumnFiltersChange: setColumnFilters,
-        onColumnVisibilityChange: setColumnVisibility,
+        onColumnVisibilityChange: (updater) =>
+            runUiTransition(() => setColumnVisibility(updater)),
         onPaginationChange: setPagination,
         onRowSelectionChange: setRowSelection,
-        onSortingChange: setSorting,
+        onSortingChange: (updater) =>
+            runUiTransition(() => setSorting(updater)),
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
@@ -472,16 +476,20 @@ export default function AdminJobsIndex({
                     <ToggleGroup
                         type="single"
                         value={statusFilter}
-                        onValueChange={(value) => {
-                            const nextValue = value || 'all';
+                        onValueChange={(value) =>
+                            runUiTransition(() => {
+                                const nextValue = value || 'all';
 
-                            table
-                                .getColumn('status')
-                                ?.setFilterValue(
-                                    nextValue === 'all' ? undefined : nextValue,
-                                );
-                            table.setPageIndex(0);
-                        }}
+                                table
+                                    .getColumn('status')
+                                    ?.setFilterValue(
+                                        nextValue === 'all'
+                                            ? undefined
+                                            : nextValue,
+                                    );
+                                table.setPageIndex(0);
+                            })
+                        }
                         variant="outline"
                         size="sm"
                         className="flex-wrap justify-start"
@@ -585,9 +593,11 @@ export default function AdminJobsIndex({
 
                         <Select
                             value={`${table.getState().pagination.pageSize}`}
-                            onValueChange={(value) => {
-                                table.setPageSize(Number(value));
-                            }}
+                            onValueChange={(value) =>
+                                runUiTransition(() =>
+                                    table.setPageSize(Number(value)),
+                                )
+                            }
                         >
                             <SelectTrigger
                                 size="sm"
@@ -696,66 +706,77 @@ export default function AdminJobsIndex({
                                 </TableRow>
                             ))}
                         </TableHeader>
-                        <TableBody>
-                            {table.getRowModel().rows.length > 0 ? (
-                                table.getRowModel().rows.map((row) => {
-                                    const styles = jobStatusStyles(
-                                        row.original.status,
-                                    );
+                        <ContentTransition default="none" update="table-change">
+                            <TableBody>
+                                {table.getRowModel().rows.length > 0 ? (
+                                    table.getRowModel().rows.map((row) => {
+                                        const styles = jobStatusStyles(
+                                            row.original.status,
+                                        );
 
-                                    return (
-                                        <TableRow
-                                            key={row.id}
-                                            data-state={
-                                                row.getIsSelected()
-                                                    ? 'selected'
-                                                    : undefined
-                                            }
-                                            onClick={() =>
-                                                router.visit(
-                                                    show(row.original.id),
-                                                )
-                                            }
-                                            className={cn(
-                                                'cursor-pointer align-top transition-colors hover:bg-accent/50 dark:hover:bg-accent/30',
-                                                styles.rowClassName,
-                                            )}
+                                        return (
+                                            <ContentTransition
+                                                key={row.id}
+                                                default="table-change"
+                                            >
+                                                <TableRow
+                                                    data-state={
+                                                        row.getIsSelected()
+                                                            ? 'selected'
+                                                            : undefined
+                                                    }
+                                                    onClick={() =>
+                                                        router.visit(
+                                                            show(
+                                                                row.original.id,
+                                                            ),
+                                                        )
+                                                    }
+                                                    className={cn(
+                                                        'cursor-pointer align-top transition-colors hover:bg-accent/50 dark:hover:bg-accent/30',
+                                                        styles.rowClassName,
+                                                    )}
+                                                >
+                                                    {row
+                                                        .getVisibleCells()
+                                                        .map((cell) => (
+                                                            <TableCell
+                                                                key={cell.id}
+                                                                className={cn(
+                                                                    'align-top',
+                                                                    columnClassNames[
+                                                                        cell
+                                                                            .column
+                                                                            .id
+                                                                    ],
+                                                                )}
+                                                            >
+                                                                {flexRender(
+                                                                    cell.column
+                                                                        .columnDef
+                                                                        .cell,
+                                                                    cell.getContext(),
+                                                                )}
+                                                            </TableCell>
+                                                        ))}
+                                                </TableRow>
+                                            </ContentTransition>
+                                        );
+                                    })
+                                ) : (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={columns.length}
+                                            className="h-28 text-center text-muted-foreground"
                                         >
-                                            {row
-                                                .getVisibleCells()
-                                                .map((cell) => (
-                                                    <TableCell
-                                                        key={cell.id}
-                                                        className={cn(
-                                                            'align-top',
-                                                            columnClassNames[
-                                                                cell.column.id
-                                                            ],
-                                                        )}
-                                                    >
-                                                        {flexRender(
-                                                            cell.column
-                                                                .columnDef.cell,
-                                                            cell.getContext(),
-                                                        )}
-                                                    </TableCell>
-                                                ))}
-                                        </TableRow>
-                                    );
-                                })
-                            ) : (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={columns.length}
-                                        className="h-28 text-center text-muted-foreground"
-                                    >
-                                        {hasActiveFilters
-                                            ? t('jobs.noJobsMatch')
-                                            : t('admin.noUserJobsStarted')}
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
+                                            {hasActiveFilters
+                                                ? t('jobs.noJobsMatch')
+                                                : t('admin.noUserJobsStarted')}
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </ContentTransition>
                     </Table>
                 </div>
 
@@ -772,7 +793,9 @@ export default function AdminJobsIndex({
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => table.setPageIndex(0)}
+                            onClick={() =>
+                                runUiTransition(() => table.setPageIndex(0))
+                            }
                             disabled={!table.getCanPreviousPage()}
                         >
                             <ChevronsLeftIcon data-icon="inline-start" />
@@ -782,7 +805,9 @@ export default function AdminJobsIndex({
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => table.previousPage()}
+                            onClick={() =>
+                                runUiTransition(() => table.previousPage())
+                            }
                             disabled={!table.getCanPreviousPage()}
                         >
                             <ChevronLeftIcon data-icon="inline-start" />
@@ -792,7 +817,9 @@ export default function AdminJobsIndex({
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => table.nextPage()}
+                            onClick={() =>
+                                runUiTransition(() => table.nextPage())
+                            }
                             disabled={!table.getCanNextPage()}
                         >
                             <ChevronRightIcon data-icon="inline-start" />
@@ -803,7 +830,11 @@ export default function AdminJobsIndex({
                             variant="outline"
                             size="sm"
                             onClick={() =>
-                                table.setPageIndex(table.getPageCount() - 1)
+                                runUiTransition(() =>
+                                    table.setPageIndex(
+                                        table.getPageCount() - 1,
+                                    ),
+                                )
                             }
                             disabled={!table.getCanNextPage()}
                         >

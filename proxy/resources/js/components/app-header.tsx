@@ -63,7 +63,7 @@ const rightNavItems: NavItem[] = [
 ];
 
 const activeItemStyles =
-    'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100';
+    'bg-accent font-semibold text-primary hover:text-primary focus:text-primary';
 
 export function AppHeader({ breadcrumbs = [] }: Props) {
     const page = usePage();
@@ -151,13 +151,18 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     >
                                         <Link
                                             href={item.href}
+                                            aria-current={
+                                                isCurrentUrl(item.href)
+                                                    ? 'page'
+                                                    : undefined
+                                            }
                                             className={cn(
                                                 navigationMenuTriggerStyle(),
                                                 whenCurrentUrl(
                                                     item.href,
                                                     activeItemStyles,
                                                 ),
-                                                'h-9 cursor-pointer px-3',
+                                                'h-9 cursor-pointer rounded-none px-3',
                                             )}
                                         >
                                             {item.icon && (
@@ -168,7 +173,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                                 : item.title}
                                         </Link>
                                         {isCurrentUrl(item.href) && (
-                                            <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black dark:bg-white"></div>
+                                            <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-primary" />
                                         )}
                                     </NavigationMenuItem>
                                 ))}
@@ -251,13 +256,19 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
 
 function HeaderLinkItem({ item }: { item: NavItem }) {
     const { t } = useTranslation();
+    const { isCurrentUrl } = useCurrentUrl();
     const title = item.titleKey ? t(item.titleKey) : item.title;
 
     return (
         <Link
             key={item.title}
             href={item.href}
-            className="flex items-center space-x-2 font-medium"
+            aria-current={isCurrentUrl(item.href) ? 'page' : undefined}
+            className={cn(
+                'flex items-center gap-2 rounded-none border-l-2 border-transparent px-3 py-2 font-medium transition-colors hover:bg-accent',
+                isCurrentUrl(item.href) &&
+                    'border-primary bg-accent font-semibold text-primary',
+            )}
         >
             {item.icon && <item.icon data-icon="inline-start" />}
             <span>{title}</span>

@@ -18,6 +18,11 @@ import type { LucideIcon } from 'lucide-react';
 import { lazy, Suspense, useState } from 'react';
 import type { ReactNode } from 'react';
 
+import {
+    AfterNavigation,
+    ContentTransition,
+} from '@/components/content-transition';
+
 import { DeleteJobButton } from '@/components/ogc/delete-job-dialog';
 import {
     InputSupport,
@@ -319,20 +324,29 @@ export default function ProcessExecutionShow({
                         {!isPolling && execution.results.length > 0
                             ? visualResults.map((item) =>
                                   item.kind === 'geotiff-map' ? (
-                                      <Suspense
+                                      <ContentTransition
                                           key={`map-${item.outputId}`}
-                                          fallback={
-                                              <ResultPreviewLoading className="min-h-[30rem]" />
-                                          }
+                                          default="none"
+                                          update="content-change"
                                       >
-                                          <GeoTiffMapResultPreview
-                                              executionId={execution.id}
-                                              title={item.title}
-                                              description={item.description}
-                                              geotiff={item.geotiff}
-                                              sld={item.sld}
-                                          />
-                                      </Suspense>
+                                          <Suspense
+                                              fallback={
+                                                  <ResultPreviewLoading className="min-h-[30rem]" />
+                                              }
+                                          >
+                                              <AfterNavigation>
+                                                  <GeoTiffMapResultPreview
+                                                      executionId={execution.id}
+                                                      title={item.title}
+                                                      description={
+                                                          item.description
+                                                      }
+                                                      geotiff={item.geotiff}
+                                                      sld={item.sld}
+                                                  />
+                                              </AfterNavigation>
+                                          </Suspense>
+                                      </ContentTransition>
                                   ) : (
                                       <ResultPreview
                                           key={item.result.id}
