@@ -13,6 +13,23 @@ type MessageShape<T> = {
 };
 
 const it = {
+    errors: {
+        forbidden: {
+            title: 'Accesso negato',
+            description: 'Non hai i permessi per accedere a questa pagina.',
+            catalog: 'Vai al catalogo',
+            jobs: 'Vai ai miei processi',
+            login: 'Torna al login',
+        },
+        notFound: {
+            title: 'Pagina non trovata',
+            description:
+                'La pagina che cerchi non esiste o non è più disponibile.',
+            catalog: 'Vai al catalogo',
+            jobs: 'Vai ai miei processi',
+            login: 'Torna al login',
+        },
+    },
     tables: {
         resetSettings: 'Ripristina impostazioni',
         settingsSaveError: 'Impossibile salvare le impostazioni della tabella.',
@@ -544,6 +561,8 @@ const it = {
         visibleColumns: 'Colonne visibili',
     },
     ogc: {
+        required: 'Obbligatorio',
+        optional: 'Opzionale',
         addRow: 'Aggiungi riga',
         arrayTableRow: 'Riga {row}',
         arrayTableColumn: 'Colonna {column}',
@@ -591,9 +610,9 @@ const it = {
         mapLayerUnavailable: 'Mappa non disponibile.',
         mapLayerUnpublished: 'Mappa non ancora pubblicata.',
         noDescription: 'Nessuna descrizione disponibile.',
-        noOutputsSelected: 'Nessun output verrà richiesto',
+        noOutputsSelected: 'Selezione automatica del risultato',
         noOutputsSelectedDescription:
-            'Il processo verrà avviato senza richiedere risultati.',
+            'Se non selezioni output, verrà richiesto automaticamente un risultato nel suo formato predefinito.',
         notAdvertised: 'Non pubblicizzato',
         openProcess: 'Apri processo',
         outputModes: 'Modalità output',
@@ -762,6 +781,23 @@ const it = {
 } as const satisfies MessageTree;
 
 const en = {
+    errors: {
+        forbidden: {
+            title: 'Access denied',
+            description: 'You do not have permission to access this page.',
+            catalog: 'Go to catalog',
+            jobs: 'Go to my jobs',
+            login: 'Return to login',
+        },
+        notFound: {
+            title: 'Page not found',
+            description:
+                'The page you are looking for does not exist or is no longer available.',
+            catalog: 'Go to catalog',
+            jobs: 'Go to my jobs',
+            login: 'Return to login',
+        },
+    },
     tables: {
         resetSettings: 'Reset settings',
         settingsSaveError: 'Table settings could not be saved.',
@@ -1286,6 +1322,8 @@ const en = {
         visibleColumns: 'Visible columns',
     },
     ogc: {
+        required: 'Required',
+        optional: 'Optional',
         addRow: 'Add row',
         arrayTableRow: 'Row {row}',
         arrayTableColumn: 'Column {column}',
@@ -1331,9 +1369,9 @@ const en = {
         mapLayerUnavailable: 'Map unavailable.',
         mapLayerUnpublished: 'Map not published yet.',
         noDescription: 'No description provided.',
-        noOutputsSelected: 'No outputs will be requested',
+        noOutputsSelected: 'Automatic result selection',
         noOutputsSelectedDescription:
-            'The process will start without requesting results.',
+            'If you select no outputs, one result will be requested automatically in its default format.',
         notAdvertised: 'Not advertised',
         openProcess: 'Open process',
         outputModes: 'Output modes',

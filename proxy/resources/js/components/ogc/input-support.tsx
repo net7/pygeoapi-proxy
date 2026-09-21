@@ -14,7 +14,7 @@ import {
 import { useClipboard } from '@/hooks/use-clipboard';
 import { useTranslation } from '@/hooks/use-translation';
 import { runUiTransition } from '@/lib/motion';
-import { fieldDisplayLabel } from '@/lib/ogc-fields';
+import { fieldDisplayLabel, isRequiredField } from '@/lib/ogc-fields';
 import { cn } from '@/lib/utils';
 import type { OgcNormalizedField } from '@/types';
 
@@ -88,9 +88,14 @@ export function InputSupportToggle({
 export function FieldLabelWithSupport({
     field,
     htmlFor,
+    showRequirement = false,
 }: {
-    field: Pick<OgcNormalizedField, 'name' | 'title'>;
+    field: Pick<
+        OgcNormalizedField,
+        'name' | 'title' | 'required' | 'minOccurs'
+    >;
     htmlFor?: string;
+    showRequirement?: boolean;
 }) {
     const support = useContext(InputSupportContext);
     const label = fieldDisplayLabel(field);
@@ -100,15 +105,47 @@ export function FieldLabelWithSupport({
             <FieldLabel
                 htmlFor={htmlFor}
                 className={cn(
-                    support?.showReferences &&
+                    'min-w-0 flex-wrap items-baseline',
+                    !showRequirement &&
+                        support?.showReferences &&
                         label === field.name &&
                         'sr-only',
                 )}
             >
-                {label}
+                <span
+                    className={cn(
+                        'min-w-0 break-words',
+                        showRequirement &&
+                            support?.showReferences &&
+                            label === field.name &&
+                            'sr-only',
+                    )}
+                >
+                    {label}
+                </span>
+                {showRequirement ? (
+                    <FieldRequirement required={isRequiredField(field)} />
+                ) : null}
             </FieldLabel>
             <FieldSupportReference name={field.name} />
         </div>
+    );
+}
+
+export function FieldRequirement({ required }: { required: boolean }) {
+    const { t } = useTranslation();
+
+    return (
+        <span
+            className={cn(
+                'inline-block shrink-0 text-[0.6875rem] leading-4 font-semibold tracking-wider whitespace-nowrap uppercase',
+                required
+                    ? 'text-destructive-emphasis'
+                    : 'text-success-emphasis',
+            )}
+        >
+            {t(required ? 'ogc.required' : 'ogc.optional')}
+        </span>
     );
 }
 

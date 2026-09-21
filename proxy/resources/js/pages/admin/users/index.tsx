@@ -1264,7 +1264,14 @@ function UserFormDialog({
                                             event.target.value,
                                         )
                                     }
-                                    onBlur={() => form.validate('email')}
+                                    onBlur={() =>
+                                        form.validate({
+                                            only: [
+                                                'email',
+                                                'email_confirmation',
+                                            ],
+                                        })
+                                    }
                                     autoComplete="off"
                                     required
                                 />

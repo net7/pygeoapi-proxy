@@ -97,10 +97,10 @@ describe('i18n', () => {
         expect(translate('it', 'ogc.image')).toBe('Immagine');
         expect(translate('en', 'ogc.image')).toBe('Image');
         expect(translate('it', 'ogc.noOutputsSelected')).toBe(
-            'Nessun output verrà richiesto',
+            'Selezione automatica del risultato',
         );
         expect(translate('en', 'ogc.noOutputsSelected')).toBe(
-            'No outputs will be requested',
+            'Automatic result selection',
         );
     });
 

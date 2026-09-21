@@ -24,7 +24,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useTranslation } from '@/hooks/use-translation';
 import { runUiTransition } from '@/lib/motion';
-import { fieldDisplayLabel, referenceDisplayLabel } from '@/lib/ogc-fields';
+import {
+    fieldDisplayLabel,
+    isRequiredField,
+    referenceDisplayLabel,
+} from '@/lib/ogc-fields';
 import { errorIdForPath, fieldError } from '@/lib/ogc-form-errors';
 import type { OgcFieldValidationController } from '@/lib/ogc-form-validation';
 import { cn } from '@/lib/utils';
@@ -154,6 +158,7 @@ export default function DataInputField({
         <ContentTransition default="none" update="content-change">
             <SectionFieldSet
                 label={fieldDisplayLabel(field)}
+                required={isRequiredField(field)}
                 supportReference={field.name}
                 description={field.description}
                 validationState={state}

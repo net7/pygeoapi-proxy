@@ -24,7 +24,11 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { htmlPatternForInput } from '@/lib/html-pattern';
-import { fieldDisplayLabel, optionDisplayLabel } from '@/lib/ogc-fields';
+import {
+    fieldDisplayLabel,
+    isRequiredField,
+    optionDisplayLabel,
+} from '@/lib/ogc-fields';
 import { errorIdForPath, fieldError } from '@/lib/ogc-form-errors';
 import { updateFormProperty } from '@/lib/ogc-form-updates';
 import type { OgcFieldValidationController } from '@/lib/ogc-form-validation';
@@ -66,6 +70,7 @@ export default function SchemaFieldRenderer({
         return (
             <SectionFieldSet
                 label={fieldDisplayLabel(field)}
+                required={readOnly ? undefined : isRequiredField(field)}
                 supportReference={field.name}
                 description={field.description}
                 fieldPath={path}
@@ -151,6 +156,7 @@ export default function SchemaFieldRenderer({
 
     const error = fieldError(errors, path);
     const errorId = errorIdForPath(path);
+    const controlId = errorId + '-control';
     const state = validation.stateFor(path, error);
 
     if (field.kind === 'enum') {
@@ -159,7 +165,11 @@ export default function SchemaFieldRenderer({
                 className={cn('min-w-0', ogcValidationFieldClassName(state))}
                 data-invalid={state === 'invalid' ? true : undefined}
             >
-                <FieldLabelWithSupport field={field} />
+                <FieldLabelWithSupport
+                    field={field}
+                    htmlFor={controlId}
+                    showRequirement
+                />
                 {field.description ? (
                     <FieldDescription className="break-words">
                         {field.description}
@@ -178,6 +188,7 @@ export default function SchemaFieldRenderer({
                         }}
                     >
                         <SelectTrigger
+                            id={controlId}
                             className={cn(
                                 'w-full min-w-0',
                                 ogcValidationControlClassName(state, true),
@@ -214,12 +225,13 @@ export default function SchemaFieldRenderer({
 
     const isNumericField = field.type === 'number' || field.type === 'integer';
     const scalarInputProps = {
+        id: controlId,
         className: cn('min-w-0', ogcValidationControlClassName(state)),
         'data-field-path': path,
         'data-validation-state': ogcValidationDataState(state),
         'aria-invalid': state === 'invalid' ? true : undefined,
         'aria-describedby': error ? errorId : undefined,
-        required: field.required === true || Boolean(field.minOccurs),
+        required: isRequiredField(field),
         min: field.minimum ?? undefined,
         max: field.maximum ?? undefined,
         'data-exclusive-minimum': field.exclusiveMinimum ?? undefined,
@@ -237,7 +249,11 @@ export default function SchemaFieldRenderer({
             className={cn('min-w-0', ogcValidationFieldClassName(state))}
             data-invalid={state === 'invalid' ? true : undefined}
         >
-            <FieldLabelWithSupport field={field} />
+            <FieldLabelWithSupport
+                field={field}
+                htmlFor={controlId}
+                showRequirement
+            />
             {field.description ? (
                 <FieldDescription className="break-words">
                     {field.description}

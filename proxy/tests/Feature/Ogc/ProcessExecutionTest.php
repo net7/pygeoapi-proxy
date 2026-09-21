@@ -49,6 +49,7 @@ test('starting a process creates an async local execution and redirects without 
     ];
     $expectedOutputs = [
         'gas' => [
+            'format' => ['mediaType' => 'application/json', 'schema' => '#/$defs/chart'],
             'transmissionMode' => 'value',
         ],
     ];
@@ -59,8 +60,8 @@ test('starting a process creates an async local execution and redirects without 
 
     $response
         ->assertRedirect(route('jobs.show', $execution))
-        ->assertInertiaFlash('toast.title', 'Processo avviato')
-        ->assertInertiaFlash('toast.message', 'Il processo è in esecuzione.')
+        ->assertInertiaFlash('toast.title', 'Process started')
+        ->assertInertiaFlash('toast.message', 'The process is running.')
         ->assertInertiaFlash('toast.type', 'success')
         ->assertInertiaFlash('toast.icon', false);
 
@@ -84,7 +85,7 @@ test('starting a process creates an async local execution and redirects without 
         && $job->payload['outputs'] === $expectedOutputs);
 
     Http::assertNothingSent();
-})->todo('Deferred point 4: honor the process outputTransmission contract.');
+});
 
 test('starting a process stores an optional user note without sending it to the remote payload', function () {
     Bus::fake();
@@ -123,7 +124,12 @@ test('starting a process stores an optional user note without sending it to the 
     Bus::assertDispatched(SubmitProcessExecutionJob::class, fn (SubmitProcessExecutionJob $job): bool => $job->processExecutionId === $execution->id
         && ! array_key_exists('note', $job->payload)
         && $job->payload['inputs'] === $payload['inputs']
-        && $job->payload['outputs'] === []);
+        && $job->payload['outputs'] === [
+            'exit' => [
+                'format' => ['mediaType' => 'text/plain'],
+                'transmissionMode' => 'value',
+            ],
+        ]);
 });
 
 test('starting a process without a note leaves note timestamps empty', function () {
@@ -334,9 +340,9 @@ test('starting a process without outputs requests every advertised output', func
         fn (SubmitProcessExecutionJob $job): bool => $job->payload['outputs'] ===
                 expectedConduitOutputRequestsForExecution(),
     );
-})->todo('Deferred point 4: honor the process outputTransmission contract.');
+});
 
-test('starting a process accepts an explicitly empty output selection', function () {
+test('starting a process automatically requests a value output when the selection is empty', function () {
     Bus::fake();
     Http::preventStrayRequests();
 
@@ -356,13 +362,50 @@ test('starting a process accepts an explicitly empty output selection', function
 
     $execution = ProcessExecution::query()->sole();
 
-    expect($execution->requested_outputs)->toBe([]);
+    $expectedOutputs = [
+        'exit' => [
+            'format' => ['mediaType' => 'text/plain'],
+            'transmissionMode' => 'value',
+        ],
+    ];
+
+    expect($execution->requested_outputs)->toBe($expectedOutputs);
 
     Bus::assertDispatched(
         SubmitProcessExecutionJob::class,
-        fn (SubmitProcessExecutionJob $job): bool => $job->payload['outputs'] === [],
+        fn (SubmitProcessExecutionJob $job): bool => $job->payload['outputs'] === $expectedOutputs,
     );
 });
+
+test('starting a process rejects an unavailable value output before creating or dispatching an execution', function (
+    array $overrides,
+    string $message,
+) {
+    Bus::fake();
+    Http::preventStrayRequests();
+
+    $user = User::factory()->create();
+    $process = array_replace(ogcFixture('process-conduit'), $overrides);
+    app(OgcProcessCache::class)->putProcess('conduit', $process);
+
+    $this->actingAs($user)->post(
+        route('processes.jobs.store', 'conduit'),
+        ['inputs' => conduitExampleInputs(), 'outputs' => []],
+    )->assertInvalid(['outputs' => __($message)]);
+
+    $this->assertDatabaseCount('process_executions', 0);
+    Bus::assertNotDispatched(SubmitProcessExecutionJob::class);
+    Http::assertNothingSent();
+})->with([
+    'no advertised outputs' => [
+        ['outputs' => []],
+        'This process does not provide any outputs.',
+    ],
+    'reference-only process' => [
+        ['outputTransmission' => ['reference']],
+        'This process does not support returning output values.',
+    ],
+]);
 
 test('starting a process rejects unknown output identifiers and formats', function (
     array $outputs,
@@ -816,9 +859,18 @@ function conduitExampleInputs(): array
 function expectedConduitOutputRequestsForExecution(): array
 {
     return [
-        'gas' => ['transmissionMode' => 'value'],
-        'velocity' => ['transmissionMode' => 'value'],
-        'pressure' => ['transmissionMode' => 'value'],
+        'gas' => [
+            'format' => ['mediaType' => 'application/json', 'schema' => '#/$defs/chart'],
+            'transmissionMode' => 'value',
+        ],
+        'velocity' => [
+            'format' => ['mediaType' => 'application/json', 'schema' => '#/$defs/chart'],
+            'transmissionMode' => 'value',
+        ],
+        'pressure' => [
+            'format' => ['mediaType' => 'application/json', 'schema' => '#/$defs/chart'],
+            'transmissionMode' => 'value',
+        ],
         'outfile' => [
             'format' => ['mediaType' => 'text/csv; header=present'],
             'transmissionMode' => 'value',
