@@ -7,10 +7,12 @@ import {
     ogcValidationDataState,
 } from '@/components/ogc/field-validation-feedback';
 import {
+    FieldRequirement,
     FieldSupportReference,
     InputSupportContext,
 } from '@/components/ogc/input-support';
 import { FieldDescription, FieldLegend, FieldSet } from '@/components/ui/field';
+import { useTranslation } from '@/hooks/use-translation';
 import { errorIdForPath } from '@/lib/ogc-form-errors';
 import type { OgcFieldValidationState } from '@/lib/ogc-form-validation';
 import { cn } from '@/lib/utils';
@@ -24,6 +26,7 @@ export default function SectionFieldSet({
     fieldPath,
     error,
     validationState,
+    required,
 }: {
     label: string;
     description?: string | null;
@@ -33,7 +36,9 @@ export default function SectionFieldSet({
     fieldPath?: string;
     error?: string;
     validationState?: OgcFieldValidationState;
+    required?: boolean;
 }) {
+    const { t } = useTranslation();
     const showReferences =
         useContext(InputSupportContext)?.showReferences ?? false;
     const errorId = fieldPath ? errorIdForPath(fieldPath) : undefined;
@@ -48,7 +53,11 @@ export default function SectionFieldSet({
                 className,
             )}
             data-field-path={fieldPath}
-            aria-label={label}
+            aria-label={
+                required === undefined
+                    ? label
+                    : `${label}: ${t(required ? 'ogc.required' : 'ogc.optional')}`
+            }
             data-invalid={
                 resolvedValidationState === 'invalid' ? true : undefined
             }
@@ -69,6 +78,9 @@ export default function SectionFieldSet({
                 )}
             >
                 {!showReferences || label !== supportReference ? label : null}
+                {required !== undefined ? (
+                    <FieldRequirement required={required} />
+                ) : null}
                 {supportReference ? (
                     <FieldSupportReference name={supportReference} />
                 ) : null}

@@ -23,6 +23,8 @@ test('the owner can review the submitted values and schema after the process cha
     $process = [
         'id' => 'review-example',
         'version' => '1.0',
+        'outputTransmission' => ['value'],
+        'outputs' => ['result' => ['schema' => ['type' => 'string', 'contentMediaType' => 'text/plain']]],
         'inputs' => [
             'pressure' => ['title' => 'Original pressure', 'schema' => ['type' => 'number']],
             'optional' => ['schema' => ['type' => 'number', 'default' => 99]],
@@ -249,6 +251,8 @@ test('submitting a file retains its original content separately from the process
     $inputs = ['data' => ['value' => ['answer' => 42], 'mediaType' => 'application/json']];
     app(OgcProcessCache::class)->putProcess('json-upload', [
         'id' => 'json-upload',
+        'outputTransmission' => ['value'],
+        'outputs' => ['result' => ['schema' => ['type' => 'string', 'contentMediaType' => 'text/plain']]],
         'inputs' => ['data' => ['schema' => ['type' => 'object', 'properties' => ['answer' => ['type' => 'integer']]]]],
     ]);
 
@@ -270,6 +274,8 @@ test('a storage failure prevents creating or dispatching an execution without it
     $user = User::factory()->create();
     app(OgcProcessCache::class)->putProcess('large-input', [
         'id' => 'large-input',
+        'outputTransmission' => ['value'],
+        'outputs' => ['result' => ['schema' => ['type' => 'string', 'contentMediaType' => 'text/plain']]],
         'inputs' => ['data' => ['schema' => ['type' => 'string']]],
     ]);
     Storage::shouldReceive('disk->put')->once()->andReturn(false);

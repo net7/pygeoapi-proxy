@@ -1,3 +1,4 @@
+import { isRequiredField } from '@/lib/ogc-fields';
 import type { OgcNormalizedField } from '@/types';
 
 export type OneOfValue = {
@@ -475,10 +476,6 @@ function pruneObjectValues(
     }
 
     return pruned;
-}
-
-function isRequiredField(field: OgcNormalizedField): boolean {
-    return field.required === true || Number(field.minOccurs) > 0;
 }
 
 function isBlankScalar(value: unknown): boolean {

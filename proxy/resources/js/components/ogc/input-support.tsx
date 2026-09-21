@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 
 import { ContentTransition } from '@/components/content-transition';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FieldLabel } from '@/components/ui/field';
 import {
@@ -14,7 +15,7 @@ import {
 import { useClipboard } from '@/hooks/use-clipboard';
 import { useTranslation } from '@/hooks/use-translation';
 import { runUiTransition } from '@/lib/motion';
-import { fieldDisplayLabel } from '@/lib/ogc-fields';
+import { fieldDisplayLabel, isRequiredField } from '@/lib/ogc-fields';
 import { cn } from '@/lib/utils';
 import type { OgcNormalizedField } from '@/types';
 
@@ -88,9 +89,14 @@ export function InputSupportToggle({
 export function FieldLabelWithSupport({
     field,
     htmlFor,
+    showRequirement = false,
 }: {
-    field: Pick<OgcNormalizedField, 'name' | 'title'>;
+    field: Pick<
+        OgcNormalizedField,
+        'name' | 'title' | 'required' | 'minOccurs'
+    >;
     htmlFor?: string;
+    showRequirement?: boolean;
 }) {
     const support = useContext(InputSupportContext);
     const label = fieldDisplayLabel(field);
@@ -100,15 +106,40 @@ export function FieldLabelWithSupport({
             <FieldLabel
                 htmlFor={htmlFor}
                 className={cn(
-                    support?.showReferences &&
+                    'min-w-0 flex-wrap items-baseline',
+                    !showRequirement &&
+                        support?.showReferences &&
                         label === field.name &&
                         'sr-only',
                 )}
             >
-                {label}
+                <span
+                    className={cn(
+                        'min-w-0 break-words',
+                        showRequirement &&
+                            support?.showReferences &&
+                            label === field.name &&
+                            'sr-only',
+                    )}
+                >
+                    {label}
+                </span>
+                {showRequirement ? (
+                    <FieldRequirement required={isRequiredField(field)} />
+                ) : null}
             </FieldLabel>
             <FieldSupportReference name={field.name} />
         </div>
+    );
+}
+
+export function FieldRequirement({ required }: { required: boolean }) {
+    const { t } = useTranslation();
+
+    return (
+        <Badge variant="outline">
+            {t(required ? 'ogc.required' : 'ogc.optional')}
+        </Badge>
     );
 }
 

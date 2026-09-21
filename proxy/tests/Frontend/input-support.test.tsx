@@ -159,9 +159,12 @@ describe('input support references', () => {
         const legend =
             html.match(/<legend\b[^>]*>([\s\S]*?)<\/legend>/)?.[1] ?? '';
 
-        expect(legend.replace(/<button\b[\s\S]*?<\/button>/g, '').trim()).toBe(
-            '',
-        );
+        expect(
+            legend
+                .replace(/<button\b[\s\S]*?<\/button>/g, '')
+                .replace(/<[^>]+>/g, '')
+                .trim(),
+        ).toBe('Optional');
         expect(legend.includes('>(settings)</code>')).toBe(true);
     });
 

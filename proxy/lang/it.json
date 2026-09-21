@@ -88,6 +88,8 @@
     "This input must be less than the maximum value.": "Questo input deve essere minore del valore massimo.",
     "This input must be one of the available options.": "Questo input deve essere una delle opzioni disponibili.",
     "This output format is not available.": "Questo formato di output non è disponibile.",
+    "This process does not provide any outputs.": "Il processo non fornisce alcun output.",
+    "This process does not support returning output values.": "Il processo non supporta la restituzione dei valori degli output.",
     "This output is not available.": "Questo output non è disponibile.",
     "This password reset link will expire in :count minutes.": "Questo link per reimpostare la password scadrà tra :count minuti.",
     "This property is not allowed.": "Questa proprietà non è consentita.",

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Http;
 beforeEach(function () {
     config([
         'services.ogc_processes.base_url' => 'https://voice.pi.ingv.it/geoinquire/',
+        'inertia.ssr.enabled' => false,
     ]);
 });
 

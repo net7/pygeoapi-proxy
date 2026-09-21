@@ -12,7 +12,7 @@ class ProcessOutputRequestBuilder
 
     /**
      * A null selection means a legacy caller omitted outputs and therefore requests all.
-     * An empty selection means the caller explicitly requests no outputs.
+     * An empty selection automatically requests one output suitable for returning by value.
      *
      * @param  array<string, mixed>  $process
      * @param  array<string, array<string, mixed>>|null  $selection
@@ -21,7 +21,23 @@ class ProcessOutputRequestBuilder
     public function forProcess(array $process, ?array $selection = null): array
     {
         $availableOutputs = $this->availableOutputs($process);
-        $selectedOutputs = $selection ?? array_fill_keys(
+
+        if ($availableOutputs === []) {
+            throw ValidationException::withMessages([
+                'outputs' => __('This process does not provide any outputs.'),
+            ]);
+        }
+
+        $transmissionModes = $process['outputTransmission'] ?? ['value', 'reference'];
+
+        if (! is_array($transmissionModes) || ! in_array('value', $transmissionModes, true)) {
+            throw ValidationException::withMessages([
+                'outputs' => __('This process does not support returning output values.'),
+            ]);
+        }
+
+        $supportsReference = in_array('reference', $transmissionModes, true);
+        $selectedOutputs = $selection ?: array_fill_keys(
             array_keys($availableOutputs),
             [],
         );
@@ -51,8 +67,17 @@ class ProcessOutputRequestBuilder
 
             $requests[$outputId] = [
                 ...($format === null ? [] : ['format' => $format]),
-                'transmissionMode' => $this->transmissionMode($output),
+                'transmissionMode' => $this->transmissionMode($output, $supportsReference),
             ];
+        }
+
+        if ($selection === []) {
+            $outputId = $this->preferredValueOutputId($requests);
+            $requests = [$outputId => $requests[$outputId]];
+        }
+
+        if (! in_array('value', array_column($requests, 'transmissionMode'), true)) {
+            $requests[$this->preferredValueOutputId($requests)]['transmissionMode'] = 'value';
         }
 
         return $requests;
@@ -157,9 +182,39 @@ class ProcessOutputRequestBuilder
     /**
      * @param  array<string, mixed>  $output
      */
-    private function transmissionMode(array $output): string
+    private function transmissionMode(array $output, bool $supportsReference): string
     {
-        return $this->hasInlineMediaType($output['schema'] ?? []) ? 'value' : 'reference';
+        return ! $supportsReference || $this->hasInlineMediaType($output['schema'] ?? [])
+            ? 'value'
+            : 'reference';
+    }
+
+    /**
+     * Prefer text and JSON over binary outputs, preserving request order for ties.
+     *
+     * @param  non-empty-array<string, array{format?: array<string, mixed>, transmissionMode: string}>  $requests
+     */
+    private function preferredValueOutputId(array $requests): string
+    {
+        $preferredOutputId = (string) array_key_first($requests);
+        $bestPriority = 4;
+
+        foreach ($requests as $outputId => $request) {
+            $mediaType = $this->baseMediaType($request['format']['mediaType'] ?? null);
+            $priority = match (true) {
+                $mediaType === 'text/plain' => 0,
+                $this->isInlineMediaType($mediaType) => 1,
+                $mediaType !== null && str_starts_with($mediaType, 'text/') => 2,
+                default => 3,
+            };
+
+            if ($priority < $bestPriority) {
+                $preferredOutputId = (string) $outputId;
+                $bestPriority = $priority;
+            }
+        }
+
+        return $preferredOutputId;
     }
 
     private function hasInlineMediaType(mixed $schema): bool
