@@ -139,7 +139,9 @@ export function FieldRequirement({ required }: { required: boolean }) {
         <span
             className={cn(
                 'inline-block shrink-0 text-[0.6875rem] leading-4 font-semibold tracking-wider whitespace-nowrap uppercase',
-                required ? 'text-destructive-emphasis' : 'text-success-emphasis',
+                required
+                    ? 'text-destructive-emphasis'
+                    : 'text-success-emphasis',
             )}
         >
             {t(required ? 'ogc.required' : 'ogc.optional')}
