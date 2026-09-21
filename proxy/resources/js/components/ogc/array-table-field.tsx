@@ -157,16 +157,22 @@ export default function ArrayTableField({
                                     key={column.key}
                                     className="w-32 break-words whitespace-normal"
                                 >
-                                    {!showReferences ||
-                                    column.label !== column.key
-                                        ? column.label
-                                        : null}{' '}
-                                    {!readOnly ? (
-                                        <FieldRequirement
-                                            required={column.required}
+                                    <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+                                        {!showReferences ||
+                                        column.label !== column.key ? (
+                                            <span className="min-w-0 break-words">
+                                                {column.label}
+                                            </span>
+                                        ) : null}
+                                        {!readOnly ? (
+                                            <FieldRequirement
+                                                required={column.required}
+                                            />
+                                        ) : null}
+                                        <FieldSupportReference
+                                            name={column.key}
                                         />
-                                    ) : null}{' '}
-                                    <FieldSupportReference name={column.key} />
+                                    </div>
                                 </TableHead>
                             ))}
                             {!readOnly ? (

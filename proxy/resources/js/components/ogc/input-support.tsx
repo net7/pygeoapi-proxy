@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 
 import { ContentTransition } from '@/components/content-transition';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FieldLabel } from '@/components/ui/field';
 import {
@@ -137,9 +136,14 @@ export function FieldRequirement({ required }: { required: boolean }) {
     const { t } = useTranslation();
 
     return (
-        <Badge variant="outline">
+        <span
+            className={cn(
+                'inline-block shrink-0 text-[0.6875rem] leading-4 font-semibold tracking-wider whitespace-nowrap uppercase',
+                required ? 'text-destructive-emphasis' : 'text-success-emphasis',
+            )}
+        >
             {t(required ? 'ogc.required' : 'ogc.optional')}
-        </Badge>
+        </span>
     );
 }
 
