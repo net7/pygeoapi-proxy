@@ -8,6 +8,12 @@ export function fieldDisplayLabel(
     return field.title?.trim() || field.name;
 }
 
+export function isRequiredField(
+    field: Pick<OgcNormalizedField, 'required' | 'minOccurs'>,
+): boolean {
+    return field.required === true || Number(field.minOccurs) > 0;
+}
+
 export function optionDisplayLabel(option: string | number | boolean): string {
     return String(option);
 }

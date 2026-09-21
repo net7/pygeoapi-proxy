@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
 import { useTranslation } from '@/hooks/use-translation';
 import { runUiTransition } from '@/lib/motion';
-import { fieldDisplayLabel } from '@/lib/ogc-fields';
+import { fieldDisplayLabel, isRequiredField } from '@/lib/ogc-fields';
 import { fieldError } from '@/lib/ogc-form-errors';
 import {
     appendFormRow,
@@ -52,6 +52,7 @@ export default function ArrayObjectField({
         <ContentTransition default="none" update="content-change">
             <SectionFieldSet
                 label={fieldDisplayLabel(field)}
+                required={readOnly ? undefined : isRequiredField(field)}
                 supportReference={field.name}
                 description={field.description}
                 fieldPath={path}

@@ -274,6 +274,37 @@ test('admins must confirm changed user emails', function () {
     expect($user->fresh()->email)->toBe('changed@example.com');
 });
 
+test('changed user email confirmation can be corrected during precognitive validation without saving', function () {
+    $admin = User::factory()->admin()->create();
+    $user = User::factory()->create(['email' => 'original@example.com']);
+    $headers = [
+        'Precognition' => 'true',
+        'Precognition-Validate-Only' => 'email,email_confirmation',
+    ];
+    $data = [
+        'name' => $user->name,
+        'email' => 'changed@example.com',
+        'email_confirmation' => 'other@example.com',
+        'role' => UserRole::User->value,
+    ];
+
+    $this->actingAs($admin)
+        ->patchJson(route('admin.users.update', $user), $data, $headers)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('email')
+        ->assertJsonPath('errors.email.0', 'The email field confirmation does not match.');
+
+    $this->actingAs($admin)
+        ->patchJson(route('admin.users.update', $user), [
+            ...$data,
+            'email_confirmation' => 'Changed@Example.com',
+        ], $headers)
+        ->assertNoContent()
+        ->assertHeader('Precognition-Success', 'true');
+
+    expect($user->fresh()->email)->toBe('original@example.com');
+});
+
 test('admins can deactivate and restore users but cannot deactivate themselves', function () {
     $admin = User::factory()->admin()->create();
     $user = User::factory()->create();

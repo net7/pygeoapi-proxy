@@ -10,6 +10,7 @@ import {
     ogcValidationDataState,
 } from '@/components/ogc/field-validation-feedback';
 import {
+    FieldRequirement,
     FieldSupportReference,
     InputSupportContext,
 } from '@/components/ogc/input-support';
@@ -29,7 +30,11 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from '@/hooks/use-translation';
 import { htmlPatternForInput } from '@/lib/html-pattern';
 import { runUiTransition } from '@/lib/motion';
-import { columnDisplayLabel, fieldDisplayLabel } from '@/lib/ogc-fields';
+import {
+    columnDisplayLabel,
+    fieldDisplayLabel,
+    isRequiredField,
+} from '@/lib/ogc-fields';
 import { errorIdForPath, fieldError } from '@/lib/ogc-form-errors';
 import {
     appendFormRow,
@@ -109,6 +114,7 @@ export default function ArrayTableField({
         <ContentTransition default="none" update="content-change">
             <SectionFieldSet
                 label={label}
+                required={readOnly ? undefined : isRequiredField(field)}
                 supportReference={field.name}
                 description={field.description}
                 fieldPath={path}
@@ -151,11 +157,22 @@ export default function ArrayTableField({
                                     key={column.key}
                                     className="w-32 break-words whitespace-normal"
                                 >
-                                    {!showReferences ||
-                                    column.label !== column.key
-                                        ? column.label
-                                        : null}{' '}
-                                    <FieldSupportReference name={column.key} />
+                                    <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+                                        {!showReferences ||
+                                        column.label !== column.key ? (
+                                            <span className="min-w-0 break-words">
+                                                {column.label}
+                                            </span>
+                                        ) : null}
+                                        {!readOnly ? (
+                                            <FieldRequirement
+                                                required={column.required}
+                                            />
+                                        ) : null}
+                                        <FieldSupportReference
+                                            name={column.key}
+                                        />
+                                    </div>
                                 </TableHead>
                             ))}
                             {!readOnly ? (
@@ -241,13 +258,31 @@ export default function ArrayTableField({
                                                             htmlFor={controlId}
                                                             className={cn(
                                                                 'text-xs font-medium break-words text-muted-foreground md:sr-only md:max-w-px',
-                                                                showReferences &&
+                                                                readOnly &&
+                                                                    showReferences &&
                                                                     column.label ===
                                                                         column.key &&
                                                                     'sr-only',
                                                             )}
                                                         >
-                                                            {column.label}
+                                                            <span
+                                                                className={cn(
+                                                                    !readOnly &&
+                                                                        showReferences &&
+                                                                        column.label ===
+                                                                            column.key &&
+                                                                        'sr-only',
+                                                                )}
+                                                            >
+                                                                {column.label}
+                                                            </span>
+                                                            {!readOnly ? (
+                                                                <FieldRequirement
+                                                                    required={
+                                                                        column.required
+                                                                    }
+                                                                />
+                                                            ) : null}
                                                         </FieldLabel>
                                                         <FieldSupportReference
                                                             name={column.key}

@@ -20,7 +20,11 @@ import {
 } from '@/components/ui/select';
 import { useTranslation } from '@/hooks/use-translation';
 import { runUiTransition } from '@/lib/motion';
-import { fieldDisplayLabel, variantDisplayLabel } from '@/lib/ogc-fields';
+import {
+    fieldDisplayLabel,
+    isRequiredField,
+    variantDisplayLabel,
+} from '@/lib/ogc-fields';
 import {
     errorIdForPath,
     fieldError,
@@ -90,6 +94,7 @@ export default function OneOfField({
         <ContentTransition default="none" update="content-change">
             <SectionFieldSet
                 label={fieldDisplayLabel(field)}
+                required={readOnly ? undefined : isRequiredField(field)}
                 supportReference={field.name}
                 description={field.description}
                 className="overflow-hidden"
