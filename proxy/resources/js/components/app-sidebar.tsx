@@ -1,10 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import {
-    BriefcaseBusiness,
-    ListChecks,
-    UsersRound,
-    Workflow,
-} from 'lucide-react';
+import { Compass, FlaskConical, ListChecks, UsersRound } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -32,13 +27,13 @@ const mainNavItems: NavItem[] = [
         title: 'My Jobs',
         titleKey: 'navigation.myJobs',
         href: jobsIndex(),
-        icon: BriefcaseBusiness,
+        icon: FlaskConical,
     },
     {
         title: 'Processes',
         titleKey: 'navigation.processes',
         href: processesIndex(),
-        icon: Workflow,
+        icon: Compass,
     },
 ];
 
@@ -87,7 +82,6 @@ export function AppSidebar() {
                         >
                             <Link href={jobsIndex()} prefetch>
                                 <AppLogo
-                                    appearance="inverse"
                                     collapsed={
                                         state === 'collapsed' && !isMobile
                                     }

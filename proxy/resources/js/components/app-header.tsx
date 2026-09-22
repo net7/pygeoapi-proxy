@@ -162,7 +162,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                                     item.href,
                                                     activeItemStyles,
                                                 ),
-                                                'h-9 cursor-pointer rounded-none px-3',
+                                                'h-9 cursor-pointer rounded-md px-3',
                                             )}
                                         >
                                             {item.icon && (
@@ -220,15 +220,15 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             <DropdownMenuTrigger asChild>
                                 <Button
                                     variant="ghost"
-                                    className="size-10 rounded-none p-1"
+                                    className="size-10 p-1"
                                     aria-label={t('common.openUserMenu')}
                                 >
-                                    <Avatar className="size-8 overflow-hidden rounded-none">
+                                    <Avatar className="size-8">
                                         <AvatarImage
                                             src={auth.user?.avatar ?? undefined}
                                             alt={auth.user?.name}
                                         />
-                                        <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
+                                        <AvatarFallback className="bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
                                             {getInitials(auth.user?.name ?? '')}
                                         </AvatarFallback>
                                     </Avatar>
@@ -265,7 +265,7 @@ function HeaderLinkItem({ item }: { item: NavItem }) {
             href={item.href}
             aria-current={isCurrentUrl(item.href) ? 'page' : undefined}
             className={cn(
-                'flex items-center gap-2 rounded-none border-l-2 border-transparent px-3 py-2 font-medium transition-colors hover:bg-accent',
+                'flex items-center gap-2 rounded-md border-l-2 border-transparent px-3 py-2 font-medium transition-colors hover:bg-accent',
                 isCurrentUrl(item.href) &&
                     'border-primary bg-accent font-semibold text-primary',
             )}

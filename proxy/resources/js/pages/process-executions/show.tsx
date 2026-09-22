@@ -723,7 +723,7 @@ function HeaderMetadataProgress({
 }) {
     return (
         <div
-            className="h-1.5 w-16 overflow-hidden rounded-none bg-muted dark:bg-background/30"
+            className="h-1.5 w-16 overflow-hidden rounded-xs bg-muted dark:bg-background/30"
             role="progressbar"
             aria-valuemin={0}
             aria-valuemax={100}
@@ -731,7 +731,7 @@ function HeaderMetadataProgress({
         >
             <div
                 className={cn(
-                    'h-full rounded-none transition-[width]',
+                    'h-full rounded-xs transition-[width]',
                     progressClassName,
                 )}
                 style={{ width: `${value}%` }}

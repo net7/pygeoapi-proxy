@@ -20,7 +20,10 @@ function Table({
     <div
       {...containerProps}
       data-slot="table-container"
-      className={cn("relative w-full overflow-x-auto", containerClassName)}
+      className={cn(
+        "relative w-full overflow-x-auto rounded-lg",
+        containerClassName
+      )}
     >
       <table
         data-slot="table"

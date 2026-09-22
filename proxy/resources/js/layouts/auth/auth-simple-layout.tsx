@@ -1,5 +1,7 @@
 import { Link } from '@inertiajs/react';
 import AppLogoIcon from '@/components/app-logo-icon';
+import AuthLandscape from '@/components/auth-landscape';
+import { useTranslation } from '@/hooks/use-translation';
 import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
 
@@ -7,29 +9,39 @@ export default function AuthSimpleLayout({
     children,
     title,
     description,
-}: AuthLayoutProps) {
-    return (
-        <div className="auth-canvas flex min-h-svh flex-col items-center justify-center gap-6 p-5 md:p-10">
-            <div data-page-content className="auth-panel w-full max-w-md">
-                <div className="flex flex-col gap-8">
-                    <div className="flex flex-col items-center gap-7">
-                        <Link
-                            href={home()}
-                            className="flex flex-col items-center gap-2 font-medium"
-                        >
-                            <AppLogoIcon className="h-auto w-full max-w-80" />
-                            <span className="sr-only">{title}</span>
-                        </Link>
+    statusCode,
+}: AuthLayoutProps & { statusCode?: 403 | 404 }) {
+    const { t } = useTranslation();
 
-                        <div className="flex flex-col gap-2 text-center">
-                            <h1 className="text-2xl font-semibold">{title}</h1>
-                            <p className="text-center text-sm text-muted-foreground">
-                                {description}
-                            </p>
-                        </div>
+    return (
+        <div className="auth-canvas">
+            <div data-page-content className="auth-shell">
+                <aside className="auth-intro">
+                    <Link href={home()} className="auth-logo">
+                        <AppLogoIcon className="h-auto w-full" />
+                    </Link>
+                    <div className="auth-identity">
+                        <p className="auth-project-name">Geo-INQUIRE</p>
+                        <p className="auth-project-description">
+                            {t('auth.platformDescription')}
+                        </p>
                     </div>
+                    <AuthLandscape />
+                </aside>
+                <main className="auth-panel" data-auth-status={statusCode}>
+                    <header className="flex flex-col gap-3">
+                        {statusCode && (
+                            <p className="auth-status-code" aria-hidden="true">
+                                {statusCode}
+                            </p>
+                        )}
+                        <h1 className="auth-title">{title}</h1>
+                        <p className="text-sm leading-relaxed text-muted-foreground">
+                            {description}
+                        </p>
+                    </header>
                     {children}
-                </div>
+                </main>
             </div>
         </div>
     );

@@ -581,7 +581,7 @@ export default function ProcessExecutionIndex({
                     ]}
                 />
 
-                <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
+                <div className="overflow-hidden rounded-lg border bg-card shadow-xs">
                     <Table aria-busy={serverTable.busy}>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
@@ -894,7 +894,7 @@ function JobProgress({ execution }: { execution: ProcessExecutionListItem }) {
                 <span className="tabular-nums">{progress}%</span>
             </div>
             <div
-                className="h-2 overflow-hidden rounded-none bg-muted"
+                className="h-2 overflow-hidden rounded-xs bg-muted"
                 role="progressbar"
                 aria-valuemin={0}
                 aria-valuemax={100}
@@ -902,7 +902,7 @@ function JobProgress({ execution }: { execution: ProcessExecutionListItem }) {
             >
                 <div
                     className={cn(
-                        'h-full rounded-none transition-[width]',
+                        'h-full rounded-xs transition-[width]',
                         styles.progressClassName,
                     )}
                     style={{

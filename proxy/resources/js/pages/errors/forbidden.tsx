@@ -19,6 +19,7 @@ export default function Forbidden({
             <Head title={`${t('errors.forbidden.title')} (403)`} />
 
             <AuthSimpleLayout
+                statusCode={403}
                 title={t('errors.forbidden.title')}
                 description={t('errors.forbidden.description')}
             >

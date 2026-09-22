@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowRightIcon, CpuIcon } from 'lucide-react';
+import { ArrowRightIcon, MountainIcon } from 'lucide-react';
 
+import GeoscienceMark from '@/components/geoscience-mark';
 import CacheWarmupPoller from '@/components/ogc/cache-warmup-poller';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -35,7 +36,7 @@ export default function ProcessIndex({
             <Head title={t('ogc.processesTitle')} />
 
             <div className="flex flex-col gap-7 p-4">
-                <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div className="page-header catalog-heading flex flex-col gap-4 sm:flex-row sm:justify-between">
                     <div className="flex flex-col gap-2">
                         <h1>{t('ogc.processesTitle')}</h1>
                         <p className="text-sm text-muted-foreground">
@@ -53,14 +54,17 @@ export default function ProcessIndex({
                             </p>
                         ) : null}
                     </div>
-                    <Badge variant="secondary" className="shrink-0">
-                        {t(
-                            processes.length === 1
-                                ? 'ogc.processCountOne'
-                                : 'ogc.processCountMany',
-                            { count: processes.length },
-                        )}
-                    </Badge>
+                    <div className="catalog-heading-art">
+                        <Badge variant="secondary" className="shrink-0">
+                            {t(
+                                processes.length === 1
+                                    ? 'ogc.processCountOne'
+                                    : 'ogc.processCountMany',
+                                { count: processes.length },
+                            )}
+                        </Badge>
+                        <GeoscienceMark />
+                    </div>
                 </div>
 
                 {isWarming ? (
@@ -98,14 +102,16 @@ export default function ProcessIndex({
                                     className="process-card group block h-full cursor-pointer rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                 >
                                     <Card className="h-full overflow-hidden">
+                                        <div
+                                            className="process-card-art"
+                                            aria-hidden="true"
+                                        >
+                                            <div className="process-card-icon">
+                                                <MountainIcon className="size-7" />
+                                            </div>
+                                        </div>
                                         <CardHeader className="gap-4">
                                             <div className="flex items-start gap-4">
-                                                <div className="process-card-icon">
-                                                    <CpuIcon
-                                                        className="size-5"
-                                                        aria-hidden="true"
-                                                    />
-                                                </div>
                                                 <div className="flex min-w-0 flex-1 flex-col gap-2">
                                                     <div className="flex min-w-0 items-start justify-between gap-3">
                                                         <CardTitle className="min-w-0 text-lg leading-tight break-words">
@@ -133,14 +139,18 @@ export default function ProcessIndex({
                                             </p>
                                         </CardContent>
                                         <CardFooter className="mt-auto justify-between gap-3">
-                                            <span className="text-sm font-medium text-primary underline-offset-4 group-hover:underline group-focus-visible:underline">
+                                            <span className="text-sm font-semibold underline-offset-4 group-hover:underline group-focus-visible:underline">
                                                 {t('ogc.openProcess')}
                                             </span>
-                                            <ArrowRightIcon
+                                            <span
+                                                className="process-card-arrow"
                                                 aria-hidden="true"
-                                                data-icon="inline-end"
-                                                className="size-4 shrink-0 text-primary"
-                                            />
+                                            >
+                                                <ArrowRightIcon
+                                                    data-icon="inline-end"
+                                                    className="size-4 shrink-0"
+                                                />
+                                            </span>
                                         </CardFooter>
                                     </Card>
                                 </Link>

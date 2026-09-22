@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { ChevronDownIcon, CopyCheckIcon, FileTextIcon } from 'lucide-react';
 
+import { ContentTransition } from '@/components/content-transition';
 import CacheWarmupPoller from '@/components/ogc/cache-warmup-poller';
 import DynamicProcessForm from '@/components/ogc/dynamic-process-form';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -112,33 +113,39 @@ export default function ProcessShow({
                     </Collapsible>
                 ) : null}
 
-                {inputPrefill ? (
-                    <Alert className="border-info-emphasis bg-info/10 text-info-emphasis shadow-xs *:data-[slot=alert-description]:text-info-emphasis/80">
-                        <CopyCheckIcon aria-hidden="true" />
-                        <AlertTitle>
-                            {t('ogc.inputPrefillTitle', {
-                                source: inputPrefill.sourceJobName,
-                            })}
-                        </AlertTitle>
-                        <AlertDescription className="flex flex-col gap-1">
-                            <span>{t('ogc.inputPrefillDescription')}</span>
-                            {inputPrefill.skippedInputs.length > 0 ? (
-                                <span className="font-medium text-amber-700 dark:text-amber-300">
-                                    {t('ogc.inputPrefillSkipped', {
-                                        inputs: inputPrefill.skippedInputs.join(
-                                            ', ',
-                                        ),
+                <ContentTransition default="none" update="form-layout">
+                    <div className="flex min-w-0 flex-col gap-4">
+                        {inputPrefill ? (
+                            <Alert className="border-info-emphasis bg-info/10 text-info-emphasis shadow-xs *:data-[slot=alert-description]:text-info-emphasis/80">
+                                <CopyCheckIcon aria-hidden="true" />
+                                <AlertTitle>
+                                    {t('ogc.inputPrefillTitle', {
+                                        source: inputPrefill.sourceJobName,
                                     })}
-                                </span>
-                            ) : null}
-                        </AlertDescription>
-                    </Alert>
-                ) : null}
+                                </AlertTitle>
+                                <AlertDescription className="flex flex-col gap-1">
+                                    <span>
+                                        {t('ogc.inputPrefillDescription')}
+                                    </span>
+                                    {inputPrefill.skippedInputs.length > 0 ? (
+                                        <span className="font-medium text-amber-700 dark:text-amber-300">
+                                            {t('ogc.inputPrefillSkipped', {
+                                                inputs: inputPrefill.skippedInputs.join(
+                                                    ', ',
+                                                ),
+                                            })}
+                                        </span>
+                                    ) : null}
+                                </AlertDescription>
+                            </Alert>
+                        ) : null}
 
-                <DynamicProcessForm
-                    schema={formSchema}
-                    inputPrefill={inputPrefill}
-                />
+                        <DynamicProcessForm
+                            schema={formSchema}
+                            inputPrefill={inputPrefill}
+                        />
+                    </div>
+                </ContentTransition>
             </div>
         </>
     );
