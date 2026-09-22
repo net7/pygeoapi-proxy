@@ -179,12 +179,16 @@ services:
     restart: unless-stopped
 
   geoserver:
-    image: docker.osgeo.org/geoserver:2.27.1
+    image: docker.osgeo.org/geoserver:3.0.1
     platform: ${GEOSERVER_PLATFORM:-linux/amd64}
     pull_policy: always
     environment:
       GEOSERVER_ADMIN_USER: ${GEOSERVER_USERNAME:-admin}
       GEOSERVER_ADMIN_PASSWORD: ${GEOSERVER_PASSWORD:-geoserver}
+      # GeoServer 3 moved these formats from core to extensions; existing data
+      # directories include ArcGrid and WorldImage demo layers.
+      INSTALL_EXTENSIONS: "true"
+      STABLE_EXTENSIONS: arcgrid,image
     volumes:
       - geoserver-data:/opt/geoserver_data
     networks:
