@@ -201,7 +201,7 @@ finale perché Vite possa usare il runtime atteso.
 
 Compose usa inoltre:
 
-- `docker.osgeo.org/geoserver:2.27.1`;
+- `docker.osgeo.org/geoserver:3.0.1`;
 - `mariadb:latest`;
 - `redis:alpine`;
 - `phpmyadmin:latest` in sviluppo;
@@ -209,6 +209,16 @@ Compose usa inoltre:
 
 I tag `latest` e `alpine` sono floating: una nuova build può acquisire nuove
 release upstream. Ogni variazione va revisionata e testata prima del deploy.
+
+L'immagine ufficiale di GeoServer 3.0.1 include Java 21 e Tomcat 11. Lo stack
+develop/staging riutilizza il volume `geoserver-data` e gli endpoint esistenti
+per la pubblicazione GeoTIFF/SLD e WMS. Compose installa le estensioni
+`arcgrid` e `image` (WorldImage) della stessa versione per mantenere i layer dimostrativi
+nelle directory dati create da GeoServer 2; la ricreazione del container richiede
+accesso al server di download delle estensioni. Consultare la [guida di aggiornamento di GeoServer](https://docs.geoserver.org/3.0.x/en/user/installation/upgrade3/)
+prima di aggiornare un ambiente esistente. Dopo il deploy verificare i layer
+esistenti e una nuova pubblicazione GeoTIFF/SLD; il solo ripristino dell'immagine
+precedente non garantisce la compatibilità della directory dati.
 
 Il memory limit PHP predefinito è `2G`. OPcache è disabilitato con validazione
 dei timestamp in sviluppo; è abilitato senza validazione dei timestamp in
