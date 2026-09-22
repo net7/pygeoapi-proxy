@@ -15,8 +15,8 @@ import {
 } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { AdminBadge, AdminBadgePopover } from '@/components/admin-badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -154,12 +154,7 @@ export function UserGuide({
                                                 )}
                                             </span>
                                             {item.adminOnly ? (
-                                                <Badge
-                                                    variant="outline"
-                                                    className="max-w-full whitespace-normal"
-                                                >
-                                                    {t('userGuide.adminOnly')}
-                                                </Badge>
+                                                <AdminBadge />
                                             ) : null}
                                         </span>
                                     </Button>
@@ -184,9 +179,7 @@ export function UserGuide({
                                         aria-hidden="true"
                                     />
                                     {chapter.adminOnly ? (
-                                        <Badge variant="secondary">
-                                            {t('userGuide.adminOnly')}
-                                        </Badge>
+                                        <AdminBadgePopover />
                                     ) : null}
                                 </div>
                                 <h2

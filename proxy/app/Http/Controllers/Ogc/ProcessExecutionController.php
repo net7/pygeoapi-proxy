@@ -157,6 +157,7 @@ class ProcessExecutionController extends Controller
             : [];
         $execution = [
             ...$this->executionListItem($processExecution, $includeAdminData),
+            'canViewStorage' => $user->can('viewStorage', $processExecution),
             'processVersion' => $processExecution->process_version,
             'note' => $processExecution->note,
             'noteUpdatedAt' => $processExecution->note_updated_at?->toIso8601String(),

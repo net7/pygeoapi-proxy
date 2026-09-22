@@ -38,6 +38,9 @@ const it = {
     },
     common: {
         appName: 'INGV Pygeoapi Proxy',
+        adminOnly: 'Solo admin',
+        adminOnlyDescription:
+            'Un aiuto in più per chi gestisce l’applicazione. Questi strumenti e dettagli sono riservati agli admin.',
         breadcrumb: 'Percorso di navigazione',
         cancel: 'Annulla',
         chooseAction: 'Scegli azione',
@@ -96,7 +99,6 @@ const it = {
             'Ti accompagniamo dalla scelta di un processo ai risultati della tua analisi.',
         adminDescription:
             'Ti accompagniamo dalle analisi alla gestione della piattaforma: utenti, accessi e supervisione di tutti i processi.',
-        adminOnly: 'Solo per amministratori',
         chapters: 'Passaggi della guida',
         step: 'Passaggio {current} di {total}',
         previous: 'Indietro',
@@ -232,7 +234,7 @@ const it = {
                 'In Tutti gli utenti scegli Vedi processi per aprire l’elenco già filtrato. Puoi cambiare utente o azzerare i filtri per tornare alla vista generale.',
             thirdTitle: 'Apri e gestisci il dettaglio',
             thirdBody:
-                'Apri un’esecuzione per controllare stato, messaggi, dati inviati e risultati. Come admin puoi anche modificare nome e nota, scaricare gli output e riutilizzare gli input dei processi degli altri utenti.',
+                'Apri un’esecuzione per controllare stato, messaggi, dati inviati e risultati. Come admin puoi anche modificare nome e nota, scaricare gli output e riutilizzare gli input dei processi degli altri utenti. Il pulsante Spazio su disco mostra i file locali e le loro dimensioni.',
             tip: 'I miei processi raccoglie le tue esecuzioni; Tutti i processi include anche quelle degli altri utenti.',
         },
         adminDiagnostics: {
@@ -242,14 +244,14 @@ const it = {
                 'Nel dettaglio di un processo sono disponibili informazioni aggiuntive per gli admin, utili per controllare i dati inviati e approfondire eventuali problemi.',
             firstTitle: 'Consulta i dati tecnici',
             firstBody:
-                'Espandi Dati inviati per consultare il JSON della richiesta, quando disponibile. Nei risultati dei grafici puoi aprire il JSON originale; nelle mappe puoi vedere gli avvisi sulla preparazione dei livelli. Le sezioni riservate sono indicate come visibili solo agli admin.',
+                'Espandi Dati inviati per consultare il JSON della richiesta, quando disponibile. Nei risultati dei grafici puoi aprire il JSON originale; nelle mappe puoi vedere gli avvisi sulla preparazione dei livelli. Riconosci i contenuti riservati dallo scudetto Solo admin. Premi il badge accanto a una sezione o su un pulsante per saperne di più.',
             secondTitle: 'Controlla errori e recupero dei risultati',
             secondBody:
                 'Verifica lo stato dell’esecuzione e i messaggi disponibili. Se il recupero degli output è fallito, usa Riprova quando presente per tentare nuovamente la raccolta dei risultati.',
             thirdTitle: 'Elimina una o più esecuzioni',
             thirdBody:
-                'Usa Elimina nel dettaglio di un processo oppure seleziona più righe in Tutti i processi e scegli Elimina selezionati. Controlla i processi coinvolti prima di confermare: la rimozione dalla piattaforma non può essere annullata.',
-            tip: 'Prima di eliminare un’esecuzione, scarica gli output che vuoi conservare e verifica a quale utente appartiene.',
+                'Usa Elimina nel dettaglio di un processo oppure seleziona più righe in Tutti i processi e scegli Elimina selezionati. Nella conferma per un singolo processo vedi anche lo spazio dei file locali che verrà liberato, inclusi gli input salvati. Controlla i processi coinvolti prima di confermare: la rimozione dalla piattaforma non può essere annullata.',
+            tip: 'Spazio su disco mostra dimensioni e numero dei file locali, inclusi gli input salvati. Espandi le cartelle per esplorarli. Con la finestra aperta, i dati si aggiornano al termine dell’elaborazione e quando i risultati sono pronti. Alcuni processi conservano i risultati solo nel database: in questi casi la finestra lo indica e non mostra file locali. Lo spazio del database è escluso dal totale e dalla stima dello spazio liberabile; eliminando il processo vengono rimossi anche i suoi dati nel database. Prima di eliminare un’esecuzione, scarica gli output che vuoi conservare.',
         },
     },
     toast: {
@@ -477,7 +479,6 @@ const it = {
         inputReviewEmpty:
             'Non sono disponibili dati di input per questa richiesta.',
         submittedFiles: 'File inviati',
-        adminOnlySection: 'VISIBILE SOLO AGLI ADMIN',
         documentTitle: 'Processo {jobId}',
         jobId: 'ID processo',
         jobIdCopied: 'ID processo copiato',
@@ -543,6 +544,31 @@ const it = {
         results: 'Risultati',
         remoteJobId: 'ID remoto',
         reuseInputs: 'Riutilizza input',
+        storage: {
+            title: 'Spazio su disco',
+            adminDescription:
+                'Funzione riservata agli amministratori: mostra i file locali e lo spazio occupato da risultati e input del processo.',
+            description:
+                'File locali di “{name}”, inclusi risultati e input salvati.',
+            total: 'Dimensione totale dei file',
+            fileCount: '{count} file',
+            files: 'File del processo',
+            loading: 'Lettura dello spazio occupato…',
+            empty: 'Questo processo non ha ancora file salvati sul disco.',
+            databaseOnly:
+                'I risultati sono salvati nel database: questo processo non ha file locali. Lo spazio del database non è incluso nel totale.',
+            databaseResults:
+                'Alcuni risultati sono salvati nel database. Il totale include solo i file locali, non lo spazio del database.',
+            reclaimTitle: 'Spazio dei file da liberare',
+            reclaimDescription:
+                'Include risultati e input salvati come file. Verranno rimossi anche i dati del processo nel database.',
+            reclaimUnavailable:
+                'Non è stato possibile calcolare lo spazio da liberare.',
+            errorTitle: 'Spazio su disco non disponibile',
+            errorDescription:
+                'Non è stato possibile leggere i file del processo. Chiudi e riapri la finestra per riprovare.',
+            updatedAt: 'Rilevato il {date}',
+        },
         rowsPerPage: 'Righe per pagina',
         saveProcessName: 'Salva nome',
         saveNote: 'Salva nota',
@@ -810,6 +836,9 @@ const en = {
     },
     common: {
         appName: 'INGV Pygeoapi Proxy',
+        adminOnly: 'Admins only',
+        adminOnlyDescription:
+            'A little extra help for those managing the application. These tools and details are reserved for admins.',
         breadcrumb: 'Breadcrumb',
         cancel: 'Cancel',
         chooseAction: 'Choose action',
@@ -868,7 +897,6 @@ const en = {
             'Let’s walk through choosing a process, running an analysis, and exploring your results.',
         adminDescription:
             'Let’s walk through running analyses and administering the platform: users, sign-in, and supervision of all jobs.',
-        adminOnly: 'Admins only',
         chapters: 'Guide steps',
         step: 'Step {current} of {total}',
         previous: 'Back',
@@ -1004,7 +1032,7 @@ const en = {
                 'In All Users, choose View jobs to open an already filtered list. You can change the user or reset the filters to return to the full view.',
             thirdTitle: 'Open and manage the details',
             thirdBody:
-                'Open an execution to review its status, messages, submitted data, and results. As an admin, you can also edit names and notes, download outputs, and reuse inputs from other users’ jobs.',
+                'Open an execution to review its status, messages, submitted data, and results. As an admin, you can also edit names and notes, download outputs, and reuse inputs from other users’ jobs. The Disk usage button shows local files and their sizes.',
             tip: 'My Jobs collects your own executions; All Jobs also includes those started by other users.',
         },
         adminDiagnostics: {
@@ -1014,14 +1042,14 @@ const en = {
                 'Job details include additional information for admins to inspect submitted data and investigate problems.',
             firstTitle: 'Inspect the technical data',
             firstBody:
-                'Expand Submitted data to inspect the request JSON, when available. Chart results let you open the original JSON, and maps show warnings about layer preparation. Restricted sections are marked as visible to admins only.',
+                'Expand Submitted data to inspect the request JSON, when available. Chart results let you open the original JSON, and maps show warnings about layer preparation. Look for the Admins only shield to recognize restricted content. Select the badge next to a section or on a button to learn more.',
             secondTitle: 'Check errors and result collection',
             secondBody:
                 'Review the execution status and available messages. If output collection failed, use Retry when available to attempt collecting the results again.',
             thirdTitle: 'Delete one or more executions',
             thirdBody:
-                'Use Delete in a job’s details, or select several rows in All Jobs and choose Delete selected. Review the affected jobs before confirming: removal from the platform cannot be undone.',
-            tip: 'Before deleting an execution, download any outputs you want to keep and check which user it belongs to.',
+                'Use Delete in a job’s details, or select several rows in All Jobs and choose Delete selected. The confirmation for a single job also shows the local file space that will be freed, including saved inputs. Review the affected jobs before confirming: removal from the platform cannot be undone.',
+            tip: 'Disk usage shows the size and number of local files, including saved inputs. Expand folders to explore them. While the dialog is open, it updates when processing ends and results become available. Some jobs store results only in the database: the dialog explains this and shows no local files. Database storage is excluded from the total and the estimate of space to be freed; deleting the job also removes its database records. Before deleting an execution, download any outputs you want to keep.',
         },
     },
     toast: {
@@ -1242,7 +1270,6 @@ const en = {
             'Some submitted data is no longer available: {inputs}.',
         inputReviewEmpty: 'No input data is available for this request.',
         submittedFiles: 'Submitted files',
-        adminOnlySection: 'VISIBLE TO ADMINS ONLY',
         documentTitle: 'Job {jobId}',
         jobId: 'Job ID',
         jobIdCopied: 'Job ID copied',
@@ -1307,6 +1334,31 @@ const en = {
         results: 'Results',
         remoteJobId: 'Remote ID',
         reuseInputs: 'Reuse inputs',
+        storage: {
+            title: 'Disk usage',
+            adminDescription:
+                'Available only to administrators: view local files and the space used by the job’s results and inputs.',
+            description:
+                'Local files for “{name}”, including saved results and inputs.',
+            total: 'Total file size',
+            fileCount: '{count} files',
+            files: 'Job files',
+            loading: 'Reading disk usage…',
+            empty: 'This job has no files saved on disk yet.',
+            databaseOnly:
+                'Results are stored in the database: this job has no local files. Database storage is not included in the total.',
+            databaseResults:
+                'Some results are stored in the database. The total includes only local files, not database storage.',
+            reclaimTitle: 'File space to be freed',
+            reclaimDescription:
+                'Includes results and inputs saved as files. The job’s data will also be removed from the database.',
+            reclaimUnavailable:
+                'The space to be freed could not be calculated.',
+            errorTitle: 'Disk usage unavailable',
+            errorDescription:
+                'The job files could not be read. Close and reopen the dialog to try again.',
+            updatedAt: 'Checked on {date}',
+        },
         rowsPerPage: 'Rows per page',
         saveProcessName: 'Save name',
         saveNote: 'Save note',
