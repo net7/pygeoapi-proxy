@@ -4,7 +4,9 @@ use App\Models\ProcessExecution;
 use App\Models\ProcessExecutionResult;
 use App\Models\User;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     config([
@@ -62,6 +64,7 @@ test('remote missing jobs are treated as deleted', function () {
 });
 
 test('remote deletion failures keep the local job', function () {
+    $disk = Storage::fake('local');
     Http::fake([
         'https://voice.pi.ingv.it/geoinquire/jobs/job-500' => Http::response([
             'description' => 'Remote service unavailable.',
@@ -72,6 +75,8 @@ test('remote deletion failures keep the local job', function () {
     $execution = ProcessExecution::factory()->for($user)->create([
         'remote_job_id' => 'job-500',
     ]);
+    $path = "ogc-results/{$execution->id}/output.txt";
+    $disk->put($path, 'keep');
 
     $this->actingAs($user)
         ->from(route('jobs.show', $execution))
@@ -82,6 +87,75 @@ test('remote deletion failures keep the local job', function () {
         'id' => $execution->id,
         'remote_job_id' => 'job-500',
     ]);
+    $disk->assertExists($path);
+});
+
+test('deletion frees the inspected result files and inputs without touching other jobs', function () {
+    $disk = Storage::fake('local');
+    Http::preventStrayRequests();
+    $admin = User::factory()->admin()->create();
+    $snapshot = 'ogc/input-snapshots/delete-job.json';
+    $execution = ProcessExecution::factory()->create([
+        'remote_job_id' => null,
+        'input_snapshot' => ['inputsPath' => $snapshot],
+    ]);
+    $result = ProcessExecutionResult::factory()->for($execution)->create();
+    $directory = "ogc-results/{$execution->id}";
+    $disk->put("{$directory}/nested/output.txt", 'result');
+    $disk->put($snapshot, 'data');
+    $disk->put('ogc-results/999999/other.txt', 'keep');
+    $disk->put('ogc/input-snapshots/other-job.json', 'keep');
+    symlink($disk->path('ogc-results/999999'), $disk->path("{$directory}/linked-directory"));
+
+    $this->actingAs($admin)->getJson(route('jobs.storage', $execution))
+        ->assertOk()
+        ->assertJsonPath('totalSizeBytes', 10);
+
+    $this->delete(route('jobs.destroy', $execution))
+        ->assertRedirect(route('jobs.index'));
+
+    $disk->assertMissing([$directory, $snapshot]);
+    $disk->assertExists(['ogc-results/999999/other.txt', 'ogc/input-snapshots/other-job.json']);
+    $this->assertDatabaseMissing('process_executions', ['id' => $execution->id]);
+    $this->assertDatabaseMissing('process_execution_results', ['id' => $result->id]);
+    Http::assertNothingSent();
+});
+
+test('deletion does not follow a job directory that links to unrelated files', function () {
+    $disk = Storage::fake('local');
+    Http::preventStrayRequests();
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create(['remote_job_id' => null]);
+    $disk->put('unrelated/keep.txt', 'private');
+    $disk->makeDirectory('ogc-results');
+    symlink($disk->path('unrelated'), $disk->path("ogc-results/{$execution->id}"));
+
+    $this->actingAs($user)->delete(route('jobs.destroy', $execution))
+        ->assertRedirect(route('jobs.index'));
+
+    $disk->assertExists('unrelated/keep.txt');
+    $this->assertDatabaseMissing('process_executions', ['id' => $execution->id]);
+    Http::assertNothingSent();
+});
+
+test('a filesystem cleanup failure keeps the job available instead of reporting deletion', function () {
+    $disk = Storage::fake('local');
+    Exceptions::fake();
+    Http::preventStrayRequests();
+    $user = User::factory()->create();
+    $execution = ProcessExecution::factory()->for($user)->create(['remote_job_id' => null]);
+    $directory = "ogc-results/{$execution->id}";
+    $disk->put("{$directory}/keep.txt", 'keep');
+    $failingDisk = Mockery::mock($disk);
+    $failingDisk->shouldReceive('deleteDirectory')->with($directory)->once()->andReturn(false);
+    Storage::shouldReceive('disk')->with('local')->andReturn($failingDisk);
+
+    $this->actingAs($user)->deleteJson(route('jobs.destroy', $execution))->assertServerError();
+
+    $this->assertDatabaseHas('process_executions', ['id' => $execution->id]);
+    $disk->assertExists("{$directory}/keep.txt");
+    Http::assertNothingSent();
+    Exceptions::assertReported(fn (RuntimeException $exception): bool => $exception->getMessage() === 'Unable to delete job result files.');
 });
 
 test('users cannot delete another users job', function () {

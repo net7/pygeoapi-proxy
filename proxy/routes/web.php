@@ -12,6 +12,7 @@ use App\Http\Controllers\Ogc\ProcessExecutionInputController;
 use App\Http\Controllers\Ogc\ProcessExecutionResultCollectionController;
 use App\Http\Controllers\Ogc\ProcessExecutionResultController;
 use App\Http\Controllers\Ogc\ProcessExecutionResultMapTileController;
+use App\Http\Controllers\Ogc\ProcessExecutionStorageController;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Models\ProcessExecution;
@@ -58,6 +59,8 @@ Route::middleware(['auth', EnsureUserIsActive::class, 'verified'])->group(functi
         ->name('jobs.bulk-destroy');
     Route::get('jobs/{processExecution}', [ProcessExecutionController::class, 'show'])
         ->name('jobs.show');
+    Route::get('jobs/{processExecution}/storage', ProcessExecutionStorageController::class)
+        ->name('jobs.storage');
     Route::get('jobs/{processExecution}/inputs/{file}/download', ProcessExecutionInputController::class)
         ->whereNumber('file')
         ->name('jobs.inputs.download');

@@ -231,7 +231,7 @@ describe('chart result preview wiring', () => {
         expect(source).toContain("import { usePage } from '@inertiajs/react'");
         expect(source).toContain('auth.user?.is_admin === true');
         expect(source).toContain('Collapsible');
-        expect(source).toContain("t('jobs.adminOnlySection')");
+        expect(source).toContain('<AdminBadgePopover />');
         expect(source).toContain(
             "import RawPayloadBlock from '@/components/ogc/raw-payload-block'",
         );
