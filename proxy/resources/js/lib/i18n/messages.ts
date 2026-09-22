@@ -293,9 +293,12 @@ const it = {
         },
         forgotYourPassword: 'Password dimenticata?',
         fullName: 'Nome completo',
+        platformDescription: 'Modelli, dati e analisi per le geoscienze.',
         login: {
-            description: 'Continua con uno dei provider abilitati',
+            description:
+                'Accedi per avviare analisi e ritrovare i tuoi risultati.',
             divider: 'Oppure',
+            providerButton: 'Continua con {provider}',
             socialLabel: 'Accedi o registrati con {provider}',
             submit: 'Accedi',
             title: 'Accedi o registrati',
@@ -635,7 +638,8 @@ const it = {
         processPreparingDescription:
             'Il modulo del processo apparirà al termine della preparazione.',
         processPreparingTitle: 'La descrizione del processo è in preparazione',
-        processesDescription: 'Processi OGC API disponibili da Geo-INQUIRE.',
+        processesDescription:
+            'Esplora i modelli di Geo-INQUIRE. Scegli un processo e dai forma alla tua prossima ricerca.',
         processesTitle: 'Processi',
         reference: 'Riferimento',
         referenceUrl: 'URL di riferimento',
@@ -1060,9 +1064,11 @@ const en = {
         },
         forgotYourPassword: 'Forgot your password?',
         fullName: 'Full name',
+        platformDescription: 'Models, data and analysis for the geosciences.',
         login: {
-            description: 'Continue with one of the enabled providers',
+            description: 'Sign in to run analyses and return to your results.',
             divider: 'Or',
+            providerButton: 'Continue with {provider}',
             socialLabel: 'Access or register with {provider}',
             submit: 'Log in',
             title: 'Access or register',
@@ -1393,7 +1399,8 @@ const en = {
         processPreparingDescription:
             'The process form will appear when the background warm-up finishes.',
         processPreparingTitle: 'Process description is being prepared',
-        processesDescription: 'Available OGC API processes from Geo-INQUIRE.',
+        processesDescription:
+            'Explore Geo-INQUIRE models. Pick a process and bring your next research idea to life.',
         processesTitle: 'Processes',
         reference: 'Reference',
         referenceUrl: 'Reference URL',

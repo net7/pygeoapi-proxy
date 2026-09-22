@@ -211,9 +211,9 @@ function DeleteJobOwnerIdentity({ owner }: { owner: DeleteJobOwner }) {
 
     return (
         <div className="flex min-w-0 items-center gap-3">
-            <Avatar className="size-8 rounded-none">
+            <Avatar className="size-8">
                 <AvatarImage src={owner.avatar ?? undefined} alt={owner.name} />
-                <AvatarFallback className="rounded-none bg-card text-xs font-medium text-destructive-emphasis">
+                <AvatarFallback className="bg-card text-xs font-medium text-destructive-emphasis">
                     {getInitials(owner.name)}
                 </AvatarFallback>
             </Avatar>
