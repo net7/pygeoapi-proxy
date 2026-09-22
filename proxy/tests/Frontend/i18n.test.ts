@@ -163,12 +163,8 @@ describe('i18n', () => {
         expect(translate('it', 'jobs.deleteDescription')).toBe(
             'Questa azione rimuove il processo dalla piattaforma. L’operazione non può essere annullata.',
         );
-        expect(translate('it', 'jobs.adminOnlySection')).toBe(
-            'VISIBILE SOLO AGLI ADMIN',
-        );
-        expect(translate('en', 'jobs.adminOnlySection')).toBe(
-            'VISIBLE TO ADMINS ONLY',
-        );
+        expect(translate('it', 'common.adminOnly')).toBe('Solo admin');
+        expect(translate('en', 'common.adminOnly')).toBe('Admins only');
         expect(translate('it', 'jobs.deleteDescription')).not.toContain(
             'servizio',
         );

@@ -13,6 +13,7 @@ abstract class TestCase extends BaseTestCase
     protected function setUpTraits(): array
     {
         $this->ensureTestingDatabaseIsIsolated();
+        config(['filesystems.disks.local.root' => storage_path('framework/testing/disks/local')]);
 
         return parent::setUpTraits();
     }

@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { AlertTriangleIcon, Trash2Icon } from 'lucide-react';
 import { useState } from 'react';
 
+import { JobDeletionStorage } from '@/components/ogc/job-deletion-storage';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -83,34 +84,40 @@ export function DeleteJobButton({
 
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent
-                    className="overflow-hidden p-0 sm:max-w-xl"
+                    className="flex max-h-[90dvh] flex-col overflow-hidden p-0 sm:max-w-xl"
                     onClick={(event) => event.stopPropagation()}
                 >
-                    <DialogHeader className="px-6 pt-6 pr-12 text-left">
+                    <DialogHeader className="shrink-0 px-6 pt-6 pr-12 text-left">
                         <DialogTitle>{t('jobs.deleteTitle')}</DialogTitle>
                         <DialogDescription className="text-sm break-words">
                             {t('jobs.deleteDescription')}
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="mx-6 rounded-lg border border-destructive-emphasis/25 bg-destructive-emphasis/5 p-4 text-destructive-emphasis">
-                        <div className="flex items-start gap-3">
-                            <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-destructive-emphasis/10 text-destructive-emphasis">
-                                <AlertTriangleIcon
-                                    data-icon="dialog-status"
-                                    className="size-5"
-                                />
-                            </span>
-                            <div className="min-w-0 flex-1">
-                                <DeleteJobSummary
-                                    execution={execution}
-                                    owner={owner}
-                                />
+                    <div className="flex min-h-0 flex-col gap-4 overflow-y-auto px-6">
+                        <div className="rounded-lg border border-destructive-emphasis/25 bg-destructive-emphasis/5 p-4 text-destructive-emphasis">
+                            <div className="flex items-start gap-3">
+                                <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-destructive-emphasis/10 text-destructive-emphasis">
+                                    <AlertTriangleIcon
+                                        data-icon="dialog-status"
+                                        className="size-5"
+                                    />
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                    <DeleteJobSummary
+                                        execution={execution}
+                                        owner={owner}
+                                    />
+                                </div>
                             </div>
                         </div>
+
+                        {open ? (
+                            <JobDeletionStorage execution={execution} />
+                        ) : null}
                     </div>
 
-                    <DialogFooter className="border-t bg-muted/20 px-6 py-4">
+                    <DialogFooter className="shrink-0 border-t bg-muted/20 px-6 py-4">
                         <DialogClose asChild>
                             <Button
                                 type="button"

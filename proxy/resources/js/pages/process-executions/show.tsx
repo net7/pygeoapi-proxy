@@ -11,13 +11,13 @@ import {
     LockKeyholeIcon,
     PackageCheckIcon,
     RefreshCwIcon,
-    ShieldCheckIcon,
     TimerIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { lazy, Suspense, useState } from 'react';
 import type { ReactNode } from 'react';
 
+import { AdminBadgePopover } from '@/components/admin-badge';
 import {
     AfterNavigation,
     ContentTransition,
@@ -32,6 +32,7 @@ import JobIdentifiers from '@/components/ogc/job-identifiers';
 import { JobNameEditDialog } from '@/components/ogc/job-name-edit-dialog';
 import { JobNoteCard } from '@/components/ogc/job-note-card';
 import JobPollingIndicator from '@/components/ogc/job-polling-indicator';
+import { JobStorageButton } from '@/components/ogc/job-storage-dialog';
 import ProcessInputReview from '@/components/ogc/process-input-review';
 import RawPayloadBlock from '@/components/ogc/raw-payload-block';
 import ResultCollectionFailureNotice from '@/components/ogc/result-collection-failure-notice';
@@ -190,7 +191,8 @@ export default function ProcessExecutionShow({
                     </div>
 
                     <div className="flex justify-end lg:pt-9">
-                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+                            <JobStorageButton execution={execution} />
                             <Button
                                 asChild
                                 variant="outline"
@@ -245,13 +247,7 @@ export default function ProcessExecutionShow({
                             />
                             {execution.requestPayload !== undefined ? (
                                 <div className="mt-6 flex min-w-0 flex-col gap-3 border-t pt-6">
-                                    <Badge
-                                        variant="destructive"
-                                        className="h-5 w-fit px-1.5 text-[10px] uppercase"
-                                    >
-                                        <ShieldCheckIcon data-icon="inline-start" />
-                                        {t('jobs.adminOnlySection')}
-                                    </Badge>
+                                    <AdminBadgePopover />
                                     <RawPayloadBlock
                                         title={t('ogc.rawJson')}
                                         data={execution.requestPayload}

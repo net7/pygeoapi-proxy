@@ -194,6 +194,7 @@ export type ProcessExecutionResultCollection = {
 };
 
 export type ProcessExecutionDetail = ProcessExecutionListItem & {
+    canViewStorage?: boolean;
     processVersion?: string | null;
     note?: TiptapDocument | null;
     noteUpdatedAt?: string | null;
@@ -202,4 +203,21 @@ export type ProcessExecutionDetail = ProcessExecutionListItem & {
     outputMetadata: ProcessOutputMetadata;
     resultCollection: ProcessExecutionResultCollection;
     results: ProcessExecutionResult[];
+};
+
+export type JobStorageNode = {
+    name: string;
+    path: string;
+    type: 'directory' | 'file';
+    sizeBytes: number;
+    fileCount: number;
+    children: JobStorageNode[];
+};
+
+export type JobStorage = {
+    totalSizeBytes: number;
+    fileCount: number;
+    databaseResultCount: number;
+    roots: JobStorageNode[];
+    inspectedAt: string;
 };

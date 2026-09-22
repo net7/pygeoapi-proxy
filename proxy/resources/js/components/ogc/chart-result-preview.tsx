@@ -7,16 +7,11 @@ import type {
     LegendItem,
     TooltipItem,
 } from 'chart.js';
-import {
-    ChevronDownIcon,
-    EyeIcon,
-    EyeOffIcon,
-    ShieldCheckIcon,
-} from 'lucide-react';
+import { ChevronDownIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { AdminBadgePopover } from '@/components/admin-badge';
 import RawPayloadBlock from '@/components/ogc/raw-payload-block';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Collapsible,
@@ -508,13 +503,7 @@ function RawJsonCollapsible({
                         {t('ogc.rawJson')}
                     </Button>
                 </CollapsibleTrigger>
-                <Badge
-                    variant="destructive"
-                    className="h-5 shrink-0 px-1.5 text-[10px] uppercase"
-                >
-                    <ShieldCheckIcon data-icon="inline-start" />
-                    {t('jobs.adminOnlySection')}
-                </Badge>
+                <AdminBadgePopover />
             </div>
             <CollapsibleContent>
                 <div className="border-t p-3">

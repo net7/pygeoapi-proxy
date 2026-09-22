@@ -23,6 +23,11 @@ class ProcessExecutionPolicy
         return $user->isAdmin() || $processExecution->user()->is($user);
     }
 
+    public function viewStorage(User $user, ProcessExecution $processExecution): bool
+    {
+        return $user->isAdmin();
+    }
+
     /**
      * Determine whether the user can create models.
      */
