@@ -72,7 +72,7 @@ container configuration. Floating image tags are identified explicitly.
 | UI | Local shadcn/ui components (New York) built on Radix UI; Tailwind CSS `4.3.3`; Lucide React `0.475.0`; Sonner `2.0.8` |
 | Typography | Source Sans 3 Variable and Roboto Mono Variable, both `5.3.0` via Fontsource |
 | Validation and data | AJV `8.17.1`; TanStack React Table `8.21.3`; JSON View `2.0.0-alpha.43`; Tiptap `3.31.3` |
-| Maps and charts | MapLibre GL `5.24.0`; Chart.js `4.5.1`; GeoServer `2.27.1` |
+| Maps and charts | MapLibre GL `5.24.0`; Chart.js `4.5.1`; GeoServer `3.0.1` |
 | OGC processing | Remote pygeoapi / OGC API - Processes; endpoint configured with `OGC_PROCESSES_BASE_URL`; upstream version managed externally |
 | Persistence | MariaDB `latest`; Redis `alpine` (floating tags) |
 | Build | Vite `8.3.0`; Inertia Vite `3.7.1`; React Compiler `1.0.0`; Bun `1.4.2` in development/staging images and CI; Node `latest` in development/staging images |

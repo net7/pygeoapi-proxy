@@ -77,7 +77,7 @@ esplicitamente.
 | UI | Componenti shadcn/ui locali (New York) basati su Radix UI; Tailwind CSS `4.3.3`; Lucide React `0.475.0`; Sonner `2.0.8` |
 | Tipografia | Source Sans 3 Variable e Roboto Mono Variable, entrambi `5.3.0` tramite Fontsource |
 | Validazione e dati | AJV `8.17.1`; TanStack React Table `8.21.3`; JSON View `2.0.0-alpha.43`; Tiptap `3.31.3` |
-| Mappe e grafici | MapLibre GL `5.24.0`; Chart.js `4.5.1`; GeoServer `2.27.1` |
+| Mappe e grafici | MapLibre GL `5.24.0`; Chart.js `4.5.1`; GeoServer `3.0.1` |
 | Elaborazione OGC | pygeoapi remoto / OGC API - Processes; endpoint configurato con `OGC_PROCESSES_BASE_URL`; versione upstream gestita esternamente |
 | Persistenza | MariaDB `latest`; Redis `alpine` (tag floating) |
 | Build | Vite `8.3.0`; Inertia Vite `3.7.1`; React Compiler `1.0.0`; Bun `1.4.2` nelle immagini sviluppo/staging e nella CI; Node `latest` nelle immagini sviluppo/staging |
