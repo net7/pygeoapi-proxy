@@ -886,7 +886,7 @@ export default function AdminUsersIndex({
                     ]}
                 />
 
-                <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
+                <div className="overflow-hidden rounded-lg border bg-card shadow-xs">
                     <Table aria-busy={serverTable.busy}>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
@@ -1677,9 +1677,9 @@ function AdminUserIdentity({
 
     return (
         <div className="flex min-w-0 items-center gap-3">
-            <Avatar className="size-8 rounded-none">
+            <Avatar className="size-8">
                 <AvatarImage src={user.avatar ?? undefined} alt={user.name} />
-                <AvatarFallback className="rounded-none bg-muted text-xs font-medium text-muted-foreground">
+                <AvatarFallback className="bg-muted text-xs font-medium text-muted-foreground">
                     {getInitials(user.name)}
                 </AvatarFallback>
             </Avatar>

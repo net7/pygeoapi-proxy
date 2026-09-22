@@ -19,6 +19,7 @@ export default function NotFound({
             <Head title={`${t('errors.notFound.title')} (404)`} />
 
             <AuthSimpleLayout
+                statusCode={404}
                 title={t('errors.notFound.title')}
                 description={t('errors.notFound.description')}
             >

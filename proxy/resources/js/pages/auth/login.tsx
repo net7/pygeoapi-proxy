@@ -34,12 +34,13 @@ export default function Login({ status, canResetPassword }: Props) {
 
             {socialProviders.length > 0 && (
                 <section className="flex flex-col gap-5">
-                    <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+                    <div className="flex flex-col gap-3">
                         {socialProviders.map((provider) => (
                             <Button
                                 key={provider.provider}
                                 asChild
                                 variant="outline"
+                                className="h-12 w-full justify-start px-4"
                             >
                                 <a
                                     href={provider.redirect}
@@ -51,7 +52,9 @@ export default function Login({ status, canResetPassword }: Props) {
                                         provider={provider.provider}
                                         data-icon="inline-start"
                                     />
-                                    {provider.label}
+                                    {t('auth.login.providerButton', {
+                                        provider: provider.label,
+                                    })}
                                 </a>
                             </Button>
                         ))}

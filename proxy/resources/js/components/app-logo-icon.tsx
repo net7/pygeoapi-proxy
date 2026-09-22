@@ -59,7 +59,9 @@ export default function AppLogoIcon({
                 className={cn(
                     className,
                     'mx-auto shrink-0 object-contain',
-                    appearance === 'inverse' && 'brightness-0 invert',
+                    appearance === 'inverse'
+                        ? 'brightness-0 invert'
+                        : 'dark:brightness-0 dark:invert',
                 )}
                 src={collapsedLogoSrc}
                 alt={alt}

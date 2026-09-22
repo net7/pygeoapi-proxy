@@ -14,7 +14,8 @@ export default function AppSidebarLayout({
     return (
         <AppShell variant="sidebar">
             <AppSidebar />
-            <AppContent variant="sidebar" className="overflow-x-hidden">
+            {/* Clip animated overflow without creating a second scroll container. */}
+            <AppContent variant="sidebar" className="min-w-0 overflow-clip">
                 <AppSidebarHeader breadcrumbs={breadcrumbs} user={auth.user} />
                 <div data-page-content className="flex min-w-0 flex-1 flex-col">
                     {children}

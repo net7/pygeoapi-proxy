@@ -43,14 +43,14 @@ export default function JobPollingIndicator({
                     className="relative flex size-2.5 shrink-0"
                 >
                     {active ? (
-                        <span className="absolute inline-flex size-full animate-ping rounded-none bg-success opacity-75" />
+                        <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-75" />
                     ) : null}
                     <span
                         className={cn(
                             'relative inline-flex size-2.5',
                             active
-                                ? 'rounded-none bg-success'
-                                : 'rounded-none bg-muted-foreground',
+                                ? 'rounded-full bg-success'
+                                : 'rounded-full bg-muted-foreground',
                         )}
                     />
                 </span>

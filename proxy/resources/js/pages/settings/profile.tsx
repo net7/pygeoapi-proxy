@@ -39,12 +39,12 @@ export default function Profile() {
                     />
 
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                        <Avatar className="size-20 overflow-hidden rounded-none">
+                        <Avatar className="size-20">
                             <AvatarImage
                                 src={auth.user.avatar ?? undefined}
                                 alt={auth.user.name}
                             />
-                            <AvatarFallback className="rounded-none bg-secondary text-lg text-secondary-foreground">
+                            <AvatarFallback className="bg-secondary text-lg text-secondary-foreground">
                                 {getInitials(auth.user.name)}
                             </AvatarFallback>
                         </Avatar>
