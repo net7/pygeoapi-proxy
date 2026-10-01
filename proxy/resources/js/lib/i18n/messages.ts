@@ -13,6 +13,31 @@ type MessageShape<T> = {
 };
 
 const it = {
+    support: {
+        title: 'Assistenza',
+        intro: 'Invia una richiesta al referente tecnico. Riceverai la risposta via email.',
+        email: 'Email di contatto',
+        emailHint:
+            'Puoi modificare questo indirizzo: lo useremo per risponderti, senza cambiare il tuo profilo.',
+        subject: 'Oggetto',
+        description: 'Descrizione',
+        descriptionHint:
+            'Descrivi il problema e i passaggi per riprodurlo. Massimo 10.000 caratteri.',
+        attachments: 'Allegati (facoltativi)',
+        attachmentLimits:
+            'Massimo {count} allegati, fino a {size} MB ciascuno.',
+        removeFile: 'Rimuovi {name}',
+        uploadProgress: 'Caricamento: {percent}%',
+        sending: 'Invio in corso…',
+        send: 'Invia richiesta',
+        unavailable:
+            "L'assistenza non è al momento disponibile. Contatta un amministratore.",
+        fileError: {
+            count: 'Puoi allegare al massimo {count} file.',
+            size: 'Il file {name} supera {size} MB.',
+            extension: 'Il formato del file {name} non è consentito.',
+        },
+    },
     errors: {
         forbidden: {
             title: 'Accesso negato',
@@ -825,6 +850,30 @@ const it = {
 } as const satisfies MessageTree;
 
 const en = {
+    support: {
+        title: 'Support',
+        intro: 'Send a request to the technical contact. You will receive a reply by email.',
+        email: 'Contact email',
+        emailHint:
+            'You can change this address: we will use it to reply without changing your profile.',
+        subject: 'Subject',
+        description: 'Description',
+        descriptionHint:
+            'Describe the problem and the steps to reproduce it. Maximum 10,000 characters.',
+        attachments: 'Attachments (optional)',
+        attachmentLimits: 'Up to {count} attachments, {size} MB each.',
+        removeFile: 'Remove {name}',
+        uploadProgress: 'Uploading: {percent}%',
+        sending: 'Sending…',
+        send: 'Send request',
+        unavailable:
+            'Support is currently unavailable. Please contact an administrator.',
+        fileError: {
+            count: 'You can attach up to {count} files.',
+            size: 'The file {name} exceeds {size} MB.',
+            extension: 'The format of {name} is not supported.',
+        },
+    },
     errors: {
         forbidden: {
             title: 'Access denied',

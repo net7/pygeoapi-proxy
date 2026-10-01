@@ -1,5 +1,11 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Compass, FlaskConical, ListChecks, UsersRound } from 'lucide-react';
+import {
+    Compass,
+    FlaskConical,
+    LifeBuoy,
+    ListChecks,
+    UsersRound,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -20,9 +26,16 @@ import { index as adminJobsIndex } from '@/routes/admin/jobs';
 import { index as adminUsersIndex } from '@/routes/admin/users';
 import { index as jobsIndex } from '@/routes/jobs';
 import { index as processesIndex } from '@/routes/processes';
+import { create as supportCreate } from '@/routes/support';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
+    {
+        title: 'Support',
+        titleKey: 'support.title',
+        href: supportCreate(),
+        icon: LifeBuoy,
+    },
     {
         title: 'My Jobs',
         titleKey: 'navigation.myJobs',
