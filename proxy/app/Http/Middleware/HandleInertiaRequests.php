@@ -45,6 +45,12 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'language' => app()->getLocale(),
+            'support' => [
+                'allowGuests' => config('support.allow_guests') === true,
+                'maxAttachments' => (int) config('support.max_attachments'),
+                'maxFileBytes' => (int) config('support.max_file_kib') * 1024,
+                'allowedExtensions' => config('support.extensions'),
+            ],
             'auth' => [
                 'user' => $this->user($request),
                 'canRegister' => Features::enabled(Features::registration()),

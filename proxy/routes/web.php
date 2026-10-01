@@ -14,6 +14,8 @@ use App\Http\Controllers\Ogc\ProcessExecutionResultCollectionController;
 use App\Http\Controllers\Ogc\ProcessExecutionResultController;
 use App\Http\Controllers\Ogc\ProcessExecutionResultMapTileController;
 use App\Http\Controllers\Ogc\ProcessExecutionStorageController;
+use App\Http\Controllers\SupportController;
+use App\Http\Middleware\EnsureSupportAccess;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Models\ProcessExecution;
@@ -21,6 +23,13 @@ use App\Models\ProcessExecutionResult;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+Route::middleware([EnsureUserIsActive::class, EnsureSupportAccess::class])->group(function (): void {
+    Route::get('support', [SupportController::class, 'create'])->name('support.create');
+    Route::post('support', [SupportController::class, 'store'])
+        ->middleware(['throttle:support', HandlePrecognitiveRequests::class])
+        ->name('support.store');
+});
 
 Route::middleware('guest')->group(function () {
     Route::get('account/deactivated', fn () => Inertia::render('auth/account-deactivated'))
