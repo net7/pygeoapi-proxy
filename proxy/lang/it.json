@@ -121,6 +121,10 @@
     "Your account has been deactivated.": "Il tuo account è stato disattivato.",
     "Your profile image has been refreshed.": "L’immagine del profilo è stata aggiornata.",
     "Your profile now uses the default account initials.": "Il profilo ora usa le iniziali predefinite dell’account.",
+    "Assign another technical contact before changing this account.": "Nomina un altro referente tecnico prima di modificare questo account.",
+    "The technical contact must be an active administrator.": "Il referente tecnico deve essere un amministratore attivo.",
+    "Technical contact appointed": "Referente tecnico nominato",
+    "Support emails will be sent to the appointed administrator.": "Le email di assistenza saranno inviate all'amministratore nominato.",
     "validation.invalid": "Il campo :attribute non è valido.",
     "validation.prohibited": "Il campo :attribute non è consentito."
 }

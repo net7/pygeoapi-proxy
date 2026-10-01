@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\JobController as AdminJobController;
+use App\Http\Controllers\Admin\TechnicalContactController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\EmailOtpChallengeController;
 use App\Http\Controllers\Auth\SocialAuthController;
@@ -110,6 +111,8 @@ Route::middleware(['auth', EnsureUserIsActive::class, 'verified', EnsureUserIsAd
         Route::patch('users/{user}', [AdminUserController::class, 'update'])
             ->middleware(HandlePrecognitiveRequests::class)
             ->name('users.update');
+        Route::put('users/{user}/technical-contact', TechnicalContactController::class)
+            ->name('users.technical-contact.update');
         Route::delete('users/{user}/force', [AdminUserController::class, 'forceDestroy'])
             ->name('users.force-destroy');
         Route::delete('users/{user}', [AdminUserController::class, 'destroy'])

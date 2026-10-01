@@ -12,6 +12,7 @@ use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Http\Requests\TableIndexRequest;
 use App\Models\User;
+use App\Services\Support\SupportContactManager;
 use App\Services\UserTableQuery;
 use App\Support\UserTableSettings;
 use Illuminate\Http\Client\ConnectionException;
@@ -28,6 +29,8 @@ use Laravel\Fortify\Features;
 
 class UserController extends Controller
 {
+    public function __construct(private SupportContactManager $contacts) {}
+
     public function index(TableIndexRequest $request, UserTableSettings $preferences, UserTableQuery $tableQuery): Response
     {
         $viewer = $request->user();
@@ -35,11 +38,13 @@ class UserController extends Controller
         $filters = $request->filters();
         $settings = $preferences->forUser($viewer, TableKey::AdminUsers);
         $table = $tableQuery->paginate($filters, $settings, $request->integer('page', 1));
+        $technicalContact = $this->contacts->current();
         $users = $table['users']
-            ->through(fn (User $user): array => $this->userPayload($user));
+            ->through(fn (User $user): array => $this->userPayload($user, $technicalContact?->id));
 
         return Inertia::render('admin/users/index', [
             'users' => $users,
+            'technicalContact' => $technicalContact?->only(['id', 'name', 'email']),
             'roles' => $this->roles(),
             'filters' => $filters,
             'tableSettings' => $settings,
@@ -89,11 +94,19 @@ class UserController extends Controller
     {
         $validated = $request->validated();
 
-        $user->forceFill([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'role' => UserRole::from($validated['role']),
-        ])->save();
+        $change = function () use ($user, $validated): void {
+            $user->forceFill([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'role' => UserRole::from($validated['role']),
+            ])->save();
+        };
+
+        if ($validated['role'] === UserRole::User->value) {
+            $this->contacts->guardAccountChange([$user->id], 'role', $change);
+        } else {
+            $change();
+        }
 
         return to_route('admin.users.index');
     }
@@ -104,8 +117,10 @@ class UserController extends Controller
             return back()->withErrors(['user' => __('You cannot deactivate your own account.')]);
         }
 
-        $user->forceFill(['deactivated_at' => now()])->save();
-        $this->invalidateUserSessions($user);
+        $this->contacts->guardAccountChange([$user->id], 'user', function () use ($user): void {
+            $user->forceFill(['deactivated_at' => now()])->save();
+            $this->invalidateUserSessions($user);
+        });
 
         return to_route('admin.users.index');
     }
@@ -122,10 +137,12 @@ class UserController extends Controller
         $users = $this->bulkUsers($request->userIds());
         $deactivatedAt = now();
 
-        foreach ($users as $user) {
-            $user->forceFill(['deactivated_at' => $deactivatedAt])->save();
-            $this->invalidateUserSessions($user);
-        }
+        $this->contacts->guardAccountChange($request->userIds(), 'ids', function () use ($users, $deactivatedAt): void {
+            foreach ($users as $user) {
+                $user->forceFill(['deactivated_at' => $deactivatedAt])->save();
+                $this->invalidateUserSessions($user);
+            }
+        });
 
         Inertia::flash('toast', [
             'type' => 'success',
@@ -223,9 +240,9 @@ class UserController extends Controller
     }
 
     /**
-     * @return array{id: int, name: string, email: string, avatar: string|null, role: string, is_admin: bool, is_deactivated: bool, deactivated_at: string|null, socialProviders: list<array{provider: string, label: string}>, jobs_count: int, first_access_completed_at: string|null, jobFilter: string, created_at: string|null}
+     * @return array{id: int, name: string, email: string, avatar: string|null, role: string, is_admin: bool, is_technical_contact: bool, is_deactivated: bool, deactivated_at: string|null, socialProviders: list<array{provider: string, label: string}>, jobs_count: int, first_access_completed_at: string|null, jobFilter: string, created_at: string|null}
      */
-    private function userPayload(User $user): array
+    private function userPayload(User $user, ?int $technicalContactId = null): array
     {
         return [
             'id' => $user->id,
@@ -234,6 +251,7 @@ class UserController extends Controller
             'avatar' => $user->avatar(),
             'role' => $user->role->value,
             'is_admin' => $user->isAdmin(),
+            'is_technical_contact' => $user->id === $technicalContactId,
             'is_deactivated' => $user->isDeactivated(),
             'deactivated_at' => $user->deactivated_at?->toISOString(),
             'socialProviders' => $this->socialProviderPayload($user),
