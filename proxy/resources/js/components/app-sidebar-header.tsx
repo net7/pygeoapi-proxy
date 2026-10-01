@@ -7,9 +7,11 @@ import type { BreadcrumbItem as BreadcrumbItemType, User } from '@/types';
 export function AppSidebarHeader({
     breadcrumbs = [],
     user,
+    allowGuestSupport = false,
 }: {
     breadcrumbs?: BreadcrumbItemType[];
     user?: User | null;
+    allowGuestSupport?: boolean;
 }) {
     return (
         <header className="app-toolbar flex h-16 shrink-0 items-center gap-3 px-5 md:px-8">
@@ -21,7 +23,13 @@ export function AppSidebarHeader({
                 />
                 <Breadcrumbs breadcrumbs={breadcrumbs} />
             </div>
-            {user ? <UserGuide key={user.id} user={user} /> : null}
+            {user ? (
+                <UserGuide
+                    key={user.id}
+                    user={user}
+                    allowGuestSupport={allowGuestSupport}
+                />
+            ) : null}
             <LanguageDropdown />
         </header>
     );

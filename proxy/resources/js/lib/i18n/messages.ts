@@ -13,6 +13,20 @@ type MessageShape<T> = {
 };
 
 const it = {
+    technicalContact: {
+        badge: 'Referente tecnico',
+        appoint: 'Nomina referente tecnico',
+        current: 'Referente tecnico attuale',
+        notConfigured:
+            "Nessun referente tecnico configurato. Nomina un amministratore attivo per abilitare l'invio delle richieste.",
+        confirmCandidate:
+            'Vuoi nominare {name} ({email}) come referente tecnico?',
+        replace:
+            'La nomina sostituirà {name} ({email}). Le prossime email di assistenza saranno inviate al nuovo referente.',
+        firstAppointment:
+            'Le email di assistenza saranno inviate a questo amministratore.',
+        confirm: 'Conferma nomina',
+    },
     support: {
         title: 'Assistenza',
         intro: 'Invia una richiesta al referente tecnico. Riceverai la risposta via email.',
@@ -118,6 +132,41 @@ const it = {
     },
     userGuide: {
         help: 'Aiuto',
+        support: {
+            label: 'Richiedere assistenza',
+            title: 'Richiedere assistenza',
+            description:
+                'Invia una richiesta al referente tecnico e ricevi la risposta via email.',
+            firstTitle: 'Apri il form',
+            firstBody:
+                'Seleziona Assistenza nella navigazione. Se il servizio non è disponibile, contatta un amministratore.',
+            secondTitle: 'Descrivi il problema',
+            secondBody:
+                "Compila oggetto e descrizione. Controlla l'email: è precompilata dal tuo account, ma puoi modificarla. Puoi aggiungere fino a 3 allegati, ciascuno da massimo 5 MB.",
+            thirdTitle: 'Invia e attendi la risposta',
+            thirdBody:
+                "Dopo la conferma di acquisizione, il referente risponderà all'indirizzo indicato. La richiesta e le risposte vengono gestite via email.",
+            tip: 'Formati consentiti: PNG, JPG/JPEG, WebP, PDF, TXT, LOG, CSV e JSON.',
+            guestEnabled:
+                'Il form è disponibile anche senza accedere, dalle schermate di accesso.',
+            guestDisabled: 'Per usare il form è necessario accedere.',
+        },
+        adminSupport: {
+            label: 'Gestire il referente tecnico',
+            title: 'Gestire il referente tecnico',
+            description:
+                "Scegli l'amministratore che riceve le richieste di assistenza.",
+            firstTitle: 'Scegli un admin attivo',
+            firstBody:
+                'Apri Tutti gli utenti e seleziona Nomina referente tecnico nel menu di un amministratore attivo.',
+            secondTitle: 'Conferma la sostituzione',
+            secondBody:
+                'La nomina sostituisce automaticamente quella precedente. Un badge e il riepilogo della pagina identificano il referente corrente.',
+            thirdTitle: "Trasferisci prima di modificare l'account",
+            thirdBody:
+                'Nomina un sostituto prima di disattivare, eliminare o togliere il ruolo admin al referente corrente.',
+            tip: 'Può esserci un solo referente tecnico. Se non è configurato, il form non accetta richieste.',
+        },
         open: 'Aiuto: apri la guida',
         greeting: 'Ciao',
         description:
@@ -850,6 +899,18 @@ const it = {
 } as const satisfies MessageTree;
 
 const en = {
+    technicalContact: {
+        badge: 'Technical contact',
+        appoint: 'Appoint technical contact',
+        current: 'Current technical contact',
+        notConfigured:
+            'No technical contact configured. Appoint an active administrator to enable support submissions.',
+        confirmCandidate: 'Appoint {name} ({email}) as the technical contact?',
+        replace:
+            'This will replace {name} ({email}). Future support emails will go to the new contact.',
+        firstAppointment: 'Support emails will be sent to this administrator.',
+        confirm: 'Confirm appointment',
+    },
     support: {
         title: 'Support',
         intro: 'Send a request to the technical contact. You will receive a reply by email.',
@@ -954,6 +1015,41 @@ const en = {
     },
     userGuide: {
         help: 'Help',
+        support: {
+            label: 'Request support',
+            title: 'Request support',
+            description:
+                'Send a request to the technical contact and receive a reply by email.',
+            firstTitle: 'Open the form',
+            firstBody:
+                'Select Support in the navigation. If the service is unavailable, contact an administrator.',
+            secondTitle: 'Describe the problem',
+            secondBody:
+                'Enter a subject and description. Check the email address: it is prefilled from your account and can be changed. You can add up to 3 attachments, each no larger than 5 MB.',
+            thirdTitle: 'Submit and wait for a reply',
+            thirdBody:
+                'After the acceptance confirmation, the technical contact will reply to the address provided. Requests and replies are handled by email.',
+            tip: 'Allowed formats: PNG, JPG/JPEG, WebP, PDF, TXT, LOG, CSV and JSON.',
+            guestEnabled:
+                'The form is also available without signing in, from the sign-in screens.',
+            guestDisabled: 'You need to sign in to use the form.',
+        },
+        adminSupport: {
+            label: 'Manage the technical contact',
+            title: 'Manage the technical contact',
+            description:
+                'Choose the administrator who receives support requests.',
+            firstTitle: 'Choose an active admin',
+            firstBody:
+                "Open All users and select Appoint technical contact from an active administrator's menu.",
+            secondTitle: 'Confirm the replacement',
+            secondBody:
+                'The appointment automatically replaces the previous one. A badge and the page summary identify the current contact.',
+            thirdTitle: 'Transfer before changing the account',
+            thirdBody:
+                'Appoint a replacement before deactivating, deleting or removing the admin role from the current contact.',
+            tip: 'There can be only one technical contact. If none is configured, the form cannot accept requests.',
+        },
         open: 'Help: open user guide',
         greeting: 'Hi',
         description:

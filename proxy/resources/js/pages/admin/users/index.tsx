@@ -35,6 +35,7 @@ import {
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'sonner';
+import { TechnicalContactDialog } from '@/components/admin/technical-contact-dialog';
 
 import { ContentTransition } from '@/components/content-transition';
 import { DataTableBulkActions } from '@/components/data-table-bulk-actions';
@@ -129,6 +130,7 @@ import {
     update as updateUser,
 } from '@/routes/admin/users';
 import type { Auth } from '@/types';
+import type { TechnicalContact } from '@/types/support';
 
 type Translate = ReturnType<typeof useTranslation>['t'];
 
@@ -148,6 +150,7 @@ type AdminUser = {
     role: AdminUserRole;
     is_admin: boolean;
     is_deactivated: boolean;
+    is_technical_contact: boolean;
     deactivated_at: string | null;
     socialProviders: SocialProvider[];
     jobs_count: number;
@@ -213,6 +216,7 @@ export default function AdminUsersIndex({
     tableDefaults,
     statusCounts,
     roleCounts,
+    technicalContact,
 }: {
     users: PaginatedUsers;
     roles: RoleOption[];
@@ -221,6 +225,7 @@ export default function AdminUsersIndex({
     tableDefaults: TableSettings;
     statusCounts: Record<AdminUserStatus, number>;
     roleCounts: Record<AdminUserRole, number>;
+    technicalContact: TechnicalContact | null;
 }) {
     'use no memo';
 
@@ -228,6 +233,9 @@ export default function AdminUsersIndex({
     const { locale, t } = useTranslation();
     const [createOpen, setCreateOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+    const [contactCandidate, setContactCandidate] = useState<AdminUser | null>(
+        null,
+    );
     const [statusUser, setStatusUser] = useState<AdminUser | null>(null);
     const [forceDeletingUser, setForceDeletingUser] =
         useState<AdminUser | null>(null);
@@ -489,6 +497,18 @@ export default function AdminUsersIndex({
                                         <PencilIcon />
                                         {t('common.edit')}
                                     </DropdownMenuItem>
+                                    {user.role === 'admin' &&
+                                        !user.is_deactivated &&
+                                        !user.is_technical_contact && (
+                                            <DropdownMenuItem
+                                                onSelect={() =>
+                                                    setContactCandidate(user)
+                                                }
+                                            >
+                                                <ShieldCheckIcon />
+                                                {t('technicalContact.appoint')}
+                                            </DropdownMenuItem>
+                                        )}
                                     {isSelf ? (
                                         <Popover>
                                             <PopoverTrigger asChild>
@@ -621,6 +641,18 @@ export default function AdminUsersIndex({
             <Head title={t('admin.allUsers')} />
 
             <div className="flex flex-col gap-5 p-4">
+                <Alert>
+                    <ShieldCheckIcon aria-hidden="true" />
+                    <AlertTitle>{t('technicalContact.current')}</AlertTitle>
+                    <AlertDescription>
+                        {technicalContact
+                            ? technicalContact.name +
+                              ' (' +
+                              technicalContact.email +
+                              ')'
+                            : t('technicalContact.notConfigured')}
+                    </AlertDescription>
+                </Alert>
                 <div className="page-header flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
                     <div className="flex flex-col gap-1">
                         <p className="text-sm font-medium text-muted-foreground">
@@ -1047,6 +1079,20 @@ export default function AdminUsersIndex({
                 onOpenChange={setCreateOpen}
                 roles={roles}
             />
+
+            {contactCandidate && (
+                <TechnicalContactDialog
+                    key={contactCandidate.id}
+                    candidate={contactCandidate}
+                    currentContact={technicalContact}
+                    open
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setContactCandidate(null);
+                        }
+                    }}
+                />
+            )}
 
             {editingUser && (
                 <UserFormDialog
@@ -1671,9 +1717,10 @@ function SortableHeader({
 function AdminUserIdentity({
     user,
 }: {
-    user: Pick<AdminUser, 'name' | 'email' | 'avatar'>;
+    user: Pick<AdminUser, 'name' | 'email' | 'avatar' | 'is_technical_contact'>;
 }) {
     const getInitials = useInitials();
+    const { t } = useTranslation();
 
     return (
         <div className="flex min-w-0 items-center gap-3">
@@ -1685,6 +1732,11 @@ function AdminUserIdentity({
             </Avatar>
             <div className="flex min-w-0 flex-col">
                 <span className="truncate font-medium">{user.name}</span>
+                {user.is_technical_contact && (
+                    <Badge variant="secondary">
+                        {t('technicalContact.badge')}
+                    </Badge>
+                )}
                 <span className="truncate text-xs text-muted-foreground">
                     {user.email}
                 </span>

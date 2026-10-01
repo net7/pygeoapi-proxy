@@ -3,16 +3,33 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import * as dialog from '../../resources/js/components/ui/dialog';
 import { UserGuide } from '../../resources/js/components/user-guide';
+import * as translationHook from '../../resources/js/hooks/use-translation';
+import type { Language } from '../../resources/js/lib/i18n/languages';
+import { translate } from '../../resources/js/lib/i18n/translation';
 
-function renderGuideContent(isAdmin: boolean) {
+function renderGuideContent(
+    isAdmin: boolean,
+    allowGuestSupport = false,
+    language: Language = 'en',
+) {
     // The dialog portal has no DOM target during server rendering.
     const content = spyOn(dialog, 'DialogContent').mockImplementation(
         ({ children }) => <>{children}</>,
     );
+    const translation = spyOn(
+        translationHook,
+        'useTranslation',
+    ).mockReturnValue({
+        language,
+        locale: language,
+        updateLanguage: () => {},
+        t: (key, values) => translate(language, key, values),
+    });
 
     try {
         return renderToStaticMarkup(
             <UserGuide
+                allowGuestSupport={allowGuestSupport}
                 user={{
                     id: 1,
                     name: 'Ada Lovelace',
@@ -23,6 +40,7 @@ function renderGuideContent(isAdmin: boolean) {
         );
     } finally {
         content.mockRestore();
+        translation.mockRestore();
     }
 }
 
@@ -70,7 +88,9 @@ describe('user guide', () => {
         expect(html).toContain('Manage accounts');
         expect(html).toContain('Supervise jobs');
         expect(html).toContain('Diagnostics and cleanup');
-        expect(html).toContain('Step 1 of 9');
+        expect(html).toContain('Request support');
+        expect(html).toContain('Manage the technical contact');
+        expect(html).toContain('Step 1 of 11');
     });
 
     test('keeps administration chapters out of the regular user guide', () => {
@@ -83,6 +103,20 @@ describe('user guide', () => {
         expect(html).not.toContain('Manage accounts');
         expect(html).not.toContain('Supervise jobs');
         expect(html).not.toContain('Diagnostics and cleanup');
-        expect(html).toContain('Step 1 of 4');
+        expect(html).toContain('Request support');
+        expect(html).not.toContain('Manage the technical contact');
+        expect(html).toContain('Step 1 of 5');
     });
 });
+
+test.each([true, false])(
+    'Italian help includes support for both guest availability settings: %s',
+    (allowGuests) => {
+        const user = renderGuideContent(false, allowGuests, 'it');
+        const admin = renderGuideContent(true, allowGuests, 'it');
+        expect(user).toContain('Richiedere assistenza');
+        expect(user).not.toContain('Gestire il referente tecnico');
+        expect(admin).toContain('Gestire il referente tecnico');
+        expect(admin).toContain('11');
+    },
+);

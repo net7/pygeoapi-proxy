@@ -4,6 +4,8 @@ export type SupportLimits = {
     allowedExtensions: string[];
 };
 
+export type TechnicalContact = { id: number; name: string; email: string };
+
 export type SupportFormValues = {
     subject: string;
     description: string;
