@@ -43,6 +43,8 @@ const it = {
         attachments: 'Allegati',
         attachmentLimits:
             'Massimo {count} allegati, fino a {size} MB ciascuno.',
+        attachmentLimitReached:
+            'Hai raggiunto il limite di {count} allegati. Rimuovi un file per aggiungerne un altro.',
         removeFile: 'Rimuovi {name}',
         uploadProgress: 'Caricamento: {percent}%',
         sending: 'Invio in corso…',
@@ -929,6 +931,8 @@ const en = {
             'Describe the problem and the steps to reproduce it. Maximum 10,000 characters.',
         attachments: 'Attachments',
         attachmentLimits: 'Up to {count} attachments, {size} MB each.',
+        attachmentLimitReached:
+            'You have reached the limit of {count} attachments. Remove a file to add another.',
         removeFile: 'Remove {name}',
         uploadProgress: 'Uploading: {percent}%',
         sending: 'Sending…',

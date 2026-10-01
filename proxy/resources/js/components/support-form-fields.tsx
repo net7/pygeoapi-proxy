@@ -1,4 +1,14 @@
-import { Paperclip, Send, X } from 'lucide-react';
+import {
+    File as FileIcon,
+    FileImage,
+    FileJson,
+    FileSpreadsheet,
+    FileTerminal,
+    FileText,
+    Send,
+    X,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { FormEvent, RefObject } from 'react';
 import { FieldRequirement } from '@/components/ogc/input-support';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -14,7 +24,20 @@ import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/hooks/use-translation';
+import { formatSupportAttachmentSize } from '@/lib/support-attachments';
 import type { SupportFormValues, SupportLimits } from '@/types/support';
+
+const attachmentIcons: Record<string, LucideIcon> = {
+    png: FileImage,
+    jpg: FileImage,
+    jpeg: FileImage,
+    webp: FileImage,
+    pdf: FileText,
+    txt: FileText,
+    log: FileTerminal,
+    csv: FileSpreadsheet,
+    json: FileJson,
+};
 
 export type SupportFormFieldsProps = {
     values: SupportFormValues;
@@ -46,7 +69,9 @@ export function SupportFormFields({
     onFileRemoved,
     onSubmit,
 }: SupportFormFieldsProps) {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
+    const attachmentsAtLimit =
+        values.attachments.length >= limits.maxAttachments;
 
     return (
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
@@ -160,9 +185,9 @@ export function SupportFormFields({
                         accept={limits.allowedExtensions
                             .map((extension) => '.' + extension)
                             .join(',')}
-                        disabled={processing}
+                        disabled={processing || attachmentsAtLimit}
                         aria-invalid={Boolean(errors.attachments)}
-                        aria-describedby="support-attachments-hint support-attachments-error"
+                        aria-describedby={`support-attachments-hint support-attachments-error${attachmentsAtLimit ? ' support-attachments-limit' : ''}`}
                         onChange={(event) => {
                             onFilesSelected(
                                 Array.from(event.target.files ?? []),
@@ -177,42 +202,76 @@ export function SupportFormFields({
                         })}{' '}
                         {limits.allowedExtensions.join(', ').toUpperCase()}.
                     </FieldDescription>
+                    {attachmentsAtLimit && (
+                        <FieldDescription
+                            id="support-attachments-limit"
+                            role="status"
+                        >
+                            {t('support.attachmentLimitReached', {
+                                count: limits.maxAttachments,
+                            })}
+                        </FieldDescription>
+                    )}
                     <FieldError id="support-attachments-error">
                         {errors.attachments}
                     </FieldError>
                     {values.attachments.length > 0 && (
-                        <ul className="flex flex-col gap-2">
-                            {values.attachments.map((file, index) => (
-                                <li
-                                    key={index}
-                                    className="flex items-start gap-3 rounded-md border p-3"
-                                >
-                                    <Paperclip
-                                        className="mt-1 size-4 shrink-0"
-                                        aria-hidden="true"
-                                    />
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-sm break-all">
+                        <ul className="flex min-w-0 flex-col gap-1.5">
+                            {values.attachments.map((file, index) => {
+                                const extension = file.name
+                                    .split('.')
+                                    .pop()
+                                    ?.toLowerCase();
+                                const AttachmentIcon =
+                                    attachmentIcons[extension ?? ''] ??
+                                    FileIcon;
+
+                                return (
+                                    <li
+                                        key={index}
+                                        className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-2.5 rounded-md border border-border/60 bg-muted/20 px-2.5 py-1.5"
+                                    >
+                                        <AttachmentIcon
+                                            className="size-4 text-muted-foreground"
+                                            aria-hidden="true"
+                                        />
+                                        <p
+                                            className="truncate text-sm font-medium"
+                                            title={file.name}
+                                        >
                                             {file.name}
                                         </p>
-                                        <FieldError>
+                                        <span
+                                            className="text-xs whitespace-nowrap text-muted-foreground tabular-nums"
+                                            title={`${file.size.toLocaleString(locale)} B`}
+                                        >
+                                            {formatSupportAttachmentSize(
+                                                file.size,
+                                                locale,
+                                            )}
+                                        </span>
+                                        <Button
+                                            type="button"
+                                            size="icon"
+                                            variant="ghost"
+                                            className="size-7 text-muted-foreground hover:text-destructive-emphasis"
+                                            disabled={processing}
+                                            aria-label={t(
+                                                'support.removeFile',
+                                                {
+                                                    name: file.name,
+                                                },
+                                            )}
+                                            onClick={() => onFileRemoved(index)}
+                                        >
+                                            <X data-icon="icon" />
+                                        </Button>
+                                        <FieldError className="col-start-2 col-end-5">
                                             {errors['attachments.' + index]}
                                         </FieldError>
-                                    </div>
-                                    <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                        disabled={processing}
-                                        aria-label={t('support.removeFile', {
-                                            name: file.name,
-                                        })}
-                                        onClick={() => onFileRemoved(index)}
-                                    >
-                                        <X data-icon="icon" />
-                                    </Button>
-                                </li>
-                            ))}
+                                    </li>
+                                );
+                            })}
                         </ul>
                     )}
                 </Field>

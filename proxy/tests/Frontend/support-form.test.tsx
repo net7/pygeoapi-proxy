@@ -72,3 +72,42 @@ test('submission is disabled during upload and progress is announced', () => {
     expect(html).toContain('42');
     expect(html).toContain('aria-live="polite"');
 });
+
+test('the full attachment list disables selection with an explanation but permits removal', () => {
+    const attachments = ['a.log', 'b.log', 'c.log'].map(
+        (name) => new File(['trace'], name),
+    );
+    const html = renderToStaticMarkup(
+        <SupportFormFields
+            {...props}
+            values={{ ...props.values, attachments }}
+        />,
+    );
+    const uploader = html.match(
+        /<input[^>]*id="support-attachments"[^>]*>/,
+    )?.[0];
+    const removeButtons = html.match(
+        /<button[^>]*aria-label="Remove [^"]+"[^>]*>/g,
+    );
+
+    expect(uploader).toMatch(/\sdisabled=""/);
+    expect(uploader).toContain('support-attachments-limit');
+    expect(html).toContain('You have reached the limit of 3 attachments.');
+    expect(html).toContain('Remove a file to add another.');
+    expect(removeButtons).toHaveLength(3);
+
+    for (const button of removeButtons ?? []) {
+        expect(button).not.toMatch(/\sdisabled=""/);
+    }
+
+    const afterRemoval = renderToStaticMarkup(
+        <SupportFormFields
+            {...props}
+            values={{ ...props.values, attachments: attachments.slice(1) }}
+        />,
+    );
+    expect(
+        afterRemoval.match(/<input[^>]*id="support-attachments"[^>]*>/)?.[0],
+    ).not.toMatch(/\sdisabled=""/);
+    expect(afterRemoval).not.toContain('support-attachments-limit');
+});

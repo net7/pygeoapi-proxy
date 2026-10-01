@@ -10,7 +10,7 @@
 
 **Spec:** [2026-10-01-support-email-technical-contact-design.md](../specs/2026-10-01-support-email-technical-contact-design.md). Leggere spec e piano insieme; la spec prevale nelle decisioni di comportamento.
 
-**Execution:** Inline nella directory corrente, sul branch corrente `develop`, senza creare worktree. Piano aggiornato durante l'esecuzione con le richieste su modal, pulsante, badge e blocco del referente; il registro di esecuzione conserva verifiche e commit già completati.
+**Execution:** Completata inline nella directory corrente, sul branch `develop`, senza creare worktree. Piano aggiornato con le richieste su modal, pulsante, badge, blocco del referente, allegati compatti e selettore disabilitato al limite. Il resoconto in fondo conserva gli esiti delle verifiche e le decisioni di esecuzione.
 
 ## Global Constraints
 
@@ -96,7 +96,7 @@ I metodi pubblici sotto elencati sono il contratto fra i task. Usare classi foca
 - Produces: `PUT /admin/users/{user}/technical-contact`, nome `admin.users.technical-contact.update`.
 - Produces: prop admin `technicalContact: {id: number; name: string; email: string} | null` e `users.data[].is_technical_contact: boolean`.
 
-- [ ] **Step 1: Scrivere le prove della nomina e dei vincoli.**
+- [x] **Step 1: Scrivere le prove della nomina e dei vincoli.**
 
 ```php
 test('a new appointment replaces the previous contact', function () {
@@ -142,13 +142,13 @@ test('a protected bulk change runs no destructive callback', function () {
 
 Coprire anche nominatore ospite/user/disattivato, candidato user/disattivato/inesistente, nomina di sé stesso, nomina identica e referente fuori dalla pagina filtrata. Verificare direttamente che un secondo `id` nella tabella sia respinto dal DB e che la FK impedisca di eliminare fisicamente il referente.
 
-- [ ] **Step 2: Eseguire RED.**
+- [x] **Step 2: Eseguire RED.**
 
 Run: `php artisan test --compact tests/Feature/Admin/TechnicalContactTest.php tests/Feature/Admin/TechnicalContactAccountGuardTest.php`.
 
 Expected: fallimento per rotta/classe/tabella assenti.
 
-- [ ] **Step 3: Creare singleton e servizio con ordine dei lock unico.**
+- [x] **Step 3: Creare singleton e servizio con ordine dei lock unico.**
 
 Usare una migrazione con SQL esplicito per SQLite e MariaDB, perché SQLite non permette di aggiungere successivamente questo `CHECK`. `down()` usa `Schema::dropIfExists('support_settings')`.
 
@@ -188,7 +188,7 @@ return DB::transaction(function () use ($userIds, $errorField, $change): mixed {
 
 Anche `assign()` fallisce se manca il singleton; non ricrearlo durante una richiesta. La guardia tiene il lock fino alla conclusione della callback e non ritenta la transazione: la cancellazione può avere effetti remoti, che non devono essere ripetuti automaticamente. Il lock impedisce una nomina tra controllo e cancellazione.
 
-- [ ] **Step 4: Collegare guardie e rotta alle operazioni esistenti.**
+- [x] **Step 4: Collegare guardie e rotta alle operazioni esistenti.**
 
 ```php
 Route::put('users/{user}/technical-contact', TechnicalContactController::class)
@@ -201,7 +201,7 @@ Nella modifica ruolo usare la guardia quando il nuovo ruolo è `UserRole::User`.
 
 Nei test HTTP invocare ogni percorso con il referente e verificare account, altri utenti del bulk, sessioni e avatar invariati. Creare un job del referente con la factory esistente e verificare `Http::assertNothingSent()` dopo il rifiuto della cancellazione. Dopo il trasferimento dell'incarico, le operazioni devono tornare consentite secondo le autorizzazioni esistenti.
 
-- [ ] **Step 5: Eseguire GREEN e regressioni account, poi committare.**
+- [x] **Step 5: Eseguire GREEN e regressioni account, poi committare.**
 
 Run: `php artisan test --compact tests/Feature/Admin tests/Feature/Settings/ProfileUpdateTest.php tests/Feature/Auth/DeactivatedUserAuthTest.php`.
 
@@ -233,7 +233,7 @@ Expected: PASS, comprese le protezioni preesistenti. Run: `vendor/bin/pint --dir
 - Produces: metadato del payload `support_mail: {id:string, expires_at:int}`. Nessun oggetto, email o descrizione in chiaro.
 - Produces: lock condiviso `support-mail:{id}`, durata 75 secondi. Timeout: SMTP 30, job 45, worker 60, `retry_after` minimo 90 secondi. Il lease supera il timeout del worker ma termina prima che un tentativo interrotto torni disponibile.
 
-- [ ] **Step 1: Scrivere le prove di destinatario corrente e identità di risposta.**
+- [x] **Step 1: Scrivere le prove di destinatario corrente e identità di risposta.**
 
 ```php
 test('the worker resolves the latest contact and preserves the reply address', function () {
@@ -273,7 +273,7 @@ test('the worker resolves the latest contact and preserves the reply address', f
 
 Provare anche corpo HTML con testo escapato, corpo testo, `From` configurato, nome allegato ripulito, identità server-side distinta dal contatto e assenza di copie al mittente. Solo indirizzi sintetici e mail fake/array.
 
-- [ ] **Step 2: Eseguire RED e creare configurazione, valore dati e storage.**
+- [x] **Step 2: Eseguire RED e creare configurazione, valore dati e storage.**
 
 Run: `php artisan test --compact tests/Feature/Support/SubmitSupportEmailTest.php tests/Feature/Support/SendSupportEmailTest.php`; expected: classi assenti.
 
@@ -295,7 +295,7 @@ Ripulire i nomi email da separatori di percorso, CR/LF, NUL e controlli, limitan
 
 `markDelivered()` aggiorna atomicamente il solo flag nel manifest dopo il successo SMTP. `cleanupCandidates()` restituisce directory scadute oppure marcate consegnate; il flag serve solo a recuperare una cancellazione fallita, non è uno storico.
 
-- [ ] **Step 3: Implementare accettazione e cifratura; provare gli errori di storage/coda.**
+- [x] **Step 3: Implementare accettazione e cifratura; provare gli errori di storage/coda.**
 
 Prima dei file, `handle()` richiede un referente valido e una connessione asincrona `database` o `redis`. Genera UUID, istante di accettazione e scadenza; ricava l'account dall'argomento server-side. Accoda esplicitamente con `Queue::pushOn('support-mail', new SendSupportEmail($data))` e conferma solo dopo l'esito positivo.
 
@@ -321,7 +321,7 @@ Nel framework installato il callback vede l'oggetto prima della cifratura. Testa
 
 Per gli errori: filesystem che fallisce alla seconda scrittura; serializzazione che fallisce prima del push; connessione che accetta il job e poi solleva un errore. Asserire rispettivamente rimozione, rimozione e conservazione della directory, sempre senza falsa conferma.
 
-- [ ] **Step 4: Implementare worker e messaggio con scadenza esplicita.**
+- [x] **Step 4: Implementare worker e messaggio con scadenza esplicita.**
 
 ```php
 public int $tries = 3;
@@ -348,7 +348,7 @@ Assenza referente ed errore SMTP sono recuperabili entro i tentativi; richiesta 
 
 In `config/mail.php` impostare il timeout SMTP a 30 secondi. SMTP è il trasporto di ambiente da verificare; `log` e `array` rimangono disponibili per sviluppo/test. Se viene configurato un trasporto diverso, verificare il timeout effettivo prima dell'abilitazione: il parametro SMTP non limita automaticamente failover o trasporti HTTP.
 
-- [ ] **Step 5: Eseguire GREEN e committare.**
+- [x] **Step 5: Eseguire GREEN e committare.**
 
 Coprire errore SMTP con file mantenuti, terzo fallimento, referente indisponibile, trasferimento tra tentativi, file mancante, limite dei sette giorni, richiesta senza allegati ed errore di cancellazione dopo SMTP senza rilancio o seconda email. Il Task 7 verifica i tentativi usando il worker reale.
 
@@ -378,7 +378,7 @@ Expected: PASS. Run: `vendor/bin/pint --dirty --format agent` e `git diff --chec
 - Produces: `SupportAttachments::canDelete(string $id, int $now): bool` per ricontrollare una singola directory sotto lock, usando consegna/scadenza e le regole degli orfani.
 - Produces: comando `support:prune`. Exit 0 senza errori; exit nonzero per errori operativi, senza loggare dati utente.
 
-- [ ] **Step 1: Scrivere test di isolamento, scadenza e worker attivo.**
+- [x] **Step 1: Scrivere test di isolamento, scadenza e worker attivo.**
 
 ```php
 test('cleanup preserves files while a worker owns the request lock', function () {
@@ -404,7 +404,7 @@ test('cleanup preserves files while a worker owns the request lock', function ()
 
 Creare nella stessa prova di cleanup una directory `ogc/keep` e un job non supporto, verificando che restino invariati. Aggiungere: nessun allegato; directory consegnata ma non scaduta; payload fallito senza directory; directory orfana senza payload; manifest corrotto; scadenza esatta; payload con commandName o UUID falsi; job supporto recente accanto a quello scaduto.
 
-- [ ] **Step 2: Eseguire RED e implementare parser restrittivo e discovery.**
+- [x] **Step 2: Eseguire RED e implementare parser restrittivo e discovery.**
 
 Run: `php artisan test --compact tests/Feature/Support/PruneSupportMailTest.php tests/Feature/Support/SupportPayloadTest.php`.
 
@@ -427,7 +427,7 @@ return ['id' => $meta['id'], 'expires_at' => $meta['expires_at']];
 
 I pruner selezionano esclusivamente la coda `support-mail` e il marker valido. Per storage, verificare UUID della directory e manifest minimo; un orfano senza manifest valido è rimovibile solo se tutti i file hanno timestamp server anteriori alla finestra di sette giorni. Non seguire link simbolici né operare fuori da `support-mail/`.
 
-- [ ] **Step 3: Implementare rimozione selettiva per database, Redis, failed job e Horizon.**
+- [x] **Step 3: Implementare rimozione selettiva per database, Redis, failed job e Horizon.**
 
 | Archivio | Selezione e rimozione |
 | --- | --- |
@@ -442,7 +442,7 @@ Per Horizon effettuare scansioni a pagine senza saltare elementi quando gli indi
 
 Con la configurazione locale `database`, Horizon non gestisce questa coda: il relativo adapter restituisce una discovery vuota senza richiedere Redis. Le fixture/mock dei test ordinari restano confinati al test che li usa; le prove Redis/Horizon reali sono separate.
 
-- [ ] **Step 4: Comporre comando e schedule con lo stesso lock del worker.**
+- [x] **Step 4: Comporre comando e schedule con lo stesso lock del worker.**
 
 ```php
 $now = now()->timestamp;
@@ -475,7 +475,7 @@ Registrazione:
 Schedule::command('support:prune')->hourly()->withoutOverlapping()->onOneServer();
 ```
 
-- [ ] **Step 5: Eseguire GREEN e committare.**
+- [x] **Step 5: Eseguire GREEN e committare.**
 
 Run: `php artisan test --compact tests/Feature/Support/PruneSupportMailTest.php tests/Feature/Support/SupportPayloadTest.php`. Expected: PASS. Le prove reali Redis/Horizon sono nel Task 7; i test ordinari usano SQLite e fixture/mock circoscritti.
 
@@ -506,7 +506,7 @@ Run: `vendor/bin/pint --dirty --format agent` e `git diff --check`; stage mirato
 - Produces: shared props `support: {allowGuests: boolean; available: boolean; isTechnicalContact: boolean; maxAttachments: number; maxFileBytes: number; allowedExtensions: string[]}`.
 - Produces: errori `subject`, `description`, `email`, `attachments`, `attachments.N`, `support`. Conferma tramite toast/sessione secondo il pattern esistente.
 
-- [ ] **Step 1: Scrivere test di accesso e assenza di effetti Precognition.**
+- [x] **Step 1: Scrivere test di accesso e assenza di effetti Precognition.**
 
 ```php
 test('guest access disabled also blocks a direct precognitive post', function () {
@@ -549,7 +549,7 @@ test('precognition validates text without persisting or sending', function () {
 
 Matrice accesso: flag mancante/false/true/invalido; ospite, account attivo, admin, referente corrente, sessione disattivata; disponibilità del pulsante, POST e Precognition. Verificare l'assenza della pagina GET. La sessione disattivata segue il middleware esistente anche con guest abilitati. Senza referente, modal indisponibile e POST senza effetti. Il referente riceve 403 per invio e Precognition anche con email diversa; trasferendo l'incarico si inverte l'accesso fra vecchio e nuovo referente. Verificare anche l'azione di accettazione chiamata direttamente, senza effetti quando l'account coincide col referente.
 
-- [ ] **Step 2: Eseguire RED e collegare rotte, middleware e disponibilità.**
+- [x] **Step 2: Eseguire RED e collegare rotte, middleware e disponibilità.**
 
 Run: `php artisan test --compact tests/Feature/Support/SupportAccessTest.php tests/Feature/Support/SupportSubmissionTest.php`. Expected: rotte assenti.
 
@@ -566,7 +566,7 @@ Rotte web con CSRF, esterne ai gruppi `guest` e `auth` esclusivi. `EnsureSupport
 
 `HandleInertiaRequests` condivide `support.available` e `support.isTechnicalContact`, risolti dal referente corrente per i visitatori ammessi; l'email iniziale viene da `auth.user.email`. `store()` passa solo i valori validati e `$request->user()` all'azione, poi torna alla pagina di provenienza con il messaggio «Richiesta acquisita. Le risposte saranno inviate all'indirizzo indicato». Gli errori di validazione restano nel form e la modal rimane aperta. Eliminare `create()` e rigenerare Wayfinder dopo aver rimosso la GET.
 
-- [ ] **Step 3: Scrivere i test dei limiti e implementare le regole condivise.**
+- [x] **Step 3: Scrivere i test dei limiti e implementare le regole condivise.**
 
 Dataset obbligatorio:
 
@@ -606,7 +606,7 @@ return $rules;
 
 Errori localizzati in `lang/it.json`, inglese come sorgente secondo la convenzione attuale. Usare un errore globale `support` per indisponibilità del referente; ricontrollare nell'azione di invio per una variazione successiva alla validazione.
 
-- [ ] **Step 4: Implementare due quote e i test degli header costruiti manualmente.**
+- [x] **Step 4: Implementare due quote e i test degli header costruiti manualmente.**
 
 ```php
 RateLimiter::for('support', function (Request $request): Limit {
@@ -626,7 +626,7 @@ Associare a ciascun `Limit` una risposta localizzata: JSON con `errors.support` 
 
 Testare 60 validazioni consentite e la 61ª limitata; cinque tentativi finali invalidi e il sesto limitato; utenti/IP indipendenti; validazioni che non consumano i cinque invii. Con dataset `Precognition=true`, `false`, `1`, assente, e `Precognition-Validate-Only` isolato, ogni richiesta deve essere o validazione senza effetti oppure invio conteggiato nella quota finale. Asserire il numero di job, non solo lo status HTTP.
 
-- [ ] **Step 5: Eseguire GREEN, rigenerare Wayfinder e committare.**
+- [x] **Step 5: Eseguire GREEN, rigenerare Wayfinder e committare.**
 
 Run: `php artisan test --compact tests/Feature/Support`; expected PASS.
 
@@ -675,7 +675,7 @@ type SupportFormFieldsProps = {
 };
 ```
 
-- [ ] **Step 1: Scrivere test dei limiti client e del form renderizzato.**
+- [x] **Step 1: Scrivere test dei limiti client e del form renderizzato.**
 
 ```tsx
 test('a fourth attachment is rejected without losing the selected files', () => {
@@ -694,7 +694,7 @@ test('a fourth attachment is rejected without losing the selected files', () => 
 
 Testare anche dimensione esatta, byte in più, estensioni maiuscole, ZIP, rimozione e nuova selezione. Nel test SSR del componente presentazionale usare `renderToStaticMarkup` come nella guida: email fornita visibile e modificabile, label collegate, errori con `aria-invalid`, limite 3×5 MB visibile, rimozione etichettata col nome, submit disabilitato durante l'invio.
 
-- [ ] **Step 2: Eseguire RED e implementare il form Inertia/Precognition.**
+- [x] **Step 2: Eseguire RED e implementare il form Inertia/Precognition.**
 
 Run: `bun test tests/Frontend/support-attachments.test.ts tests/Frontend/support-form.test.tsx`; expected: moduli assenti.
 
@@ -722,7 +722,11 @@ Seguire il `useForm` già usato in `admin/users/index.tsx`. Inizializzare l'emai
 
 Comporre `FieldGroup`, `Field`, `FieldLabel`, `FieldError`, `Input`, `Textarea`, `Button` e `Alert` già installati. Riutilizzare `FieldRequirement` da `components/ogc/input-support.tsx` accanto alle etichette: email/oggetto/descrizione obbligatori, allegati opzionali; evitare di ripetere «facoltativi» nel testo dell'etichetta. Non aggiungere dipendenze. Esprimere gli errori globali in un alert e quelli per file vicino al nome. Le etichette e lo stato di invio devono essere accessibili da tastiera e da screen reader.
 
-- [ ] **Step 3: Implementare selezione allegati e layout senza duplicare il form.**
+Presentare gli allegati in righe compatte: icone della libreria Lucide React già installata per immagini, PDF/testo, log, CSV e JSON; nome troncato su una riga con nome completo nel `title`; dimensione B/KB/MB, multipli di 1024 e decimali localizzati; rimozione da 28 px con etichetta accessibile. Mostrare gli errori sotto il nome senza comprimere il testo. Verificare nel browser nomi lunghi, diversi tipi/dimensioni, rimozione e assenza di overflow orizzontale anche su mobile.
+
+Quando `attachments.length >= limits.maxAttachments`, disabilitare il solo selettore file e mostrare un messaggio IT/EN collegato tramite `aria-describedby`, annunciato come stato, che spiega come rimuovere un allegato per aggiungerne un altro. I pulsanti di rimozione rimangono disponibili se non è in corso un invio. Riattivare il selettore automaticamente dopo la rimozione. Verificare la transizione 2 → 3 → 2 file, la spiegazione e la disponibilità dei comandi di rimozione, con test del form e prova nel browser.
+
+- [x] **Step 3: Implementare selezione allegati e layout senza duplicare il form.**
 
 ```ts
 const files = [...current, ...incoming];
@@ -745,7 +749,7 @@ Un batch invalido non modifica i file precedenti. L'input `multiple` usa `accept
 
 Comporre una modal `Dialog` ampia (`sm:max-w-4xl`, limite verticale `calc(100dvh - 2rem)`), con titolo, descrizione, chiusura e ripristino del focus. Il form iniziale deve stare nel viewport desktop senza scorrimento interno; conservare lo scorrimento quando lo richiedono schermi piccoli, allegati o errori. In `onOpenAutoFocus`, se l'email iniziale non è vuota, spostare il focus su Oggetto; altrimenti lasciare il focus sull'email. Il pulsante «Assistenza» ha icona riconoscibile e testo visibile ed è accanto ad «Aiuto» nell'header; niente voce nella sidebar o pagina dedicata. Nel layout di accesso, mostrare il pulsante per gli ospiti solo con `support.allowGuests=true`, usando la stessa modal. Con `available=false` mostrare l'avviso di indisponibilità. Con `isTechnicalContact=true` il pulsante è disabilitato: un contenitore accessibile da tastiera apre un popover che spiega che il referente riceve le richieste e non può inviarle a sé stesso. Non affidare la spiegazione al solo hover. Rimuovere la vecchia pagina e l'eccezione support nell'assegnazione automatica dei layout. Verificare apertura senza cambio URL, ordine Aiuto/Assistenza, spiegazione del blocco e ritorno del focus alla chiusura.
 
-- [ ] **Step 4: Verificare gli stati di interazione e committare.**
+- [x] **Step 4: Verificare gli stati di interazione e committare.**
 
 Run: `bun test tests/Frontend/support-attachments.test.ts tests/Frontend/support-form.test.tsx` e `bun run types:check`.
 
@@ -773,7 +777,7 @@ Formattare i file modificati con Prettier, eseguire lint mirato e `git diff --ch
 - Produces: `TechnicalContactDialog({candidate, currentContact, open, onOpenChange}: {candidate:TechnicalContact; currentContact:TechnicalContact|null; open:boolean; onOpenChange:(open:boolean)=>void})`.
 - Produces: capitoli guida `support` comune e `adminSupport` riservato agli admin; `UserGuide` riceve anche `allowGuestSupport: boolean`.
 
-- [ ] **Step 1: Scrivere test di capitoli, ruoli e sostituzione.**
+- [x] **Step 1: Scrivere test di capitoli, ruoli e sostituzione.**
 
 Adattare i test SSR esistenti preservando primo accesso e apertura manuale. Per l'utente ordinario in inglese:
 
@@ -793,7 +797,7 @@ expect(html).toContain('Step 1 of 11');
 
 Renderizzare entrambe le lingue e i due valori del flag. Nel dialog verificare nuovo e vecchio referente, annullamento senza richiesta, submit disabilitato durante invio ed errore server visibile. Nel test HTTP applicare un filtro che nasconde il referente e verificare che `technicalContact` resti presente.
 
-- [ ] **Step 2: Eseguire RED e implementare badge, riepilogo e dialog.**
+- [x] **Step 2: Eseguire RED e implementare badge, riepilogo e dialog.**
 
 Run: `bun test tests/Frontend/technical-contact.test.tsx tests/Frontend/user-guide.test.tsx`; expected: capitoli e componente assenti.
 
@@ -809,7 +813,7 @@ Aggiungere `is_technical_contact` al tipo `AdminUser`. Nella colonna Ruolo, impi
 
 Il dialog usa `DialogTitle`/`DialogDescription`, descrive la sostituzione e invia la rotta Wayfinder del candidato. Form Inertia senza campi aggiuntivi; al successo chiudere il dialog e usare le props aggiornate per trasferire il badge. Il server ricontrolla il candidato anche se lo stato cambia con il dialog aperto.
 
-- [ ] **Step 3: Aggiungere capitoli e testi IT/EN.**
+- [x] **Step 3: Aggiungere capitoli e testi IT/EN.**
 
 `support` è il quinto capitolo comune; `adminSupport` segue quelli admin esistenti. Mantenere titolo, descrizione, tre passi e tip. Passare il flag dall'header alla guida e scegliere il tip appropriato senza mostrare variabili tecniche.
 
@@ -838,7 +842,7 @@ Il dialog usa `DialogTitle`/`DialogDescription`, descrive la sostituzione e invi
 
 Adeguare le chiavi alla struttura corrente mantenendo questi testi. Tradurre anche badge, azione, dialog, errori, disponibilità, limiti file e conferma usando terminologia coerente.
 
-- [ ] **Step 4: Eseguire GREEN e committare.**
+- [x] **Step 4: Eseguire GREEN e committare.**
 
 Run: `bun test tests/Frontend/technical-contact.test.tsx tests/Frontend/user-guide.test.tsx`, `php artisan test --compact tests/Feature/Admin/TechnicalContactTest.php` e `bun run types:check`.
 
@@ -865,7 +869,7 @@ Expected: PASS, cinque capitoli comuni, undici admin, nessun capitolo admin per 
 - Produces: `vendor/bin/phpunit --configuration phpunit.support-integration.xml`.
 - Produces: fixture `support-process.php` con argomenti `assign`, `deactivate`, `demote`, `delete`, `work-once`; id utenti e istante di test espliciti, nessuna credenziale reale.
 
-- [ ] **Step 1: Scrivere i test della configurazione ed eseguire RED.**
+- [x] **Step 1: Scrivere i test della configurazione ed eseguire RED.**
 
 Provare flag assente, `false`, `true`, `0`, `1`, stringa invalida; shared props con booleano e limiti esatti; coda presente in Horizon e ordine dei timeout.
 
@@ -884,7 +888,7 @@ La verifica di `config:cache` usa un sottoprocesso con `APP_CONFIG_CACHE` tempor
 
 Run: `php artisan test --compact tests/Feature/Support/SupportConfigurationTest.php`. Expected: configurazione della coda ancora incompleta.
 
-- [ ] **Step 2: Aggiornare worker, esempi e istruzioni di ambiente.**
+- [x] **Step 2: Aggiornare worker, esempi e istruzioni di ambiente.**
 
 In Horizon:
 
@@ -911,7 +915,7 @@ Aggiornare `deploy/README.md`: nomina iniziale dalla lista utenti; aggiornamento
 
 Verificare nei Compose develop/staging che web, Horizon e scheduler condividano storage e flag. Usare gli esempi e non stampare configurazioni espanse con segreti reali.
 
-- [ ] **Step 3: Creare test MariaDB isolati e concorrenti.**
+- [x] **Step 3: Creare test MariaDB isolati e concorrenti.**
 
 `SupportIntegrationTestCase` estende la base Laravel direttamente, senza modificare `Tests\TestCase`. Avvia MariaDB e Redis in container effimeri con nomi casuali `support-test-{12 hex}`, porte assegnate su `127.0.0.1` e nessun volume dell'app. Database `support_test_{12 hex}`, credenziali sintetiche; conservare e rimuovere in teardown/finally solo gli id creati dal test. Riutilizzare le immagini già adottate dal Compose; nessuna nuova dipendenza applicativa.
 
@@ -933,7 +937,7 @@ Il padre attende `LOCKED`, avvia il secondo processo e poi libera il primo. Usar
 
 Provare nomina A/nomina B e nomina/disattivazione, nomina/declassamento, nomina/eliminazione in entrambi gli ordini. Asserire un singleton e referente esistente/admin/attivo, oppure assente se la prima nomina è stata respinta. L'operazione rifiutata non produce effetti distruttivi. Il processo di eliminazione usa fake del servizio OGC.
 
-- [ ] **Step 4: Provare worker e pulizia su Redis/Horizon reali.**
+- [x] **Step 4: Provare worker e pulizia su Redis/Horizon reali.**
 
 `SupportQueueRuntimeTest` usa `SendSupportEmail` reale e `work-once`. Nel processo figlio un trasporto di test conta i tentativi su Redis e lancia un errore SMTP sintetico; cache, database e storage sono condivisi solo dai processi di test.
 
@@ -945,7 +949,7 @@ Un figlio mantiene il lock Redis mentre il padre lancia il cleanup: manifest e p
 
 Run: `vendor/bin/phpunit --configuration phpunit.support-integration.xml`. Expected: PASS senza connessioni all'infrastruttura applicativa.
 
-- [ ] **Step 5: Eseguire verifica complessiva e committare.**
+- [x] **Step 5: Eseguire verifica complessiva e committare.**
 
 Una sola volta dopo i test mirati, ripetendo solo in caso di modifiche/errori:
 
@@ -964,7 +968,7 @@ Il build rigenera Wayfinder. Se formatter/build modificano file pertinenti, ripe
 
 Stage mirato; commit `feat: configure support mail runtime and verify integration`.
 
-- [ ] **Step 6: Completare la revisione finale del flusso inline.**
+- [x] **Step 6: Completare la revisione finale del flusso inline.**
 
 Applicare `superpowers:requesting-code-review` secondo `superpowers:executing-plans`: un solo reviewer indipendente alla fine, con spec, piano e commit base/finale. Nessun agente implementatore per task. Correggere i rilievi critici/importanti con test pertinenti e registrare decisioni/verifiche nel registro di esecuzione.
 
@@ -989,3 +993,26 @@ Il resoconto finale distingue funzionalità implementate, verifiche effettive, l
 | Nessuno storico, nuovo ruolo enum o nuova dipendenza | Tutti |
 
 L'auto-revisione controlla questa matrice, la coerenza delle interfacce, i sei casi di Review Focus e l'assenza di passaggi lasciati da definire. La preferenza inline senza worktree resta acquisita dopo la revisione del documento.
+
+## Esito dell'esecuzione
+
+Tutti i sette task sono completati. Verifiche: 110 test backend di assistenza (717 asserzioni), 12 test separati con MariaDB/Redis reali e worker (742 asserzioni), 300 test frontend. TypeScript, lint, formato, build e prove di deployment develop/staging superati. Le ultime modifiche frontend sono state riverificate con tutti i test frontend e i controlli pertinenti.
+
+La suite PHP complessiva riporta 724 test superati, 8 saltati e un errore preesistente in `ProcessUiLayoutTest`: l'aspettativa CSS sul contenitore del grafico non corrisponde al codice già presente nel commit base. Sorgente e test sono rimasti invariati. Non dichiarare la suite complessiva interamente verde.
+
+Revisione indipendente sull'intervallo `2a75277..0c56ffc`: nessun rilievo critico o importante. L'unico rilievo minore, l'assenza della dimensione degli allegati, è stato risolto nella successiva richiesta esplicita dell'utente. Nessun rilievo minore rinviato.
+
+Prove browser su ambiente isolato: modal e focus, campi obbligatori/opzionali, validazione e conservazione dei dati, invio simulato, nomina e badge, blocco del referente, tastiera, flag ospiti, help. Le righe allegato passano da 66 a 42 px; icone, dimensioni localizzate, nomi lunghi e rimozione sono verificati anche a 390 px senza overflow orizzontale. La sequenza 2 → 3 → 2 → 3 allegati verifica blocco, spiegazione, riattivazione e nuovo blocco del selettore. Il nuovo test del blocco è stato osservato fallire e poi passare.
+
+### Decisioni di esecuzione
+
+1. Conservato il contratto preesistente delle eliminazioni parziali in caso di errore remoto: le cancellazioni locali già riuscite restano confermate prima di rilanciare l'eccezione. Costo se errato: modifiche parziali persistenti dopo un errore remoto; comportamento coperto dalla regressione esistente.
+2. Pulizia con scansione progressiva e lock per richiesta, invece di accumulare tutti i payload o ripetere scansioni complete. Costo se errato: record saltati durante la paginazione; verificato anche con Redis reale oltre una pagina.
+3. L'eccezione di layout inizialmente aggiunta per la pagina di assistenza evitava layout annidati. Costo originario: transizioni differenti; scelta superata dalla richiesta della modal e codice rimosso, senza effetto residuo.
+4. Flag ospiti passato esplicitamente dal layout all'header e alla guida, mantenendo il contratto a props dell'header. Costo se omesso da un futuro chiamante: guida con accesso ospiti indicato come disabilitato; il chiamante applicativo lo fornisce.
+5. Lasciata invariata l'asserzione CSS preesistente estranea all'assistenza. Costo: la suite PHP completa resta con quell'errore finché sorgente e aspettativa non vengono riallineati.
+6. Recapito SMTP reale e limite del provider rimandati alla verifica dell'ambiente configurato, come richiesto dalla spec che impone trasporti di test. Costo: credenziali o limiti del provider possono impedire il recapito, in particolare per messaggi vicini a 20 MiB dopo la codifica.
+7. Confermata dopo la revisione indipendente la decisione sul test CSS: nessuna modifica a sorgente, test o protezione del database dei test nel range esaminato. Costo invariato: errore generale ancora presente.
+8. Mantenuto il limite documentato dell'invio con retry dopo accettazione SMTP e crash: l'invio esattamente una volta è escluso dalla spec. Costo: un crash ambiguo può produrre un'email duplicata.
+
+Nessun invio SMTP reale, migrazione sul database applicativo o deploy è stato eseguito durante queste verifiche.

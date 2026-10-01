@@ -2,7 +2,7 @@
 
 Data: 2026-10-01.
 
-Stato: approvata e in implementazione inline nella directory corrente, senza worktree. Aggiornata con le richieste successive su modal, pulsante di assistenza, badge e blocco del referente tecnico.
+Stato: implementata inline nella directory corrente, senza worktree. Aggiornata con le richieste successive su modal, pulsante di assistenza, badge, blocco del referente tecnico e allegati compatti con dimensione e selettore disabilitato al limite. Verifiche e limiti residui sono riportati nel piano di implementazione.
 
 ## Obiettivo
 
@@ -157,7 +157,9 @@ Quando disponibile, l'identità autenticata è ricavata dal server e mantenuta d
 
 ### Allegati
 
-L'interfaccia mostra nome, dimensione e comando di rimozione per ogni file. Offre un riscontro immediato su quantità e dimensione, mentre il server esegue sempre i controlli definitivi.
+L'interfaccia presenta ogni file in una riga compatta: icona Lucide coerente con il tipo (immagine, documento PDF/testo, log, CSV o JSON), nome su una sola riga con ellissi e nome completo disponibile al passaggio del puntatore, dimensione leggibile in B/KB/MB e comando di rimozione compatto con etichetta accessibile. La dimensione usa multipli di 1024 e il separatore decimale della lingua corrente, coerentemente con il limite dichiarato. Gli eventuali errori restano leggibili sotto il nome. Offre un riscontro immediato su quantità e dimensione, mentre il server esegue sempre i controlli definitivi. Si riutilizza la libreria di icone già installata, senza nuove dipendenze.
+
+Raggiunti i tre allegati, il selettore file viene disabilitato con una spiegazione visibile e accessibile: occorre rimuovere un file per aggiungerne un altro. I comandi di rimozione restano attivi; appena il numero torna sotto il limite, il selettore si riabilita e la spiegazione scompare. Durante l'invio tutti i controlli restano disabilitati come previsto.
 
 Le estensioni consentite sono `png`, `jpg`, `jpeg`, `webp`, `pdf`, `txt`, `log`, `csv` e `json`. Il controllo server combina estensione e tipo effettivo del contenuto. La compatibilità dei MIME dei file testuali deve comprendere i normali casi di TXT, LOG, CSV e JSON, senza richiedere che un documento allegato per segnalare un problema sia semanticamente corretto.
 

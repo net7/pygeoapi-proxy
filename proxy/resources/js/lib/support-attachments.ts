@@ -4,6 +4,15 @@ type Selection =
     | { ok: true; files: File[] }
     | { ok: false; reason: 'count' | 'size' | 'extension'; fileName?: string };
 
+export function formatSupportAttachmentSize(bytes: number, locale: string) {
+    const unit = bytes >= 1024 ** 2 ? 2 : bytes >= 1024 ? 1 : 0;
+    const amount = (bytes / 1024 ** unit).toLocaleString(locale, {
+        maximumFractionDigits: 1,
+    });
+
+    return `${amount} ${['B', 'KB', 'MB'][unit]}`;
+}
+
 export function selectSupportAttachments(
     current: File[],
     incoming: File[],
