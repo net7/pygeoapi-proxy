@@ -2,7 +2,7 @@
 
 Data: 2026-10-01.
 
-Stato: implementata inline nella directory corrente, senza worktree. Aggiornata con le richieste successive su modal, pulsante di assistenza, badge, blocco del referente tecnico, allegati compatti con dimensione e selettore disabilitato al limite, validazione dei campi, formati Office e link email sotto al login con ospiti disabilitati. Verifiche e limiti residui sono riportati nel piano di implementazione.
+Stato: implementata inline nella directory corrente, senza worktree. Aggiornata con le richieste successive su modal, pulsante di assistenza, badge, blocco del referente tecnico, allegati compatti con dimensione e selettore disabilitato al limite, validazione dei campi, formati Office, link email sotto al login con ospiti disabilitati, email professionale e raccolta dichiarata del contesto tecnico al solo invio. Verifiche e limiti residui sono riportati nel piano di implementazione.
 
 ## Obiettivo
 
@@ -27,6 +27,8 @@ Il risultato atteso è un flusso semplice da compilare, con validazioni Laravel 
 - Il form si apre in una modal dal pulsante «Assistenza», con icona riconoscibile e testo visibile, accanto ad «Aiuto» nell'header; non esiste una pagina dedicata o una voce nella sidebar.
 - Il referente tecnico autenticato vede il pulsante disabilitato con un popover che ne spiega il motivo; il backend impedisce anche invio diretto e Precognition.
 - Il badge del referente è colorato, con icona e testo maiuscolo, nella colonna Ruolo sotto il ruolo ordinario dell'utente.
+- L'oggetto email inizia con `[ASSISTENZA]`. L'email ha un'impaginazione professionale, poche emoji di sezione e font monospace per indirizzi, descrizione, log e valori tecnici.
+- Al solo invio finale vengono raccolti browser, sistema operativo, lingua, fuso orario e dimensioni della finestra; un avviso nel form ne dichiara raccolta e uso esclusivo per diagnosticare e risolvere il problema.
 
 ## Scelte di progetto proposte per questa revisione
 
@@ -160,6 +162,16 @@ L'email viene inizializzata una sola volta con quella dell'account autenticato; 
 
 Quando disponibile, l'identità autenticata è ricavata dal server e mantenuta distinta dall'indirizzo di risposta inserito nel form.
 
+### Informazioni tecniche
+
+Un avviso visibile prima del pulsante di invio, associato anche tramite `aria-describedby`, elenca le informazioni raccolte e lo scopo: diagnosticare e risolvere il problema segnalato. È localizzato in italiano e inglese.
+
+La raccolta avviene soltanto nell'invio finale, senza registrare dati durante la compilazione o la validazione Precognition. Il client aggiunge lingua del browser (massimo 64 caratteri), fuso orario (massimo 100 caratteri) e larghezza/altezza corrente della finestra (interi positivi fino a 100.000). La trasformazione Inertia è ripristinata immediatamente dopo il submit, così non si applica alle validazioni successive. Il backend accetta soltanto queste chiavi opzionali e ricava browser/versione dichiarata, famiglia del sistema operativo e User-Agent dall'header HTTP, ripulito dai caratteri di controllo e limitato a 1024 caratteri.
+
+I valori sono informativi: possono mancare o essere ridotti dal browser, non costituiscono un'identificazione certa del dispositivo. Non si raccolgono IP, URL della pagina o referrer, cookie, token, contenuti di storage o informazioni hardware per il contesto tecnico. Se i dati non sono disponibili, l'invio rimane utilizzabile; valori presenti ma malformati vengono rifiutati con un errore localizzato prima di accodare la richiesta.
+
+Il contesto segue lo stesso payload cifrato e la stessa finestra operativa di sette giorni del messaggio. Non si aggiungono tabelle, storico, dati nei tag di monitoraggio o nuove dipendenze. Le richieste già in coda prive del nuovo campo continuano a essere inviate.
+
 ### Allegati
 
 L'interfaccia presenta ogni file in una riga compatta: icona Lucide coerente con il tipo (immagine, documento PDF/testo/Word, log, CSV/Excel, JSON o presentazione PowerPoint), nome su una sola riga con ellissi e nome completo disponibile al passaggio del puntatore, dimensione leggibile in B/KB/MB e comando di rimozione compatto con etichetta accessibile. La dimensione usa multipli di 1024 e il separatore decimale della lingua corrente, coerentemente con il limite dichiarato. Gli eventuali errori restano leggibili sotto il nome. Offre un riscontro immediato su quantità e dimensione, mentre il server esegue sempre i controlli definitivi. Si riutilizza la libreria di icone già installata, senza nuove dipendenze.
@@ -233,9 +245,12 @@ Il job esegue direttamente il trasporto del messaggio nel worker; non accoda a s
 - `To`: email del referente risolto dal server.
 - `From`: indirizzo e nome configurati per l'applicazione.
 - `Reply-To`: email di contatto validata nel form.
-- Oggetto: prefisso riconoscibile dell'assistenza seguito dall'oggetto inserito.
-- Corpo: descrizione, email di contatto, data della richiesta e, se presente, identità dell'account autenticato distinta dal contatto dichiarato.
+- Oggetto: `[ASSISTENZA]` seguito dall'oggetto inserito.
+- Corpo: riepilogo con oggetto, email di contatto, data della richiesta e, se presente, identità dell'account autenticato distinta dal contatto dichiarato; descrizione, elenco degli allegati e sezione separata per il contesto tecnico.
+- Contesto tecnico: browser/versione dichiarata, sistema operativo, lingua, fuso orario, dimensioni della finestra e User-Agent, quando disponibili. La sezione ribadisce lo scopo diagnostico e segnala che i valori possono essere limitati o approssimativi.
 - Allegati: i file validati, con nomi normalizzati e tipi appropriati.
+
+Il template HTML usa tabelle e stili inline, con larghezza fluida fino a 640 px, colori blu/teal coerenti con l'app, gerarchia leggibile e poche emoji per intestazione, allegati e diagnostica. Titoli ed etichette usano font di sistema; indirizzi, descrizione, log e valori tecnici usano un font monospace con fallback locali. Righe e rientri del messaggio sono preservati; righe e valori lunghi vanno a capo anche su mobile. Non si caricano font o immagini remoti. La versione testo semplice contiene gli stessi dati.
 
 Il testo dell'utente viene rappresentato come testo, con escaping nell'eventuale versione HTML. Non si inviano copie, conferme automatiche o altre email all'indirizzo inserito nel form. Il referente risponde dalla propria casella usando il `Reply-To`.
 
@@ -281,8 +296,8 @@ Il pulsante «Assistenza», con icona e testo visibile accanto ad «Aiuto» nell
 
 La guida esistente riceve due capitoli:
 
-1. **Richiedere assistenza**, comune a utenti e admin: apertura del form, campi da compilare, email modificabile, tre allegati da 5 MB, formati consentiti, conferma di acquisizione e risposta tramite email. Il testo sull'accesso anonimo segue il flag effettivo e spiega il link email sotto al login quando il form ospiti è disabilitato.
-2. **Gestire il referente tecnico**, riservato agli admin: nomina dalla lista utenti, badge colorato con icona e testo maiuscolo sotto il ruolo ordinario nella colonna Ruolo, sostituzione automatica, necessità di un admin attivo e trasferimento prima di disattivazione, cambio ruolo o cancellazione. Spiega anche perché il referente vede Assistenza disabilitato e il relativo popover, e che il suo indirizzo viene mostrato nel login quando il form ospiti è disabilitato.
+1. **Richiedere assistenza**, comune a utenti e admin: apertura del form, campi da compilare, email modificabile, tre allegati da 5 MB, formati consentiti, avviso sulla raccolta dei dati tecnici all'invio e sul loro scopo, conferma di acquisizione e risposta tramite email. Il testo sull'accesso anonimo segue il flag effettivo e spiega il link email sotto al login quando il form ospiti è disabilitato.
+2. **Gestire il referente tecnico**, riservato agli admin: nomina dalla lista utenti, badge colorato con icona e testo maiuscolo sotto il ruolo ordinario nella colonna Ruolo, sostituzione automatica, necessità di un admin attivo e trasferimento prima di disattivazione, cambio ruolo o cancellazione. Spiega il contenuto delle email `[ASSISTENZA]` e l'uso esclusivamente diagnostico dei dati tecnici. Spiega anche perché il referente vede Assistenza disabilitato e il relativo popover, e che il suo indirizzo viene mostrato nel login quando il form ospiti è disabilitato.
 
 Con questi capitoli la guida passa da quattro a cinque sezioni per gli utenti e da nove a undici per gli admin. I capitoli admin rimangono esclusi dalla guida degli utenti ordinari.
 
@@ -331,6 +346,8 @@ Il piano identificherà i file nuovi e le modifiche ai punti di integrazione ele
 - Tre file validi di dimensione massima sono accettati. Nessun file è richiesto.
 - Precognition non produce job, email o file persistiti. Le sue richieste non consumano la quota di invio.
 - Sono coperti i due rate limiter e il tentativo di eludere l'invio tramite header Precognition.
+- L'avviso tecnico precede l'invio; il contesto include soltanto i campi dichiarati, non passa da Precognition ed è validato e limitato dal backend. Dati assenti e richieste precedentemente accodate restano compatibili.
+- HTML e testo semplice contengono gli stessi dati; il rendering HTML esegue escaping anche di oggetto e contesto tecnico e preserva rientri e righe della descrizione.
 
 ### Referente e amministrazione
 

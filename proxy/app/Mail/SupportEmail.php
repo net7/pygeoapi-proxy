@@ -28,7 +28,7 @@ class SupportEmail extends Mailable
         return new Envelope(
             from: new Address((string) config('mail.from.address'), (string) config('mail.from.name')),
             replyTo: [new Address($this->data->replyTo)],
-            subject: '[Assistenza] '.$this->data->subject,
+            subject: '[ASSISTENZA] '.$this->data->subject,
         );
     }
 
@@ -37,9 +37,19 @@ class SupportEmail extends Mailable
      */
     public function content(): Content
     {
+        $context = $this->data->technicalContext ?? [];
+
         return new Content(
             view: 'mail.support-email',
             text: 'mail.support-email-text',
+            with: ['technicalDetails' => array_filter([
+                __('Browser') => $context['browser'] ?? null,
+                __('Operating system') => $context['operating_system'] ?? null,
+                __('Browser language') => $context['language'] ?? null,
+                __('Time zone') => $context['timezone'] ?? null,
+                __('Browser window') => $context['viewport'] ?? null,
+                'User-Agent' => $context['user_agent'] ?? null,
+            ], fn (?string $value): bool => $value !== null && $value !== '')],
         );
     }
 

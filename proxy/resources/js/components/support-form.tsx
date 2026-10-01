@@ -7,6 +7,7 @@ import { SupportSubmissionFeedback } from '@/components/support-submission-feedb
 import { useTranslation } from '@/hooks/use-translation';
 import { runUiTransition } from '@/lib/motion';
 import { selectSupportAttachments } from '@/lib/support-attachments';
+import { collectSupportClientContext } from '@/lib/support-client-context';
 import { store } from '@/routes/support';
 import type { SupportFormValues, SupportLimits } from '@/types/support';
 
@@ -91,43 +92,52 @@ export function SupportForm({
             );
         };
 
-        form.submit({
-            preserveScroll: true,
-            onStart: () => {
-                onProcessingChange(true);
-                runUiTransition(() =>
-                    setView({ status: 'sending', email, height }),
-                );
-            },
-            onSuccess: () => {
-                runUiTransition(() => {
-                    form.reset('subject', 'description', 'attachments');
-                    setView({ status: 'success', email, height });
-                });
-            },
-            onError: (errors) => {
-                if (errors.support) {
-                    showError(errors.support);
-                } else {
-                    runUiTransition(() => setView({ status: 'form' }));
-                }
-            },
-            onHttpException: () => {
-                showError();
+        form.transform((data) => ({
+            ...data,
+            technical_context: collectSupportClientContext(),
+        }));
 
-                return false;
-            },
-            onNetworkError: () => {
-                showError();
+        try {
+            form.submit({
+                preserveScroll: true,
+                onStart: () => {
+                    onProcessingChange(true);
+                    runUiTransition(() =>
+                        setView({ status: 'sending', email, height }),
+                    );
+                },
+                onSuccess: () => {
+                    runUiTransition(() => {
+                        form.reset('subject', 'description', 'attachments');
+                        setView({ status: 'success', email, height });
+                    });
+                },
+                onError: (errors) => {
+                    if (errors.support) {
+                        showError(errors.support);
+                    } else {
+                        runUiTransition(() => setView({ status: 'form' }));
+                    }
+                },
+                onHttpException: () => {
+                    showError();
 
-                return false;
-            },
-            onCancel: () => showError(),
-            onFinish: () => {
-                submitting.current = false;
-                onProcessingChange(false);
-            },
-        });
+                    return false;
+                },
+                onNetworkError: () => {
+                    showError();
+
+                    return false;
+                },
+                onCancel: () => showError(),
+                onFinish: () => {
+                    submitting.current = false;
+                    onProcessingChange(false);
+                },
+            });
+        } finally {
+            form.transform((data) => data);
+        }
     }
 
     return (

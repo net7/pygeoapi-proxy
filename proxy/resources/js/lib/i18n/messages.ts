@@ -34,6 +34,8 @@ const it = {
         technicalContactDisabled:
             'Sei il referente tecnico e ricevi le richieste di assistenza. Non puoi inviare una richiesta a te stesso.',
         intro: 'Invia una richiesta al referente tecnico. Riceverai la risposta via email.',
+        technicalNotice:
+            'Al momento dell’invio raccogliamo informazioni tecniche su browser e sistema operativo, lingua, fuso orario e dimensioni della finestra. Le includiamo nell’email esclusivamente per diagnosticare e risolvere il problema.',
         email: 'Email di contatto',
         emailHint:
             'Puoi modificare questo indirizzo: lo useremo per risponderti, senza cambiare il tuo profilo.',
@@ -158,7 +160,7 @@ const it = {
                 'Premi Assistenza, con l’icona di supporto accanto ad Aiuto, per aprire il form in una finestra. Se il servizio non è disponibile, contatta un amministratore.',
             secondTitle: 'Descrivi il problema',
             secondBody:
-                "Compila l'oggetto (massimo 200 caratteri) e la descrizione (da 10 a 10.000 caratteri). Controlla l'email: è precompilata dal tuo account, ma puoi modificarla. Puoi aggiungere fino a 3 allegati, ciascuno da massimo 5 MB.",
+                "Compila l'oggetto (massimo 200 caratteri) e la descrizione (da 10 a 10.000 caratteri). Controlla l'email: è precompilata dal tuo account, ma puoi modificarla. Puoi aggiungere fino a 3 allegati, ciascuno da massimo 5 MB. L’avviso nel form spiega che, all’invio, browser, sistema operativo, lingua, fuso orario e dimensioni della finestra vengono inclusi nell’email solo per diagnosticare e risolvere il problema.",
             thirdTitle: 'Invia e attendi la risposta',
             thirdBody:
                 "Durante l'invio il form lascia spazio all'indicatore di attesa; l'esito compare nella stessa finestra con l'email di risposta. Se l'invio non è confermato, puoi tornare alla richiesta senza perdere dati e allegati. Il referente risponderà via email all'indirizzo indicato.",
@@ -172,7 +174,7 @@ const it = {
             label: 'Gestire il referente tecnico',
             title: 'Gestire il referente tecnico',
             description:
-                "Scegli l'amministratore che riceve le richieste di assistenza.",
+                "Scegli l'amministratore che riceve le richieste di assistenza. Le email [ASSISTENZA] includono messaggio, contatto per la risposta e dati tecnici del browser, da usare solo per diagnosticare e risolvere il problema.",
             firstTitle: 'Scegli un admin attivo',
             firstBody:
                 'Apri Tutti gli utenti e seleziona Nomina referente tecnico nel menu di un amministratore attivo.',
@@ -935,6 +937,8 @@ const en = {
         technicalContactDisabled:
             'You are the technical contact and receive support requests. You cannot send a request to yourself.',
         intro: 'Send a request to the technical contact. You will receive a reply by email.',
+        technicalNotice:
+            'When you submit, we collect technical information about your browser and operating system, language, time zone and window size. We include it in the email solely to diagnose and resolve the issue.',
         email: 'Contact email',
         emailHint:
             'You can change this address: we will use it to reply without changing your profile.',
@@ -1058,7 +1062,7 @@ const en = {
                 'Click Support, with its support icon next to Help, to open the form in a dialog. If the service is unavailable, contact an administrator.',
             secondTitle: 'Describe the problem',
             secondBody:
-                'Enter a subject (up to 200 characters) and description (between 10 and 10,000 characters). Check the email address: it is prefilled from your account and can be changed. You can add up to 3 attachments, each no larger than 5 MB.',
+                'Enter a subject (up to 200 characters) and description (between 10 and 10,000 characters). Check the email address: it is prefilled from your account and can be changed. You can add up to 3 attachments, each no larger than 5 MB. The notice explains that, upon submission, browser, operating system, language, time zone and window size are included in the email solely to diagnose and resolve the issue.',
             thirdTitle: 'Submit and wait for a reply',
             thirdBody:
                 'While sending, the form is replaced by a loading indicator; the outcome appears in the same dialog with the reply email. If submission is not confirmed, you can return to the request without losing your details or attachments. The technical contact will reply by email to the address provided.',
@@ -1072,7 +1076,7 @@ const en = {
             label: 'Manage the technical contact',
             title: 'Manage the technical contact',
             description:
-                'Choose the administrator who receives support requests.',
+                'Choose the administrator who receives support requests. [ASSISTENZA] emails include the message, reply contact and browser-reported technical details, to be used solely to diagnose and resolve the issue.',
             firstTitle: 'Choose an active admin',
             firstBody:
                 "Open All users and select Appoint technical contact from an active administrator's menu.",

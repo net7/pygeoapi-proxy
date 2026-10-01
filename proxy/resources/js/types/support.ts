@@ -18,3 +18,10 @@ export type SupportFormValues = {
     email: string;
     attachments: File[];
 };
+
+export type SupportClientContext = {
+    language?: string;
+    timezone?: string;
+    viewport_width?: number;
+    viewport_height?: number;
+};

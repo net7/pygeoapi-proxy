@@ -7,6 +7,7 @@ readonly class SupportMailData
     /**
      * @param  array{id:int,name:string,email:string}|null  $account
      * @param  list<array{path:string,name:string,mime:string}>  $attachments
+     * @param  array<string, string>  $technicalContext
      */
     public function __construct(
         public string $id,
@@ -17,5 +18,6 @@ readonly class SupportMailData
         public int $expiresAt,
         public ?array $account,
         public array $attachments,
+        public array $technicalContext = [],
     ) {}
 }

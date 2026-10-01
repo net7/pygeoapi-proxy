@@ -5,6 +5,7 @@ import {
     FileSpreadsheet,
     FileTerminal,
     FileText,
+    Info,
     Presentation,
     Send,
     X,
@@ -84,6 +85,10 @@ export function SupportFormFields({
         values.email.trim().length === 0 ||
         values.subject.trim().length === 0 ||
         Array.from(values.description.trim()).length < 10;
+    const technicalContextError = Object.entries(errors).find(
+        ([key]) =>
+            key === 'technical_context' || key.startsWith('technical_context.'),
+    )?.[1];
 
     return (
         <form
@@ -96,7 +101,7 @@ export function SupportFormFields({
 
                 onSubmit(event);
             }}
-            className="flex flex-col gap-6"
+            className="flex flex-col gap-3"
         >
             {errors.support && (
                 <Alert variant="destructive">
@@ -303,13 +308,26 @@ export function SupportFormFields({
                     )}
                 </Field>
             </FieldGroup>
+            <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-2 text-xs leading-5 text-muted-foreground">
+                <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                <div>
+                    <p id="support-technical-notice">
+                        {t('support.technicalNotice')}
+                    </p>
+                    <FieldError>{technicalContextError}</FieldError>
+                </div>
+            </div>
             <div aria-live="polite">
                 {progress !== null && (
                     <p className="mb-3 text-sm text-muted-foreground">
                         {t('support.uploadProgress', { percent: progress })}
                     </p>
                 )}
-                <Button type="submit" disabled={submissionDisabled}>
+                <Button
+                    type="submit"
+                    disabled={submissionDisabled}
+                    aria-describedby="support-technical-notice"
+                >
                     {processing ? (
                         <Spinner data-icon="inline-start" />
                     ) : (

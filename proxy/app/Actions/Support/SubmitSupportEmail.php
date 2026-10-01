@@ -19,8 +19,11 @@ class SubmitSupportEmail
 {
     public function __construct(private SupportAttachments $files, private SupportContactManager $contacts) {}
 
-    /** @param array{subject:string,description:string,email:string,attachments?:array|null} $validated */
-    public function handle(array $validated, ?User $account): void
+    /**
+     * @param  array{subject:string,description:string,email:string,attachments?:array|null}  $validated
+     * @param  array<string, string>  $technicalContext
+     */
+    public function handle(array $validated, ?User $account, array $technicalContext = []): void
     {
         $contact = $this->contacts->current();
         if ($contact === null) {
@@ -53,6 +56,7 @@ class SubmitSupportEmail
             expiresAt: $expiresAt,
             account: $account?->only(['id', 'name', 'email']),
             attachments: $attachments,
+            technicalContext: $technicalContext,
         );
         try {
             Queue::pushOn((string) config('support.queue'), new SendSupportEmail($data));

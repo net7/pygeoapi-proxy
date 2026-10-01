@@ -10,7 +10,7 @@
 
 **Spec:** [2026-10-01-support-email-technical-contact-design.md](../specs/2026-10-01-support-email-technical-contact-design.md). Leggere spec e piano insieme; la spec prevale nelle decisioni di comportamento.
 
-**Execution:** Completata inline nella directory corrente, sul branch `develop`, senza creare worktree. Piano aggiornato con le richieste su modal, pulsante, badge, blocco del referente, allegati compatti e selettore disabilitato al limite. Il resoconto in fondo conserva gli esiti delle verifiche e le decisioni di esecuzione.
+**Execution:** Completata inline nella directory corrente, sul branch `develop`, senza creare worktree. Piano aggiornato con le richieste su modal, pulsante, badge, blocco del referente, allegati compatti, selettore disabilitato al limite, email professionale e contesto tecnico al solo invio. Il resoconto in fondo conserva gli esiti delle verifiche e le decisioni di esecuzione.
 
 ## Global Constraints
 
@@ -29,6 +29,7 @@
 - Invio finale: cinque tentativi all'ora. Validazione Precognition: sessanta richieste al minuto, con identità distinte per utente o IP.
 - «Il job prevede tre tentativi automatici, con attese di 60 e 300 secondi dopo i primi due fallimenti.» La finestra operativa è di «**sette giorni dall'accettazione**».
 - «Non si inviano copie, conferme automatiche o altre email all'indirizzo inserito nel form.» L'indirizzo serve come `Reply-To`.
+- Oggetto `[ASSISTENZA]`, template professionale con emoji discrete, descrizione/log e valori tecnici in monospace. Avviso nel form: browser, sistema operativo, lingua, fuso orario e finestra raccolti al solo invio, esclusivamente per diagnosticare e risolvere il problema. Contesto nel payload cifrato esistente, senza IP, cookie, URL, token o dati hardware aggiuntivi.
 - «Il cambio del flag disciplina le nuove richieste; non annulla quelle già accettate e presenti in coda.»
 - «Testi del form, errori, messaggi di esito, azioni admin e help sono disponibili in italiano e inglese.» I capitoli diventano cinque per utenti e undici per admin.
 - «Non servono nuovi pacchetti, un sistema di ruoli multipli o refactoring estranei alla funzionalità.»
@@ -62,6 +63,7 @@ All'inizio dell'esecuzione creare il registro previsto da `superpowers:executing
 | --- | --- | --- |
 | Incarico | `app/Services/Support/SupportContactManager.php` | Unico accesso mutante alla configurazione; guardie account coordinate |
 | Dati di invio | `app/Support/SupportMailData.php` | Valore serializzabile nel solo payload cifrato |
+| Contesto tecnico | `app/Support/SupportClientContext.php`, `resources/js/lib/support-client-context.ts` | Campi consentiti raccolti al submit finale, derivazione limitata da User-Agent |
 | File temporanei | `app/Services/Support/SupportAttachments.php` | Directory private, manifest minimo e rimozione |
 | Accettazione | `app/Actions/Support/SubmitSupportEmail.php` | Salvataggio, enqueue, errori certi/ambigui |
 | Trasporto | `app/Jobs/SendSupportEmail.php`, `app/Mail/SupportEmail.php` | Tentativi, destinatario corrente, email sincrona nel worker |
@@ -227,9 +229,9 @@ Expected: PASS, comprese le protezioni preesistenti. Run: `vendor/bin/pint --dir
 **Interfaces**
 
 - Consumes: `SupportContactManager::current(): ?User`.
-- Produces: readonly `SupportMailData` con `string $id`, `string $subject`, `string $description`, `string $replyTo`, `int $acceptedAt`, `int $expiresAt`, `?array $account`, `array $attachments`. PHPDoc: account `{id:int,name:string,email:string}|null`; allegati `list<array{path:string,name:string,mime:string}>`.
+- Produces: readonly `SupportMailData` con `string $id`, `string $subject`, `string $description`, `string $replyTo`, `int $acceptedAt`, `int $expiresAt`, `?array $account`, `array $attachments`, `array $technicalContext = []`. PHPDoc: account `{id:int,name:string,email:string}|null`; allegati `list<array{path:string,name:string,mime:string}>`; contesto `array<string,string>`. Il rendering gestisce anche i payload precedenti privi della nuova proprietà.
 - Produces: `SupportAttachments::store(string $id, int $acceptedAt, int $expiresAt, array $files): array` (`list<UploadedFile>` → lista di descrittori); `assertPresent(SupportMailData $data): void`; `markDelivered(string $id): void`; `isDelivered(string $id): bool`; `delete(string $id): void`; `cleanupCandidates(int $now): iterable<string>`.
-- Produces: `SubmitSupportEmail::handle(array $validated, ?User $account): void`. Dati validati: `subject`, `description`, `email`, `attachments` facoltativo. Errore di accettazione: `ValidationException`, chiave `support`.
+- Produces: `SubmitSupportEmail::handle(array $validated, ?User $account, array $technicalContext = []): void`. Dati validati: `subject`, `description`, `email`, `attachments` facoltativo. Il controller compone il contesto dalla richiesta validata e dall'header User-Agent. Errore di accettazione: `ValidationException`, chiave `support`.
 - Produces: `SendSupportEmail::__construct(public SupportMailData $data)`; `ShouldQueue` e `ShouldBeEncrypted`; coda `support-mail`.
 - Produces: metadato del payload `support_mail: {id:string, expires_at:int}`. Nessun oggetto, email o descrizione in chiaro.
 - Produces: lock condiviso `support-mail:{id}`, durata 75 secondi. Timeout: SMTP 30, job 45, worker 60, `retry_after` minimo 90 secondi. Il lease supera il timeout del worker ma termina prima che un tentativo interrotto torni disponibile.
@@ -345,7 +347,7 @@ Non definire `retryUntil()`: nel Laravel installato può prevalere sul numero ma
 
 Assenza referente ed errore SMTP sono recuperabili entro i tentativi; richiesta scaduta e file mancanti falliscono esplicitamente senza email parziale. Il controllo della scadenza vale anche per un retry manuale.
 
-`SupportEmail` non implementa `ShouldQueue`. `Envelope` usa `From` dell'app, `Reply-To` validato e oggetto `[Assistenza] {$data->subject}`. `Content` specifica view HTML e testo con descrizione, contatto, data di accettazione e identità autenticata distinta quando presente; HTML con `{{ $data->description }}` e whitespace preservato. Allegati da storage privato con nomi normalizzati. Nessun `cc`, `bcc` o destinatario derivato dal form.
+`SupportEmail` non implementa `ShouldQueue`. `Envelope` usa `From` dell'app, `Reply-To` validato e oggetto `[ASSISTENZA] {$data->subject}`. `Content` specifica view HTML e testo con descrizione, contatto, data di accettazione, identità autenticata distinta quando presente e contesto tecnico. HTML professionale a tabelle con stili inline, larghezza fluida fino a 640 px, colori dell'app e poche emoji; monospace locale per indirizzi, descrizione/log e valori tecnici, `{{ $data->description }}` con whitespace preservato e wrapping per righe lunghe. Stessi contenuti nella versione testo. Allegati da storage privato con nomi normalizzati. Nessun `cc`, `bcc` o destinatario derivato dal form.
 
 In `config/mail.php` impostare il timeout SMTP a 30 secondi. SMTP è il trasporto di ambiente da verificare; `log` e `array` rimangono disponibili per sviluppo/test. Se viene configurato un trasporto diverso, verificare il timeout effettivo prima dell'abilitazione: il parametro SMTP non limita automaticamente failover o trasporti HTTP.
 
@@ -995,6 +997,16 @@ Applicare `superpowers:requesting-code-review` secondo `superpowers:executing-pl
 
 Il resoconto finale distingue funzionalità implementate, verifiche effettive, limiti ancora aperti e configurazione necessaria in develop/staging. Un mail fake non dimostra il recapito SMTP reale.
 
+### Task 8: Email professionale e contesto tecnico (2026-10-02)
+
+**Files:** `app/Support/SupportClientContext.php`, `app/Support/SupportMailData.php`, `app/Actions/Support/SubmitSupportEmail.php`, `app/Http/Controllers/SupportController.php`, `app/Http/Requests/StoreSupportRequest.php`, `app/Mail/SupportEmail.php`, entrambe le view email, `resources/js/lib/support-client-context.ts`, form, tipi, traduzioni e help.
+
+- [x] **Step 1:** Osservare RED per contesto finale, limiti e chiavi ammesse, dati assenti, escaping e avviso nel form; coprire separatamente la raccolta nel browser e i dati opzionali indisponibili.
+- [x] **Step 2:** Implementare raccolta finale e validazione Laravel senza effetti Precognition. Il frontend ripristina la trasformazione subito dopo il submit. Backend: lingua max 64, fuso max 100, finestra da 1 a 100.000, User-Agent ripulito e limitato a 1024; derivazione indicativa di browser/versione e famiglia del sistema operativo, senza nuove dipendenze.
+- [x] **Step 3:** Estendere il payload cifrato con contesto opzionale, preservando i payload precedenti. Template HTML/testo equivalenti, prefisso maiuscolo, emoji discrete, monospace per descrizione/log e diagnostica, escaping di ogni valore HTML e righe lunghe a capo.
+- [x] **Step 4:** Aggiungere avviso visibile e accessibile prima dell'invio; allineare help comune/admin IT/EN e spec.
+- [x] **Step 5:** Verificare compatibilità delle richieste già in coda, suite PHP/frontend e controlli di qualità; rendere il template con dati sintetici e controllare il form nel browser su desktop/mobile. Nessun invio reale. Esiti e limite sulla verifica visiva del template riportati qui sotto.
+
 ## Tracciabilità e auto-revisione
 
 | Requisito | Task |
@@ -1006,6 +1018,7 @@ Il resoconto finale distingue funzionalità implementate, verifiche effettive, l
 | Campi, email modificabile, 3 file da 5 MiB | 4, 5 |
 | Precognition senza effetti e quote separate | 4 |
 | Cifratura, destinatario corrente, Reply-To, escaping | 2, 7 |
+| Email professionale, monospace, contesto tecnico al submit e avviso | 8 |
 | Errori storage/coda/SMTP, tentativi e timeout | 2, 3, 7 |
 | Sette giorni, orfani, dati senza file, Laravel/Horizon, lock | 2, 3, 7 |
 | Modal autenticata/ospite, pulsante con icona accanto ad Aiuto | 5 |
@@ -1017,7 +1030,7 @@ L'auto-revisione controlla questa matrice, la coerenza delle interfacce, i sei c
 
 ## Esito dell'esecuzione
 
-Tutti i sette task sono completati. Verifiche correnti (2026-10-02): suite PHP completa con 752 test superati e 8 saltati (5173 asserzioni), e 316 test frontend (2413 asserzioni). I 12 test separati con MariaDB/Redis reali e worker (742 asserzioni) e le prove di deployment develop/staging sono stati superati nella verifica precedente; il successivo affinamento della modal non modifica quei componenti. TypeScript, lint, formato e build superati anche dopo l'affinamento.
+I sette task iniziali e l'estensione del Task 8 sono implementati. Ultima verifica del 2026-10-02: suite PHP completa con 772 test superati e 8 saltati (5261 asserzioni), e 319 test frontend superati. I 12 test separati con MariaDB/Redis reali e worker (742 asserzioni) e le prove di deployment develop/staging sono stati superati nella verifica precedente; gli affinamenti successivi non modificano quei componenti. TypeScript, lint, formato e build superati. Il limite residuo sulla verifica visiva dell'email è descritto sotto.
 
 La suite PHP complessiva passa: 752 test superati, 8 saltati per funzionalità Fortify disabilitate e nessun errore (5173 asserzioni). Su successiva richiesta esplicita dell'utente è stata corretta l'aspettativa CSS preesistente in `ProcessUiLayoutTest`: il grafico usa già `bg-background`, con colore specifico nel tema scuro, e il bordo `ring-1 ring-border/50`. Il test non richiede più la vecchia combinazione `dark:bg-muted/20`, rimossa quando sono stati aggiunti i controlli del grafico. Verificato RED → GREEN, quindi ripetute le suite PHP, frontend, MariaDB/Redis e deployment, oltre ai controlli di qualità. Il componente applicativo è rimasto invariato. Il test aggiunto nell'affinamento della modal verifica l'assenza del toast dopo un invio riuscito.
 
@@ -1030,6 +1043,10 @@ Affinamento successivo: loader e risultati con icone Lucide nella modal, nessun 
 Aggiornamento del 2026-10-02: corretti il submit incompleto e la validazione minima della descrizione, aggiunti gli allegati Office e il testo con `mailto:` sotto al login per ospiti disabilitati. Test RED → GREEN per campi incompleti, descrizione di 9/10 caratteri (anche Precognition), Office con MIME browser inattendibile e file rinominati, props del login e rendering del link sia con password sia con soli provider esterni. Nel browser su `localhost:8088` verificati blocco dei campi vuoti/spazi, mancato avvio del loader con Enter, blocco nativo delle email invalide, minimo 10 e massimo 200 caratteri, focus iniziale su Oggetto e lista dei formati Office. Nessun invio valido eseguito contro l'ambiente applicativo. La pagina ospite aperta tramite `127.0.0.1` rimane vuota con gli asset Vite da `localhost`: la verifica visiva del testo login non è completata in questa sessione; il markup reale è verificato dai test di rendering Inertia/React. Help comune/admin, spec e piano sono allineati. Suite PHP e frontend, Pint, TypeScript, ESLint, Prettier e build superati.
 
 ### Decisioni di esecuzione
+
+L'estensione del Task 8 è verificata con dati tecnici ammessi/malformati/assenti, browser comuni e priorità dei token User-Agent, escaping HTML e limiti, assenza di contesto durante Precognition, raccolta browser opzionale e compatibilità con oggetti serializzati prima dell'aggiunta del campo. Il contenuto è verificato nelle versioni HTML e testo; è stata generata un'anteprima sintetica senza invio. Il browser di verifica vieta gli URL `file:`: l'anteprima HTML locale e la resa nei client email reali non sono state verificate visivamente. Non è stato aggirato il blocco.
+
+Nel browser applicativo il form iniziale con avviso, su desktop, misura 695 px senza scrollbar e conserva il focus su Oggetto. Su mobile a 390 px avviso e pulsante sono raggiungibili con scorrimento verticale, senza overflow orizzontale. Le suite complete hanno superato 772 test PHP (8 saltati) e 319 frontend; dopo la sola correzione di spaziatura e formato sono stati ripetuti i 17 test frontend interessati, ESLint e Prettier. TypeScript, Pint, build e `git diff --check` sono superati. Help IT/EN, spec e piano sono allineati.
 
 1. Conservato il contratto preesistente delle eliminazioni parziali in caso di errore remoto: le cancellazioni locali già riuscite restano confermate prima di rilanciare l'eccezione. Costo se errato: modifiche parziali persistenti dopo un errore remoto; comportamento coperto dalla regressione esistente.
 2. Pulizia con scansione progressiva e lock per richiesta, invece di accumulare tutti i payload o ripetere scansioni complete. Costo se errato: record saltati durante la paginazione; verificato anche con Redis reale oltre una pagina.

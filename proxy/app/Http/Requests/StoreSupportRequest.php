@@ -23,6 +23,11 @@ class StoreSupportRequest extends FormRequest
         if (! $this->isPrecognitive()) {
             $rules['attachments'] = ['nullable', 'array', 'max:'.config('support.max_attachments')];
             $rules['attachments.*'] = ['bail', 'file', 'max:'.config('support.max_file_kib'), new SupportAttachmentType];
+            $rules['technical_context'] = ['nullable', 'array:language,timezone,viewport_width,viewport_height'];
+            $rules['technical_context.language'] = ['nullable', 'string', 'max:64'];
+            $rules['technical_context.timezone'] = ['nullable', 'string', 'max:100'];
+            $rules['technical_context.viewport_width'] = ['nullable', 'integer', 'between:1,100000'];
+            $rules['technical_context.viewport_height'] = ['nullable', 'integer', 'between:1,100000'];
         }
 
         return $rules;
@@ -46,6 +51,8 @@ class StoreSupportRequest extends FormRequest
 
     public function messages(): array
     {
+        $technicalContextError = __('Technical details could not be verified. Reload the page and try again.');
+
         return [
             'subject.required' => __('Enter a subject.'),
             'subject.string' => __('Enter a valid subject.'),
@@ -64,6 +71,11 @@ class StoreSupportRequest extends FormRequest
             'attachments.*.file' => __('The attachment could not be uploaded.'),
             'attachments.*.uploaded' => __('The attachment could not be uploaded.'),
             'attachments.*.max' => __('Each attachment must not exceed 5 MB.'),
+            'technical_context.array' => $technicalContextError,
+            'technical_context.*.string' => $technicalContextError,
+            'technical_context.*.max' => $technicalContextError,
+            'technical_context.*.integer' => $technicalContextError,
+            'technical_context.*.between' => $technicalContextError,
         ];
     }
 }

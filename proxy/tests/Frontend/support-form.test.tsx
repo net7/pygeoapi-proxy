@@ -40,6 +40,12 @@ test('the form renders an editable email and labels linked to each control', () 
     expect(html).toContain('5 MB');
     expect(html).toContain('accept=".log,.pdf"');
     expect(html).toContain('aria-label="Remove trace.log"');
+    expect(html).toContain('id="support-technical-notice"');
+    expect(html).toContain('browser and operating system');
+    expect(html).toContain('solely to diagnose and resolve the issue');
+    expect(html.match(/<button[^>]*type="submit"[^>]*>/)?.[0]).toContain(
+        'aria-describedby="support-technical-notice"',
+    );
 });
 
 test('field and attachment errors are associated and user input is escaped', () => {

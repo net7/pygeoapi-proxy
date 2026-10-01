@@ -56,7 +56,7 @@ test('the message escapes html but preserves plain text identity and attachments
     $mail->assertSeeInText('<script>alert(1)</script>');
     $mail->assertHasAttachedData('diagnostics', 'trace.log', ['mime' => 'text/plain']);
     expect($mail->envelope()->from->address)->toBe('app@example.org');
-    expect($mail->envelope()->subject)->toBe('[Assistenza] A result problem');
+    expect($mail->envelope()->subject)->toBe('[ASSISTENZA] A result problem');
     expect($mail->envelope()->cc)->toBe([]);
     expect($mail->envelope()->bcc)->toBe([]);
 });
@@ -70,6 +70,22 @@ test('expired support jobs fail without sending even on a manual retry', functio
     app()->call([$job, 'handle']);
     $job->assertFailedWith(new RuntimeException('Support email has expired.'));
     Mail::assertNothingSent();
+});
+
+test('previously queued requests without technical context still render both email formats', function () {
+    Storage::fake('local');
+    $reflection = new ReflectionClass(SupportMailData::class);
+    $legacy = $reflection->newInstanceWithoutConstructor();
+    foreach (get_object_vars(supportDeliveryData()) as $name => $value) {
+        if ($name !== 'technicalContext') {
+            $reflection->getProperty($name)->setValue($legacy, $value);
+        }
+    }
+    $mail = new SupportEmail(unserialize(serialize($legacy)));
+
+    $mail->assertSeeInHtml('Technical details were not available.');
+    $mail->assertSeeInText('Technical details were not available.');
+    $mail->assertSeeInText('<script>alert(1)</script>');
 });
 
 test('missing attachments fail the whole message without partial delivery', function () {
