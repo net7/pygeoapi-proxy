@@ -35,6 +35,7 @@ x-laravel-environment: &laravel-environment
   CACHE_STORE: redis
   SESSION_DRIVER: redis
   QUEUE_CONNECTION: redis
+  SUPPORT_ALLOW_GUESTS: "${SUPPORT_ALLOW_GUESTS:-false}"
   REDIS_CLIENT: phpredis
   REDIS_HOST: redis
   REDIS_PORT: 6379
