@@ -604,6 +604,20 @@ const it = {
         chartValueAxis: 'Valore',
         chartDomain: 'Dominio',
         chartSeries: 'Serie {number}',
+        chartControls: 'Controlli del grafico',
+        chartZoomIn: 'Aumenta zoom',
+        chartZoomOut: 'Riduci zoom',
+        chartResetView: 'Ripristina vista',
+        chartPan: 'Sposta',
+        chartExpand: 'Espandi grafico',
+        chartCollapse: 'Riduci grafico',
+        chartDownloadImage: 'Scarica PNG',
+        chartZoomHint:
+            'Trascina per ingrandire un’area. Usa Ctrl + rotellina o due dita per lo zoom; attiva Sposta per esplorare il grafico.',
+        chartPanHint:
+            'Trascina per spostare la vista. Usa Ctrl + rotellina o due dita per lo zoom; disattiva Sposta per ingrandire un’area.',
+        chartZoomUnavailable:
+            'I controlli di zoom non sono disponibili. Ricarica la pagina per riprovare.',
         checkInputs: 'Controlla gli input del processo',
         checkProcessData: 'Controlla i dati del processo',
         csvPreviewTruncated:
@@ -1393,6 +1407,20 @@ const en = {
         chartValueAxis: 'Value',
         chartDomain: 'Domain',
         chartSeries: 'Series {number}',
+        chartControls: 'Chart controls',
+        chartZoomIn: 'Zoom in',
+        chartZoomOut: 'Zoom out',
+        chartResetView: 'Reset view',
+        chartPan: 'Pan',
+        chartExpand: 'Expand chart',
+        chartCollapse: 'Collapse chart',
+        chartDownloadImage: 'Download PNG',
+        chartZoomHint:
+            'Drag to zoom into an area. Use Ctrl + scroll or pinch to zoom; enable Pan to explore the chart.',
+        chartPanHint:
+            'Drag to move the view. Use Ctrl + scroll or pinch to zoom; disable Pan to zoom into an area.',
+        chartZoomUnavailable:
+            'Zoom controls are unavailable. Reload the page to try again.',
         checkInputs: 'Check the process inputs',
         checkProcessData: 'Check the process data',
         csvPreviewTruncated:
