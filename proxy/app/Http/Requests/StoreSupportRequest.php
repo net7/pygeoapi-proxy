@@ -17,7 +17,7 @@ class StoreSupportRequest extends FormRequest
     {
         $rules = [
             'subject' => ['bail', 'required', 'string', 'max:200', 'not_regex:/[\r\n]/'],
-            'description' => ['bail', 'required', 'string', 'max:10000'],
+            'description' => ['bail', 'required', 'string', 'min:10', 'max:10000'],
             'email' => ['bail', 'required', 'string', 'email:strict', 'max:255'],
         ];
         if (! $this->isPrecognitive()) {
@@ -53,6 +53,7 @@ class StoreSupportRequest extends FormRequest
             'subject.not_regex' => __('The subject must not contain line breaks.'),
             'description.required' => __('Enter a description.'),
             'description.string' => __('Enter a valid description.'),
+            'description.min' => __('The description must be at least 10 characters.'),
             'description.max' => __('The description must not exceed 10000 characters.'),
             'email.required' => __('Enter your email address.'),
             'email.string' => __('Enter a valid email address.'),

@@ -5,6 +5,7 @@ import {
     FileSpreadsheet,
     FileTerminal,
     FileText,
+    Presentation,
     Send,
     X,
 } from 'lucide-react';
@@ -37,6 +38,12 @@ const attachmentIcons: Record<string, LucideIcon> = {
     log: FileTerminal,
     csv: FileSpreadsheet,
     json: FileJson,
+    doc: FileText,
+    docx: FileText,
+    xls: FileSpreadsheet,
+    xlsx: FileSpreadsheet,
+    ppt: Presentation,
+    pptx: Presentation,
 };
 
 export type SupportFormFieldsProps = {
@@ -72,9 +79,25 @@ export function SupportFormFields({
     const { t, locale } = useTranslation();
     const attachmentsAtLimit =
         values.attachments.length >= limits.maxAttachments;
+    const submissionDisabled =
+        processing ||
+        values.email.trim().length === 0 ||
+        values.subject.trim().length === 0 ||
+        Array.from(values.description.trim()).length < 10;
 
     return (
-        <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
+        <form
+            onSubmit={(event) => {
+                if (submissionDisabled) {
+                    event.preventDefault();
+
+                    return;
+                }
+
+                onSubmit(event);
+            }}
+            className="flex flex-col gap-6"
+        >
             {errors.support && (
                 <Alert variant="destructive">
                     <AlertDescription>{errors.support}</AlertDescription>
@@ -128,12 +151,15 @@ export function SupportFormFields({
                         value={values.subject}
                         disabled={processing}
                         aria-invalid={Boolean(errors.subject)}
-                        aria-describedby="support-subject-error"
+                        aria-describedby="support-subject-hint support-subject-error"
                         onChange={(event) =>
                             onTextChange('subject', event.target.value)
                         }
                         onBlur={() => onValidate('subject')}
                     />
+                    <FieldDescription id="support-subject-hint">
+                        {t('support.subjectHint')}
+                    </FieldDescription>
                     <FieldError id="support-subject-error">
                         {errors.subject}
                     </FieldError>
@@ -150,6 +176,7 @@ export function SupportFormFields({
                         id="support-description"
                         name="description"
                         required
+                        minLength={10}
                         maxLength={10000}
                         rows={7}
                         value={values.description}
@@ -282,7 +309,7 @@ export function SupportFormFields({
                         {t('support.uploadProgress', { percent: progress })}
                     </p>
                 )}
-                <Button type="submit" disabled={processing}>
+                <Button type="submit" disabled={submissionDisabled}>
                     {processing ? (
                         <Spinner data-icon="inline-start" />
                     ) : (

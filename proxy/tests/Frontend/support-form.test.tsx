@@ -7,7 +7,7 @@ const props: SupportFormFieldsProps = {
     values: {
         email: 'editable@example.org',
         subject: 'Help',
-        description: 'Details',
+        description: 'Details of the issue',
         attachments: [new File(['data'], 'trace.log')],
     },
     errors: {},
@@ -68,10 +68,76 @@ test('submission is disabled during upload and progress is announced', () => {
         <SupportFormFields {...props} processing progress={42} />,
     );
     const button = html.match(/<button[^>]*type="submit"[^>]*>/)?.[0];
-    expect(button).toContain('disabled');
+    expect(button).toMatch(/\sdisabled=""/);
     expect(html).toContain('42');
     expect(html).toContain('aria-live="polite"');
 });
+
+test.each([
+    ['email', ''],
+    ['subject', ''],
+    ['description', ''],
+    ['email', '   '],
+    ['subject', '   '],
+    ['description', ' \n\t '],
+] as const)(
+    'submission is disabled when %s contains only %j',
+    (field, value) => {
+        const html = renderToStaticMarkup(
+            <SupportFormFields
+                {...props}
+                values={{ ...props.values, [field]: value }}
+            />,
+        );
+
+        expect(html.match(/<button[^>]*type="submit"[^>]*>/)?.[0]).toMatch(
+            /\sdisabled=""/,
+        );
+    },
+);
+
+test('completed required fields enable submission without requiring attachments', () => {
+    const html = renderToStaticMarkup(
+        <SupportFormFields
+            {...props}
+            values={{
+                ...props.values,
+                description: '1234567890',
+                attachments: [],
+            }}
+        />,
+    );
+
+    expect(html.match(/<button[^>]*type="submit"[^>]*>/)?.[0]).not.toMatch(
+        /\sdisabled=""/,
+    );
+    expect(html.match(/<form[^>]*>/)?.[0]).not.toMatch(/\snovalidate[\s=>]/i);
+    expect(html.match(/<input[^>]*id="support-email"[^>]*>/)?.[0]).toContain(
+        'type="email"',
+    );
+    expect(html.match(/<input[^>]*id="support-subject"[^>]*>/)?.[0]).toMatch(
+        /maxlength="200"/i,
+    );
+    expect(
+        html.match(/<textarea[^>]*id="support-description"[^>]*>/)?.[0],
+    ).toMatch(/minlength="10"/i);
+});
+
+test.each(['123456789', ' 123456789 ', '😀😀😀😀😀😀😀😀😀'])(
+    'submission is disabled when the trimmed description is shorter than ten characters: %j',
+    (description) => {
+        const html = renderToStaticMarkup(
+            <SupportFormFields
+                {...props}
+                values={{ ...props.values, description }}
+            />,
+        );
+
+        expect(html.match(/<button[^>]*type="submit"[^>]*>/)?.[0]).toMatch(
+            /\sdisabled=""/,
+        );
+    },
+);
 
 test('the full attachment list disables selection with an explanation but permits removal', () => {
     const attachments = ['a.log', 'b.log', 'c.log'].map(

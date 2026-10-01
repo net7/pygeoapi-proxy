@@ -17,11 +17,12 @@
 - «La funzionalità serve esclusivamente a inviare email. Non introduce uno storico delle segnalazioni, ticket o una pagina di gestione delle richieste.»
 - «Gli allegati sono facoltativi: massimo **3 file**, ciascuno fino a **5 MB**.» Il limite è «**5 × 1024 × 1024 byte**, ossia 5120 KiB».
 - «L'accesso senza autenticazione è controllato da `SUPPORT_ALLOW_GUESTS`, booleano con default `false`.»
+- Con il flag disabilitato, mostrare sotto il login soltanto un testo con link `mailto:` al referente attivo per problemi di accesso, se configurato. Indirizzo nelle sole props del login, assente nelle props comuni.
 - Il form è una modal, aperta dal pulsante «Assistenza» con icona e testo visibile accanto ad «Aiuto». Nessuna pagina dedicata, rotta GET o voce nella sidebar.
 - Il referente autenticato vede il pulsante disabilitato con popover esplicativo. Backend: HTTP 403 per POST e Precognition, controllo sull'account e non sull'email modificabile, ricontrollo prima degli effetti di accettazione.
 - Il badge del referente è colorato, con icona e testo maiuscolo, sotto il ruolo ordinario nella colonna Ruolo.
-- «Oggetto fino a 200 caratteri, descrizione fino a 10.000 caratteri, email fino a 255 caratteri.»
-- «Le estensioni consentite sono `png`, `jpg`, `jpeg`, `webp`, `pdf`, `txt`, `log`, `csv` e `json`.» ZIP escluso.
+- «Oggetto fino a 200 caratteri, descrizione da 10 a 10.000 caratteri, email fino a 255 caratteri.»
+- «Le estensioni consentite sono `png`, `jpg`, `jpeg`, `webp`, `pdf`, `txt`, `log`, `csv`, `json`, `doc`, `docx`, `xls`, `xlsx`, `ppt` e `pptx`.» ZIP generici esclusi.
 - «Il referente tecnico è un incarico aggiuntivo assegnabile a un admin; può esserci al massimo un referente.» `UserRole` rimane `user` / `admin`.
 - «Prima di disattivare, eliminare o rimuovere il ruolo admin al referente corrente, occorre trasferire l'incarico a un altro admin attivo.» La protezione precede gli effetti distruttivi e copre le operazioni massive.
 - «Il destinatario viene risolto dal worker prima di ciascun tentativo: le email ancora da spedire seguono il referente corrente.»
@@ -282,7 +283,7 @@ return [
     'allow_guests' => filter_var(env('SUPPORT_ALLOW_GUESTS', false), FILTER_VALIDATE_BOOLEAN),
     'max_attachments' => 3,
     'max_file_kib' => 5120,
-    'extensions' => ['png', 'jpg', 'jpeg', 'webp', 'pdf', 'txt', 'log', 'csv', 'json'],
+    'extensions' => ['png', 'jpg', 'jpeg', 'webp', 'pdf', 'txt', 'log', 'csv', 'json', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'],
     'queue' => 'support-mail',
     'retention_seconds' => 7 * 24 * 60 * 60,
     'lock_seconds' => 75,
@@ -491,11 +492,13 @@ Run: `vendor/bin/pint --dirty --format agent` e `git diff --check`; stage mirato
 - Create: `app/Rules/SupportAttachmentType.php`
 - Modify: `routes/web.php`, `bootstrap/app.php`
 - Modify: `app/Providers/AppServiceProvider.php`
+- Modify: `app/Providers/FortifyServiceProvider.php`
 - Modify: `app/Http/Middleware/HandleInertiaRequests.php`
 - Modify: `lang/it.json`
 - Test: `tests/Feature/Support/SupportAccessTest.php`
 - Test: `tests/Feature/Support/SupportSubmissionTest.php`
 - Test: `tests/Feature/Support/SupportValidationTest.php`
+- Test: `tests/Feature/Support/SupportOfficeAttachmentsTest.php`
 - Test: `tests/Feature/Support/SupportRateLimitTest.php`
 
 **Interfaces**
@@ -503,6 +506,7 @@ Run: `vendor/bin/pint --dirty --format agent` e `git diff --check`; stage mirato
 - Consumes: `config('support.*')`, `SupportContactManager::current()`, `SubmitSupportEmail::handle()`.
 - Produces: solo `POST /support` (`support.store`); nessuna rotta GET o pagina `support/create`.
 - Produces: disponibilità e stato del referente nelle shared props; email iniziale da `auth.user.email`, vuota per ospiti. Nessun indirizzo del referente nelle props comuni.
+- Produces: `supportContactEmail: string|null` nella sola pagina `auth/login`, risolto da `SupportContactManager::current()` quando gli ospiti non sono abilitati, altrimenti `null`.
 - Produces: shared props `support: {allowGuests: boolean; available: boolean; isTechnicalContact: boolean; maxAttachments: number; maxFileBytes: number; allowedExtensions: string[]}`.
 - Produces: errori `subject`, `description`, `email`, `attachments`, `attachments.N`, `support`. Conferma nella modal tramite `onSuccess`, senza toast.
 
@@ -573,7 +577,7 @@ Dataset obbligatorio:
 | Campo | Input accettati | Input respinti |
 | --- | --- | --- |
 | Oggetto | Testo ripulito, 200 caratteri | vuoto/spazi, array, 201 caratteri, CR/LF anche ai bordi |
-| Descrizione | Testo multilinea, 10.000 caratteri | vuoto/spazi, array, 10.001 caratteri |
+| Descrizione | Testo multilinea, da 10 a 10.000 caratteri dopo trim | vuoto/spazi, 1–9 caratteri dopo trim, array, 10.001 caratteri |
 | Email | indirizzo valido, maiuscole/spazi normalizzati, già appartenente a un altro account | vuoto, array, sintassi invalida, oltre 255 |
 | Allegati | nessuno; tre file da 5.242.880 byte | quarto file, un file da 5.242.881 byte, campo scalare, upload non valido |
 | Tipi | ogni estensione consentita con contenuto coerente; LOG/CSV/JSON testuali anche malformati | ZIP, eseguibile rinominato, contenuto binario con estensione testuale |
@@ -603,6 +607,10 @@ return $rules;
 `prepareForValidation()` normalizza soltanto input di tipo stringa; email come nei form account esistenti. Non applicare unicità o verifica dell'indirizzo. Per l'oggetto eliminare solo spazi/tab esterni prima del controllo CR/LF. Il middleware globale `TrimStrings` non deve cancellare i CR/LF prima di questa regola: escludere la sola rotta `support` dal trimming globale in `bootstrap/app.php` e normalizzare esplicitamente nella Form Request.
 
 `SupportAttachmentType` combina estensione originale normalizzata e MIME rilevato: PNG/JPEG/WebP con MIME immagine corrispondente; PDF con `application/pdf`; TXT/LOG/CSV/JSON con MIME testuali ordinari (`text/plain`, `text/csv`, `application/csv`, `application/json`, `text/json`). Consentire file testuali vuoti riconosciuti come `application/x-empty` o `inode/x-empty`. Nessun parser richiede JSON o CSV semanticamente corretti. Non fidarsi del MIME inviato dal browser.
+
+Consentire anche DOC/XLS/PPT con MIME specifici e generici OLE/CFB; DOCX/XLSX/PPTX con MIME Office oppure ZIP rilevato. Per i tre formati moderni usare `ZipArchive::RDONLY` e verificare `[Content_Types].xml`, `_rels/.rels` e la parte principale coerente (`word/document.xml`, `xl/workbook.xml`, `ppt/presentation.xml`), chiudendo sempre l'archivio. Non estrarre né analizzare XML. Il runtime contiene già l'estensione ZIP. Coprire tutti i sei formati con contenuti sintetici CFB/OOXML effettivi, inclusa un'estensione maiuscola e MIME browser errato; verificare accodamento, nome normalizzato e byte salvati. Rifiutare testo/eseguibili/ZIP rinominati, formati Office scambiati, ZIP espliciti e archivi troncati, senza file salvati o job.
+
+Nel login Fortify aggiungere la prop dedicata `supportContactEmail`, senza modificare l'autorizzazione al form. Testare referente presente/assente, flag false/true, cambio referente e assenza della prop nelle pagine autenticate. POST e Precognition restano bloccati per gli ospiti con flag disabilitato.
 
 Errori localizzati in `lang/it.json`, inglese come sorgente secondo la convenzione attuale. Usare un errore globale `support` per indisponibilità del referente; ricontrollare nell'azione di invio per una variazione successiva alla validazione.
 
@@ -645,10 +653,12 @@ Run: `php artisan wayfinder:generate --no-interaction`, `vendor/bin/pint --dirty
 - Modify: `resources/js/types/global.d.ts`
 - Modify: `resources/js/components/app-sidebar-header.tsx`, `resources/js/layouts/app/app-sidebar-layout.tsx`
 - Modify: `resources/js/layouts/auth/auth-simple-layout.tsx`
+- Modify: `resources/js/pages/auth/login.tsx`
 - Modify: `resources/js/lib/i18n/messages.ts`
 - Test: `tests/Frontend/support-attachments.test.ts`
 - Test: `tests/Frontend/support-form.test.tsx`
 - Test: `tests/Frontend/support-dialog.test.tsx`
+- Test: `tests/Frontend/support-login.test.tsx`
 - Test: `tests/Frontend/support-submission-feedback.test.tsx`
 
 **Interfaces**
@@ -721,13 +731,17 @@ const form = useForm<SupportFormValues>(store(), {
 
 Seguire il `useForm` già usato in `admin/users/index.tsx`. Inizializzare l'email una sola volta; nessun effect deve risincronizzarla da `auth.user.email`. Validare `subject`, `description`, `email` su blur con `form.validate('campo')`. Gli upload restano esclusi dalle richieste live; usare la conversione multipart di Inertia per il submit effettivo e mostrare `form.progress`.
 
+Abilitare la validazione nativa del form, senza `noValidate`. Disabilitare il submit se email/oggetto sono vuoti dopo trim oppure la descrizione conta meno di 10 caratteri dopo trim; contare i caratteri Unicode coerentemente con Laravel. Applicare la stessa guardia all'handler per l'invio da tastiera e durante `processing`, prima di chiamare l'invio Inertia o mostrare il loader. Mantenere `required`, `type="email"`, `maxLength={200}` sull'oggetto e `minLength={10}`/`maxLength={10000}` sulla descrizione. Mostrare i limiti nelle descrizioni accessibili e nell'help IT/EN. In `StoreSupportRequest` applicare `min:10` e relativo messaggio localizzato, con la stessa regola nelle richieste Precognition e finali.
+
+Regressioni: form iniziale incompleto; ciascun campo obbligatorio vuoto/soli spazi; descrizione di 9 caratteri, anche con spazi esterni o caratteri Unicode; abilitazione a 10 caratteri senza allegati; oggetto di 200/201 caratteri; nessun job per invio vuoto e trasmissione degli errori nel redirect Inertia usando il cookie di sessione del POST. Adeguare i payload validi dei test esistenti al nuovo minimo senza cambiare le aspettative di accesso o quote.
+
 Comporre `FieldGroup` con `gap-3`, `Field`, `FieldLabel`, `FieldError`, `Input`, `Textarea`, `Button` e `Alert` già installati. Riutilizzare `FieldRequirement` da `components/ogc/input-support.tsx` accanto alle etichette: email/oggetto/descrizione obbligatori, allegati opzionali; evitare di ripetere «facoltativi» nel testo dell'etichetta. Non aggiungere dipendenze. Esprimere gli errori globali nell'esito della modal e quelli per file vicino al nome. Le etichette e lo stato di invio devono essere accessibili da tastiera e da screen reader.
 
 Sostituire il form durante l'invio con `SupportSubmissionFeedback`: aeroplanino Lucide e anello animato, descrizione di attesa e solo il progresso reale disponibile. Al successo mostrare l'icona `MailCheck`, titolo «Richiesta acquisita», descrizione, email di risposta effettiva e «Chiudi». Negli errori globali/HTTP/rete usare `MailWarning`, descrizione specifica o messaggio di mancata conferma, «Torna alla richiesta» e «Chiudi». Conservare tutti i valori e gli oggetti `File` sugli errori; azzerarli solo al successo. Gli errori di campo ripristinano direttamente il form con focus sul primo input non valido. Il ritorno da un errore globale pulisce gli errori e porta il focus su Oggetto.
 
 Usare `ContentTransition` e `runUiTransition` esistenti per le dissolvenze, rispettando movimento ridotto e browser senza supporto. Conservare l'altezza precedente durante loader/esito, senza attese artificiali. Gestire il focus sull'intestazione dello stato e gli annunci `role="status"`. La modal controlla `open` e `processing`: durante l'invio disabilita la X e ignora Escape/interazioni esterne; `DialogContent` espone `closeButtonDisabled` opzionale, senza cambiare gli altri dialog.
 
-Presentare gli allegati in righe compatte: icone della libreria Lucide React già installata per immagini, PDF/testo, log, CSV e JSON; nome troncato su una riga con nome completo nel `title`; dimensione B/KB/MB, multipli di 1024 e decimali localizzati; rimozione da 28 px con etichetta accessibile. Mostrare gli errori sotto il nome senza comprimere il testo. Verificare nel browser nomi lunghi, diversi tipi/dimensioni, rimozione e assenza di overflow orizzontale anche su mobile.
+Presentare gli allegati in righe compatte: icone della libreria Lucide React già installata per immagini, PDF/testo/Word, log, CSV/Excel, JSON e PowerPoint (`Presentation`); nome troncato su una riga con nome completo nel `title`; dimensione B/KB/MB, multipli di 1024 e decimali localizzati; rimozione da 28 px con etichetta accessibile. Mostrare gli errori sotto il nome senza comprimere il testo. Verificare nel browser nomi lunghi, diversi tipi/dimensioni, rimozione e assenza di overflow orizzontale anche su mobile.
 
 Quando `attachments.length >= limits.maxAttachments`, disabilitare il solo selettore file e mostrare un messaggio IT/EN collegato tramite `aria-describedby`, annunciato come stato, che spiega come rimuovere un allegato per aggiungerne un altro. I pulsanti di rimozione rimangono disponibili se non è in corso un invio. Riattivare il selettore automaticamente dopo la rimozione. Verificare la transizione 2 → 3 → 2 file, la spiegazione e la disponibilità dei comandi di rimozione, con test del form e prova nel browser.
 
@@ -753,6 +767,8 @@ return { ok: true, files };
 Un batch invalido non modifica i file precedenti. L'input `multiple` usa `accept` derivato dalla configurazione; il server resta autorevole. Permettere di riselezionare lo stesso file dopo la rimozione azzerando il valore dell'input.
 
 Comporre una modal `Dialog` ampia (`sm:max-w-4xl`, limite verticale `calc(100dvh - 2rem)`), con titolo, descrizione, chiusura e ripristino del focus. Il form iniziale deve stare nel viewport desktop senza scorrimento interno; conservare lo scorrimento quando lo richiedono schermi piccoli, allegati o errori. In `onOpenAutoFocus`, se l'email iniziale non è vuota, spostare il focus su Oggetto; altrimenti lasciare il focus sull'email. Il pulsante «Assistenza» ha icona riconoscibile e testo visibile ed è accanto ad «Aiuto» nell'header; niente voce nella sidebar o pagina dedicata. Nel layout di accesso, mostrare il pulsante per gli ospiti solo con `support.allowGuests=true`, usando la stessa modal. Con `available=false` mostrare l'avviso di indisponibilità. Con `isTechnicalContact=true` il pulsante è disabilitato: un contenitore accessibile da tastiera apre un popover che spiega che il referente riceve le richieste e non può inviarle a sé stesso. Non affidare la spiegazione al solo hover. Rimuovere la vecchia pagina e l'eccezione support nell'assegnazione automatica dei layout. Verificare apertura senza cambio URL, ordine Aiuto/Assistenza, spiegazione del blocco e ritorno del focus alla chiusura.
+
+Con `supportContactEmail` valorizzata, `auth/login.tsx` mostra sotto tutte le opzioni di accesso (anche con soli provider esterni) una frase IT/EN e un normale link `mailto:` con l'indirizzo come testo. Il link usa lo stile dei link testuali esistenti e consente di andare a capo per indirizzi lunghi. Nessun nuovo pulsante o form; con prop nulla non renderizzare la frase. La presenza della prop è decisa dal server in base al flag e al referente attivo. Aggiornare help comune e admin per descrivere questa possibilità.
 
 - [x] **Step 4: Verificare gli stati di interazione e committare.**
 
@@ -832,9 +848,9 @@ Il dialog usa `DialogTitle`/`DialogDescription`, descrive la sostituzione e invi
 | support.second.description | Compila oggetto e descrizione. Controlla l'email: è precompilata dal tuo account, ma puoi modificarla. Puoi aggiungere fino a 3 allegati, ciascuno da massimo 5 MB. | Enter a subject and description. Check the email address: it is prefilled from your account and can be changed. You can add up to 3 attachments, each no larger than 5 MB. |
 | support.third.title | Invia e attendi la risposta | Submit and wait for a reply |
 | support.third.description | Dopo la conferma di acquisizione, il referente risponderà all'indirizzo indicato. La richiesta e le risposte vengono gestite via email. | After the acceptance confirmation, the technical contact will reply to the address provided. Requests and replies are handled by email. |
-| support.tip | Formati consentiti: PNG, JPG/JPEG, WebP, PDF, TXT, LOG, CSV e JSON. | Allowed formats: PNG, JPG/JPEG, WebP, PDF, TXT, LOG, CSV and JSON. |
+| support.tip | Formati consentiti: PNG, JPG/JPEG, WebP, PDF, TXT, LOG, CSV, JSON, Word (DOC/DOCX), Excel (XLS/XLSX) e PowerPoint (PPT/PPTX). | Allowed formats: PNG, JPG/JPEG, WebP, PDF, TXT, LOG, CSV, JSON, Word (DOC/DOCX), Excel (XLS/XLSX) and PowerPoint (PPT/PPTX). |
 | support.guestEnabled | Il form è disponibile anche senza accedere, dalle schermate di accesso. | The form is also available without signing in, from the sign-in screens. |
-| support.guestDisabled | Per usare il form è necessario accedere. | You need to sign in to use the form. |
+| support.guestDisabled | Per usare il form è necessario accedere. Per problemi di accesso, nella pagina di login trovi il link email del referente tecnico, se configurato. | You need to sign in to use the form. For sign-in problems, the login page provides an email link to the technical contact, if configured. |
 | adminSupport.title | Gestire il referente tecnico | Manage the technical contact |
 | adminSupport.description | Scegli l'amministratore che riceve le richieste di assistenza. | Choose the administrator who receives support requests. |
 | adminSupport.first.title | Scegli un admin attivo | Choose an active admin |
@@ -1001,15 +1017,17 @@ L'auto-revisione controlla questa matrice, la coerenza delle interfacce, i sei c
 
 ## Esito dell'esecuzione
 
-Tutti i sette task sono completati. Verifiche correnti: 111 test backend di assistenza (723 asserzioni) e 303 test frontend. I 12 test separati con MariaDB/Redis reali e worker (742 asserzioni) e le prove di deployment develop/staging sono stati superati nella verifica precedente; il successivo affinamento della modal non modifica quei componenti. TypeScript, lint, formato e build superati anche dopo l'affinamento.
+Tutti i sette task sono completati. Verifiche correnti (2026-10-02): suite PHP completa con 752 test superati e 8 saltati (5173 asserzioni), e 316 test frontend (2413 asserzioni). I 12 test separati con MariaDB/Redis reali e worker (742 asserzioni) e le prove di deployment develop/staging sono stati superati nella verifica precedente; il successivo affinamento della modal non modifica quei componenti. TypeScript, lint, formato e build superati anche dopo l'affinamento.
 
-La suite PHP complessiva ora passa: 726 test superati, 8 saltati per funzionalità Fortify disabilitate e nessun errore (5015 asserzioni). Su successiva richiesta esplicita dell'utente è stata corretta l'aspettativa CSS preesistente in `ProcessUiLayoutTest`: il grafico usa già `bg-background`, con colore specifico nel tema scuro, e il bordo `ring-1 ring-border/50`. Il test non richiede più la vecchia combinazione `dark:bg-muted/20`, rimossa quando sono stati aggiunti i controlli del grafico. Verificato RED → GREEN, quindi ripetute le suite PHP, frontend, MariaDB/Redis e deployment, oltre ai controlli di qualità. Il componente applicativo è rimasto invariato. Il test aggiunto nell'affinamento della modal verifica l'assenza del toast dopo un invio riuscito.
+La suite PHP complessiva passa: 752 test superati, 8 saltati per funzionalità Fortify disabilitate e nessun errore (5173 asserzioni). Su successiva richiesta esplicita dell'utente è stata corretta l'aspettativa CSS preesistente in `ProcessUiLayoutTest`: il grafico usa già `bg-background`, con colore specifico nel tema scuro, e il bordo `ring-1 ring-border/50`. Il test non richiede più la vecchia combinazione `dark:bg-muted/20`, rimossa quando sono stati aggiunti i controlli del grafico. Verificato RED → GREEN, quindi ripetute le suite PHP, frontend, MariaDB/Redis e deployment, oltre ai controlli di qualità. Il componente applicativo è rimasto invariato. Il test aggiunto nell'affinamento della modal verifica l'assenza del toast dopo un invio riuscito.
 
 Revisione indipendente sull'intervallo `2a75277..0c56ffc`: nessun rilievo critico o importante. L'unico rilievo minore, l'assenza della dimensione degli allegati, è stato risolto nella successiva richiesta esplicita dell'utente. Nessun rilievo minore rinviato.
 
 Prove browser su ambiente isolato: modal e focus, campi obbligatori/opzionali, validazione e conservazione dei dati, invio simulato, nomina e badge, blocco del referente, tastiera, flag ospiti, help. Le righe allegato passano da 66 a 42 px; icone, dimensioni localizzate, nomi lunghi e rimozione sono verificati anche a 390 px senza overflow orizzontale. La sequenza 2 → 3 → 2 → 3 allegati verifica blocco, spiegazione, riattivazione e nuovo blocco del selettore. Il nuovo test del blocco è stato osservato fallire e poi passare.
 
 Affinamento successivo: loader e risultati con icone Lucide nella modal, nessun toast, View Transition esistenti, `gap-3` fra i campi e guida IT/EN aggiornata. I tre test frontend degli stati e il test backend senza toast sono stati osservati fallire prima dell'implementazione e poi passare. Nel browser verificati: gap effettivo di 12 px, focus iniziale su Oggetto, sostituzione del form col loader, X disabilitata ed Escape ignorato durante l'invio, conservazione di email modificata/oggetto/file dopo validazione fallita, ritorno del focus su Descrizione e due View Transition native completate senza errori di avvio. Dopo il passaggio dell'ambiente a permessi ristretti, server locale e sessione browser non sono più disponibili; il riavvio del server è negato con `Operation not permitted`. Restano quindi non completate in questa iterazione le verifiche visive degli esiti finali su desktop/mobile e le prove interattive di rete/HTTP e movimento ridotto; i rendering dei tre stati sono coperti dai test frontend.
+
+Aggiornamento del 2026-10-02: corretti il submit incompleto e la validazione minima della descrizione, aggiunti gli allegati Office e il testo con `mailto:` sotto al login per ospiti disabilitati. Test RED → GREEN per campi incompleti, descrizione di 9/10 caratteri (anche Precognition), Office con MIME browser inattendibile e file rinominati, props del login e rendering del link sia con password sia con soli provider esterni. Nel browser su `localhost:8088` verificati blocco dei campi vuoti/spazi, mancato avvio del loader con Enter, blocco nativo delle email invalide, minimo 10 e massimo 200 caratteri, focus iniziale su Oggetto e lista dei formati Office. Nessun invio valido eseguito contro l'ambiente applicativo. La pagina ospite aperta tramite `127.0.0.1` rimane vuota con gli asset Vite da `localhost`: la verifica visiva del testo login non è completata in questa sessione; il markup reale è verificato dai test di rendering Inertia/React. Help comune/admin, spec e piano sono allineati. Suite PHP e frontend, Pint, TypeScript, ESLint, Prettier e build superati.
 
 ### Decisioni di esecuzione
 

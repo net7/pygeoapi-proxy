@@ -41,15 +41,31 @@ test('a final submission uses the editable email without modifying the account',
 
 test('guest submission contains no invented account identity', function () {
     app(SupportContactManager::class)->assign(User::factory()->admin()->create()->id);
-    $this->post('/support', ['subject' => 'Help', 'description' => 'Details', 'email' => 'guest@example.org'])
+    $this->post('/support', ['subject' => 'Help', 'description' => 'Details of the issue', 'email' => 'guest@example.org'])
         ->assertRedirect('/login')->assertSessionHasNoErrors();
     Queue::assertPushed(SendSupportEmail::class, fn ($job): bool => $job->data->account === null);
+});
+
+test('an empty web submission returns field errors without queuing an email', function () {
+    app(SupportContactManager::class)->assign(User::factory()->admin()->create()->id);
+
+    $this->post('/support', ['subject' => '', 'description' => '', 'email' => ''])
+        ->assertRedirect('/login')
+        ->assertSessionHasErrors(['subject', 'description', 'email']);
+
+    $this->withCookie(config('session.cookie'), session()->getId())
+        ->get('/login')->assertOk()
+        ->assertViewHas('page', fn (array $page): bool => filled(data_get($page, 'props.errors.subject'))
+                && filled(data_get($page, 'props.errors.description'))
+                && filled(data_get($page, 'props.errors.email'))
+        );
+    Queue::assertNothingPushed();
 });
 
 test('successful submission leaves confirmation in the support dialog without a toast', function () {
     app(SupportContactManager::class)->assign(User::factory()->admin()->create()->id);
 
-    $this->post('/support', ['subject' => 'Help', 'description' => 'Details', 'email' => 'guest@example.org'])
+    $this->post('/support', ['subject' => 'Help', 'description' => 'Details of the issue', 'email' => 'guest@example.org'])
         ->assertRedirect('/login')->assertSessionHasNoErrors();
 
     $this->get('/login')->assertOk()
@@ -58,7 +74,7 @@ test('successful submission leaves confirmation in the support dialog without a 
 });
 
 test('support unavailable returns a form error without side effects', function () {
-    $this->postJson('/support', ['subject' => 'Help', 'description' => 'Details', 'email' => 'guest@example.org'])
+    $this->postJson('/support', ['subject' => 'Help', 'description' => 'Details of the issue', 'email' => 'guest@example.org'])
         ->assertUnprocessable()->assertJsonValidationErrors('support');
     Queue::assertNothingPushed();
     Mail::assertNothingSent();

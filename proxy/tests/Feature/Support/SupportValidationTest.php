@@ -16,7 +16,7 @@ beforeEach(function () {
 });
 
 test('support rejects invalid text fields', function (string $field, mixed $value) {
-    $payload = ['subject' => 'Help', 'description' => 'Details', 'email' => 'guest@example.org'];
+    $payload = ['subject' => 'Help', 'description' => 'Details of the issue', 'email' => 'guest@example.org'];
     $payload[$field] = $value;
     $this->postJson('/support', $payload)->assertUnprocessable()->assertJsonValidationErrors($field);
     Queue::assertNothingPushed();
@@ -24,8 +24,31 @@ test('support rejects invalid text fields', function (string $field, mixed $valu
     ['subject', ''], ['subject', '  '], ['subject', []], ['subject', str_repeat('a', 201)],
     ['subject', "Line\nBreak"], ['subject', "\rHelp"], ['subject', "Help\n"],
     ['description', ''], ['description', '  '], ['description', []], ['description', str_repeat('a', 10001)],
+    ['description', '123456789'], ['description', ' 123456789 '],
     ['email', ''], ['email', []], ['email', 'invalid'], ['email', str_repeat('a', 250).'@example.org'],
 ]);
+
+test('a ten character description is accepted after trimming', function () {
+    $this->post('/support', [
+        'subject' => 'Help', 'description' => ' 1234567890 ', 'email' => 'guest@example.org',
+    ])->assertRedirect('/login')->assertSessionHasNoErrors();
+
+    Queue::assertPushed(SendSupportEmail::class, fn (SendSupportEmail $job): bool => $job->data->description === '1234567890');
+});
+
+test('precognition enforces the description minimum without queuing an email', function (string $description, bool $valid) {
+    $response = $this->withHeaders([
+        'Precognition' => 'true', 'Precognition-Validate-Only' => 'description',
+    ])->postJson('/support', ['description' => $description]);
+
+    if ($valid) {
+        $response->assertNoContent();
+    } else {
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['description' => 'The description must be at least 10 characters.']);
+    }
+    Queue::assertNothingPushed();
+})->with([['123456789', false], ['1234567890', true]]);
 
 test('text field upper boundaries and an existing account email are accepted', function () {
     $user = User::factory()->create();
@@ -37,7 +60,7 @@ test('text field upper boundaries and an existing account email are accepted', f
 });
 
 test('three files at exactly five mib are accepted and one byte over is rejected', function () {
-    $payload = ['subject' => 'Help', 'description' => 'Details', 'email' => 'guest@example.org'];
+    $payload = ['subject' => 'Help', 'description' => 'Details of the issue', 'email' => 'guest@example.org'];
     $files = array_map(fn ($i) => UploadedFile::fake()->createWithContent("trace{$i}.log", str_repeat('a', 5242880)), range(1, 3));
     $this->post('/support', [...$payload, 'attachments' => $files])->assertSessionHasNoErrors()->assertRedirect('/login');
     $this->postJson('/support', [...$payload, 'attachments' => [
@@ -53,7 +76,7 @@ test('attachment structure and uploads are validated', function (string $scenari
         'invalid' => [new UploadedFile(__FILE__, 'trace.log', null, UPLOAD_ERR_PARTIAL, true)],
     };
     $this->postJson('/support', [
-        'subject' => 'Help', 'description' => 'Details', 'email' => 'guest@example.org', 'attachments' => $files,
+        'subject' => 'Help', 'description' => 'Details of the issue', 'email' => 'guest@example.org', 'attachments' => $files,
     ])->assertUnprocessable()->assertJsonValidationErrors($scenario === 'invalid' ? 'attachments.0' : 'attachments');
     Queue::assertNothingPushed();
 })->with(['scalar', 'four', 'invalid']);
@@ -66,7 +89,7 @@ test('attachment extension and detected content must agree', function (string $n
     // Testing\\File overrides MIME detection using the name; exercise real server detection.
     $file = new UploadedFile($fixture->getPathname(), $name, 'application/octet-stream', null, true);
     $response = $this->postJson('/support', [
-        'subject' => 'Help', 'description' => 'Details', 'email' => 'guest@example.org', 'attachments' => [$file],
+        'subject' => 'Help', 'description' => 'Details of the issue', 'email' => 'guest@example.org', 'attachments' => [$file],
     ]);
     if ($valid) {
         $response->assertRedirect('/login');

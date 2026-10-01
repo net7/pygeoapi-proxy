@@ -2,7 +2,7 @@
 
 Data: 2026-10-01.
 
-Stato: implementata inline nella directory corrente, senza worktree. Aggiornata con le richieste successive su modal, pulsante di assistenza, badge, blocco del referente tecnico e allegati compatti con dimensione e selettore disabilitato al limite. Verifiche e limiti residui sono riportati nel piano di implementazione.
+Stato: implementata inline nella directory corrente, senza worktree. Aggiornata con le richieste successive su modal, pulsante di assistenza, badge, blocco del referente tecnico, allegati compatti con dimensione e selettore disabilitato al limite, validazione dei campi, formati Office e link email sotto al login con ospiti disabilitati. Verifiche e limiti residui sono riportati nel piano di implementazione.
 
 ## Obiettivo
 
@@ -20,6 +20,9 @@ Il risultato atteso è un flusso semplice da compilare, con validazioni Laravel 
 - Il referente tecnico è un incarico aggiuntivo assegnabile a un admin; può esserci al massimo un referente.
 - Un admin può assegnare l'incarico dalla lista di tutti gli utenti. La nomina di un altro utente sostituisce automaticamente il referente precedente.
 - L'accesso senza autenticazione è controllato da `SUPPORT_ALLOW_GUESTS`, booleano con default `false`.
+- Con accesso ospiti disabilitato, sotto al login compare un testo per i problemi di accesso con il `mailto:` del referente tecnico attivo, se configurato.
+- La descrizione richiede almeno 10 caratteri dopo trim; l'oggetto ha un massimo di 200 caratteri. Il form incompleto non avvia l'invio o il loader.
+- Sono consentiti anche i documenti Word (`doc`, `docx`), Excel (`xls`, `xlsx`) e PowerPoint (`ppt`, `pptx`).
 - L'help descrive il nuovo flusso sia per gli utenti sia per gli admin, nelle lingue italiana e inglese.
 - Il form si apre in una modal dal pulsante «Assistenza», con icona riconoscibile e testo visibile, accanto ad «Aiuto» nell'header; non esiste una pagina dedicata o una voce nella sidebar.
 - Il referente tecnico autenticato vede il pulsante disabilitato con un popover che ne spiega il motivo; il backend impedisce anche invio diretto e Precognition.
@@ -29,8 +32,8 @@ Il risultato atteso è un flusso semplice da compilare, con validazioni Laravel 
 
 Queste scelte completano i requisiti, senza attribuirle a richieste esplicite dell'utente:
 
-- Oggetto fino a 200 caratteri, descrizione fino a 10.000 caratteri, email fino a 255 caratteri.
-- Formati iniziali: PNG, JPG/JPEG, WebP, PDF, TXT, LOG, CSV e JSON. Gli archivi ZIP non sono inclusi in questa versione; la domanda sul loro supporto non ha ricevuto una conferma.
+- Oggetto fino a 200 caratteri, descrizione da 10 a 10.000 caratteri, email fino a 255 caratteri.
+- Formati consentiti: PNG, JPG/JPEG, WebP, PDF, TXT, LOG, CSV, JSON e documenti Office DOC/DOCX, XLS/XLSX e PPT/PPTX. Gli archivi ZIP generici restano esclusi.
 - Invio asincrono, massimo tre tentativi automatici e disponibilità temporanea dei dati per sette giorni per consentire il recupero degli invii falliti.
 - Al massimo cinque tentativi di invio all'ora per utente autenticato o, per un ospite, per indirizzo IP. Le validazioni Precognition hanno un limite separato di sessanta richieste al minuto.
 - Prima di disattivare, eliminare o rimuovere il ruolo admin al referente corrente, occorre trasferire l'incarico a un altro admin attivo.
@@ -129,12 +132,14 @@ Il valore è letto in `config/support.php` ed esposto al resto dell'applicazione
 | Utente autenticato e attivo | Form disponibile | Form disponibile |
 | Admin autenticato e attivo, diverso dal referente | Form disponibile | Form disponibile |
 | Referente tecnico autenticato | Pulsante disabilitato con spiegazione; invio e Precognition vietati | Pulsante disabilitato con spiegazione; invio e Precognition vietati |
-| Ospite | Accesso riservato agli utenti autenticati | Form disponibile |
+| Ospite | Form riservato agli utenti autenticati; testo con `mailto:` al referente sotto il login, se configurato | Form disponibile |
 | Sessione di account disattivato | Accesso negato secondo il comportamento esistente | Accesso negato secondo il comportamento esistente |
 
 Il flag controlla la disponibilità del pulsante per gli ospiti, il POST di invio e le richieste Precognition. Non esiste una pagina dedicata né una rotta GET del form. Con accesso anonimo disabilitato, una richiesta diretta di invio o validazione richiede il login e non può produrre email, job o allegati persistiti.
 
 Quando il flag è attivo, un pulsante «Assistenza» con icona compare anche nelle schermate di accesso e apre la stessa modal. Gli utenti autenticati trovano il pulsante nell'header accanto ad «Aiuto». L'help riflette l'impostazione corrente. Nessun controllo admin consente di cambiare questo flag: la scelta è effettuata tramite ambiente.
+
+Quando il flag è disattivato, la pagina di login mostra sotto le opzioni di accesso il testo «Problemi di accesso? Invia un’email al referente tecnico:», seguito dall'indirizzo cliccabile con `mailto:`. Compare anche se il login usa solo provider esterni. L'indirizzo appartiene al referente corrente, deve essere un admin attivo ed è fornito soltanto nelle props della pagina login; non è aggiunto alle props comuni. Senza referente il testo è assente. Con il flag attivo il testo è assente e resta il pulsante del form. Una nuova nomina aggiorna l'indirizzo alla successiva apertura del login. Il link apre il client email dell'utente e non invia richieste all'app.
 
 Il referente tecnico non può inviare richieste a sé stesso: il pulsante è disabilitato e un popover, accessibile anche da tastiera, spiega «Sei il referente tecnico e ricevi le richieste di assistenza. Non puoi inviare una richiesta a te stesso». Il controllo backend confronta l'identità dell'account autenticato con il referente corrente, senza basarsi sull'email modificabile del form o su dati inviati dal client. Il middleware rifiuta con HTTP 403 sia POST sia Precognition; l'azione di accettazione ricontrolla il referente prima di scrivere file o accodare job. Cambiare l'email di contatto non aggira il blocco. La sostituzione del referente aggiorna lo stato disponibile alle successive richieste.
 
@@ -145,7 +150,7 @@ Il cambio del flag disciplina le nuove richieste; non annulla quelle già accett
 | Campo | Regole |
 | --- | --- |
 | Oggetto | Stringa obbligatoria, ripulita dagli spazi esterni, massimo 200 caratteri; rifiuto dei ritorni a capo per l'uso nell'oggetto email |
-| Descrizione | Testo semplice obbligatorio, ripulito dagli spazi esterni, massimo 10.000 caratteri |
+| Descrizione | Testo semplice obbligatorio, ripulito dagli spazi esterni, da 10 a 10.000 caratteri |
 | Email di contatto | Stringa obbligatoria, normalizzata come nei form esistenti, email valida, massimo 255 caratteri |
 | Allegati | Array facoltativo, massimo 3 elementi; ogni elemento deve essere un file valido del tipo consentito e rispettare il limite individuale |
 
@@ -157,11 +162,13 @@ Quando disponibile, l'identità autenticata è ricavata dal server e mantenuta d
 
 ### Allegati
 
-L'interfaccia presenta ogni file in una riga compatta: icona Lucide coerente con il tipo (immagine, documento PDF/testo, log, CSV o JSON), nome su una sola riga con ellissi e nome completo disponibile al passaggio del puntatore, dimensione leggibile in B/KB/MB e comando di rimozione compatto con etichetta accessibile. La dimensione usa multipli di 1024 e il separatore decimale della lingua corrente, coerentemente con il limite dichiarato. Gli eventuali errori restano leggibili sotto il nome. Offre un riscontro immediato su quantità e dimensione, mentre il server esegue sempre i controlli definitivi. Si riutilizza la libreria di icone già installata, senza nuove dipendenze.
+L'interfaccia presenta ogni file in una riga compatta: icona Lucide coerente con il tipo (immagine, documento PDF/testo/Word, log, CSV/Excel, JSON o presentazione PowerPoint), nome su una sola riga con ellissi e nome completo disponibile al passaggio del puntatore, dimensione leggibile in B/KB/MB e comando di rimozione compatto con etichetta accessibile. La dimensione usa multipli di 1024 e il separatore decimale della lingua corrente, coerentemente con il limite dichiarato. Gli eventuali errori restano leggibili sotto il nome. Offre un riscontro immediato su quantità e dimensione, mentre il server esegue sempre i controlli definitivi. Si riutilizza la libreria di icone già installata, senza nuove dipendenze.
 
 Raggiunti i tre allegati, il selettore file viene disabilitato con una spiegazione visibile e accessibile: occorre rimuovere un file per aggiungerne un altro. I comandi di rimozione restano attivi; appena il numero torna sotto il limite, il selettore si riabilita e la spiegazione scompare. Durante l'invio tutti i controlli restano disabilitati come previsto.
 
-Le estensioni consentite sono `png`, `jpg`, `jpeg`, `webp`, `pdf`, `txt`, `log`, `csv` e `json`. Il controllo server combina estensione e tipo effettivo del contenuto. La compatibilità dei MIME dei file testuali deve comprendere i normali casi di TXT, LOG, CSV e JSON, senza richiedere che un documento allegato per segnalare un problema sia semanticamente corretto.
+Le estensioni consentite sono `png`, `jpg`, `jpeg`, `webp`, `pdf`, `txt`, `log`, `csv`, `json`, `doc`, `docx`, `xls`, `xlsx`, `ppt` e `pptx`. Il controllo server combina estensione e tipo effettivo del contenuto. La compatibilità dei MIME dei file testuali deve comprendere i normali casi di TXT, LOG, CSV e JSON, senza richiedere che un documento allegato per segnalare un problema sia semanticamente corretto.
+
+Per i formati Office legacy si accettano i MIME specifici Word/Excel/PowerPoint e quelli generici OLE/CFB rilevati dal server. Per DOCX/XLSX/PPTX si verifica anche che il contenitore includa `[Content_Types].xml`, `_rels/.rels` e la parte principale del tipo dichiarato (`word/document.xml`, `xl/workbook.xml`, `ppt/presentation.xml`). La verifica legge soltanto l'indice dell'archivio, senza estrarre file o analizzare XML. Un ZIP generico rinominato o un documento Word rinominato XLSX/PPTX viene rifiutato. Le icone distinguono documenti Word, fogli Excel e presentazioni PowerPoint. Restano invariati numero massimo e dimensione individuale.
 
 I file ricevono nomi generati dal server in una directory privata dedicata. I nomi originali sono utilizzabili come etichette degli allegati dopo normalizzazione; non determinano percorsi di storage. Non vengono generati URL pubblici né endpoint di download per questi file.
 
@@ -176,6 +183,8 @@ Una Form Request dedicata contiene le regole Laravel ed è usata sia per la vali
 - Autorizzazione, disponibilità del servizio e limiti di frequenza sono imposti dal server.
 
 I campi del form sono separati da `gap-3`, mantenendo lo stesso stile obbligatorio/opzionale dei processi.
+
+«Invia richiesta» resta disabilitato finché email e oggetto non contengono testo e la descrizione non raggiunge almeno 10 caratteri, esclusi gli spazi iniziali e finali. Il gestore del submit applica lo stesso blocco anche all'invio da tastiera, senza attivare il loader. La validazione nativa del browser resta abilitata per campi obbligatori e formato email; si mantengono Precognition e i controlli Laravel definitivi. Sotto i campi sono visibili il massimo di 200 caratteri per l'oggetto e l'intervallo di 10–10.000 caratteri per la descrizione, riportati anche nell'help IT/EN.
 
 Durante l'invio il form è sostituito da un loader con icona di invio, anello animato, titolo e descrizione. Il progresso reale del caricamento è mostrato quando disponibile. La modal mantiene l'altezza del contenuto e impedisce chiusura, Escape e clic esterni durante la richiesta, evitando invii ripetuti o perdita accidentale dei dati.
 
@@ -272,8 +281,8 @@ Il pulsante «Assistenza», con icona e testo visibile accanto ad «Aiuto» nell
 
 La guida esistente riceve due capitoli:
 
-1. **Richiedere assistenza**, comune a utenti e admin: apertura del form, campi da compilare, email modificabile, tre allegati da 5 MB, formati consentiti, conferma di acquisizione e risposta tramite email. Il testo sull'accesso anonimo segue il flag effettivo.
-2. **Gestire il referente tecnico**, riservato agli admin: nomina dalla lista utenti, badge colorato con icona e testo maiuscolo sotto il ruolo ordinario nella colonna Ruolo, sostituzione automatica, necessità di un admin attivo e trasferimento prima di disattivazione, cambio ruolo o cancellazione. Spiega anche perché il referente vede Assistenza disabilitato e il relativo popover.
+1. **Richiedere assistenza**, comune a utenti e admin: apertura del form, campi da compilare, email modificabile, tre allegati da 5 MB, formati consentiti, conferma di acquisizione e risposta tramite email. Il testo sull'accesso anonimo segue il flag effettivo e spiega il link email sotto al login quando il form ospiti è disabilitato.
+2. **Gestire il referente tecnico**, riservato agli admin: nomina dalla lista utenti, badge colorato con icona e testo maiuscolo sotto il ruolo ordinario nella colonna Ruolo, sostituzione automatica, necessità di un admin attivo e trasferimento prima di disattivazione, cambio ruolo o cancellazione. Spiega anche perché il referente vede Assistenza disabilitato e il relativo popover, e che il suo indirizzo viene mostrato nel login quando il form ospiti è disabilitato.
 
 Con questi capitoli la guida passa da quattro a cinque sezioni per gli utenti e da nove a undici per gli admin. I capitoli admin rimangono esclusi dalla guida degli utenti ordinari.
 

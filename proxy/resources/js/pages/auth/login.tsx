@@ -17,9 +17,14 @@ import { store } from '@/routes/login';
 type Props = {
     status?: string;
     canResetPassword: boolean;
+    supportContactEmail: string | null;
 };
 
-export default function Login({ status, canResetPassword }: Props) {
+export default function Login({
+    status,
+    canResetPassword,
+    supportContactEmail,
+}: Props) {
     const { auth } = usePage().props;
     const { t } = useTranslation();
     const socialProviders = auth.routes.socialProviders;
@@ -175,6 +180,19 @@ export default function Login({ status, canResetPassword }: Props) {
                         )}
                     </Form>
                 </div>
+            )}
+
+            {supportContactEmail && (
+                <p className="text-center text-sm text-muted-foreground">
+                    {t('support.loginHelp')}{' '}
+                    <a
+                        href={`mailto:${supportContactEmail}`}
+                        className="break-all text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
+                    >
+                        {supportContactEmail}
+                    </a>
+                    .
+                </p>
             )}
 
             <StatusNotice message={status} title={t('auth.accountNotice')} />

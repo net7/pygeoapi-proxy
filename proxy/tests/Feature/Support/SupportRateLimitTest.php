@@ -32,7 +32,7 @@ test('precognition has its own sixty per minute quota', function () {
     $this->postJson('/support', ['email' => 'valid@example.org'])->assertTooManyRequests();
     $this->flushHeaders();
     for ($i = 0; $i < 5; $i++) {
-        $this->postJson('/support', ['subject' => 'Help', 'description' => 'Details', 'email' => 'valid@example.org'])
+        $this->postJson('/support', ['subject' => 'Help', 'description' => 'Details of the issue', 'email' => 'valid@example.org'])
             ->assertRedirect('/login');
     }
     $this->postJson('/support')->assertTooManyRequests();
@@ -42,7 +42,7 @@ test('precognition has its own sixty per minute quota', function () {
 test('manual precognition headers cannot bypass submission quotas', function (array $headers, bool $precognitive) {
     $this->withHeaders($headers);
     for ($i = 0; $i < 6; $i++) {
-        $response = $this->postJson('/support', ['subject' => 'Help', 'description' => 'Details', 'email' => 'valid@example.org']);
+        $response = $this->postJson('/support', ['subject' => 'Help', 'description' => 'Details of the issue', 'email' => 'valid@example.org']);
         if ($precognitive) {
             $response->assertNoContent();
         } elseif ($i < 5) {

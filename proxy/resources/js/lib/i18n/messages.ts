@@ -29,6 +29,7 @@ const it = {
     },
     support: {
         title: 'Assistenza',
+        loginHelp: 'Problemi di accesso? Invia un’email al referente tecnico:',
         disabledHelp: 'Perché Assistenza è disabilitato',
         technicalContactDisabled:
             'Sei il referente tecnico e ricevi le richieste di assistenza. Non puoi inviare una richiesta a te stesso.',
@@ -37,9 +38,10 @@ const it = {
         emailHint:
             'Puoi modificare questo indirizzo: lo useremo per risponderti, senza cambiare il tuo profilo.',
         subject: 'Oggetto',
+        subjectHint: 'Massimo 200 caratteri.',
         description: 'Descrizione',
         descriptionHint:
-            'Descrivi il problema e i passaggi per riprodurlo. Massimo 10.000 caratteri.',
+            'Descrivi il problema e i passaggi per riprodurlo. Da 10 a 10.000 caratteri.',
         attachments: 'Allegati',
         attachmentLimits:
             'Massimo {count} allegati, fino a {size} MB ciascuno.',
@@ -156,14 +158,15 @@ const it = {
                 'Premi Assistenza, con l’icona di supporto accanto ad Aiuto, per aprire il form in una finestra. Se il servizio non è disponibile, contatta un amministratore.',
             secondTitle: 'Descrivi il problema',
             secondBody:
-                "Compila oggetto e descrizione. Controlla l'email: è precompilata dal tuo account, ma puoi modificarla. Puoi aggiungere fino a 3 allegati, ciascuno da massimo 5 MB.",
+                "Compila l'oggetto (massimo 200 caratteri) e la descrizione (da 10 a 10.000 caratteri). Controlla l'email: è precompilata dal tuo account, ma puoi modificarla. Puoi aggiungere fino a 3 allegati, ciascuno da massimo 5 MB.",
             thirdTitle: 'Invia e attendi la risposta',
             thirdBody:
                 "Durante l'invio il form lascia spazio all'indicatore di attesa; l'esito compare nella stessa finestra con l'email di risposta. Se l'invio non è confermato, puoi tornare alla richiesta senza perdere dati e allegati. Il referente risponderà via email all'indirizzo indicato.",
-            tip: 'Formati consentiti: PNG, JPG/JPEG, WebP, PDF, TXT, LOG, CSV e JSON.',
+            tip: 'Formati consentiti: PNG, JPG/JPEG, WebP, PDF, TXT, LOG, CSV, JSON, Word (DOC/DOCX), Excel (XLS/XLSX) e PowerPoint (PPT/PPTX).',
             guestEnabled:
                 'Il form è disponibile anche senza accedere, dalle schermate di accesso.',
-            guestDisabled: 'Per usare il form è necessario accedere.',
+            guestDisabled:
+                'Per usare il form è necessario accedere. Per problemi di accesso, nella pagina di login trovi il link email del referente tecnico, se configurato.',
         },
         adminSupport: {
             label: 'Gestire il referente tecnico',
@@ -175,7 +178,7 @@ const it = {
                 'Apri Tutti gli utenti e seleziona Nomina referente tecnico nel menu di un amministratore attivo.',
             secondTitle: 'Conferma la sostituzione',
             secondBody:
-                'La nomina sostituisce automaticamente quella precedente. Nella colonna Ruolo, il badge colorato con icona REFERENTE TECNICO compare sotto ADMIN; il riepilogo identifica il referente corrente.',
+                'La nomina sostituisce automaticamente quella precedente. Nella colonna Ruolo, il badge colorato con icona REFERENTE TECNICO compare sotto ADMIN; il riepilogo identifica il referente corrente. Se il form per ospiti è disabilitato, l’email del referente compare nella pagina di login per i problemi di accesso.',
             thirdTitle: "Trasferisci prima di modificare l'account",
             thirdBody:
                 'Nomina un sostituto prima di disattivare, eliminare o togliere il ruolo admin al referente corrente.',
@@ -927,6 +930,7 @@ const en = {
     },
     support: {
         title: 'Support',
+        loginHelp: 'Trouble signing in? Email the technical contact:',
         disabledHelp: 'Why Support is disabled',
         technicalContactDisabled:
             'You are the technical contact and receive support requests. You cannot send a request to yourself.',
@@ -935,9 +939,10 @@ const en = {
         emailHint:
             'You can change this address: we will use it to reply without changing your profile.',
         subject: 'Subject',
+        subjectHint: 'Maximum 200 characters.',
         description: 'Description',
         descriptionHint:
-            'Describe the problem and the steps to reproduce it. Maximum 10,000 characters.',
+            'Describe the problem and the steps to reproduce it. Between 10 and 10,000 characters.',
         attachments: 'Attachments',
         attachmentLimits: 'Up to {count} attachments, {size} MB each.',
         attachmentLimitReached:
@@ -1053,14 +1058,15 @@ const en = {
                 'Click Support, with its support icon next to Help, to open the form in a dialog. If the service is unavailable, contact an administrator.',
             secondTitle: 'Describe the problem',
             secondBody:
-                'Enter a subject and description. Check the email address: it is prefilled from your account and can be changed. You can add up to 3 attachments, each no larger than 5 MB.',
+                'Enter a subject (up to 200 characters) and description (between 10 and 10,000 characters). Check the email address: it is prefilled from your account and can be changed. You can add up to 3 attachments, each no larger than 5 MB.',
             thirdTitle: 'Submit and wait for a reply',
             thirdBody:
                 'While sending, the form is replaced by a loading indicator; the outcome appears in the same dialog with the reply email. If submission is not confirmed, you can return to the request without losing your details or attachments. The technical contact will reply by email to the address provided.',
-            tip: 'Allowed formats: PNG, JPG/JPEG, WebP, PDF, TXT, LOG, CSV and JSON.',
+            tip: 'Allowed formats: PNG, JPG/JPEG, WebP, PDF, TXT, LOG, CSV, JSON, Word (DOC/DOCX), Excel (XLS/XLSX) and PowerPoint (PPT/PPTX).',
             guestEnabled:
                 'The form is also available without signing in, from the sign-in screens.',
-            guestDisabled: 'You need to sign in to use the form.',
+            guestDisabled:
+                'You need to sign in to use the form. For sign-in problems, the login page provides an email link to the technical contact, if configured.',
         },
         adminSupport: {
             label: 'Manage the technical contact',
@@ -1072,7 +1078,7 @@ const en = {
                 "Open All users and select Appoint technical contact from an active administrator's menu.",
             secondTitle: 'Confirm the replacement',
             secondBody:
-                'The appointment automatically replaces the previous one. In the Role column, the colored TECHNICAL CONTACT badge with an icon appears below ADMIN; the summary identifies the current contact.',
+                'The appointment automatically replaces the previous one. In the Role column, the colored TECHNICAL CONTACT badge with an icon appears below ADMIN; the summary identifies the current contact. If guest support is disabled, the contact’s email appears on the login page for sign-in problems.',
             thirdTitle: 'Transfer before changing the account',
             thirdBody:
                 'Appoint a replacement before deactivating, deleting or removing the admin role from the current contact.',

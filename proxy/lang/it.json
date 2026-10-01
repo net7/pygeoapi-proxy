@@ -16,6 +16,7 @@
     "The subject must not contain line breaks.": "L'oggetto non può contenere interruzioni di riga.",
     "Enter a description.": "Inserisci una descrizione.",
     "Enter a valid description.": "Inserisci una descrizione valida.",
+    "The description must be at least 10 characters.": "La descrizione deve contenere almeno 10 caratteri.",
     "The description must not exceed 10000 characters.": "La descrizione non può superare 10.000 caratteri.",
     "Enter your email address.": "Inserisci il tuo indirizzo email.",
     "Enter a valid email address.": "Inserisci un indirizzo email valido.",
