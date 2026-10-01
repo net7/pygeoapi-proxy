@@ -941,7 +941,8 @@ test('job pages use readable dark mode status surfaces', function () {
         ->toContain('ring-1 ring-border/50 dark:bg-muted/50');
 
     expect($chartPreviewSource)
-        ->toContain('ring-1 ring-border/50 dark:bg-muted/20');
+        ->toContain('bg-background')
+        ->toContain('ring-1 ring-border/50');
 
     expect($indicatorSource)
         ->toContain('text-success-emphasis')

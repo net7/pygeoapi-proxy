@@ -998,7 +998,7 @@ L'auto-revisione controlla questa matrice, la coerenza delle interfacce, i sei c
 
 Tutti i sette task sono completati. Verifiche: 110 test backend di assistenza (717 asserzioni), 12 test separati con MariaDB/Redis reali e worker (742 asserzioni), 300 test frontend. TypeScript, lint, formato, build e prove di deployment develop/staging superati. Le ultime modifiche frontend sono state riverificate con tutti i test frontend e i controlli pertinenti.
 
-La suite PHP complessiva riporta 724 test superati, 8 saltati e un errore preesistente in `ProcessUiLayoutTest`: l'aspettativa CSS sul contenitore del grafico non corrisponde al codice già presente nel commit base. Sorgente e test sono rimasti invariati. Non dichiarare la suite complessiva interamente verde.
+La suite PHP complessiva ora passa: 725 test superati, 8 saltati per funzionalità Fortify disabilitate e nessun errore (5009 asserzioni). Su successiva richiesta esplicita dell'utente è stata corretta l'aspettativa CSS preesistente in `ProcessUiLayoutTest`: il grafico usa già `bg-background`, con colore specifico nel tema scuro, e il bordo `ring-1 ring-border/50`. Il test non richiede più la vecchia combinazione `dark:bg-muted/20`, rimossa quando sono stati aggiunti i controlli del grafico. Verificato RED → GREEN, quindi ripetute le suite PHP, frontend, MariaDB/Redis e deployment, oltre ai controlli di qualità. Il componente applicativo è rimasto invariato.
 
 Revisione indipendente sull'intervallo `2a75277..0c56ffc`: nessun rilievo critico o importante. L'unico rilievo minore, l'assenza della dimensione degli allegati, è stato risolto nella successiva richiesta esplicita dell'utente. Nessun rilievo minore rinviato.
 
@@ -1010,9 +1010,9 @@ Prove browser su ambiente isolato: modal e focus, campi obbligatori/opzionali, v
 2. Pulizia con scansione progressiva e lock per richiesta, invece di accumulare tutti i payload o ripetere scansioni complete. Costo se errato: record saltati durante la paginazione; verificato anche con Redis reale oltre una pagina.
 3. L'eccezione di layout inizialmente aggiunta per la pagina di assistenza evitava layout annidati. Costo originario: transizioni differenti; scelta superata dalla richiesta della modal e codice rimosso, senza effetto residuo.
 4. Flag ospiti passato esplicitamente dal layout all'header e alla guida, mantenendo il contratto a props dell'header. Costo se omesso da un futuro chiamante: guida con accesso ospiti indicato come disabilitato; il chiamante applicativo lo fornisce.
-5. Lasciata invariata l'asserzione CSS preesistente estranea all'assistenza. Costo: la suite PHP completa resta con quell'errore finché sorgente e aspettativa non vengono riallineati.
+5. Inizialmente lasciata invariata l'asserzione CSS preesistente estranea all'assistenza. Il costo era mantenere un errore nella suite completa. Decisione superata dalla successiva richiesta dell'utente di sistemare tutti i test: aspettativa riallineata al tema corrente e suite PHP completa superata.
 6. Recapito SMTP reale e limite del provider rimandati alla verifica dell'ambiente configurato, come richiesto dalla spec che impone trasporti di test. Costo: credenziali o limiti del provider possono impedire il recapito, in particolare per messaggi vicini a 20 MiB dopo la codifica.
-7. Confermata dopo la revisione indipendente la decisione sul test CSS: nessuna modifica a sorgente, test o protezione del database dei test nel range esaminato. Costo invariato: errore generale ancora presente.
+7. La revisione indipendente aveva confermato l'estraneità del test CSS: nessuna modifica a sorgente, test o protezione del database dei test nel range esaminato. La successiva correzione autorizzata dell'aspettativa ha eliminato il fallimento senza modificare il grafico o la protezione del database.
 8. Mantenuto il limite documentato dell'invio con retry dopo accettazione SMTP e crash: l'invio esattamente una volta è escluso dalla spec. Costo: un crash ambiguo può produrre un'email duplicata.
 
 Nessun invio SMTP reale, migrazione sul database applicativo o deploy è stato eseguito durante queste verifiche.
