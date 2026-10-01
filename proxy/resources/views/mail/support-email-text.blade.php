@@ -1,4 +1,10 @@
-{!! config('app.name') !!} — {!! __('Support request') !!}
++--------+
+| >_     |
++--------+
+   _||_
+
+{!! config('app.name') !!} / {!! __('Support request') !!}
+----------------------------------------
 {!! $data->subject !!}
 
 {!! __('Contact email') !!}: {!! $data->replyTo !!}
@@ -9,19 +15,18 @@
 {!! __('Submitted without signing in.') !!}
 @endif
 
-{!! __('Request details') !!}
---------------------
+[ {!! __('Request details') !!} ]
 {!! $data->description !!}
 
 @if (count($data->attachments) > 0)
-{!! __('Attachments') !!} ({!! count($data->attachments) !!})
+[ {!! __('Attachments') !!} ({!! count($data->attachments) !!}) ]
 @foreach ($data->attachments as $attachment)
-- {!! $attachment['name'] !!}
++-- {!! $attachment['name'] !!}
 @endforeach
 @endif
 
-{!! __('Technical context') !!}
---------------------
+----------------------------------------
+[ {!! __('Technical context') !!} ]
 {!! __('Technical information collected at submission, solely to diagnose and resolve this issue.') !!}
 @forelse ($technicalDetails as $label => $value)
 {!! $label !!}: {!! $value !!}
@@ -33,4 +38,5 @@
 {!! __('Browser-reported information may be limited or approximate.') !!}
 @endif
 
-{!! __('Reply to this email to contact the requester at the address they provided.') !!}
+----------------------------------------
+> {!! __('Reply to this email to contact the requester at the address they provided.') !!}
