@@ -1,5 +1,6 @@
 import { Paperclip, Send, X } from 'lucide-react';
 import type { FormEvent, RefObject } from 'react';
+import { FieldRequirement } from '@/components/ogc/input-support';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -61,6 +62,7 @@ export function SupportFormFields({
                 >
                     <FieldLabel htmlFor="support-email">
                         {t('support.email')}
+                        <FieldRequirement required={true} />
                     </FieldLabel>
                     <Input
                         id="support-email"
@@ -91,6 +93,7 @@ export function SupportFormFields({
                 >
                     <FieldLabel htmlFor="support-subject">
                         {t('support.subject')}
+                        <FieldRequirement required={true} />
                     </FieldLabel>
                     <Input
                         id="support-subject"
@@ -116,6 +119,7 @@ export function SupportFormFields({
                 >
                     <FieldLabel htmlFor="support-description">
                         {t('support.description')}
+                        <FieldRequirement required={true} />
                     </FieldLabel>
                     <Textarea
                         id="support-description"
@@ -145,6 +149,7 @@ export function SupportFormFields({
                 >
                     <FieldLabel htmlFor="support-attachments">
                         {t('support.attachments')}
+                        <FieldRequirement required={false} />
                     </FieldLabel>
                     <Input
                         ref={fileInput}

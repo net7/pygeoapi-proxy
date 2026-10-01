@@ -12,7 +12,7 @@ Il risultato atteso è un flusso semplice da compilare, con validazioni Laravel 
 
 ## Requisiti concordati
 
-- Oggetto, descrizione ed email di contatto sono obbligatori.
+- Oggetto, descrizione ed email di contatto sono obbligatori e gli allegati sono opzionali; le etichette riusano gli indicatori visivi dei form dei processi.
 - Per un utente autenticato, l'email è precompilata con quella dell'account e rimane modificabile.
 - Gli allegati sono facoltativi: massimo **3 file**, ciascuno fino a **5 MB**.
 - Le regole di validazione risiedono nel backend Laravel; Precognition offre la validazione durante la compilazione.
@@ -260,7 +260,7 @@ I log applicativi non riportano il contenuto del messaggio o i file. L'eventuale
 
 ## Navigazione, help e localizzazione
 
-Il pulsante «Assistenza», con icona e testo visibile accanto ad «Aiuto» nell'header, apre una modal accessibile senza cambiare pagina o URL. Non si aggiunge una voce alla sidebar. Per gli ospiti ammessi, il pulsante nelle schermate di accesso apre la stessa modal e lo stesso form. La modal ha titolo, descrizione, chiusura e contenuto scorrevole; restituisce il focus al pulsante alla chiusura. L'email iniziale viene dall'account nelle shared props; disponibilità e stato di referente corrente sono booleani che non espongono il destinatario. Il POST torna alla pagina di provenienza: gli errori mantengono aperta la modal con i valori e i file selezionati, mentre il successo svuota oggetto, descrizione e allegati conservando l'email e lasciando aperta la modal.
+Il pulsante «Assistenza», con icona e testo visibile accanto ad «Aiuto» nell'header, apre una modal accessibile senza cambiare pagina o URL. Non si aggiunge una voce alla sidebar. Per gli ospiti ammessi, il pulsante nelle schermate di accesso apre la stessa modal e lo stesso form. La modal è ampia (fino a 56rem) e sfrutta l'altezza disponibile lasciando un margine dal bordo: il form iniziale su desktop non richiede una scrollbar. Lo scorrimento rimane disponibile per schermi piccoli, allegati aggiunti o errori che aumentano il contenuto. Ha titolo, descrizione e chiusura; restituisce il focus al pulsante alla chiusura. All'apertura, se l'email è già compilata, il focus va su Oggetto; altrimenti va sull'email. Le etichette indicano OBBLIGATORIO per email, oggetto e descrizione e OPZIONALE per gli allegati, con lo stesso componente e stile dei form dei processi. L'email iniziale viene dall'account nelle shared props; disponibilità e stato di referente corrente sono booleani che non espongono il destinatario. Il POST torna alla pagina di provenienza: gli errori mantengono aperta la modal con i valori e i file selezionati, mentre il successo svuota oggetto, descrizione e allegati conservando l'email e lasciando aperta la modal.
 
 La guida esistente riceve due capitoli:
 
@@ -340,7 +340,7 @@ Il piano identificherà i file nuovi e le modifiche ai punti di integrazione ele
 - Il badge del referente è colorato, con icona e testo maiuscolo, impilato sotto il ruolo ordinario nella colonna Ruolo.
 - La guida comune documenta il form; quella admin aggiunge la gestione del referente. Gli utenti ordinari non vedono il capitolo admin.
 - Le due lingue descrivono gli stessi limiti e comportamenti e riflettono la configurazione dell'accesso anonimo.
-- Campi, errori, rimozione file e stato di invio sono utilizzabili da tastiera e correttamente etichettati.
+- Campi, errori, rimozione file e stato di invio sono utilizzabili da tastiera e correttamente etichettati. Il focus iniziale segue l'email compilata/vuota; gli indicatori obbligatorio/opzionale corrispondono alle regole backend e allo stile dei processi.
 
 Si useranno test Pest per i comportamenti backend, test frontend mirati per interfaccia/help e i controlli di formato e tipi previsti dal repository. Le verifiche di concorrenza sul database effettivo completano le prove SQLite; la spec non presume che SQLite dimostri la semantica dei blocchi di MariaDB.
 

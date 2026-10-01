@@ -1,5 +1,5 @@
 import { LifeBuoyIcon } from 'lucide-react';
-import { useId } from 'react';
+import { useId, useRef } from 'react';
 import { SupportForm } from '@/components/support-form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,7 @@ export function SupportDialog({
 }) {
     const { t } = useTranslation();
     const explanationId = useId();
+    const contentRef = useRef<HTMLDivElement>(null);
     const button = (
         <Button
             type="button"
@@ -84,7 +85,23 @@ export function SupportDialog({
     return (
         <Dialog>
             <DialogTrigger asChild>{button}</DialogTrigger>
-            <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
+            <DialogContent
+                ref={contentRef}
+                className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-4xl"
+                onOpenAutoFocus={(event) => {
+                    if (initialEmail.trim()) {
+                        const subject =
+                            contentRef.current?.querySelector<HTMLInputElement>(
+                                '#support-subject',
+                            );
+
+                        if (subject) {
+                            event.preventDefault();
+                            subject.focus();
+                        }
+                    }
+                }}
+            >
                 <DialogHeader>
                     <DialogTitle>{t('support.title')}</DialogTitle>
                     <DialogDescription>{t('support.intro')}</DialogDescription>

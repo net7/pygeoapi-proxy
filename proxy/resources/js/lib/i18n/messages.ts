@@ -40,7 +40,7 @@ const it = {
         description: 'Descrizione',
         descriptionHint:
             'Descrivi il problema e i passaggi per riprodurlo. Massimo 10.000 caratteri.',
-        attachments: 'Allegati (facoltativi)',
+        attachments: 'Allegati',
         attachmentLimits:
             'Massimo {count} allegati, fino a {size} MB ciascuno.',
         removeFile: 'Rimuovi {name}',
@@ -927,7 +927,7 @@ const en = {
         description: 'Description',
         descriptionHint:
             'Describe the problem and the steps to reproduce it. Maximum 10,000 characters.',
-        attachments: 'Attachments (optional)',
+        attachments: 'Attachments',
         attachmentLimits: 'Up to {count} attachments, {size} MB each.',
         removeFile: 'Remove {name}',
         uploadProgress: 'Uploading: {percent}%',
