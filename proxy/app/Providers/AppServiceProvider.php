@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Jobs\SendSupportEmail;
 use App\Services\Ogc\OgcProcessCacheWarmupDispatcher;
 use Carbon\CarbonImmutable;
+use Illuminate\Queue\Queue;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
@@ -27,6 +29,13 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureUrlScheme();
         $this->configureDefaults();
+        Queue::createPayloadUsing(function ($connection, $queue, array $payload): array {
+            $job = $payload['data']['command'] ?? null;
+
+            return $job instanceof SendSupportEmail
+                ? ['support_mail' => ['id' => $job->data->id, 'expires_at' => $job->data->expiresAt]]
+                : [];
+        });
         $warmupDispatcher->dispatchIfAppropriate();
     }
 
