@@ -80,7 +80,7 @@ export function SupportFormFields({
                     <AlertDescription>{errors.support}</AlertDescription>
                 </Alert>
             )}
-            <FieldGroup>
+            <FieldGroup className="gap-3">
                 <Field
                     data-invalid={Boolean(errors.email)}
                     data-disabled={processing}

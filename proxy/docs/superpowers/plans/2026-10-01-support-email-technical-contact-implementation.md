@@ -504,7 +504,7 @@ Run: `vendor/bin/pint --dirty --format agent` e `git diff --check`; stage mirato
 - Produces: solo `POST /support` (`support.store`); nessuna rotta GET o pagina `support/create`.
 - Produces: disponibilità e stato del referente nelle shared props; email iniziale da `auth.user.email`, vuota per ospiti. Nessun indirizzo del referente nelle props comuni.
 - Produces: shared props `support: {allowGuests: boolean; available: boolean; isTechnicalContact: boolean; maxAttachments: number; maxFileBytes: number; allowedExtensions: string[]}`.
-- Produces: errori `subject`, `description`, `email`, `attachments`, `attachments.N`, `support`. Conferma tramite toast/sessione secondo il pattern esistente.
+- Produces: errori `subject`, `description`, `email`, `attachments`, `attachments.N`, `support`. Conferma nella modal tramite `onSuccess`, senza toast.
 
 - [x] **Step 1: Scrivere test di accesso e assenza di effetti Precognition.**
 
@@ -564,7 +564,7 @@ Route::middleware([EnsureUserIsActive::class, EnsureSupportAccess::class])
 
 Rotte web con CSRF, esterne ai gruppi `guest` e `auth` esclusivi. `EnsureSupportAccess` consente un utente attivo diverso dal referente, oppure un ospite solo se il flag è vero; altrimenti redirect al login, oppure risposta di autenticazione prevista per richieste JSON. Per il referente autenticato restituisce 403 prima di Precognition. Non basare l'autorizzazione sul pulsante frontend o sull'email dichiarata. `SubmitSupportEmail` ricontrolla lo stesso vincolo prima di scrivere file o accodare.
 
-`HandleInertiaRequests` condivide `support.available` e `support.isTechnicalContact`, risolti dal referente corrente per i visitatori ammessi; l'email iniziale viene da `auth.user.email`. `store()` passa solo i valori validati e `$request->user()` all'azione, poi torna alla pagina di provenienza con il messaggio «Richiesta acquisita. Le risposte saranno inviate all'indirizzo indicato». Gli errori di validazione restano nel form e la modal rimane aperta. Eliminare `create()` e rigenerare Wayfinder dopo aver rimosso la GET.
+`HandleInertiaRequests` condivide `support.available` e `support.isTechnicalContact`, risolti dal referente corrente per i visitatori ammessi; l'email iniziale viene da `auth.user.email`. `store()` passa solo i valori validati e `$request->user()` all'azione, poi torna alla pagina di provenienza senza flash toast. Il frontend mostra l'esito nella modal dopo `onSuccess`. Gli errori di validazione restano nel form e la modal rimane aperta. Eliminare `create()` e rigenerare Wayfinder dopo aver rimosso la GET. Verificare con un test che un invio riuscito non lasci un toast nella pagina restituita.
 
 - [x] **Step 3: Scrivere i test dei limiti e implementare le regole condivise.**
 
@@ -639,6 +639,7 @@ Run: `php artisan wayfinder:generate --no-interaction`, `vendor/bin/pint --dirty
 - Create: `resources/js/components/support-dialog.tsx`
 - Create: `resources/js/components/support-form.tsx`
 - Create: `resources/js/components/support-form-fields.tsx`
+- Create: `resources/js/components/support-submission-feedback.tsx`
 - Create: `resources/js/lib/support-attachments.ts`
 - Create: `resources/js/types/support.ts`
 - Modify: `resources/js/types/global.d.ts`
@@ -648,13 +649,15 @@ Run: `php artisan wayfinder:generate --no-interaction`, `vendor/bin/pint --dirty
 - Test: `tests/Frontend/support-attachments.test.ts`
 - Test: `tests/Frontend/support-form.test.tsx`
 - Test: `tests/Frontend/support-dialog.test.tsx`
+- Test: `tests/Frontend/support-submission-feedback.test.tsx`
 
 **Interfaces**
 
 - Consumes: rotta Wayfinder `support.store` e shared props del Task 4.
 - Produces: `SupportLimits = {maxAttachments:number; maxFileBytes:number; allowedExtensions:string[]}`.
 - Produces: `SupportConfiguration = SupportLimits & {allowGuests:boolean; available:boolean; isTechnicalContact:boolean}` e `SupportDialog({initialEmail, support})`, senza dipendenza diretta dal contesto Inertia nell'header.
-- Produces: `SupportFormProps = {initialEmail:string; limits:SupportLimits}` e `SupportForm({ initialEmail, limits }: SupportFormProps): React.ReactElement`.
+- Produces: `SupportFormProps = {initialEmail:string; limits:SupportLimits; onClose:()=>void; onProcessingChange:(processing:boolean)=>void}` e `SupportForm(props: SupportFormProps): React.ReactElement`.
+- Produces: `SupportSubmissionFeedback` per gli stati `sending`, `success`, `error`, con icone Lucide, descrizioni IT/EN, progresso reale facoltativo e azioni di chiusura/ritorno al form.
 - Produces: `SupportFormValues = {subject: string; description: string; email: string; attachments: File[]}`.
 - Produces: `selectSupportAttachments(current: File[], incoming: File[], limits: SupportLimits): {ok:true; files:File[]} | {ok:false; reason:'count'|'size'|'extension'; fileName?:string}`.
 - Produces: `SupportFormFields(props: SupportFormFieldsProps): React.ReactElement` presentazionale; le richieste HTTP restano in `SupportForm`.
@@ -706,21 +709,23 @@ const form = useForm<SupportFormValues>(store(), {
     attachments: [],
 });
 
-function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    form.submit({
-        preserveScroll: true,
-        onSuccess: () => {
-            form.reset('subject', 'description', 'attachments');
-            if (fileInput.current) fileInput.current.value = '';
-        },
-    });
-}
+// Stato locale: form | sending | success | error.
+// Conservare email di risposta e altezza del contenuto prima dell'invio.
+// onStart: sostituire il form con il loader e bloccare la chiusura.
+// onSuccess: azzerare oggetto/descrizione/allegati e mostrare l'esito.
+// onError: tornare ai campi non validi oppure mostrare l'errore globale.
+// onHttpException/onNetworkError: esito non confermato, return false.
+// onFinish: sbloccare la chiusura e consentire eventuali tentativi successivi.
+// Tutti i cambi di stato usano runUiTransition e ContentTransition.
 ```
 
 Seguire il `useForm` già usato in `admin/users/index.tsx`. Inizializzare l'email una sola volta; nessun effect deve risincronizzarla da `auth.user.email`. Validare `subject`, `description`, `email` su blur con `form.validate('campo')`. Gli upload restano esclusi dalle richieste live; usare la conversione multipart di Inertia per il submit effettivo e mostrare `form.progress`.
 
-Comporre `FieldGroup`, `Field`, `FieldLabel`, `FieldError`, `Input`, `Textarea`, `Button` e `Alert` già installati. Riutilizzare `FieldRequirement` da `components/ogc/input-support.tsx` accanto alle etichette: email/oggetto/descrizione obbligatori, allegati opzionali; evitare di ripetere «facoltativi» nel testo dell'etichetta. Non aggiungere dipendenze. Esprimere gli errori globali in un alert e quelli per file vicino al nome. Le etichette e lo stato di invio devono essere accessibili da tastiera e da screen reader.
+Comporre `FieldGroup` con `gap-3`, `Field`, `FieldLabel`, `FieldError`, `Input`, `Textarea`, `Button` e `Alert` già installati. Riutilizzare `FieldRequirement` da `components/ogc/input-support.tsx` accanto alle etichette: email/oggetto/descrizione obbligatori, allegati opzionali; evitare di ripetere «facoltativi» nel testo dell'etichetta. Non aggiungere dipendenze. Esprimere gli errori globali nell'esito della modal e quelli per file vicino al nome. Le etichette e lo stato di invio devono essere accessibili da tastiera e da screen reader.
+
+Sostituire il form durante l'invio con `SupportSubmissionFeedback`: aeroplanino Lucide e anello animato, descrizione di attesa e solo il progresso reale disponibile. Al successo mostrare l'icona `MailCheck`, titolo «Richiesta acquisita», descrizione, email di risposta effettiva e «Chiudi». Negli errori globali/HTTP/rete usare `MailWarning`, descrizione specifica o messaggio di mancata conferma, «Torna alla richiesta» e «Chiudi». Conservare tutti i valori e gli oggetti `File` sugli errori; azzerarli solo al successo. Gli errori di campo ripristinano direttamente il form con focus sul primo input non valido. Il ritorno da un errore globale pulisce gli errori e porta il focus su Oggetto.
+
+Usare `ContentTransition` e `runUiTransition` esistenti per le dissolvenze, rispettando movimento ridotto e browser senza supporto. Conservare l'altezza precedente durante loader/esito, senza attese artificiali. Gestire il focus sull'intestazione dello stato e gli annunci `role="status"`. La modal controlla `open` e `processing`: durante l'invio disabilita la X e ignora Escape/interazioni esterne; `DialogContent` espone `closeButtonDisabled` opzionale, senza cambiare gli altri dialog.
 
 Presentare gli allegati in righe compatte: icone della libreria Lucide React già installata per immagini, PDF/testo, log, CSV e JSON; nome troncato su una riga con nome completo nel `title`; dimensione B/KB/MB, multipli di 1024 e decimali localizzati; rimozione da 28 px con etichetta accessibile. Mostrare gli errori sotto il nome senza comprimere il testo. Verificare nel browser nomi lunghi, diversi tipi/dimensioni, rimozione e assenza di overflow orizzontale anche su mobile.
 
@@ -753,7 +758,7 @@ Comporre una modal `Dialog` ampia (`sm:max-w-4xl`, limite verticale `calc(100dvh
 
 Run: `bun test tests/Frontend/support-attachments.test.ts tests/Frontend/support-form.test.tsx` e `bun run types:check`.
 
-Nel browser dell'ambiente di test verificare: modal aperta e URL invariato dopo invio o errori; email modificata che sopravvive a un errore server; testo/file mantenuti in caso di rate limit; rimozione via tastiera; nessun doppio submit durante upload; al successo solo oggetto/descrizione/file svuotati e modal ancora aperta. Verificare pulsante con icona/testo, blocco del referente e popover da tastiera; form iniziale senza scrollbar a 1280×720, focus su Oggetto per l'email precompilata e sull'email per ospiti, indicatori obbligatorio/opzionale identici ai processi. Usare esclusivamente mailer array/log con dati sintetici o Mailpit locale. Se un browser eseguibile non è disponibile, riportare esplicitamente la verifica interattiva mancante senza sostituirla con un test che replica l'implementazione.
+Nel browser dell'ambiente di test verificare: modal aperta e URL invariato dopo invio o errori; email modificata che sopravvive a un errore server; testo/file mantenuti in caso di rate limit o errore di rete/HTTP; rimozione via tastiera; nessun doppio submit durante upload. Verificare loader al posto del form, icone, chiusura bloccata durante l'invio, esito positivo con email modificata e nessun toast, ritorno dal risultato di errore con dati/file conservati. Controllare View Transition effettive, focus dopo errore/chiusura e preferenza di movimento ridotto. Verificare pulsante con icona/testo, blocco del referente e popover da tastiera; form iniziale senza scrollbar a 1280×720, focus su Oggetto per l'email precompilata e sull'email per ospiti, distanza di 12 px fra i campi e indicatori obbligatorio/opzionale identici ai processi. Controllare anche il viewport mobile. Usare esclusivamente mailer array/log con dati sintetici o Mailpit locale. Se un browser eseguibile non è disponibile, riportare esplicitamente la verifica interattiva mancante senza sostituirla con un test che replica l'implementazione.
 
 Formattare i file modificati con Prettier, eseguire lint mirato e `git diff --check`. Commit `feat: add support form and navigation`.
 
@@ -996,13 +1001,15 @@ L'auto-revisione controlla questa matrice, la coerenza delle interfacce, i sei c
 
 ## Esito dell'esecuzione
 
-Tutti i sette task sono completati. Verifiche: 110 test backend di assistenza (717 asserzioni), 12 test separati con MariaDB/Redis reali e worker (742 asserzioni), 300 test frontend. TypeScript, lint, formato, build e prove di deployment develop/staging superati. Le ultime modifiche frontend sono state riverificate con tutti i test frontend e i controlli pertinenti.
+Tutti i sette task sono completati. Verifiche correnti: 111 test backend di assistenza (723 asserzioni) e 303 test frontend. I 12 test separati con MariaDB/Redis reali e worker (742 asserzioni) e le prove di deployment develop/staging sono stati superati nella verifica precedente; il successivo affinamento della modal non modifica quei componenti. TypeScript, lint, formato e build superati anche dopo l'affinamento.
 
-La suite PHP complessiva ora passa: 725 test superati, 8 saltati per funzionalità Fortify disabilitate e nessun errore (5009 asserzioni). Su successiva richiesta esplicita dell'utente è stata corretta l'aspettativa CSS preesistente in `ProcessUiLayoutTest`: il grafico usa già `bg-background`, con colore specifico nel tema scuro, e il bordo `ring-1 ring-border/50`. Il test non richiede più la vecchia combinazione `dark:bg-muted/20`, rimossa quando sono stati aggiunti i controlli del grafico. Verificato RED → GREEN, quindi ripetute le suite PHP, frontend, MariaDB/Redis e deployment, oltre ai controlli di qualità. Il componente applicativo è rimasto invariato.
+La suite PHP complessiva ora passa: 726 test superati, 8 saltati per funzionalità Fortify disabilitate e nessun errore (5015 asserzioni). Su successiva richiesta esplicita dell'utente è stata corretta l'aspettativa CSS preesistente in `ProcessUiLayoutTest`: il grafico usa già `bg-background`, con colore specifico nel tema scuro, e il bordo `ring-1 ring-border/50`. Il test non richiede più la vecchia combinazione `dark:bg-muted/20`, rimossa quando sono stati aggiunti i controlli del grafico. Verificato RED → GREEN, quindi ripetute le suite PHP, frontend, MariaDB/Redis e deployment, oltre ai controlli di qualità. Il componente applicativo è rimasto invariato. Il test aggiunto nell'affinamento della modal verifica l'assenza del toast dopo un invio riuscito.
 
 Revisione indipendente sull'intervallo `2a75277..0c56ffc`: nessun rilievo critico o importante. L'unico rilievo minore, l'assenza della dimensione degli allegati, è stato risolto nella successiva richiesta esplicita dell'utente. Nessun rilievo minore rinviato.
 
 Prove browser su ambiente isolato: modal e focus, campi obbligatori/opzionali, validazione e conservazione dei dati, invio simulato, nomina e badge, blocco del referente, tastiera, flag ospiti, help. Le righe allegato passano da 66 a 42 px; icone, dimensioni localizzate, nomi lunghi e rimozione sono verificati anche a 390 px senza overflow orizzontale. La sequenza 2 → 3 → 2 → 3 allegati verifica blocco, spiegazione, riattivazione e nuovo blocco del selettore. Il nuovo test del blocco è stato osservato fallire e poi passare.
+
+Affinamento successivo: loader e risultati con icone Lucide nella modal, nessun toast, View Transition esistenti, `gap-3` fra i campi e guida IT/EN aggiornata. I tre test frontend degli stati e il test backend senza toast sono stati osservati fallire prima dell'implementazione e poi passare. Nel browser verificati: gap effettivo di 12 px, focus iniziale su Oggetto, sostituzione del form col loader, X disabilitata ed Escape ignorato durante l'invio, conservazione di email modificata/oggetto/file dopo validazione fallita, ritorno del focus su Descrizione e due View Transition native completate senza errori di avvio. Dopo il passaggio dell'ambiente a permessi ristretti, server locale e sessione browser non sono più disponibili; il riavvio del server è negato con `Operation not permitted`. Restano quindi non completate in questa iterazione le verifiche visive degli esiti finali su desktop/mobile e le prove interattive di rete/HTTP e movimento ridotto; i rendering dei tre stati sono coperti dai test frontend.
 
 ### Decisioni di esecuzione
 

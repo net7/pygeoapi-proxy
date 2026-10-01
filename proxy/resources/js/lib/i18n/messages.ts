@@ -48,6 +48,15 @@ const it = {
         removeFile: 'Rimuovi {name}',
         uploadProgress: 'Caricamento: {percent}%',
         sending: 'Invio in corso…',
+        sendingDescription:
+            'Attendi mentre riceviamo la richiesta e gli eventuali allegati.',
+        successTitle: 'Richiesta acquisita',
+        successDescription:
+            'Abbiamo acquisito la tua richiesta di assistenza. Riceverai la risposta a questo indirizzo:',
+        failureTitle: 'Invio non confermato',
+        failureDescription:
+            'Non abbiamo ricevuto la conferma dell’invio. I dati sono stati conservati: verifica la connessione e torna alla richiesta per riprovare.',
+        backToRequest: 'Torna alla richiesta',
         send: 'Invia richiesta',
         unavailable:
             "L'assistenza non è al momento disponibile. Contatta un amministratore.",
@@ -150,7 +159,7 @@ const it = {
                 "Compila oggetto e descrizione. Controlla l'email: è precompilata dal tuo account, ma puoi modificarla. Puoi aggiungere fino a 3 allegati, ciascuno da massimo 5 MB.",
             thirdTitle: 'Invia e attendi la risposta',
             thirdBody:
-                "Dopo la conferma di acquisizione, il referente risponderà all'indirizzo indicato. La richiesta e le risposte vengono gestite via email.",
+                "Durante l'invio il form lascia spazio all'indicatore di attesa; l'esito compare nella stessa finestra con l'email di risposta. Se l'invio non è confermato, puoi tornare alla richiesta senza perdere dati e allegati. Il referente risponderà via email all'indirizzo indicato.",
             tip: 'Formati consentiti: PNG, JPG/JPEG, WebP, PDF, TXT, LOG, CSV e JSON.',
             guestEnabled:
                 'Il form è disponibile anche senza accedere, dalle schermate di accesso.',
@@ -936,6 +945,15 @@ const en = {
         removeFile: 'Remove {name}',
         uploadProgress: 'Uploading: {percent}%',
         sending: 'Sending…',
+        sendingDescription:
+            'Please wait while we receive your request and any attachments.',
+        successTitle: 'Request accepted',
+        successDescription:
+            'Your support request has been accepted. Replies will be sent to:',
+        failureTitle: 'Send not confirmed',
+        failureDescription:
+            'We did not receive confirmation of your submission. Your details have been kept: check your connection and return to the request to try again.',
+        backToRequest: 'Back to request',
         send: 'Send request',
         unavailable:
             'Support is currently unavailable. Please contact an administrator.',
@@ -1038,7 +1056,7 @@ const en = {
                 'Enter a subject and description. Check the email address: it is prefilled from your account and can be changed. You can add up to 3 attachments, each no larger than 5 MB.',
             thirdTitle: 'Submit and wait for a reply',
             thirdBody:
-                'After the acceptance confirmation, the technical contact will reply to the address provided. Requests and replies are handled by email.',
+                'While sending, the form is replaced by a loading indicator; the outcome appears in the same dialog with the reply email. If submission is not confirmed, you can return to the request without losing your details or attachments. The technical contact will reply by email to the address provided.',
             tip: 'Allowed formats: PNG, JPG/JPEG, WebP, PDF, TXT, LOG, CSV and JSON.',
             guestEnabled:
                 'The form is also available without signing in, from the sign-in screens.',

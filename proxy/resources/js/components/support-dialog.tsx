@@ -1,5 +1,5 @@
 import { LifeBuoyIcon } from 'lucide-react';
-import { useId, useRef } from 'react';
+import { useId, useRef, useState } from 'react';
 import { SupportForm } from '@/components/support-form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,8 @@ export function SupportDialog({
     const { t } = useTranslation();
     const explanationId = useId();
     const contentRef = useRef<HTMLDivElement>(null);
+    const [open, setOpen] = useState(false);
+    const [processing, setProcessing] = useState(false);
     const button = (
         <Button
             type="button"
@@ -83,11 +85,29 @@ export function SupportDialog({
     }
 
     return (
-        <Dialog>
+        <Dialog
+            open={open}
+            onOpenChange={(nextOpen) => {
+                if (!processing) {
+                    setOpen(nextOpen);
+                }
+            }}
+        >
             <DialogTrigger asChild>{button}</DialogTrigger>
             <DialogContent
                 ref={contentRef}
                 className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-4xl"
+                closeButtonDisabled={processing}
+                onEscapeKeyDown={(event) => {
+                    if (processing) {
+                        event.preventDefault();
+                    }
+                }}
+                onInteractOutside={(event) => {
+                    if (processing) {
+                        event.preventDefault();
+                    }
+                }}
                 onOpenAutoFocus={(event) => {
                     if (initialEmail.trim()) {
                         const subject =
@@ -107,7 +127,12 @@ export function SupportDialog({
                     <DialogDescription>{t('support.intro')}</DialogDescription>
                 </DialogHeader>
                 {support.available ? (
-                    <SupportForm initialEmail={initialEmail} limits={support} />
+                    <SupportForm
+                        initialEmail={initialEmail}
+                        limits={support}
+                        onClose={() => setOpen(false)}
+                        onProcessingChange={setProcessing}
+                    />
                 ) : (
                     <Alert>
                         <AlertDescription>

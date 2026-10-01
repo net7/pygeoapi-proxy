@@ -46,6 +46,17 @@ test('guest submission contains no invented account identity', function () {
     Queue::assertPushed(SendSupportEmail::class, fn ($job): bool => $job->data->account === null);
 });
 
+test('successful submission leaves confirmation in the support dialog without a toast', function () {
+    app(SupportContactManager::class)->assign(User::factory()->admin()->create()->id);
+
+    $this->post('/support', ['subject' => 'Help', 'description' => 'Details', 'email' => 'guest@example.org'])
+        ->assertRedirect('/login')->assertSessionHasNoErrors();
+
+    $this->get('/login')->assertOk()
+        ->assertViewHas('page', fn (array $page): bool => data_get($page, 'flash.toast') === null);
+    Queue::assertPushed(SendSupportEmail::class, 1);
+});
+
 test('support unavailable returns a form error without side effects', function () {
     $this->postJson('/support', ['subject' => 'Help', 'description' => 'Details', 'email' => 'guest@example.org'])
         ->assertUnprocessable()->assertJsonValidationErrors('support');

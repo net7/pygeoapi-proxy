@@ -175,7 +175,13 @@ Una Form Request dedicata contiene le regole Laravel ed è usata sia per la vali
 - L'invio finale applica nuovamente tutte le regole, anche se il browser ha già mostrato i campi come validi.
 - Autorizzazione, disponibilità del servizio e limiti di frequenza sono imposti dal server.
 
-Durante l'invio il pulsante è disabilitato e viene indicato il progresso del caricamento. Un errore mantiene il testo e l'email inseriti. Dopo l'accettazione vengono svuotati oggetto, descrizione e allegati, mantenendo l'email di contatto.
+I campi del form sono separati da `gap-3`, mantenendo lo stesso stile obbligatorio/opzionale dei processi.
+
+Durante l'invio il form è sostituito da un loader con icona di invio, anello animato, titolo e descrizione. Il progresso reale del caricamento è mostrato quando disponibile. La modal mantiene l'altezza del contenuto e impedisce chiusura, Escape e clic esterni durante la richiesta, evitando invii ripetuti o perdita accidentale dei dati.
+
+L'esito appare nella stessa modal con icona dedicata, titolo, descrizione e comandi pertinenti; non viene mostrato un toast. Al successo compare l'indirizzo di risposta effettivamente inserito e il pulsante di chiusura; oggetto, descrizione e allegati vengono svuotati. Gli errori di validazione riportano al form e spostano il focus sul primo campo non valido. Gli errori globali, di rete o HTTP mostrano un esito di invio non confermato con «Torna alla richiesta» e «Chiudi». Tornando al form, testo, email e file selezionati sono conservati.
+
+I passaggi form → loader → esito usano le View Transition già presenti nell'app, con dissolvenze morbide e senza ritardi artificiali. Il focus segue lo stato visualizzato; i messaggi sono annunciati agli screen reader. Con movimento ridotto o browser senza supporto alle View Transition il flusso resta utilizzabile senza quelle animazioni.
 
 ## Frequenza degli invii
 
@@ -199,7 +205,7 @@ Il superamento del limite produce un errore comprensibile, localizzato, senza az
 
 Un errore durante il salvataggio o un fallimento certo dell'accodamento rimuove i file già creati e restituisce un errore. Un eventuale esito ambiguo della connessione alla coda non deve essere presentato come invio riuscito; il cleanup periodico recupera i file rimasti orfani.
 
-Il messaggio di successo è «Richiesta acquisita. Le risposte saranno inviate all'indirizzo indicato». La conferma indica che l'app ha accettato l'invio; non dichiara che l'email sia già arrivata al referente.
+L'esito positivo nella modal ha titolo «Richiesta acquisita», icona di email confermata e descrizione «Abbiamo acquisito la tua richiesta di assistenza. Riceverai la risposta a questo indirizzo:», seguita dall'email di contatto inserita. La conferma indica che l'app ha accettato l'invio; non dichiara che l'email sia già arrivata al referente.
 
 ### Job e destinatario
 
