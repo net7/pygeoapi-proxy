@@ -23,7 +23,6 @@ type SubmissionView =
     | {
           status: 'sending' | 'success' | 'error';
           email: string;
-          height: number;
           error?: string;
       };
 
@@ -85,11 +84,8 @@ export function SupportForm({
         submitting.current = true;
         hasSubmitted.current = true;
         const email = form.data.email.trim();
-        const height = content.current?.offsetHeight ?? 400;
         const showError = (error = t('support.failureDescription')) => {
-            runUiTransition(() =>
-                setView({ status: 'error', email, height, error }),
-            );
+            runUiTransition(() => setView({ status: 'error', email, error }));
         };
 
         form.transform((data) => ({
@@ -103,13 +99,13 @@ export function SupportForm({
                 onStart: () => {
                     onProcessingChange(true);
                     runUiTransition(() =>
-                        setView({ status: 'sending', email, height }),
+                        setView({ status: 'sending', email }),
                     );
                 },
                 onSuccess: () => {
                     runUiTransition(() => {
                         form.reset('subject', 'description', 'attachments');
-                        setView({ status: 'success', email, height });
+                        setView({ status: 'success', email });
                     });
                 },
                 onError: (errors) => {
@@ -142,15 +138,7 @@ export function SupportForm({
 
     return (
         <ContentTransition>
-            <div
-                ref={content}
-                className="grid min-w-0"
-                style={
-                    view.status === 'form'
-                        ? undefined
-                        : { minHeight: view.height }
-                }
-            >
+            <div ref={content} className="grid min-w-0">
                 {view.status === 'form' ? (
                     <SupportFormFields
                         values={form.data}
