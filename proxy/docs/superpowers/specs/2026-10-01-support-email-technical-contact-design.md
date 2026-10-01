@@ -2,7 +2,7 @@
 
 Data: 2026-10-01.
 
-Stato: spec completa proposta per la revisione dell'utente, prima del piano di implementazione.
+Stato: approvata per la pianificazione con l'indicazione «procedi inline e senza worktrees». Esecuzione nella directory corrente, senza worktree.
 
 ## Obiettivo
 
@@ -345,4 +345,4 @@ Si useranno test Pest per i comportamenti backend, test frontend mirati per inte
 
 ## Passaggio successivo nel flusso Superpowers
 
-Questa spec viene sottoposta a revisione prima di scrivere il piano. Dopo l'approvazione della versione scritta si applica `superpowers:writing-plans`; il piano sarà a sua volta sottoposto a revisione e alla scelta del metodo di esecuzione prima di implementare la funzionalità.
+La spec è stata approvata per la pianificazione. Si applica `superpowers:writing-plans`; il piano sarà sottoposto a revisione prima di implementare la funzionalità. Il metodo di esecuzione è già scelto: inline, tramite `superpowers:executing-plans`, nella directory corrente e senza worktree.
