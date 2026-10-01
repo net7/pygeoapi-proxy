@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
+    $this->from('/login');
     config(['support.allow_guests' => true, 'queue.default' => 'database']);
     app(SupportContactManager::class)->assign(User::factory()->admin()->create()->id);
     Queue::fake();
@@ -31,14 +32,14 @@ test('text field upper boundaries and an existing account email are accepted', f
     $this->postJson('/support', [
         'subject' => str_repeat('à', 200), 'description' => str_repeat('a', 10000),
         'email' => strtoupper($user->email),
-    ])->assertRedirect('/support');
+    ])->assertRedirect('/login');
     Queue::assertPushed(SendSupportEmail::class, fn ($job): bool => $job->data->replyTo === $user->email);
 });
 
 test('three files at exactly five mib are accepted and one byte over is rejected', function () {
     $payload = ['subject' => 'Help', 'description' => 'Details', 'email' => 'guest@example.org'];
     $files = array_map(fn ($i) => UploadedFile::fake()->createWithContent("trace{$i}.log", str_repeat('a', 5242880)), range(1, 3));
-    $this->post('/support', [...$payload, 'attachments' => $files])->assertSessionHasNoErrors()->assertRedirect('/support');
+    $this->post('/support', [...$payload, 'attachments' => $files])->assertSessionHasNoErrors()->assertRedirect('/login');
     $this->postJson('/support', [...$payload, 'attachments' => [
         UploadedFile::fake()->createWithContent('trace.log', str_repeat('a', 5242881)),
     ]])->assertUnprocessable()->assertJsonValidationErrors('attachments.0');
@@ -68,7 +69,7 @@ test('attachment extension and detected content must agree', function (string $n
         'subject' => 'Help', 'description' => 'Details', 'email' => 'guest@example.org', 'attachments' => [$file],
     ]);
     if ($valid) {
-        $response->assertRedirect('/support');
+        $response->assertRedirect('/login');
         Queue::assertPushed(SendSupportEmail::class, 1);
     } else {
         $response->assertUnprocessable()->assertJsonValidationErrors('attachments.0');

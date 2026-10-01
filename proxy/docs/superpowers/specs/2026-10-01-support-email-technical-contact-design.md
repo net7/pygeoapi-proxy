@@ -2,7 +2,7 @@
 
 Data: 2026-10-01.
 
-Stato: approvata per la pianificazione con l'indicazione «procedi inline e senza worktrees». Esecuzione nella directory corrente, senza worktree.
+Stato: approvata e in implementazione inline nella directory corrente, senza worktree. Aggiornata con le richieste successive su modal, pulsante di assistenza, badge e blocco del referente tecnico.
 
 ## Obiettivo
 
@@ -21,6 +21,9 @@ Il risultato atteso è un flusso semplice da compilare, con validazioni Laravel 
 - Un admin può assegnare l'incarico dalla lista di tutti gli utenti. La nomina di un altro utente sostituisce automaticamente il referente precedente.
 - L'accesso senza autenticazione è controllato da `SUPPORT_ALLOW_GUESTS`, booleano con default `false`.
 - L'help descrive il nuovo flusso sia per gli utenti sia per gli admin, nelle lingue italiana e inglese.
+- Il form si apre in una modal dal pulsante «Assistenza», con icona riconoscibile e testo visibile, accanto ad «Aiuto» nell'header; non esiste una pagina dedicata o una voce nella sidebar.
+- Il referente tecnico autenticato vede il pulsante disabilitato con un popover che ne spiega il motivo; il backend impedisce anche invio diretto e Precognition.
+- Il badge del referente è colorato, con icona e testo maiuscolo, nella colonna Ruolo sotto il ruolo ordinario dell'utente.
 
 ## Scelte di progetto proposte per questa revisione
 
@@ -98,7 +101,7 @@ La verifica e l'aggiornamento devono usare lo stesso coordinamento delle operazi
 
 Nella lista di tutti gli utenti:
 
-- un badge identifica il referente corrente;
+- nella colonna **Ruolo**, il ruolo ordinario e l'incarico di referente sono incolonnati: il badge **REFERENTE TECNICO** compare sotto **ADMIN**, è colorato, usa un'icona ed è in maiuscolo come i ruoli;
 - il menu dell'utente presenta «Nomina referente tecnico» per gli admin attivi;
 - la schermata indica il referente corrente anche quando filtri e paginazione non ne mostrano la riga;
 - l'azione rende esplicito che la nomina sostituirà il referente attuale;
@@ -124,13 +127,16 @@ Il valore è letto in `config/support.php` ed esposto al resto dell'applicazione
 | Visitatore | Flag `false` | Flag `true` |
 | --- | --- | --- |
 | Utente autenticato e attivo | Form disponibile | Form disponibile |
-| Admin autenticato e attivo | Form disponibile | Form disponibile |
+| Admin autenticato e attivo, diverso dal referente | Form disponibile | Form disponibile |
+| Referente tecnico autenticato | Pulsante disabilitato con spiegazione; invio e Precognition vietati | Pulsante disabilitato con spiegazione; invio e Precognition vietati |
 | Ospite | Accesso riservato agli utenti autenticati | Form disponibile |
 | Sessione di account disattivato | Accesso negato secondo il comportamento esistente | Accesso negato secondo il comportamento esistente |
 
-Il flag controlla GET del form, POST di invio e richieste Precognition. Con accesso anonimo disabilitato, la pagina rimanda l'ospite al login; una richiesta diretta di invio o validazione non può produrre email, job o allegati persistiti.
+Il flag controlla la disponibilità del pulsante per gli ospiti, il POST di invio e le richieste Precognition. Non esiste una pagina dedicata né una rotta GET del form. Con accesso anonimo disabilitato, una richiesta diretta di invio o validazione richiede il login e non può produrre email, job o allegati persistiti.
 
-Quando il flag è attivo, un link «Assistenza» compare anche nelle schermate di accesso. Gli utenti autenticati trovano il link nella navigazione dell'app. L'help riflette l'impostazione corrente. Nessun controllo admin consente di cambiare questo flag: la scelta è effettuata tramite ambiente.
+Quando il flag è attivo, un pulsante «Assistenza» con icona compare anche nelle schermate di accesso e apre la stessa modal. Gli utenti autenticati trovano il pulsante nell'header accanto ad «Aiuto». L'help riflette l'impostazione corrente. Nessun controllo admin consente di cambiare questo flag: la scelta è effettuata tramite ambiente.
+
+Il referente tecnico non può inviare richieste a sé stesso: il pulsante è disabilitato e un popover, accessibile anche da tastiera, spiega «Sei il referente tecnico e ricevi le richieste di assistenza. Non puoi inviare una richiesta a te stesso». Il controllo backend confronta l'identità dell'account autenticato con il referente corrente, senza basarsi sull'email modificabile del form o su dati inviati dal client. Il middleware rifiuta con HTTP 403 sia POST sia Precognition; l'azione di accettazione ricontrolla il referente prima di scrivere file o accodare job. Cambiare l'email di contatto non aggira il blocco. La sostituzione del referente aggiorna lo stato disponibile alle successive richieste.
 
 Il cambio del flag disciplina le nuove richieste; non annulla quelle già accettate e presenti in coda.
 
@@ -238,7 +244,8 @@ Se la cancellazione degli allegati fallisce dopo che il trasporto ha accettato l
 
 | Condizione | Comportamento |
 | --- | --- |
-| Nessun referente configurato o referente non valido | Pagina con avviso di indisponibilità e form non compilabile; invio diretto respinto senza job o file residui |
+| Nessun referente configurato o referente non valido | Modal con avviso di indisponibilità e form non compilabile; invio diretto respinto senza job o file residui |
+| Account autenticato uguale al referente corrente | Pulsante disabilitato e popover esplicativo; POST e Precognition respinti senza email, job o file persistiti |
 | Referente diventato indisponibile dopo l'accodamento | Tentativo fallito e recuperabile entro i limiti; nessun destinatario alternativo scelto automaticamente |
 | Nuovo referente prima di un tentativo | Il worker usa il nuovo referente valido |
 | Campi o file non validi | Errori specifici sui campi; nessuna email o richiesta accodata |
@@ -253,12 +260,12 @@ I log applicativi non riportano il contenuto del messaggio o i file. L'eventuale
 
 ## Navigazione, help e localizzazione
 
-La pagina di assistenza usa il layout dell'app per gli autenticati e un layout coerente con le schermate di accesso per gli ospiti ammessi. Il form è condiviso nei due casi.
+Il pulsante «Assistenza», con icona e testo visibile accanto ad «Aiuto» nell'header, apre una modal accessibile senza cambiare pagina o URL. Non si aggiunge una voce alla sidebar. Per gli ospiti ammessi, il pulsante nelle schermate di accesso apre la stessa modal e lo stesso form. La modal ha titolo, descrizione, chiusura e contenuto scorrevole; restituisce il focus al pulsante alla chiusura. L'email iniziale viene dall'account nelle shared props; disponibilità e stato di referente corrente sono booleani che non espongono il destinatario. Il POST torna alla pagina di provenienza: gli errori mantengono aperta la modal con i valori e i file selezionati, mentre il successo svuota oggetto, descrizione e allegati conservando l'email e lasciando aperta la modal.
 
 La guida esistente riceve due capitoli:
 
 1. **Richiedere assistenza**, comune a utenti e admin: apertura del form, campi da compilare, email modificabile, tre allegati da 5 MB, formati consentiti, conferma di acquisizione e risposta tramite email. Il testo sull'accesso anonimo segue il flag effettivo.
-2. **Gestire il referente tecnico**, riservato agli admin: nomina dalla lista utenti, badge, sostituzione automatica, necessità di un admin attivo e trasferimento prima di disattivazione, cambio ruolo o cancellazione.
+2. **Gestire il referente tecnico**, riservato agli admin: nomina dalla lista utenti, badge colorato con icona e testo maiuscolo sotto il ruolo ordinario nella colonna Ruolo, sostituzione automatica, necessità di un admin attivo e trasferimento prima di disattivazione, cambio ruolo o cancellazione. Spiega anche perché il referente vede Assistenza disabilitato e il relativo popover.
 
 Con questi capitoli la guida passa da quattro a cinque sezioni per gli utenti e da nove a undici per gli admin. I capitoli admin rimangono esclusi dalla guida degli utenti ordinari.
 
@@ -275,11 +282,11 @@ La successiva implementazione deve mantenere responsabilità separate:
 | Azione di assegnazione e guardie account | Transazione, autorizzazione e conservazione degli invarianti durante tutte le modifiche account |
 | Middleware di accesso e rate limiter | Accesso autenticato/anonimo e limiti separati per invio e Precognition |
 | Form Request | Regole, normalizzazione ed errori di validazione condivisi |
-| Controller del form | Rendering, accettazione e composizione del flusso di accodamento |
+| Controller del form | Accettazione, composizione del flusso di accodamento e redirect alla pagina di provenienza |
 | Gestione allegati temporanei | Scrittura privata, scadenza, cleanup su errori e rimozione dopo invio |
 | Job e messaggio email | Destinatario corrente, tentativi, trasporto e contenuto del messaggio |
 | Pulizia pianificata | Rimozione circoscritta dei dati operativi scaduti, senza interferire con gli invii in corso |
-| Pagina e componenti frontend | Campi, allegati, feedback, navigazione e gestione incarico |
+| Modal e componenti frontend | Pulsante con icona accanto ad Aiuto, blocco e popover del referente, campi, allegati, feedback e gestione incarico |
 | Help e traduzioni | Istruzioni coerenti con ruoli, flag e comportamento implementato |
 
 Il piano identificherà i file nuovi e le modifiche ai punti di integrazione elencati, riutilizzando struttura, componenti e convenzioni esistenti. Non servono nuovi pacchetti, un sistema di ruoli multipli o refactoring estranei alla funzionalità.
@@ -300,7 +307,8 @@ Il piano identificherà i file nuovi e le modifiche ai punti di integrazione ele
 
 - Con flag assente o `false`, un ospite non accede al form e non può inviare o validare direttamente tramite Precognition.
 - Con flag `true`, un ospite può compilare e inviare il form; un account disattivato non acquisisce accesso tramite la propria sessione.
-- Un utente attivo può usare il form in entrambe le configurazioni.
+- Un utente attivo diverso dal referente può usare il form in entrambe le configurazioni.
+- Il referente autenticato vede Assistenza disabilitato con spiegazione accessibile; POST e Precognition sono rifiutati anche con email modificata. Nessun job, email o file viene creato. Dopo il trasferimento l'ex referente può inviare e il nuovo referente viene bloccato.
 - L'email autenticata è precompilata, modificabile e resta distinta dall'account; l'indirizzo modificato viene usato nel `Reply-To` senza alterare il profilo.
 - Oggetto, descrizione, email e file rispettano tutte le regole, compresi valori vuoti, limiti esatti, limite più uno, quarto file e file di tipo non consentito.
 - Tre file validi di dimensione massima sono accettati. Nessun file è richiesto.
@@ -328,7 +336,8 @@ Il piano identificherà i file nuovi e le modifiche ai punti di integrazione ele
 
 ### Help e interfaccia
 
-- I collegamenti al form seguono autenticazione e flag.
+- I pulsanti seguono autenticazione e flag e aprono una modal senza cambio di URL; quello autenticato è accanto ad Aiuto, con icona e testo visibile. Non esistono pagina dedicata, rotta GET o voce nella sidebar.
+- Il badge del referente è colorato, con icona e testo maiuscolo, impilato sotto il ruolo ordinario nella colonna Ruolo.
 - La guida comune documenta il form; quella admin aggiunge la gestione del referente. Gli utenti ordinari non vedono il capitolo admin.
 - Le due lingue descrivono gli stessi limiti e comportamenti e riflettono la configurazione dell'accesso anonimo.
 - Campi, errori, rimozione file e stato di invio sono utilizzabili da tastiera e correttamente etichettati.
@@ -345,4 +354,4 @@ Si useranno test Pest per i comportamenti backend, test frontend mirati per inte
 
 ## Passaggio successivo nel flusso Superpowers
 
-La spec è stata approvata per la pianificazione. Si applica `superpowers:writing-plans`; il piano sarà sottoposto a revisione prima di implementare la funzionalità. Il metodo di esecuzione è già scelto: inline, tramite `superpowers:executing-plans`, nella directory corrente e senza worktree.
+Spec e piano sono approvati; le richieste successive dell'utente vengono recepite in entrambi durante l'implementazione. L'esecuzione procede inline tramite `superpowers:executing-plans`, nella directory corrente e senza worktree.

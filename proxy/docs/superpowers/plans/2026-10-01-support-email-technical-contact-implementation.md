@@ -10,13 +10,16 @@
 
 **Spec:** [2026-10-01-support-email-technical-contact-design.md](../specs/2026-10-01-support-email-technical-contact-design.md). Leggere spec e piano insieme; la spec prevale nelle decisioni di comportamento.
 
-**Execution:** Inline nella directory corrente, sul branch corrente `develop`, senza creare worktree. Questo documento precede l'implementazione: le caselle ancora vuote sono intenzionali.
+**Execution:** Inline nella directory corrente, sul branch corrente `develop`, senza creare worktree. Piano aggiornato durante l'esecuzione con le richieste su modal, pulsante, badge e blocco del referente; il registro di esecuzione conserva verifiche e commit già completati.
 
 ## Global Constraints
 
 - «La funzionalità serve esclusivamente a inviare email. Non introduce uno storico delle segnalazioni, ticket o una pagina di gestione delle richieste.»
 - «Gli allegati sono facoltativi: massimo **3 file**, ciascuno fino a **5 MB**.» Il limite è «**5 × 1024 × 1024 byte**, ossia 5120 KiB».
 - «L'accesso senza autenticazione è controllato da `SUPPORT_ALLOW_GUESTS`, booleano con default `false`.»
+- Il form è una modal, aperta dal pulsante «Assistenza» con icona e testo visibile accanto ad «Aiuto». Nessuna pagina dedicata, rotta GET o voce nella sidebar.
+- Il referente autenticato vede il pulsante disabilitato con popover esplicativo. Backend: HTTP 403 per POST e Precognition, controllo sull'account e non sull'email modificabile, ricontrollo prima degli effetti di accettazione.
+- Il badge del referente è colorato, con icona e testo maiuscolo, sotto il ruolo ordinario nella colonna Ruolo.
 - «Oggetto fino a 200 caratteri, descrizione fino a 10.000 caratteri, email fino a 255 caratteri.»
 - «Le estensioni consentite sono `png`, `jpg`, `jpeg`, `webp`, `pdf`, `txt`, `log`, `csv` e `json`.» ZIP escluso.
 - «Il referente tecnico è un incarico aggiuntivo assegnabile a un admin; può esserci al massimo un referente.» `UserRole` rimane `user` / `admin`.
@@ -38,6 +41,7 @@
 3. Timeout della coda dopo un possibile accodamento e allegati parzialmente scritti: non dichiarare successo, non cancellare file che un job accettato potrebbe usare e recuperare gli orfani. Test Task 2 e Task 3.
 4. Cleanup contemporaneo a un worker, retry dopo sette giorni e invii senza allegati: mai iniziare un invio scaduto, eliminare file in uso o coinvolgere job estranei. Test Task 3 e Redis/Horizon reali Task 7.
 5. Email modificata durante errori/rerender e cambio del referente durante l'attesa: preservare il contatto dichiarato, non cambiare il profilo e spedire solo al referente corrente. Test Task 2, Task 4 e Task 5.
+6. Pulsante disabilitato per il referente e tentativi diretti con email diversa o nomina dopo il caricamento della pagina: il backend deve bloccare prima di file, job o email; verificare anche Precognition, aggiornamento dopo trasferimento e popover da tastiera.
 
 ---
 
@@ -62,7 +66,7 @@ All'inizio dell'esecuzione creare il registro previsto da `superpowers:executing
 | Trasporto | `app/Jobs/SendSupportEmail.php`, `app/Mail/SupportEmail.php` | Tentativi, destinatario corrente, email sincrona nel worker |
 | Conservazione | `app/Services/Support/SupportQueuePruner.php`, `app/Services/Support/SupportHorizonPruner.php` | Rimozione selettiva dei payload scaduti |
 | Web | `app/Http/Controllers/SupportController.php`, middleware e Form Request | Accesso, quote, validazione, conferma |
-| Form | `resources/js/pages/support/create.tsx`, `resources/js/components/support-form.tsx` | Un solo form per autenticati e ospiti |
+| Form | `resources/js/components/support-dialog.tsx`, `resources/js/components/support-form.tsx` | Una sola modal per autenticati e ospiti, pulsante e spiegazione del blocco |
 | Admin | `resources/js/components/admin/technical-contact-dialog.tsx` | Nomina dalla lista e referente corrente |
 | Help | `resources/js/components/user-guide.tsx`, `resources/js/lib/i18n/messages.ts` | Istruzioni e traduzioni dei due ruoli |
 
@@ -497,9 +501,9 @@ Run: `vendor/bin/pint --dirty --format agent` e `git diff --check`; stage mirato
 **Interfaces**
 
 - Consumes: `config('support.*')`, `SupportContactManager::current()`, `SubmitSupportEmail::handle()`.
-- Produces: `GET /support` (`support.create`), `POST /support` (`support.store`).
-- Produces: pagina Inertia `support/create` con `available: boolean` e `initialEmail: string`; nessun indirizzo del referente.
-- Produces: shared props `support: {allowGuests: boolean; maxAttachments: number; maxFileBytes: number; allowedExtensions: string[]}`.
+- Produces: solo `POST /support` (`support.store`); nessuna rotta GET o pagina `support/create`.
+- Produces: disponibilità e stato del referente nelle shared props; email iniziale da `auth.user.email`, vuota per ospiti. Nessun indirizzo del referente nelle props comuni.
+- Produces: shared props `support: {allowGuests: boolean; available: boolean; isTechnicalContact: boolean; maxAttachments: number; maxFileBytes: number; allowedExtensions: string[]}`.
 - Produces: errori `subject`, `description`, `email`, `attachments`, `attachments.N`, `support`. Conferma tramite toast/sessione secondo il pattern esistente.
 
 - [ ] **Step 1: Scrivere test di accesso e assenza di effetti Precognition.**
@@ -543,7 +547,7 @@ test('precognition validates text without persisting or sending', function () {
 });
 ```
 
-Matrice accesso: flag mancante/false/true/invalido; ospite, account attivo, admin, sessione disattivata; GET, POST e Precognition. La sessione disattivata segue il middleware esistente anche con guest abilitati. Verificare inoltre form indisponibile senza referente e POST senza effetti in tale stato.
+Matrice accesso: flag mancante/false/true/invalido; ospite, account attivo, admin, referente corrente, sessione disattivata; disponibilità del pulsante, POST e Precognition. Verificare l'assenza della pagina GET. La sessione disattivata segue il middleware esistente anche con guest abilitati. Senza referente, modal indisponibile e POST senza effetti. Il referente riceve 403 per invio e Precognition anche con email diversa; trasferendo l'incarico si inverte l'accesso fra vecchio e nuovo referente. Verificare anche l'azione di accettazione chiamata direttamente, senza effetti quando l'account coincide col referente.
 
 - [ ] **Step 2: Eseguire RED e collegare rotte, middleware e disponibilità.**
 
@@ -552,16 +556,15 @@ Run: `php artisan test --compact tests/Feature/Support/SupportAccessTest.php tes
 ```php
 Route::middleware([EnsureUserIsActive::class, EnsureSupportAccess::class])
     ->group(function (): void {
-        Route::get('support', [SupportController::class, 'create'])->name('support.create');
         Route::post('support', [SupportController::class, 'store'])
             ->middleware(['throttle:support', HandlePrecognitiveRequests::class])
             ->name('support.store');
     });
 ```
 
-Rotte web con CSRF, esterne ai gruppi `guest` e `auth` esclusivi. `EnsureSupportAccess` consente un utente attivo o un ospite solo se il flag è vero; altrimenti redirect al login, oppure risposta di autenticazione prevista per richieste JSON. Non basare l'autorizzazione sui link frontend.
+Rotte web con CSRF, esterne ai gruppi `guest` e `auth` esclusivi. `EnsureSupportAccess` consente un utente attivo diverso dal referente, oppure un ospite solo se il flag è vero; altrimenti redirect al login, oppure risposta di autenticazione prevista per richieste JSON. Per il referente autenticato restituisce 403 prima di Precognition. Non basare l'autorizzazione sul pulsante frontend o sull'email dichiarata. `SubmitSupportEmail` ricontrolla lo stesso vincolo prima di scrivere file o accodare.
 
-`create()` restituisce disponibilità e email iniziale dell'account, o stringa vuota. `store()` passa solo i valori validati e `$request->user()` all'azione, poi restituisce il messaggio «Richiesta acquisita. Le risposte saranno inviate all'indirizzo indicato». Un errore dell'azione resta un errore del form.
+`HandleInertiaRequests` condivide `support.available` e `support.isTechnicalContact`, risolti dal referente corrente per i visitatori ammessi; l'email iniziale viene da `auth.user.email`. `store()` passa solo i valori validati e `$request->user()` all'azione, poi torna alla pagina di provenienza con il messaggio «Richiesta acquisita. Le risposte saranno inviate all'indirizzo indicato». Gli errori di validazione restano nel form e la modal rimane aperta. Eliminare `create()` e rigenerare Wayfinder dopo aver rimosso la GET.
 
 - [ ] **Step 3: Scrivere i test dei limiti e implementare le regole condivise.**
 
@@ -629,26 +632,28 @@ Run: `php artisan test --compact tests/Feature/Support`; expected PASS.
 
 Run: `php artisan wayfinder:generate --no-interaction`, `vendor/bin/pint --dirty --format agent` e `git diff --check`. Rispettare la policy esistente sui file generati. Commit `feat: validate and rate limit support submissions with precognition`.
 
-### Task 5: Form condiviso, allegati e collegamenti
+### Task 5: Modal condivisa, allegati e pulsante Assistenza
 
 **Files**
 
-- Create: `resources/js/pages/support/create.tsx`
+- Create: `resources/js/components/support-dialog.tsx`
 - Create: `resources/js/components/support-form.tsx`
 - Create: `resources/js/components/support-form-fields.tsx`
 - Create: `resources/js/lib/support-attachments.ts`
 - Create: `resources/js/types/support.ts`
 - Modify: `resources/js/types/global.d.ts`
-- Modify: `resources/js/components/app-sidebar.tsx`
+- Modify: `resources/js/components/app-sidebar-header.tsx`, `resources/js/layouts/app/app-sidebar-layout.tsx`
 - Modify: `resources/js/layouts/auth/auth-simple-layout.tsx`
 - Modify: `resources/js/lib/i18n/messages.ts`
 - Test: `tests/Frontend/support-attachments.test.ts`
 - Test: `tests/Frontend/support-form.test.tsx`
+- Test: `tests/Frontend/support-dialog.test.tsx`
 
 **Interfaces**
 
-- Consumes: rotte Wayfinder `support.create` e `support.store`; shared props e page props del Task 4.
+- Consumes: rotta Wayfinder `support.store` e shared props del Task 4.
 - Produces: `SupportLimits = {maxAttachments:number; maxFileBytes:number; allowedExtensions:string[]}`.
+- Produces: `SupportConfiguration = SupportLimits & {allowGuests:boolean; available:boolean; isTechnicalContact:boolean}` e `SupportDialog({initialEmail, support})`, senza dipendenza diretta dal contesto Inertia nell'header.
 - Produces: `SupportFormProps = {initialEmail:string; limits:SupportLimits}` e `SupportForm({ initialEmail, limits }: SupportFormProps): React.ReactElement`.
 - Produces: `SupportFormValues = {subject: string; description: string; email: string; attachments: File[]}`.
 - Produces: `selectSupportAttachments(current: File[], incoming: File[], limits: SupportLimits): {ok:true; files:File[]} | {ok:false; reason:'count'|'size'|'extension'; fileName?:string}`.
@@ -738,13 +743,13 @@ return { ok: true, files };
 
 Un batch invalido non modifica i file precedenti. L'input `multiple` usa `accept` derivato dalla configurazione; il server resta autorevole. Permettere di riselezionare lo stesso file dopo la rimozione azzerando il valore dell'input.
 
-La pagina usa `AppLayout` per utenti autenticati e `AuthLayout` per ospiti ammessi. Con `available=false` mostra solo l'avviso di indisponibilità. Aggiungere «Assistenza» alla navigazione autenticata e al layout di accesso solo quando `support.allowGuests` è vero; evitare il link a sé stesso nella pagina del form.
+Comporre una modal `Dialog` con titolo, descrizione, chiusura, area scorrevole e ripristino del focus. Il pulsante «Assistenza» ha icona riconoscibile e testo visibile ed è accanto ad «Aiuto» nell'header; niente voce nella sidebar o pagina dedicata. Nel layout di accesso, mostrare il pulsante per gli ospiti solo con `support.allowGuests=true`, usando la stessa modal. Con `available=false` mostrare l'avviso di indisponibilità. Con `isTechnicalContact=true` il pulsante è disabilitato: un contenitore accessibile da tastiera apre un popover che spiega che il referente riceve le richieste e non può inviarle a sé stesso. Non affidare la spiegazione al solo hover. Rimuovere la vecchia pagina e l'eccezione support nell'assegnazione automatica dei layout. Verificare apertura senza cambio URL, ordine Aiuto/Assistenza, spiegazione del blocco e ritorno del focus alla chiusura.
 
 - [ ] **Step 4: Verificare gli stati di interazione e committare.**
 
 Run: `bun test tests/Frontend/support-attachments.test.ts tests/Frontend/support-form.test.tsx` e `bun run types:check`.
 
-Nel browser dell'ambiente di test verificare: email modificata che sopravvive a un errore server; testo/file mantenuti in caso di rate limit; rimozione via tastiera; nessun doppio submit durante upload; al successo solo oggetto/descrizione/file svuotati. Usare esclusivamente mailer array/log con dati sintetici o Mailpit locale. Se un browser eseguibile non è disponibile, riportare esplicitamente la verifica interattiva mancante senza sostituirla con un test che replica l'implementazione.
+Nel browser dell'ambiente di test verificare: modal aperta e URL invariato dopo invio o errori; email modificata che sopravvive a un errore server; testo/file mantenuti in caso di rate limit; rimozione via tastiera; nessun doppio submit durante upload; al successo solo oggetto/descrizione/file svuotati e modal ancora aperta. Verificare pulsante con icona/testo, blocco del referente e popover da tastiera. Usare esclusivamente mailer array/log con dati sintetici o Mailpit locale. Se un browser eseguibile non è disponibile, riportare esplicitamente la verifica interattiva mancante senza sostituirla con un test che replica l'implementazione.
 
 Formattare i file modificati con Prettier, eseguire lint mirato e `git diff --check`. Commit `feat: add support form and navigation`.
 
@@ -792,7 +797,7 @@ Renderizzare entrambe le lingue e i due valori del flag. Nel dialog verificare n
 
 Run: `bun test tests/Frontend/technical-contact.test.tsx tests/Frontend/user-guide.test.tsx`; expected: capitoli e componente assenti.
 
-Aggiungere `is_technical_contact` al tipo `AdminUser` e mostrare il badge accanto all'identità. Sopra la tabella rendere sempre `technicalContact` oppure l'avviso di servizio non configurato; non ricavare il riepilogo dalle sole righe paginabili.
+Aggiungere `is_technical_contact` al tipo `AdminUser`. Nella colonna Ruolo, impilare il ruolo ordinario e, sotto, il badge del referente: colorato, con icona e testo maiuscolo come gli altri ruoli. Non aggiungerlo all'identità dell'utente. Sopra la tabella rendere sempre `technicalContact` oppure l'avviso di servizio non configurato; non ricavare il riepilogo dalle sole righe paginabili.
 
 ```tsx
 {user.role === 'admin' && !user.is_deactivated && !user.is_technical_contact && (
@@ -813,7 +818,7 @@ Il dialog usa `DialogTitle`/`DialogDescription`, descrive la sostituzione e invi
 | support.title | Richiedere assistenza | Request support |
 | support.description | Invia una richiesta al referente tecnico e ricevi la risposta via email. | Send a request to the technical contact and receive a reply by email. |
 | support.first.title | Apri il form | Open the form |
-| support.first.description | Seleziona Assistenza nella navigazione. Se il servizio non è disponibile, contatta un amministratore. | Select Support in the navigation. If the service is unavailable, contact an administrator. |
+| support.first.description | Premi Assistenza, con l'icona di supporto accanto ad Aiuto, per aprire il form in una finestra. Se il servizio non è disponibile, contatta un amministratore. | Click Support, with its support icon next to Help, to open the form in a dialog. If the service is unavailable, contact an administrator. |
 | support.second.title | Descrivi il problema | Describe the problem |
 | support.second.description | Compila oggetto e descrizione. Controlla l'email: è precompilata dal tuo account, ma puoi modificarla. Puoi aggiungere fino a 3 allegati, ciascuno da massimo 5 MB. | Enter a subject and description. Check the email address: it is prefilled from your account and can be changed. You can add up to 3 attachments, each no larger than 5 MB. |
 | support.third.title | Invia e attendi la risposta | Submit and wait for a reply |
@@ -826,10 +831,10 @@ Il dialog usa `DialogTitle`/`DialogDescription`, descrive la sostituzione e invi
 | adminSupport.first.title | Scegli un admin attivo | Choose an active admin |
 | adminSupport.first.description | Apri Tutti gli utenti e seleziona Nomina referente tecnico nel menu di un amministratore attivo. | Open All users and select Appoint technical contact from an active administrator's menu. |
 | adminSupport.second.title | Conferma la sostituzione | Confirm the replacement |
-| adminSupport.second.description | La nomina sostituisce automaticamente quella precedente. Un badge e il riepilogo della pagina identificano il referente corrente. | The appointment automatically replaces the previous one. A badge and the page summary identify the current contact. |
+| adminSupport.second.description | La nomina sostituisce automaticamente quella precedente. Nella colonna Ruolo, il badge colorato con icona REFERENTE TECNICO compare sotto ADMIN; il riepilogo identifica il referente corrente. | The appointment automatically replaces the previous one. In the Role column, the colored TECHNICAL CONTACT badge with an icon appears below ADMIN; the summary identifies the current contact. |
 | adminSupport.third.title | Trasferisci prima di modificare l'account | Transfer before changing the account |
 | adminSupport.third.description | Nomina un sostituto prima di disattivare, eliminare o togliere il ruolo admin al referente corrente. | Appoint a replacement before deactivating, deleting or removing the admin role from the current contact. |
-| adminSupport.tip | Può esserci un solo referente tecnico. Se non è configurato, il form non accetta richieste. | There can be only one technical contact. If none is configured, the form cannot accept requests. |
+| adminSupport.tip | Può esserci un solo referente tecnico. Se sei il referente, Assistenza è disabilitato: il popover spiega che ricevi le richieste e non puoi inviarle a te stesso. Senza un referente, il form non accetta richieste. | There can be only one technical contact. If you are the contact, Support is disabled: the popover explains that you receive requests and cannot send one to yourself. Without a contact, the form cannot accept requests. |
 
 Adeguare le chiavi alla struttura corrente mantenendo questi testi. Tradurre anche badge, azione, dialog, errori, disponibilità, limiti file e conferma usando terminologia coerente.
 
@@ -971,15 +976,16 @@ Il resoconto finale distingue funzionalità implementate, verifiche effettive, l
 | --- | --- |
 | Referente unico, nomina admin, sostituzione atomica | 1, 6, 7 |
 | Protezioni ruolo/stato/bulk/eliminazione/profilo | 1, 7 |
-| Guest false, GET/POST/Precognition, config cache | 2, 4, 7 |
+| Guest false, pulsante/POST/Precognition, assenza GET, config cache | 2, 4, 5, 7 |
+| Referente bloccato, popover accessibile, controllo backend sull'identità | 2, 4, 5, 6 |
 | Campi, email modificabile, 3 file da 5 MiB | 4, 5 |
 | Precognition senza effetti e quote separate | 4 |
 | Cifratura, destinatario corrente, Reply-To, escaping | 2, 7 |
 | Errori storage/coda/SMTP, tentativi e timeout | 2, 3, 7 |
 | Sette giorni, orfani, dati senza file, Laravel/Horizon, lock | 2, 3, 7 |
-| Navigazione e form autenticato/ospite | 5 |
+| Modal autenticata/ospite, pulsante con icona accanto ad Aiuto | 5 |
 | Help user/admin IT/EN, cinque/undici capitoli | 6 |
 | Worker, storage condiviso, scheduler, develop/staging | 7 |
 | Nessuno storico, nuovo ruolo enum o nuova dipendenza | Tutti |
 
-L'auto-revisione controlla questa matrice, la coerenza delle interfacce, i cinque casi di Review Focus e l'assenza di passaggi lasciati da definire. La preferenza inline senza worktree resta acquisita dopo la revisione del documento.
+L'auto-revisione controlla questa matrice, la coerenza delle interfacce, i sei casi di Review Focus e l'assenza di passaggi lasciati da definire. La preferenza inline senza worktree resta acquisita dopo la revisione del documento.

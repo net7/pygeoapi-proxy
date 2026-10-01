@@ -29,6 +29,9 @@ const it = {
     },
     support: {
         title: 'Assistenza',
+        disabledHelp: 'Perché Assistenza è disabilitato',
+        technicalContactDisabled:
+            'Sei il referente tecnico e ricevi le richieste di assistenza. Non puoi inviare una richiesta a te stesso.',
         intro: 'Invia una richiesta al referente tecnico. Riceverai la risposta via email.',
         email: 'Email di contatto',
         emailHint:
@@ -139,7 +142,7 @@ const it = {
                 'Invia una richiesta al referente tecnico e ricevi la risposta via email.',
             firstTitle: 'Apri il form',
             firstBody:
-                'Seleziona Assistenza nella navigazione. Se il servizio non è disponibile, contatta un amministratore.',
+                'Premi Assistenza, con l’icona di supporto accanto ad Aiuto, per aprire il form in una finestra. Se il servizio non è disponibile, contatta un amministratore.',
             secondTitle: 'Descrivi il problema',
             secondBody:
                 "Compila oggetto e descrizione. Controlla l'email: è precompilata dal tuo account, ma puoi modificarla. Puoi aggiungere fino a 3 allegati, ciascuno da massimo 5 MB.",
@@ -161,11 +164,11 @@ const it = {
                 'Apri Tutti gli utenti e seleziona Nomina referente tecnico nel menu di un amministratore attivo.',
             secondTitle: 'Conferma la sostituzione',
             secondBody:
-                'La nomina sostituisce automaticamente quella precedente. Un badge e il riepilogo della pagina identificano il referente corrente.',
+                'La nomina sostituisce automaticamente quella precedente. Nella colonna Ruolo, il badge colorato con icona REFERENTE TECNICO compare sotto ADMIN; il riepilogo identifica il referente corrente.',
             thirdTitle: "Trasferisci prima di modificare l'account",
             thirdBody:
                 'Nomina un sostituto prima di disattivare, eliminare o togliere il ruolo admin al referente corrente.',
-            tip: 'Può esserci un solo referente tecnico. Se non è configurato, il form non accetta richieste.',
+            tip: 'Può esserci un solo referente tecnico. Se sei il referente, Assistenza è disabilitato: il popover spiega che ricevi le richieste e non puoi inviarle a te stesso. Senza un referente, il form non accetta richieste.',
         },
         open: 'Aiuto: apri la guida',
         greeting: 'Ciao',
@@ -913,6 +916,9 @@ const en = {
     },
     support: {
         title: 'Support',
+        disabledHelp: 'Why Support is disabled',
+        technicalContactDisabled:
+            'You are the technical contact and receive support requests. You cannot send a request to yourself.',
         intro: 'Send a request to the technical contact. You will receive a reply by email.',
         email: 'Contact email',
         emailHint:
@@ -1022,7 +1028,7 @@ const en = {
                 'Send a request to the technical contact and receive a reply by email.',
             firstTitle: 'Open the form',
             firstBody:
-                'Select Support in the navigation. If the service is unavailable, contact an administrator.',
+                'Click Support, with its support icon next to Help, to open the form in a dialog. If the service is unavailable, contact an administrator.',
             secondTitle: 'Describe the problem',
             secondBody:
                 'Enter a subject and description. Check the email address: it is prefilled from your account and can be changed. You can add up to 3 attachments, each no larger than 5 MB.',
@@ -1044,11 +1050,11 @@ const en = {
                 "Open All users and select Appoint technical contact from an active administrator's menu.",
             secondTitle: 'Confirm the replacement',
             secondBody:
-                'The appointment automatically replaces the previous one. A badge and the page summary identify the current contact.',
+                'The appointment automatically replaces the previous one. In the Role column, the colored TECHNICAL CONTACT badge with an icon appears below ADMIN; the summary identifies the current contact.',
             thirdTitle: 'Transfer before changing the account',
             thirdBody:
                 'Appoint a replacement before deactivating, deleting or removing the admin role from the current contact.',
-            tip: 'There can be only one technical contact. If none is configured, the form cannot accept requests.',
+            tip: 'There can be only one technical contact. If you are the contact, Support is disabled: the popover explains that you receive requests and cannot send one to yourself. Without a contact, the form cannot accept requests.',
         },
         open: 'Help: open user guide',
         greeting: 'Hi',

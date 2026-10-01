@@ -19,7 +19,7 @@ export default function AppSidebarLayout({
                 <AppSidebarHeader
                     breadcrumbs={breadcrumbs}
                     user={auth.user}
-                    allowGuestSupport={support.allowGuests}
+                    support={support}
                 />
                 <div data-page-content className="flex min-w-0 flex-1 flex-col">
                     {children}

@@ -17,6 +17,7 @@ import {
     Columns3Icon,
     CopyIcon,
     ListChecksIcon,
+    LifeBuoyIcon,
     ListFilterIcon,
     MoreHorizontalIcon,
     PencilIcon,
@@ -307,7 +308,17 @@ export default function AdminUsersIndex({
                 header: ({ column }) => (
                     <SortableHeader column={column} titleKey="common.role" />
                 ),
-                cell: ({ row }) => <RoleBadge role={row.original.role} />,
+                cell: ({ row }) => (
+                    <div className="flex flex-col items-start gap-1">
+                        <RoleBadge role={row.original.role} />
+                        {row.original.is_technical_contact && (
+                            <Badge className="uppercase">
+                                <LifeBuoyIcon data-icon="inline-start" />
+                                {t('technicalContact.badge').toUpperCase()}
+                            </Badge>
+                        )}
+                    </div>
+                ),
                 filterFn: (row, columnId, filterValue) =>
                     !filterValue ||
                     filterValue === 'all' ||
@@ -1717,10 +1728,9 @@ function SortableHeader({
 function AdminUserIdentity({
     user,
 }: {
-    user: Pick<AdminUser, 'name' | 'email' | 'avatar' | 'is_technical_contact'>;
+    user: Pick<AdminUser, 'name' | 'email' | 'avatar'>;
 }) {
     const getInitials = useInitials();
-    const { t } = useTranslation();
 
     return (
         <div className="flex min-w-0 items-center gap-3">
@@ -1732,11 +1742,6 @@ function AdminUserIdentity({
             </Avatar>
             <div className="flex min-w-0 flex-col">
                 <span className="truncate font-medium">{user.name}</span>
-                {user.is_technical_contact && (
-                    <Badge variant="secondary">
-                        {t('technicalContact.badge')}
-                    </Badge>
-                )}
                 <span className="truncate text-xs text-muted-foreground">
                     {user.email}
                 </span>

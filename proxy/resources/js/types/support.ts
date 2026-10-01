@@ -6,6 +6,12 @@ export type SupportLimits = {
 
 export type TechnicalContact = { id: number; name: string; email: string };
 
+export type SupportConfiguration = SupportLimits & {
+    allowGuests: boolean;
+    available: boolean;
+    isTechnicalContact: boolean;
+};
+
 export type SupportFormValues = {
     subject: string;
     description: string;

@@ -1,9 +1,9 @@
 import { Link, usePage } from '@inertiajs/react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import AuthLandscape from '@/components/auth-landscape';
+import { SupportDialog } from '@/components/support-dialog';
 import { useTranslation } from '@/hooks/use-translation';
 import { home } from '@/routes';
-import { create as supportCreate } from '@/routes/support';
 import type { AuthLayoutProps } from '@/types';
 
 export default function AuthSimpleLayout({
@@ -43,14 +43,14 @@ export default function AuthSimpleLayout({
                         </p>
                     </header>
                     {children}
-                    {page.props.support?.allowGuests &&
-                        page.component !== 'support/create' && (
-                            <Link
-                                href={supportCreate()}
-                                className="text-sm underline underline-offset-4"
-                            >
-                                {t('support.title')}
-                            </Link>
+                    {!page.props.auth?.user &&
+                        page.props.support?.allowGuests && (
+                            <div>
+                                <SupportDialog
+                                    initialEmail=""
+                                    support={page.props.support}
+                                />
+                            </div>
                         )}
                 </main>
             </div>

@@ -1,28 +1,31 @@
 <?php
 
+use App\Jobs\SendSupportEmail;
 use App\Models\User;
 use App\Services\Support\SupportContactManager;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Env;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
-test('guest access is enforced on get post and precognition', function ($flag, bool $allowed) {
+test('guest access controls shared availability post and precognition', function ($flag, bool $allowed) {
     config(['support.allow_guests' => $flag]);
     Queue::fake();
     Mail::fake();
     Storage::fake('local');
-    $get = $this->get('/support');
+    $get = $this->get('/login');
     $post = $this->post('/support', []);
     $precognition = $this->withHeaders(['Precognition' => 'true'])->post('/support', []);
+    $get->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('support.allowGuests', $allowed)->where('support.available', false)
+        ->where('support.isTechnicalContact', false)->where('auth.user', null));
     if ($allowed) {
-        $get->assertOk()->assertInertia(fn (Assert $page) => $page
-            ->component('support/create', false)->where('initialEmail', '')->where('available', false));
         $post->assertSessionHasErrors();
         $precognition->assertSessionHasErrors();
     } else {
-        $get->assertRedirect(route('login'));
         $post->assertRedirect(route('login'));
         $precognition->assertRedirect(route('login'));
     }
@@ -48,8 +51,9 @@ test('an active account sees its email and no technical contact address', functi
     $contact = User::factory()->admin()->create();
     app(SupportContactManager::class)->assign($contact->id);
     $user = User::factory()->create(['role' => $role]);
-    $this->actingAs($user)->get('/support')->assertOk()->assertInertia(fn (Assert $page) => $page
-        ->component('support/create', false)->where('available', true)->where('initialEmail', $user->email)
+    $this->actingAs($user)->get('/settings/profile')->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('support.available', true)->where('auth.user.email', $user->email)
+        ->where('support.isTechnicalContact', false)
         ->where('support.allowGuests', false)->where('support.maxAttachments', 3)
         ->where('support.maxFileBytes', 5242880)->missing('technicalContact'));
 })->with(['user', 'admin']);
@@ -60,7 +64,7 @@ test('a deactivated session is rejected even when guest support is enabled', fun
     if ($method === 'precognition') {
         $this->withHeaders(['Precognition' => 'true'])->post('/support')->assertRedirect(route('account.deactivated'));
     } else {
-        $this->{$method}('/support')->assertRedirect(route('account.deactivated'));
+        $this->{$method}($method === 'get' ? '/settings/profile' : '/support')->assertRedirect(route('account.deactivated'));
     }
     $this->assertGuest();
 })->with(['get', 'post', 'precognition']);
@@ -68,4 +72,53 @@ test('a deactivated session is rejected even when guest support is enabled', fun
 test('json guest submissions receive an authentication error when disabled', function () {
     config(['support.allow_guests' => false]);
     $this->postJson('/support')->assertUnauthorized();
+});
+
+test('support has no dedicated get page', function () {
+    $this->actingAs(User::factory()->create())->get('/support')->assertMethodNotAllowed();
+    expect(Route::has('support.create'))->toBeFalse();
+});
+
+test('the technical contact cannot submit or precognitively validate even with a different email', function (bool $guests, bool $precognitive) {
+    config(['support.allow_guests' => $guests, 'queue.default' => 'database']);
+    Queue::fake();
+    Mail::fake();
+    Storage::fake('local');
+    $contact = User::factory()->admin()->create();
+    app(SupportContactManager::class)->assign($contact->id);
+    $this->actingAs($contact);
+    if ($precognitive) {
+        $this->withHeaders(['Precognition' => 'true', 'Precognition-Validate-Only' => 'email']);
+    }
+    $this->postJson('/support', [
+        'subject' => 'Help', 'description' => 'Details', 'email' => 'different@example.org',
+        'attachments' => [UploadedFile::fake()->createWithContent('trace.log', 'trace')],
+    ])->assertForbidden();
+    Queue::assertNothingPushed();
+    Mail::assertNothingSent();
+    expect(Storage::disk('local')->allFiles('support-mail'))->toBe([]);
+})->with([[false, false], [false, true], [true, false], [true, true]]);
+
+test('a transfer updates shared button state and backend access for both contacts', function () {
+    config(['queue.default' => 'database']);
+    Queue::fake();
+    Storage::fake('local');
+    $first = User::factory()->admin()->create();
+    $next = User::factory()->admin()->create();
+    $contacts = app(SupportContactManager::class);
+    $contacts->assign($first->id);
+    $this->actingAs($first)->get('/settings/profile')->assertInertia(fn (Assert $page) => $page
+        ->where('support.available', true)->where('support.isTechnicalContact', true));
+    $contacts->assign($next->id);
+    $this->get('/settings/profile')->assertInertia(fn (Assert $page) => $page
+        ->where('support.isTechnicalContact', false));
+    $this->from('/settings/profile')->post('/support', [
+        'subject' => 'Help', 'description' => 'Details', 'email' => $next->email,
+    ])->assertRedirect('/settings/profile')->assertSessionHasNoErrors();
+    $this->actingAs($next)->get('/settings/profile')->assertInertia(fn (Assert $page) => $page
+        ->where('support.isTechnicalContact', true));
+    $this->postJson('/support', [
+        'subject' => 'Help', 'description' => 'Details', 'email' => $first->email,
+    ])->assertForbidden();
+    Queue::assertPushed(SendSupportEmail::class, 1);
 });

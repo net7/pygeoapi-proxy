@@ -1,17 +1,19 @@
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import LanguageDropdown from '@/components/language-dropdown';
+import { SupportDialog } from '@/components/support-dialog';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { UserGuide } from '@/components/user-guide';
 import type { BreadcrumbItem as BreadcrumbItemType, User } from '@/types';
+import type { SupportConfiguration } from '@/types/support';
 
 export function AppSidebarHeader({
     breadcrumbs = [],
     user,
-    allowGuestSupport = false,
+    support,
 }: {
     breadcrumbs?: BreadcrumbItemType[];
     user?: User | null;
-    allowGuestSupport?: boolean;
+    support?: SupportConfiguration;
 }) {
     return (
         <header className="app-toolbar flex h-16 shrink-0 items-center gap-3 px-5 md:px-8">
@@ -27,8 +29,11 @@ export function AppSidebarHeader({
                 <UserGuide
                     key={user.id}
                     user={user}
-                    allowGuestSupport={allowGuestSupport}
+                    allowGuestSupport={support?.allowGuests ?? false}
                 />
+            ) : null}
+            {user && support ? (
+                <SupportDialog initialEmail={user.email} support={support} />
             ) : null}
             <LanguageDropdown />
         </header>

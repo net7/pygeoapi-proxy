@@ -1,6 +1,6 @@
 import type { Language } from '@/lib/i18n/languages';
 import type { Auth } from '@/types/auth';
-import type { SupportLimits } from '@/types/support';
+import type { SupportConfiguration } from '@/types/support';
 
 declare module 'react' {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -16,7 +16,7 @@ declare module '@inertiajs/core' {
             language: Language;
             auth: Auth;
             sidebarOpen: boolean;
-            support: SupportLimits & { allowGuests: boolean };
+            support: SupportConfiguration;
             [key: string]: unknown;
         };
     }

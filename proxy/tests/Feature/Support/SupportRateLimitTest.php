@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
+    $this->from('/login');
     config(['support.allow_guests' => true, 'queue.default' => 'database']);
     Cache::flush();
     app(SupportContactManager::class)->assign(User::factory()->admin()->create()->id);
@@ -32,7 +33,7 @@ test('precognition has its own sixty per minute quota', function () {
     $this->flushHeaders();
     for ($i = 0; $i < 5; $i++) {
         $this->postJson('/support', ['subject' => 'Help', 'description' => 'Details', 'email' => 'valid@example.org'])
-            ->assertRedirect('/support');
+            ->assertRedirect('/login');
     }
     $this->postJson('/support')->assertTooManyRequests();
     Queue::assertPushed(SendSupportEmail::class, 5);
@@ -45,7 +46,7 @@ test('manual precognition headers cannot bypass submission quotas', function (ar
         if ($precognitive) {
             $response->assertNoContent();
         } elseif ($i < 5) {
-            $response->assertRedirect('/support');
+            $response->assertRedirect('/login');
         } else {
             $response->assertTooManyRequests();
         }
@@ -82,6 +83,6 @@ test('inertia throttling returns a form error rather than a success response', f
         $this->postJson('/support');
     }
     $this->flushHeaders();
-    $this->from('/support')->withHeaders(['X-Inertia' => 'true'])
-        ->post('/support')->assertRedirect('/support')->assertSessionHasErrors('support')->assertHeader('Retry-After');
+    $this->from('/login')->withHeaders(['X-Inertia' => 'true'])
+        ->post('/support')->assertRedirect('/login')->assertSessionHasErrors('support')->assertHeader('Retry-After');
 });

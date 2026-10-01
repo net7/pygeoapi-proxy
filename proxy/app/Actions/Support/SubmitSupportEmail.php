@@ -22,9 +22,15 @@ class SubmitSupportEmail
     /** @param array{subject:string,description:string,email:string,attachments?:array|null} $validated */
     public function handle(array $validated, ?User $account): void
     {
-        if ($this->contacts->current() === null) {
+        $contact = $this->contacts->current();
+        if ($contact === null) {
             throw ValidationException::withMessages(['support' => __('Support is currently unavailable. Please contact an administrator.')]);
         }
+        abort_if(
+            $account !== null && $contact->is($account),
+            403,
+            __('You are the technical contact and cannot send a support request to yourself.'),
+        );
         $connection = config('queue.default');
         if (! in_array(config("queue.connections.{$connection}.driver"), ['database', 'redis'], true)) {
             throw ValidationException::withMessages(['support' => __('Your request could not be accepted. Please try again later.')]);

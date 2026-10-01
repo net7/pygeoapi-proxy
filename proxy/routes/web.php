@@ -25,7 +25,6 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::middleware([EnsureUserIsActive::class, EnsureSupportAccess::class])->group(function (): void {
-    Route::get('support', [SupportController::class, 'create'])->name('support.create');
     Route::post('support', [SupportController::class, 'store'])
         ->middleware(['throttle:support', HandlePrecognitiveRequests::class])
         ->name('support.store');

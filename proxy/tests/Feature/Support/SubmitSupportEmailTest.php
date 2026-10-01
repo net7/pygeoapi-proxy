@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 beforeEach(function () {
     config(['queue.default' => 'database']);
@@ -109,4 +110,18 @@ test('an ambiguous enqueue failure reports an error but keeps files for an accep
         ->toThrow(ValidationException::class);
     $this->assertDatabaseCount('jobs', 1);
     expect(Storage::disk('local')->allFiles('support-mail'))->toHaveCount(1);
+});
+
+test('acceptance rechecks the authenticated account against the current contact before side effects', function () {
+    Queue::fake();
+    Storage::fake('local');
+    $account = User::factory()->admin()->create();
+    $action = app(SubmitSupportEmail::class);
+    app(SupportContactManager::class)->assign($account->id);
+    expect(fn () => $action->handle(supportSubmissionData([
+        'email' => 'different@example.org',
+        'attachments' => [UploadedFile::fake()->createWithContent('trace.log', 'trace')],
+    ]), $account))->toThrow(HttpException::class);
+    Queue::assertNothingPushed();
+    expect(Storage::disk('local')->allFiles('support-mail'))->toBe([]);
 });
