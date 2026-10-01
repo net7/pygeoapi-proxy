@@ -3,11 +3,14 @@
 namespace App\Services\Support;
 
 use App\Support\SupportMailData;
+use DirectoryIterator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use JsonException;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use RuntimeException;
 use Throwable;
 
@@ -89,16 +92,49 @@ class SupportAttachments
     /** @return iterable<string> */
     public function cleanupCandidates(int $now): iterable
     {
-        foreach (Storage::disk('local')->directories('support-mail') as $directory) {
-            $id = basename($directory);
-            if (! Str::isUuid($id)) {
+        $root = Storage::disk('local')->path('support-mail');
+        if (is_link($root) || ! is_dir($root)) {
+            return;
+        }
+        foreach (new DirectoryIterator($root) as $entry) {
+            $id = $entry->getFilename();
+            if ($entry->isLink() || ! $entry->isDir() || ! Str::isUuid($id)) {
                 continue;
             }
-            $manifest = $this->manifest($id);
-            if ($manifest !== null && ($manifest['delivered'] || $manifest['expires_at'] <= $now)) {
+            try {
+                $candidate = $this->canDelete($id, $now);
+            } catch (Throwable) {
+                // Recheck and report this directory under its lock without stopping discovery.
+                $candidate = true;
+            }
+            if ($candidate) {
                 yield $id;
             }
         }
+    }
+
+    public function canDelete(string $id, int $now): bool
+    {
+        $directory = Storage::disk('local')->path($this->directory($id));
+        if (is_link($directory) || ! is_dir($directory)) {
+            return false;
+        }
+        $latest = 0;
+        foreach (new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($directory, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST,
+        ) as $entry) {
+            if ($entry->isLink()) {
+                return false;
+            }
+            $latest = max($latest, $entry->getMTime());
+        }
+        $manifest = $this->manifest($id);
+        if ($manifest !== null) {
+            return $manifest['delivered'] || $manifest['expires_at'] <= $now;
+        }
+
+        return ($latest ?: filemtime($directory)) <= $now - (int) config('support.retention_seconds');
     }
 
     private function directory(string $id): string
