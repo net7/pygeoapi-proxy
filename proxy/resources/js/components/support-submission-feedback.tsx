@@ -16,7 +16,6 @@ export type SupportSubmissionFeedbackProps = {
     progress?: number | null;
     error?: string;
     onEdit: () => void;
-    onClose: () => void;
 };
 
 export function SupportSubmissionFeedback({
@@ -25,7 +24,6 @@ export function SupportSubmissionFeedback({
     progress = null,
     error,
     onEdit,
-    onClose,
 }: SupportSubmissionFeedbackProps) {
     const { t } = useTranslation();
     const heading = useRef<HTMLHeadingElement>(null);
@@ -115,20 +113,10 @@ export function SupportSubmissionFeedback({
                     </p>
                 </div>
             )}
-            {status === 'success' && (
-                <Button type="button" onClick={onClose} className="min-w-28">
-                    {t('common.close')}
-                </Button>
-            )}
             {status === 'error' && (
-                <div className="flex flex-wrap justify-center gap-3">
-                    <Button type="button" onClick={onEdit}>
-                        {t('support.backToRequest')}
-                    </Button>
-                    <Button type="button" variant="outline" onClick={onClose}>
-                        {t('common.close')}
-                    </Button>
-                </div>
+                <Button type="button" onClick={onEdit}>
+                    {t('support.backToRequest')}
+                </Button>
             )}
         </div>
     );

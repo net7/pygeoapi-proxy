@@ -14,7 +14,6 @@ import type { SupportFormValues, SupportLimits } from '@/types/support';
 export type SupportFormProps = {
     initialEmail: string;
     limits: SupportLimits;
-    onClose: () => void;
     onProcessingChange: (processing: boolean) => void;
 };
 
@@ -35,7 +34,6 @@ const attachmentErrorKeys = {
 export function SupportForm({
     initialEmail,
     limits,
-    onClose,
     onProcessingChange,
 }: SupportFormProps) {
     const { t } = useTranslation();
@@ -193,7 +191,6 @@ export function SupportForm({
                         email={view.email}
                         error={view.error}
                         progress={form.progress?.percentage ?? null}
-                        onClose={onClose}
                         onEdit={() => {
                             runUiTransition(() => {
                                 form.clearErrors();

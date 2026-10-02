@@ -32,6 +32,7 @@ export function SupportDialog({
     const { t } = useTranslation();
     const explanationId = useId();
     const contentRef = useRef<HTMLDivElement>(null);
+    const closeButtonRef = useRef<HTMLButtonElement>(null);
     const [open, setOpen] = useState(false);
     const [processing, setProcessing] = useState(false);
     const button = (
@@ -98,15 +99,32 @@ export function SupportDialog({
                 ref={contentRef}
                 className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-4xl"
                 closeButtonDisabled={processing}
-                onEscapeKeyDown={(event) => {
-                    if (processing) {
-                        event.preventDefault();
+                closeButtonRef={closeButtonRef}
+                onEscapeKeyDown={(event) => event.preventDefault()}
+                onInteractOutside={(event) => event.preventDefault()}
+                onPointerDownOutside={() => {
+                    const closeButton = closeButtonRef.current;
+
+                    if (
+                        !closeButton ||
+                        processing ||
+                        window.matchMedia('(prefers-reduced-motion: reduce)')
+                            .matches
+                    ) {
+                        return;
                     }
-                }}
-                onInteractOutside={(event) => {
-                    if (processing) {
-                        event.preventDefault();
-                    }
+
+                    closeButton
+                        .getAnimations()
+                        .forEach((animation) => animation.cancel());
+                    closeButton.animate(
+                        [
+                            { transform: 'scale(1)' },
+                            { transform: 'scale(1.2)' },
+                            { transform: 'scale(1)' },
+                        ],
+                        { duration: 280, easing: 'ease-in-out' },
+                    );
                 }}
                 onOpenAutoFocus={(event) => {
                     if (initialEmail.trim()) {
@@ -130,7 +148,6 @@ export function SupportDialog({
                     <SupportForm
                         initialEmail={initialEmail}
                         limits={support}
-                        onClose={() => setOpen(false)}
                         onProcessingChange={setProcessing}
                     />
                 ) : (
