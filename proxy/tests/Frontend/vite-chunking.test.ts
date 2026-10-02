@@ -25,6 +25,7 @@ describe('Vite result preview chunking', () => {
             expect(Object.keys(metadata.optimized)).toEqual(
                 expect.arrayContaining([
                     'chart.js',
+                    'chartjs-plugin-zoom',
                     'maplibre-gl',
                     '@uiw/react-json-view',
                     '@uiw/react-json-view/nord',

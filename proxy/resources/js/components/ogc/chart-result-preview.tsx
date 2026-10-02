@@ -7,8 +7,20 @@ import type {
     LegendItem,
     TooltipItem,
 } from 'chart.js';
-import { ChevronDownIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+    ChevronDownIcon,
+    DownloadIcon,
+    EyeIcon,
+    EyeOffIcon,
+    HandIcon,
+    Maximize2Icon,
+    Minimize2Icon,
+    RotateCcwIcon,
+    ZoomInIcon,
+    ZoomOutIcon,
+} from 'lucide-react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import type { ComponentProps } from 'react';
 
 import { AdminBadgePopover } from '@/components/admin-badge';
 import RawPayloadBlock from '@/components/ogc/raw-payload-block';
@@ -18,6 +30,12 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useTranslation } from '@/hooks/use-translation';
 import type { Language } from '@/lib/i18n/languages';
 import {
@@ -31,6 +49,7 @@ import type {
     OgcChartSeries,
     OgcLineChart,
 } from '@/lib/ogc-chart';
+import { cn } from '@/lib/utils';
 
 ChartJS.register(...registerables);
 
@@ -74,6 +93,14 @@ export default function ChartResultPreview({
     const chartRef = useRef<ChartJS<'line', ChartPoint[]> | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [visibleSeriesCount, setVisibleSeriesCount] = useState(0);
+    const [zoomStatus, setZoomStatus] = useState<
+        'loading' | 'ready' | 'unavailable'
+    >('loading');
+    const [isZoomed, setIsZoomed] = useState(false);
+    const [isPanning, setIsPanning] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const chartId = useId();
+    const hintId = useId();
     const canViewRawJson = auth.user?.is_admin === true;
 
     useEffect(() => {
@@ -99,14 +126,41 @@ export default function ChartResultPreview({
                 initialVisibleKeys,
                 valueAxisLabel,
                 language,
-                setVisibleSeriesCount,
+                (count) => {
+                    setVisibleSeriesCount(count);
+                    setIsZoomed(false);
+                },
+                setIsZoomed,
             ),
         );
 
         chartRef.current = instance;
         setVisibleSeriesCount(countVisibleSeries(instance));
+        setIsZoomed(false);
+        setIsPanning(false);
+        setZoomStatus('loading');
+
+        // Hammer.js requires a browser; keep it out of server rendering.
+        let disposed = false;
+
+        void import('chartjs-plugin-zoom')
+            .then(({ default: zoomPlugin }) => {
+                if (disposed) {
+                    return;
+                }
+
+                ChartJS.register(zoomPlugin);
+                instance.update('none');
+                setZoomStatus('ready');
+            })
+            .catch(() => {
+                if (!disposed) {
+                    setZoomStatus('unavailable');
+                }
+            });
 
         return () => {
+            disposed = true;
             chartRef.current = null;
             instance.destroy();
             setVisibleSeriesCount(0);
@@ -124,6 +178,44 @@ export default function ChartResultPreview({
         lineChart,
         visibleSeriesCount,
     );
+    const navigationDisabled =
+        zoomStatus !== 'ready' || visibleSeriesCount === 0;
+
+    function resetView(): void {
+        chartRef.current?.resetZoom?.();
+        setIsZoomed(false);
+    }
+
+    function setPanMode(enabled: boolean): void {
+        const instance = chartRef.current;
+
+        if (!instance) {
+            return;
+        }
+
+        setChartPanMode(instance, enabled);
+        setIsPanning(enabled);
+    }
+
+    function downloadImage(): void {
+        const instance = chartRef.current;
+
+        if (!instance) {
+            return;
+        }
+
+        instance.stop();
+        instance.setActiveElements([]);
+        instance.tooltip?.setActiveElements([], { x: 0, y: 0 });
+        instance.update('none');
+
+        const link = document.createElement('a');
+        link.download = `${copyLabel?.trim() || 'chart'}.png`;
+        link.href = instance.toBase64Image('image/png');
+        document.body.append(link);
+        link.click();
+        link.remove();
+    }
 
     function setAllSeriesVisibility(visible: boolean): void {
         const instance = chartRef.current;
@@ -135,49 +227,194 @@ export default function ChartResultPreview({
         lineChart.series.forEach((_, index) => {
             instance.setDatasetVisibility(index, visible);
         });
+        resetView();
         instance.update();
         setVisibleSeriesCount(visible ? lineChart.series.length : 0);
     }
 
     return (
         <div className="flex min-w-0 flex-col gap-3">
-            {visibilityControls.showAll || visibilityControls.hideAll ? (
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                    {visibilityControls.showAll ? (
-                        <Button
-                            type="button"
-                            variant="default"
-                            size="sm"
-                            onClick={() => setAllSeriesVisibility(true)}
-                        >
-                            <EyeIcon data-icon="inline-start" />
-                            {t('ogc.chartShowAll')}
-                        </Button>
-                    ) : null}
-                    {visibilityControls.hideAll ? (
-                        <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => setAllSeriesVisibility(false)}
-                        >
-                            <EyeOffIcon data-icon="inline-start" />
-                            {t('ogc.chartHideAll')}
-                        </Button>
-                    ) : null}
+            <div className="relative min-w-0 rounded-md bg-background p-3 ring-1 ring-border/50">
+                <TooltipProvider delayDuration={200}>
+                    <div
+                        role="group"
+                        aria-label={t('ogc.chartControls')}
+                        className="absolute top-3 right-3 flex flex-col gap-2"
+                    >
+                        <div className="flex flex-col overflow-hidden rounded-md border bg-card shadow-sm">
+                            <ChartControlButton
+                                label={t('ogc.chartZoomIn')}
+                                disabled={navigationDisabled}
+                                onClick={() => chartRef.current?.zoom(1.2)}
+                            >
+                                <ZoomInIcon aria-hidden="true" />
+                            </ChartControlButton>
+                            <ChartControlButton
+                                label={t('ogc.chartZoomOut')}
+                                disabled={navigationDisabled || !isZoomed}
+                                onClick={() => chartRef.current?.zoom(0.8)}
+                            >
+                                <ZoomOutIcon aria-hidden="true" />
+                            </ChartControlButton>
+                            <ChartControlButton
+                                label={t('ogc.chartResetView')}
+                                disabled={navigationDisabled || !isZoomed}
+                                onClick={resetView}
+                            >
+                                <RotateCcwIcon aria-hidden="true" />
+                            </ChartControlButton>
+                        </div>
+                        <div className="flex flex-col overflow-hidden rounded-md border bg-card shadow-sm">
+                            <ChartControlButton
+                                label={t('ogc.chartPan')}
+                                variant={isPanning ? 'secondary' : 'ghost'}
+                                aria-pressed={isPanning}
+                                aria-describedby={hintId}
+                                disabled={navigationDisabled}
+                                onClick={() => setPanMode(!isPanning)}
+                            >
+                                <HandIcon aria-hidden="true" />
+                            </ChartControlButton>
+                            <ChartControlButton
+                                label={t(
+                                    isExpanded
+                                        ? 'ogc.chartCollapse'
+                                        : 'ogc.chartExpand',
+                                )}
+                                aria-expanded={isExpanded}
+                                aria-controls={chartId}
+                                onClick={() =>
+                                    setIsExpanded((expanded) => !expanded)
+                                }
+                            >
+                                {isExpanded ? (
+                                    <Minimize2Icon aria-hidden="true" />
+                                ) : (
+                                    <Maximize2Icon aria-hidden="true" />
+                                )}
+                            </ChartControlButton>
+                            <ChartControlButton
+                                label={t('ogc.chartDownloadImage')}
+                                disabled={visibleSeriesCount === 0}
+                                onClick={downloadImage}
+                            >
+                                <DownloadIcon aria-hidden="true" />
+                            </ChartControlButton>
+                        </div>
+                        {visibilityControls.showAll ||
+                        visibilityControls.hideAll ? (
+                            <div className="flex flex-col overflow-hidden rounded-md border bg-card shadow-sm">
+                                {visibilityControls.showAll ? (
+                                    <ChartControlButton
+                                        label={t('ogc.chartShowAll')}
+                                        variant="default"
+                                        onClick={() =>
+                                            setAllSeriesVisibility(true)
+                                        }
+                                    >
+                                        <EyeIcon aria-hidden="true" />
+                                    </ChartControlButton>
+                                ) : null}
+                                {visibilityControls.hideAll ? (
+                                    <ChartControlButton
+                                        label={t('ogc.chartHideAll')}
+                                        variant="destructive"
+                                        onClick={() =>
+                                            setAllSeriesVisibility(false)
+                                        }
+                                    >
+                                        <EyeOffIcon aria-hidden="true" />
+                                    </ChartControlButton>
+                                ) : null}
+                            </div>
+                        ) : null}
+                    </div>
+                </TooltipProvider>
+                <div
+                    id={chartId}
+                    className={cn(
+                        'min-w-0 pr-12',
+                        isExpanded ? 'h-[75vh] min-h-[28rem]' : 'h-[28rem]',
+                    )}
+                >
+                    <div className="relative size-full">
+                        <canvas
+                            ref={canvasRef}
+                            className={cn(
+                                isPanning
+                                    ? 'cursor-grab active:cursor-grabbing'
+                                    : 'cursor-crosshair',
+                            )}
+                            role="img"
+                            aria-label={
+                                chart.domain.description ?? chart.domain.label
+                            }
+                            aria-describedby={hintId}
+                        />
+                    </div>
                 </div>
-            ) : null}
-            <div className="h-[28rem] min-w-0 rounded-md bg-background p-3 ring-1 ring-border/50 dark:bg-muted/20">
-                <canvas
-                    ref={canvasRef}
-                    aria-label={chart.domain.description ?? chart.domain.label}
-                />
+                <p id={hintId} className="pt-3 text-xs text-muted-foreground">
+                    {t(
+                        zoomStatus === 'unavailable'
+                            ? 'ogc.chartZoomUnavailable'
+                            : isPanning
+                              ? 'ogc.chartPanHint'
+                              : 'ogc.chartZoomHint',
+                    )}
+                </p>
             </div>
             {canViewRawJson ? (
                 <RawJsonCollapsible data={data} copyLabel={copyLabel} />
             ) : null}
         </div>
     );
+}
+
+function ChartControlButton({
+    label,
+    children,
+    variant = 'ghost',
+    ...props
+}: Omit<ComponentProps<typeof Button>, 'size' | 'title' | 'aria-label'> & {
+    label: string;
+}) {
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <span className="inline-flex">
+                    <Button
+                        type="button"
+                        variant={variant}
+                        size="icon"
+                        className="size-9 rounded-none"
+                        aria-label={label}
+                        {...props}
+                    >
+                        {children}
+                    </Button>
+                </span>
+            </TooltipTrigger>
+            <TooltipContent side="left">{label}</TooltipContent>
+        </Tooltip>
+    );
+}
+
+function setChartPanMode(
+    instance: ChartJS<'line', ChartPoint[]>,
+    enabled: boolean,
+): void {
+    const options = instance.options.plugins?.zoom;
+
+    if (!options) {
+        return;
+    }
+
+    options.pan = { ...options.pan, enabled };
+    options.zoom = {
+        ...options.zoom,
+        drag: { ...options.zoom?.drag, enabled: !enabled },
+    };
+    instance.update('none');
 }
 
 function chartConfiguration(
@@ -187,11 +424,23 @@ function chartConfiguration(
     valueAxisLabel: string,
     language: Language,
     onVisibilityChange: (visibleSeriesCount: number) => void,
+    onViewChange: (isZoomed: boolean) => void,
 ): ChartConfiguration<'line', ChartPoint[]> {
     const colors = chartCanvasColors();
 
     return {
         type: 'line',
+        plugins: [
+            {
+                id: 'chart-background',
+                beforeDraw({ ctx, width, height }): void {
+                    ctx.save();
+                    ctx.fillStyle = colors.background;
+                    ctx.fillRect(0, 0, width, height);
+                    ctx.restore();
+                },
+            },
+        ],
         data: {
             datasets: chart.series.map((series, index) =>
                 chartDataset(
@@ -206,6 +455,7 @@ function chartConfiguration(
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: false,
             parsing: false,
             normalized: true,
             resizeDelay: 80,
@@ -228,6 +478,31 @@ function chartConfiguration(
                 },
             },
             plugins: {
+                zoom: {
+                    limits: {
+                        x: { min: 'original', max: 'original' },
+                        y: { min: 'original', max: 'original' },
+                    },
+                    pan: {
+                        enabled: false,
+                        mode: 'xy',
+                        onPan: ({ chart: instance }) =>
+                            onViewChange(instance.isZoomedOrPanned()),
+                    },
+                    zoom: {
+                        mode: 'xy',
+                        wheel: { enabled: true, modifierKey: 'ctrl' },
+                        pinch: { enabled: true },
+                        drag: {
+                            enabled: true,
+                            threshold: 8,
+                            borderColor: colors.text,
+                            borderWidth: 1,
+                        },
+                        onZoom: ({ chart: instance }) =>
+                            onViewChange(instance.isZoomedOrPanned()),
+                    },
+                },
                 legend: {
                     display: true,
                     align: 'center',
@@ -354,6 +629,7 @@ function toggleDatasetVisibility(
         datasetIndex,
         !chart.isDatasetVisible(datasetIndex),
     );
+    chart.resetZoom?.();
     chart.update();
 }
 
@@ -453,6 +729,7 @@ function chartPalette(count: number): string[] {
 }
 
 function chartCanvasColors(): {
+    background: string;
     grid: string;
     text: string;
     tooltipBackground: string;
@@ -461,6 +738,7 @@ function chartCanvasColors(): {
 } {
     if (typeof window === 'undefined') {
         return {
+            background: '#ffffff',
             grid: '#d9e5eb',
             text: '#55717e',
             tooltipBackground: '#ffffff',
@@ -472,6 +750,7 @@ function chartCanvasColors(): {
     const styles = getComputedStyle(document.documentElement);
 
     return {
+        background: styles.getPropertyValue('--background').trim() || '#ffffff',
         grid: styles.getPropertyValue('--border').trim(),
         text: styles.getPropertyValue('--muted-foreground').trim(),
         tooltipBackground: styles.getPropertyValue('--popover').trim(),

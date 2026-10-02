@@ -8,6 +8,7 @@ use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\User;
 use App\Services\Ogc\ProcessExecutionInputSnapshot;
+use App\Services\Support\SupportContactManager;
 use App\Support\AuthFeatures;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -124,28 +125,30 @@ class ProfileController extends Controller
     /**
      * Delete the user's profile.
      */
-    public function destroy(ProfileDeleteRequest $request, ProcessExecutionInputSnapshot $inputSnapshots): RedirectResponse
+    public function destroy(ProfileDeleteRequest $request, ProcessExecutionInputSnapshot $inputSnapshots, SupportContactManager $contacts): RedirectResponse
     {
         abort_unless(AuthFeatures::enabled(AuthFeatures::accountDeletion()), 404);
 
         $user = $request->user();
 
-        foreach ($user->processExecutions()->select(['id', 'input_snapshot'])->lazyById() as $execution) {
-            $inputSnapshots->delete($execution->input_snapshot);
-        }
+        return $contacts->guardAccountChange([$user->id], 'user', function () use ($request, $user, $inputSnapshots): RedirectResponse {
+            foreach ($user->processExecutions()->select(['id', 'input_snapshot'])->lazyById() as $execution) {
+                $inputSnapshots->delete($execution->input_snapshot);
+            }
 
-        Auth::logout();
+            Auth::logout();
 
-        if ($user->avatar_path !== null) {
-            Storage::disk('public')->delete($user->avatar_path);
-        }
+            if ($user->avatar_path !== null) {
+                Storage::disk('public')->delete($user->avatar_path);
+            }
 
-        $user->delete();
+            $user->delete();
 
-        $request->session()->forget('auth.email_otp_confirmed_at');
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+            $request->session()->forget('auth.email_otp_confirmed_at');
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
 
-        return redirect('/');
+            return redirect('/');
+        });
     }
 }

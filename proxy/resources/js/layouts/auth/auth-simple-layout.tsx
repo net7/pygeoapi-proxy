@@ -1,6 +1,7 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import AuthLandscape from '@/components/auth-landscape';
+import { SupportDialog } from '@/components/support-dialog';
 import { useTranslation } from '@/hooks/use-translation';
 import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
@@ -12,6 +13,7 @@ export default function AuthSimpleLayout({
     statusCode,
 }: AuthLayoutProps & { statusCode?: 403 | 404 }) {
     const { t } = useTranslation();
+    const page = usePage();
 
     return (
         <div className="auth-canvas">
@@ -41,6 +43,15 @@ export default function AuthSimpleLayout({
                         </p>
                     </header>
                     {children}
+                    {!page.props.auth?.user &&
+                        page.props.support?.allowGuests && (
+                            <div>
+                                <SupportDialog
+                                    initialEmail=""
+                                    support={page.props.support}
+                                />
+                            </div>
+                        )}
                 </main>
             </div>
         </div>

@@ -13,6 +13,63 @@ type MessageShape<T> = {
 };
 
 const it = {
+    technicalContact: {
+        badge: 'Referente tecnico',
+        appoint: 'Nomina referente tecnico',
+        current: 'Referente tecnico attuale',
+        notConfigured:
+            "Nessun referente tecnico configurato. Nomina un amministratore attivo per abilitare l'invio delle richieste.",
+        confirmCandidate:
+            'Vuoi nominare {name} ({email}) come referente tecnico?',
+        replace:
+            'La nomina sostituirà {name} ({email}). Le prossime email di assistenza saranno inviate al nuovo referente.',
+        firstAppointment:
+            'Le email di assistenza saranno inviate a questo amministratore.',
+        confirm: 'Conferma nomina',
+    },
+    support: {
+        title: 'Assistenza',
+        loginHelp: 'Problemi di accesso? Invia un’email al referente tecnico:',
+        disabledHelp: 'Perché Assistenza è disabilitato',
+        technicalContactDisabled:
+            'Sei il referente tecnico e ricevi le richieste di assistenza. Non puoi inviare una richiesta a te stesso.',
+        intro: 'Invia una richiesta al referente tecnico. Riceverai la risposta via email.',
+        technicalNotice:
+            'Al momento dell’invio raccogliamo informazioni tecniche su browser e sistema operativo, lingua, fuso orario e dimensioni della finestra. Le includiamo nell’email esclusivamente per diagnosticare e risolvere il problema.',
+        email: 'Email di contatto',
+        emailHint:
+            'Puoi modificare questo indirizzo: lo useremo per risponderti, senza cambiare il tuo profilo.',
+        subject: 'Oggetto',
+        subjectHint: 'Massimo 200 caratteri.',
+        description: 'Descrizione',
+        descriptionHint:
+            'Descrivi il problema e i passaggi per riprodurlo. Da 10 a 10.000 caratteri.',
+        attachments: 'Allegati',
+        attachmentLimits:
+            'Massimo {count} allegati, fino a {size} MB ciascuno.',
+        attachmentLimitReached:
+            'Hai raggiunto il limite di {count} allegati. Rimuovi un file per aggiungerne un altro.',
+        removeFile: 'Rimuovi {name}',
+        uploadProgress: 'Caricamento: {percent}%',
+        sending: 'Invio in corso…',
+        sendingDescription:
+            'Attendi mentre riceviamo la richiesta e gli eventuali allegati.',
+        successTitle: 'Richiesta acquisita',
+        successDescription:
+            'Abbiamo acquisito la tua richiesta di assistenza. Riceverai la risposta a questo indirizzo:',
+        failureTitle: 'Invio non confermato',
+        failureDescription:
+            'Non abbiamo ricevuto la conferma dell’invio. I dati sono stati conservati: verifica la connessione e torna alla richiesta per riprovare.',
+        backToRequest: 'Torna alla richiesta',
+        send: 'Invia richiesta',
+        unavailable:
+            "L'assistenza non è al momento disponibile. Contatta un amministratore.",
+        fileError: {
+            count: 'Puoi allegare al massimo {count} file.',
+            size: 'Il file {name} supera {size} MB.',
+            extension: 'Il formato del file {name} non è consentito.',
+        },
+    },
     errors: {
         forbidden: {
             title: 'Accesso negato',
@@ -93,6 +150,42 @@ const it = {
     },
     userGuide: {
         help: 'Aiuto',
+        support: {
+            label: 'Richiedere assistenza',
+            title: 'Richiedere assistenza',
+            description:
+                'Invia una richiesta al referente tecnico e ricevi la risposta via email.',
+            firstTitle: 'Apri il form',
+            firstBody:
+                'Premi Assistenza, con l’icona di supporto accanto ad Aiuto, per aprire il form in una finestra. Se il servizio non è disponibile, contatta un amministratore.',
+            secondTitle: 'Descrivi il problema',
+            secondBody:
+                "Compila l'oggetto (massimo 200 caratteri) e la descrizione (da 10 a 10.000 caratteri). Controlla l'email: è precompilata dal tuo account, ma puoi modificarla. Puoi aggiungere fino a 3 allegati, ciascuno da massimo 5 MB. L’avviso nel form spiega che, all’invio, browser, sistema operativo, lingua, fuso orario e dimensioni della finestra vengono inclusi nell’email solo per diagnosticare e risolvere il problema.",
+            thirdTitle: 'Invia e attendi la risposta',
+            thirdBody:
+                "Durante l'invio il form lascia spazio all'indicatore di attesa; l'esito compare nella stessa finestra con l'email di risposta. Se l'invio non è confermato, puoi tornare alla richiesta senza perdere dati e allegati. Il referente risponderà via email all'indirizzo indicato.",
+            tip: 'Formati consentiti: PNG, JPG/JPEG, WebP, PDF, TXT, LOG, CSV, JSON, Word (DOC/DOCX), Excel (XLS/XLSX) e PowerPoint (PPT/PPTX).',
+            guestEnabled:
+                'Il form è disponibile anche senza accedere, dalle schermate di accesso.',
+            guestDisabled:
+                'Per usare il form è necessario accedere. Per problemi di accesso, nella pagina di login trovi il link email del referente tecnico, se configurato.',
+        },
+        adminSupport: {
+            label: 'Gestire il referente tecnico',
+            title: 'Gestire il referente tecnico',
+            description:
+                "Scegli l'amministratore che riceve le richieste di assistenza. Le email [ASSISTENZA] includono messaggio, contatto per la risposta e dati tecnici del browser, da usare solo per diagnosticare e risolvere il problema.",
+            firstTitle: 'Scegli un admin attivo',
+            firstBody:
+                'Apri Tutti gli utenti e seleziona Nomina referente tecnico nel menu di un amministratore attivo.',
+            secondTitle: 'Conferma la sostituzione',
+            secondBody:
+                'La nomina sostituisce automaticamente quella precedente. Nella colonna Ruolo, il badge colorato con icona REFERENTE TECNICO compare sotto ADMIN; il riepilogo identifica il referente corrente. Se il form per ospiti è disabilitato, l’email del referente compare nella pagina di login per i problemi di accesso.',
+            thirdTitle: "Trasferisci prima di modificare l'account",
+            thirdBody:
+                'Nomina un sostituto prima di disattivare, eliminare o togliere il ruolo admin al referente corrente.',
+            tip: 'Può esserci un solo referente tecnico. Se sei il referente, Assistenza è disabilitato: il popover spiega che ricevi le richieste e non puoi inviarle a te stesso. Senza un referente, il form non accetta richieste.',
+        },
         open: 'Aiuto: apri la guida',
         greeting: 'Ciao',
         description:
@@ -604,6 +697,20 @@ const it = {
         chartValueAxis: 'Valore',
         chartDomain: 'Dominio',
         chartSeries: 'Serie {number}',
+        chartControls: 'Controlli del grafico',
+        chartZoomIn: 'Aumenta zoom',
+        chartZoomOut: 'Riduci zoom',
+        chartResetView: 'Ripristina vista',
+        chartPan: 'Sposta',
+        chartExpand: 'Espandi grafico',
+        chartCollapse: 'Riduci grafico',
+        chartDownloadImage: 'Scarica PNG',
+        chartZoomHint:
+            'Trascina per ingrandire un’area. Usa Ctrl + rotellina o due dita per lo zoom; attiva Sposta per esplorare il grafico.',
+        chartPanHint:
+            'Trascina per spostare la vista. Usa Ctrl + rotellina o due dita per lo zoom; disattiva Sposta per ingrandire un’area.',
+        chartZoomUnavailable:
+            'I controlli di zoom non sono disponibili. Ricarica la pagina per riprovare.',
         checkInputs: 'Controlla gli input del processo',
         checkProcessData: 'Controlla i dati del processo',
         csvPreviewTruncated:
@@ -811,6 +918,60 @@ const it = {
 } as const satisfies MessageTree;
 
 const en = {
+    technicalContact: {
+        badge: 'Technical contact',
+        appoint: 'Appoint technical contact',
+        current: 'Current technical contact',
+        notConfigured:
+            'No technical contact configured. Appoint an active administrator to enable support submissions.',
+        confirmCandidate: 'Appoint {name} ({email}) as the technical contact?',
+        replace:
+            'This will replace {name} ({email}). Future support emails will go to the new contact.',
+        firstAppointment: 'Support emails will be sent to this administrator.',
+        confirm: 'Confirm appointment',
+    },
+    support: {
+        title: 'Support',
+        loginHelp: 'Trouble signing in? Email the technical contact:',
+        disabledHelp: 'Why Support is disabled',
+        technicalContactDisabled:
+            'You are the technical contact and receive support requests. You cannot send a request to yourself.',
+        intro: 'Send a request to the technical contact. You will receive a reply by email.',
+        technicalNotice:
+            'When you submit, we collect technical information about your browser and operating system, language, time zone and window size. We include it in the email solely to diagnose and resolve the issue.',
+        email: 'Contact email',
+        emailHint:
+            'You can change this address: we will use it to reply without changing your profile.',
+        subject: 'Subject',
+        subjectHint: 'Maximum 200 characters.',
+        description: 'Description',
+        descriptionHint:
+            'Describe the problem and the steps to reproduce it. Between 10 and 10,000 characters.',
+        attachments: 'Attachments',
+        attachmentLimits: 'Up to {count} attachments, {size} MB each.',
+        attachmentLimitReached:
+            'You have reached the limit of {count} attachments. Remove a file to add another.',
+        removeFile: 'Remove {name}',
+        uploadProgress: 'Uploading: {percent}%',
+        sending: 'Sending…',
+        sendingDescription:
+            'Please wait while we receive your request and any attachments.',
+        successTitle: 'Request accepted',
+        successDescription:
+            'Your support request has been accepted. Replies will be sent to:',
+        failureTitle: 'Send not confirmed',
+        failureDescription:
+            'We did not receive confirmation of your submission. Your details have been kept: check your connection and return to the request to try again.',
+        backToRequest: 'Back to request',
+        send: 'Send request',
+        unavailable:
+            'Support is currently unavailable. Please contact an administrator.',
+        fileError: {
+            count: 'You can attach up to {count} files.',
+            size: 'The file {name} exceeds {size} MB.',
+            extension: 'The format of {name} is not supported.',
+        },
+    },
     errors: {
         forbidden: {
             title: 'Access denied',
@@ -891,6 +1052,42 @@ const en = {
     },
     userGuide: {
         help: 'Help',
+        support: {
+            label: 'Request support',
+            title: 'Request support',
+            description:
+                'Send a request to the technical contact and receive a reply by email.',
+            firstTitle: 'Open the form',
+            firstBody:
+                'Click Support, with its support icon next to Help, to open the form in a dialog. If the service is unavailable, contact an administrator.',
+            secondTitle: 'Describe the problem',
+            secondBody:
+                'Enter a subject (up to 200 characters) and description (between 10 and 10,000 characters). Check the email address: it is prefilled from your account and can be changed. You can add up to 3 attachments, each no larger than 5 MB. The notice explains that, upon submission, browser, operating system, language, time zone and window size are included in the email solely to diagnose and resolve the issue.',
+            thirdTitle: 'Submit and wait for a reply',
+            thirdBody:
+                'While sending, the form is replaced by a loading indicator; the outcome appears in the same dialog with the reply email. If submission is not confirmed, you can return to the request without losing your details or attachments. The technical contact will reply by email to the address provided.',
+            tip: 'Allowed formats: PNG, JPG/JPEG, WebP, PDF, TXT, LOG, CSV, JSON, Word (DOC/DOCX), Excel (XLS/XLSX) and PowerPoint (PPT/PPTX).',
+            guestEnabled:
+                'The form is also available without signing in, from the sign-in screens.',
+            guestDisabled:
+                'You need to sign in to use the form. For sign-in problems, the login page provides an email link to the technical contact, if configured.',
+        },
+        adminSupport: {
+            label: 'Manage the technical contact',
+            title: 'Manage the technical contact',
+            description:
+                'Choose the administrator who receives support requests. [ASSISTENZA] emails include the message, reply contact and browser-reported technical details, to be used solely to diagnose and resolve the issue.',
+            firstTitle: 'Choose an active admin',
+            firstBody:
+                "Open All users and select Appoint technical contact from an active administrator's menu.",
+            secondTitle: 'Confirm the replacement',
+            secondBody:
+                'The appointment automatically replaces the previous one. In the Role column, the colored TECHNICAL CONTACT badge with an icon appears below ADMIN; the summary identifies the current contact. If guest support is disabled, the contact’s email appears on the login page for sign-in problems.',
+            thirdTitle: 'Transfer before changing the account',
+            thirdBody:
+                'Appoint a replacement before deactivating, deleting or removing the admin role from the current contact.',
+            tip: 'There can be only one technical contact. If you are the contact, Support is disabled: the popover explains that you receive requests and cannot send one to yourself. Without a contact, the form cannot accept requests.',
+        },
         open: 'Help: open user guide',
         greeting: 'Hi',
         description:
@@ -1393,6 +1590,20 @@ const en = {
         chartValueAxis: 'Value',
         chartDomain: 'Domain',
         chartSeries: 'Series {number}',
+        chartControls: 'Chart controls',
+        chartZoomIn: 'Zoom in',
+        chartZoomOut: 'Zoom out',
+        chartResetView: 'Reset view',
+        chartPan: 'Pan',
+        chartExpand: 'Expand chart',
+        chartCollapse: 'Collapse chart',
+        chartDownloadImage: 'Download PNG',
+        chartZoomHint:
+            'Drag to zoom into an area. Use Ctrl + scroll or pinch to zoom; enable Pan to explore the chart.',
+        chartPanHint:
+            'Drag to move the view. Use Ctrl + scroll or pinch to zoom; disable Pan to zoom into an area.',
+        chartZoomUnavailable:
+            'Zoom controls are unavailable. Reload the page to try again.',
         checkInputs: 'Check the process inputs',
         checkProcessData: 'Check the process data',
         csvPreviewTruncated:

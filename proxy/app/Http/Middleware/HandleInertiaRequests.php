@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\Support\SupportContactManager;
 use App\Support\AuthFeatures;
 use App\Support\UserTableSettings;
 use Illuminate\Http\Request;
@@ -11,7 +12,7 @@ use Laravel\Fortify\Features;
 
 class HandleInertiaRequests extends Middleware
 {
-    public function __construct(private UserTableSettings $tableSettings) {}
+    public function __construct(private UserTableSettings $tableSettings, private SupportContactManager $contacts) {}
 
     /**
      * The root template that's loaded on the first page visit.
@@ -45,6 +46,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'language' => app()->getLocale(),
+            'support' => fn (): array => $this->support($request),
             'auth' => [
                 'user' => $this->user($request),
                 'canRegister' => Features::enabled(Features::registration()),
@@ -55,6 +57,23 @@ class HandleInertiaRequests extends Middleware
                 'routes' => $this->authRoutes($request),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+        ];
+    }
+
+    /** @return array{allowGuests:bool, available:bool, isTechnicalContact:bool, maxAttachments:int, maxFileBytes:int, allowedExtensions:list<string>} */
+    private function support(Request $request): array
+    {
+        $allowGuests = config('support.allow_guests') === true;
+        $eligible = $request->user()?->isActive() ?? $allowGuests;
+        $contact = $eligible ? $this->contacts->current() : null;
+
+        return [
+            'allowGuests' => $allowGuests,
+            'available' => $contact !== null,
+            'isTechnicalContact' => $request->user() !== null && ($contact?->is($request->user()) ?? false),
+            'maxAttachments' => (int) config('support.max_attachments'),
+            'maxFileBytes' => (int) config('support.max_file_kib') * 1024,
+            'allowedExtensions' => config('support.extensions'),
         ];
     }
 
