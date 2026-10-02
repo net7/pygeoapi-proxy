@@ -17,6 +17,7 @@ import {
     Columns3Icon,
     CopyIcon,
     ListChecksIcon,
+    LifeBuoyIcon,
     ListFilterIcon,
     MoreHorizontalIcon,
     PencilIcon,
@@ -35,6 +36,7 @@ import {
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'sonner';
+import { TechnicalContactDialog } from '@/components/admin/technical-contact-dialog';
 
 import { ContentTransition } from '@/components/content-transition';
 import { DataTableBulkActions } from '@/components/data-table-bulk-actions';
@@ -129,6 +131,7 @@ import {
     update as updateUser,
 } from '@/routes/admin/users';
 import type { Auth } from '@/types';
+import type { TechnicalContact } from '@/types/support';
 
 type Translate = ReturnType<typeof useTranslation>['t'];
 
@@ -148,6 +151,7 @@ type AdminUser = {
     role: AdminUserRole;
     is_admin: boolean;
     is_deactivated: boolean;
+    is_technical_contact: boolean;
     deactivated_at: string | null;
     socialProviders: SocialProvider[];
     jobs_count: number;
@@ -213,6 +217,7 @@ export default function AdminUsersIndex({
     tableDefaults,
     statusCounts,
     roleCounts,
+    technicalContact,
 }: {
     users: PaginatedUsers;
     roles: RoleOption[];
@@ -221,6 +226,7 @@ export default function AdminUsersIndex({
     tableDefaults: TableSettings;
     statusCounts: Record<AdminUserStatus, number>;
     roleCounts: Record<AdminUserRole, number>;
+    technicalContact: TechnicalContact | null;
 }) {
     'use no memo';
 
@@ -228,6 +234,9 @@ export default function AdminUsersIndex({
     const { locale, t } = useTranslation();
     const [createOpen, setCreateOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+    const [contactCandidate, setContactCandidate] = useState<AdminUser | null>(
+        null,
+    );
     const [statusUser, setStatusUser] = useState<AdminUser | null>(null);
     const [forceDeletingUser, setForceDeletingUser] =
         useState<AdminUser | null>(null);
@@ -299,7 +308,17 @@ export default function AdminUsersIndex({
                 header: ({ column }) => (
                     <SortableHeader column={column} titleKey="common.role" />
                 ),
-                cell: ({ row }) => <RoleBadge role={row.original.role} />,
+                cell: ({ row }) => (
+                    <div className="flex flex-col items-start gap-1">
+                        <RoleBadge role={row.original.role} />
+                        {row.original.is_technical_contact && (
+                            <Badge className="uppercase">
+                                <LifeBuoyIcon data-icon="inline-start" />
+                                {t('technicalContact.badge').toUpperCase()}
+                            </Badge>
+                        )}
+                    </div>
+                ),
                 filterFn: (row, columnId, filterValue) =>
                     !filterValue ||
                     filterValue === 'all' ||
@@ -489,6 +508,18 @@ export default function AdminUsersIndex({
                                         <PencilIcon />
                                         {t('common.edit')}
                                     </DropdownMenuItem>
+                                    {user.role === 'admin' &&
+                                        !user.is_deactivated &&
+                                        !user.is_technical_contact && (
+                                            <DropdownMenuItem
+                                                onSelect={() =>
+                                                    setContactCandidate(user)
+                                                }
+                                            >
+                                                <ShieldCheckIcon />
+                                                {t('technicalContact.appoint')}
+                                            </DropdownMenuItem>
+                                        )}
                                     {isSelf ? (
                                         <Popover>
                                             <PopoverTrigger asChild>
@@ -621,6 +652,18 @@ export default function AdminUsersIndex({
             <Head title={t('admin.allUsers')} />
 
             <div className="flex flex-col gap-5 p-4">
+                <Alert>
+                    <ShieldCheckIcon aria-hidden="true" />
+                    <AlertTitle>{t('technicalContact.current')}</AlertTitle>
+                    <AlertDescription>
+                        {technicalContact
+                            ? technicalContact.name +
+                              ' (' +
+                              technicalContact.email +
+                              ')'
+                            : t('technicalContact.notConfigured')}
+                    </AlertDescription>
+                </Alert>
                 <div className="page-header flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
                     <div className="flex flex-col gap-1">
                         <p className="text-sm font-medium text-muted-foreground">
@@ -1047,6 +1090,20 @@ export default function AdminUsersIndex({
                 onOpenChange={setCreateOpen}
                 roles={roles}
             />
+
+            {contactCandidate && (
+                <TechnicalContactDialog
+                    key={contactCandidate.id}
+                    candidate={contactCandidate}
+                    currentContact={technicalContact}
+                    open
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setContactCandidate(null);
+                        }
+                    }}
+                />
+            )}
 
             {editingUser && (
                 <UserFormDialog

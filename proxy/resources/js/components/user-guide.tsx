@@ -6,6 +6,7 @@ import {
     CircleHelp,
     Info,
     KeyRound,
+    LifeBuoy,
     ListChecks,
     ShieldCheck,
     SlidersHorizontal,
@@ -37,6 +38,7 @@ const userChapters = [
     { key: 'configure', icon: SlidersHorizontal, adminOnly: false },
     { key: 'monitor', icon: ListChecks, adminOnly: false },
     { key: 'results', icon: ChartNoAxesCombined, adminOnly: false },
+    { key: 'support', icon: LifeBuoy, adminOnly: false },
 ] as const;
 
 const adminChapters = [
@@ -46,14 +48,17 @@ const adminChapters = [
     { key: 'adminAccounts', icon: ShieldCheck, adminOnly: true },
     { key: 'adminJobs', icon: ListChecks, adminOnly: true },
     { key: 'adminDiagnostics', icon: Wrench, adminOnly: true },
+    { key: 'adminSupport', icon: LifeBuoy, adminOnly: true },
 ] as const;
 
 const instructions = ['first', 'second', 'third'] as const;
 
 export function UserGuide({
     user,
+    allowGuestSupport = false,
 }: {
     user: Pick<User, 'id' | 'name' | 'is_admin' | 'first_access_completed_at'>;
+    allowGuestSupport?: boolean;
 }) {
     const { t } = useTranslation();
     const chapters = user.is_admin ? adminChapters : userChapters;
@@ -220,6 +225,15 @@ export function UserGuide({
                                 <AlertTitle>{t('userGuide.tip')}</AlertTitle>
                                 <AlertDescription className="leading-relaxed">
                                     {t(`userGuide.${chapter.key}.tip`)}
+                                    {chapter.key === 'support' && (
+                                        <p>
+                                            {t(
+                                                allowGuestSupport
+                                                    ? 'userGuide.support.guestEnabled'
+                                                    : 'userGuide.support.guestDisabled',
+                                            )}
+                                        </p>
+                                    )}
                                 </AlertDescription>
                             </Alert>
                         </div>

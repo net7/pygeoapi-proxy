@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\JobController as AdminJobController;
+use App\Http\Controllers\Admin\TechnicalContactController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\EmailOtpChallengeController;
 use App\Http\Controllers\Auth\SocialAuthController;
@@ -13,6 +14,8 @@ use App\Http\Controllers\Ogc\ProcessExecutionResultCollectionController;
 use App\Http\Controllers\Ogc\ProcessExecutionResultController;
 use App\Http\Controllers\Ogc\ProcessExecutionResultMapTileController;
 use App\Http\Controllers\Ogc\ProcessExecutionStorageController;
+use App\Http\Controllers\SupportController;
+use App\Http\Middleware\EnsureSupportAccess;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Models\ProcessExecution;
@@ -20,6 +23,12 @@ use App\Models\ProcessExecutionResult;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+Route::middleware([EnsureUserIsActive::class, EnsureSupportAccess::class])->group(function (): void {
+    Route::post('support', [SupportController::class, 'store'])
+        ->middleware(['throttle:support', HandlePrecognitiveRequests::class])
+        ->name('support.store');
+});
 
 Route::middleware('guest')->group(function () {
     Route::get('account/deactivated', fn () => Inertia::render('auth/account-deactivated'))
@@ -110,6 +119,8 @@ Route::middleware(['auth', EnsureUserIsActive::class, 'verified', EnsureUserIsAd
         Route::patch('users/{user}', [AdminUserController::class, 'update'])
             ->middleware(HandlePrecognitiveRequests::class)
             ->name('users.update');
+        Route::put('users/{user}/technical-contact', TechnicalContactController::class)
+            ->name('users.technical-contact.update');
         Route::delete('users/{user}/force', [AdminUserController::class, 'forceDestroy'])
             ->name('users.force-destroy');
         Route::delete('users/{user}', [AdminUserController::class, 'destroy'])

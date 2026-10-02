@@ -9,14 +9,18 @@ export default function AppSidebarLayout({
     children,
     breadcrumbs = [],
 }: AppLayoutProps) {
-    const { auth } = usePage().props;
+    const { auth, support } = usePage().props;
 
     return (
         <AppShell variant="sidebar">
             <AppSidebar />
             {/* Clip animated overflow without creating a second scroll container. */}
             <AppContent variant="sidebar" className="min-w-0 overflow-clip">
-                <AppSidebarHeader breadcrumbs={breadcrumbs} user={auth.user} />
+                <AppSidebarHeader
+                    breadcrumbs={breadcrumbs}
+                    user={auth.user}
+                    support={support}
+                />
                 <div data-page-content className="flex min-w-0 flex-1 flex-col">
                     {children}
                 </div>

@@ -85,6 +85,7 @@ export default defineConfig(({ command, mode }) => {
             // Avoid dev-server reloads when polling first reveals lazy result viewers.
             include: [
                 'chart.js',
+                'chartjs-plugin-zoom',
                 'maplibre-gl',
                 '@uiw/react-json-view',
                 '@uiw/react-json-view/nord',

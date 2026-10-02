@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
+        $middleware->trimStrings(except: [fn (Request $request): bool => $request->is('support')]);
 
         $middleware->redirectUsersTo(fn (Request $request): string => route('jobs.index', absolute: false));
 
