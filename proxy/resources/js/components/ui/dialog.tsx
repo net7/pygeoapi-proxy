@@ -49,9 +49,11 @@ function DialogContent({
   className,
   children,
   closeButtonDisabled = false,
+  closeButtonRef,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   closeButtonDisabled?: boolean
+  closeButtonRef?: React.Ref<HTMLButtonElement>
 }) {
   const { t } = useTranslation()
 
@@ -67,7 +69,7 @@ function DialogContent({
         {...props}
       >
         {children}
-        <DialogPrimitive.Close disabled={closeButtonDisabled} className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 cursor-pointer rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-30 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4">
+        <DialogPrimitive.Close ref={closeButtonRef} disabled={closeButtonDisabled} className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 cursor-pointer rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-30 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4">
           <XIcon />
           <span className="sr-only">{t("common.close")}</span>
         </DialogPrimitive.Close>
